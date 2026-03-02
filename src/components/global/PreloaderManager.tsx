@@ -39,7 +39,7 @@ function PreloaderContent() {
 
         const preloadImage = (index: number) => {
             const img = new Image();
-            img.src = `/sequence/v${currentV}/frame_${index}.webp`;
+            img.src = `/sequence/v${currentV}/frame_${index}.jpg`;
             const handleLoad = () => {
                 if (!isMounted) return;
                 loadedCount++;

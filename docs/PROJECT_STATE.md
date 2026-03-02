@@ -36,6 +36,7 @@
 - `src/app/actions/form-actions.ts` -> Server Actions for Supabase mutations
 
 ## 4. CHANGELOG
+- **[v1.0.3]** - Navigation Dropdowns & CMS Submissions UI: Added nested video concept dropdown to Desktop Header and Mobile Accordion Menu. Removed VideoSwitcher. Built `/admin/submissions` Server Component to securely fetch JSONB payloads from Supabase via searchParams tabs. Committed 720 extracted JPEG frames. Frame format changed from WebP to JPEG due to FFmpeg codec availability.
 - **[v1.0.0]** - Admin UI Scaffolded: Refactored Next.js structure. Moved all frontend routes into a `(website)` route group to isolate the cinematic layouts. Created a separate layout for `/admin`. Implemented Supabase Auth Middleware and Login Server Actions. Updated `.gitignore` to block raw MP4s.
 - **[v0.9.7]** - Frame Scrubber Restored: HTML5 video scrubbing is ineffective on mobile. Reverted to `DynamicCanvasEngine.tsx` with dynamic routing (`v1-v6`). Created `scripts/extract_frames.sh` to downsample 4K MP4s into memory-safe 1080p WebP frame sequences for performant 60fps scrolling. Wrapped Preloader in Suspense to dynamically preload the correct frames.
 - **[v0.9.6]** - Hero Engine Migration: Replaced heavy canvas image scrubber with high-performance `<VideoEngine>` natively playing 4K MP4s with GSAP scrolling scale/parallax. Added client `VideoSwitcher` preview dropdown via Next.js `searchParams`. Decoupled Preloader from WebP loading for fast 1.8s mobile streaming.
