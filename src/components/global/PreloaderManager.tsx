@@ -4,58 +4,43 @@ import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
-const TOTAL_FRAMES = 106;
-const CRITICAL_FRAMES: number = 35;
-
 const LOADING_MESSAGES = [
     "Weaving Digital Infrastructure...",
     "Aligning Sustainable Threads...",
-    "Calibrating 4-Point Inspection...",
+    "Calibrating Zero-Defect Pipeline...",
     "Experience Ready."
 ];
 
 export default function PreloaderManager() {
-    const [loadedFrames, setLoadedFrames] = useState(0);
+    const [progressPercentage, setProgressPercentage] = useState(0);
     const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
         document.body.style.overflow = "hidden";
-        let loadedCount = 0;
 
-        const checkReady = () => {
-            if (loadedCount >= CRITICAL_FRAMES && !isReady) {
+        // Fast simulated load since videos stream asynchronously via HTML5
+        const duration = 1800; // 1.8 seconds total preloader time
+        const interval = 30; // update every 30ms
+        const steps = duration / interval;
+        let currentStep = 0;
+
+        const timer = setInterval(() => {
+            currentStep++;
+            const newProgress = Math.min(Math.round((currentStep / steps) * 100), 100);
+            setProgressPercentage(newProgress);
+
+            if (currentStep >= steps) {
+                clearInterval(timer);
                 setIsReady(true);
                 document.body.style.overflow = "";
             }
+        }, interval);
+
+        return () => {
+            clearInterval(timer);
+            document.body.style.overflow = "";
         };
-
-        if (CRITICAL_FRAMES === 0) {
-            checkReady();
-            return;
-        }
-
-        const preloadImage = (index: number) => {
-            const img = new Image();
-            img.src = `/sequence/frame_${index}.webp`;
-            const handleLoad = () => {
-                loadedCount++;
-                setLoadedFrames(loadedCount);
-                checkReady();
-            };
-            img.onload = handleLoad;
-            img.onerror = handleLoad;
-        };
-
-        for (let i = 0; i < TOTAL_FRAMES; i++) {
-            preloadImage(i);
-        }
-
-        return () => { document.body.style.overflow = ""; };
-    }, [isReady]);
-
-    const progressPercentage = CRITICAL_FRAMES === 0
-        ? 100
-        : Math.min(Math.round((loadedFrames / CRITICAL_FRAMES) * 100), 100);
+    }, []);
 
     const messageIndex = Math.min(
         Math.floor((progressPercentage / 100) * LOADING_MESSAGES.length),
@@ -94,12 +79,9 @@ export default function PreloaderManager() {
                         ))}
                     </div>
 
-                    {/* Ambient Glow */}
                     <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#0EC97A_0%,transparent_35%)] opacity-10 blur-[80px] pointer-events-none" />
 
                     <div className="relative z-10 flex flex-col items-center">
-
-                        {/* Pulsating Brand Logo */}
                         <motion.div
                             animate={{
                                 scale: 1 + (progressPercentage / 500),
@@ -111,7 +93,6 @@ export default function PreloaderManager() {
                             <BrandLogo className="w-24 h-24" animated={true} />
                         </motion.div>
 
-                        {/* Cinematic Counter */}
                         <div className="flex items-start overflow-hidden">
                             <motion.span
                                 initial={{ y: 50, opacity: 0 }}
@@ -132,7 +113,6 @@ export default function PreloaderManager() {
                             <h2 className="font-serif text-xl md:text-2xl tracking-[0.25em] text-foreground font-bold uppercase">Fashion Asia</h2>
                         </motion.div>
 
-                        {/* Dynamic Status Text */}
                         <div className="mt-8 h-6 overflow-hidden">
                             <AnimatePresence mode="wait">
                                 <motion.p
@@ -149,13 +129,11 @@ export default function PreloaderManager() {
                         </div>
                     </div>
 
-                    {/* Premium Bottom Loading Bar */}
                     <div className="absolute bottom-12 w-[80%] max-w-md h-[2px] bg-white/10 overflow-hidden backdrop-blur-sm">
                         <motion.div
                             className="h-full bg-gradient-to-r from-[#019329] via-primary to-white shadow-[0_0_15px_#0EC97A]"
-                            initial={{ width: 0 }}
                             animate={{ width: `${progressPercentage}%` }}
-                            transition={{ duration: 0.2, ease: "linear" }}
+                            transition={{ duration: 0.1, ease: "linear" }}
                         />
                     </div>
                 </motion.div>

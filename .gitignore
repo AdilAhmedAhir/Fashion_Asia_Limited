@@ -32,3 +32,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# large media assets (deploy via CDN/Vercel)
+public/videos/*.mp4
+/Video/
+/Images_From_Client/
