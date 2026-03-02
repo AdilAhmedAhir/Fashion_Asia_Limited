@@ -13,9 +13,7 @@ export default function AboutSection() {
 
                 <div className="flex flex-col justify-center">
                     <ScrollReveal delay={0}>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                            About Fashion Asia Limited
-                        </span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">About Fashion Asia Limited</span>
                     </ScrollReveal>
 
                     <ScrollReveal delay={0.1}>
@@ -45,8 +43,8 @@ export default function AboutSection() {
                 <ScrollReveal delay={0.4} className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-white/5 md:aspect-auto">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f1a] to-black z-0"></div>
                     <img
-                        src="https://images.unsplash.com/photo-1581091226825-a6a2a5aee158?auto=format&fit=crop&q=80&w=1400"
-                        alt="Fashion Asia Production Facility"
+                        src="/images/client/about-us-copy.jpg"
+                        alt="Fashion Asia Manufacturing Facility"
                         className="absolute inset-0 z-10 h-full w-full object-cover opacity-60 mix-blend-luminosity grayscale transition-all duration-1000 hover:scale-105 hover:grayscale-0 hover:opacity-100"
                     />
                     <div className="absolute bottom-6 right-6 z-20 rounded-full border border-primary bg-background/90 px-6 py-3 font-sans text-xs font-semibold uppercase tracking-widest text-primary backdrop-blur-md">

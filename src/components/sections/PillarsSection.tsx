@@ -8,7 +8,7 @@ export default function PillarsSection() {
             title: "Quality",
             desc: "Zero-defect philosophy with Optitex precision and rigorous 4-point inspection.",
             tags: ["Optitex CAD", "AQL 2.5", "Gemini"],
-            img: "https://images.unsplash.com/photo-1558222218-b7b54eede3f3?auto=format&fit=crop&q=80&w=800",
+            img: "/images/client/box1-copy.jpg",
             featured: false
         },
         {
@@ -16,7 +16,7 @@ export default function PillarsSection() {
             title: "Sustainability",
             desc: "Solar powered. Zero salt dyeing. Water recycling. 100% compliance.",
             tags: ["Solar Power", "Zero Discharge", "Certified"],
-            img: "https://images.unsplash.com/photo-1497435334941-8c899ee9e8e9?auto=format&fit=crop&q=80&w=800",
+            img: "/images/client/csr-main-copy.jpg",
             featured: true
         },
         {
@@ -24,7 +24,7 @@ export default function PillarsSection() {
             title: "Delivery",
             desc: "Bullmar auto-cutting. Real-time tracking. Agile production systems.",
             tags: ["Bullmar", "45K/Day", "Agile"],
-            img: "https://images.unsplash.com/photo-1587293852726-70cdb56c2866?auto=format&fit=crop&q=80&w=800",
+            img: "/images/client/box5-copy.jpg",
             featured: false
         }
     ];
@@ -34,12 +34,8 @@ export default function PillarsSection() {
             <div className="container flex flex-col items-center">
 
                 <ScrollReveal delay={0} className="text-center">
-                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                        Our Framework
-                    </span>
-                    <h2 className="mt-4 font-serif text-[clamp(2.5rem,4vw,3.5rem)] font-bold text-foreground">
-                        Three Pillars of Excellence
-                    </h2>
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Framework</span>
+                    <h2 className="mt-4 font-serif text-[clamp(2.5rem,4vw,3.5rem)] font-bold text-foreground">Three Pillars of Excellence</h2>
                 </ScrollReveal>
 
                 <div className="mt-16 grid w-full grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
@@ -57,9 +53,7 @@ export default function PillarsSection() {
                                         {pillar.num}
                                     </div>
                                     {pillar.featured && (
-                                        <div className="absolute left-4 top-4 rounded-full bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-black">
-                                            LEED GOLD
-                                        </div>
+                                        <div className="absolute left-4 top-4 rounded-full bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-black">LEED GOLD</div>
                                     )}
                                 </div>
 

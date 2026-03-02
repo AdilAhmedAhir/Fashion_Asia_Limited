@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import MobileOverlayMenu from "./MobileOverlayMenu";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { cn } from "@/lib/utils";
 
 export default function Header() {
@@ -24,13 +25,16 @@ export default function Header() {
                 )}
             >
                 <div className="container flex items-center justify-between">
-                    <Link href="/" className="group relative z-[1001] flex flex-col" onClick={() => setMenuOpen(false)}>
-                        <span className="font-serif text-xl font-bold leading-none tracking-wide text-foreground transition-colors group-hover:text-primary">
-                            FASHION ASIA
-                        </span>
-                        <span className="text-[0.65rem] uppercase tracking-[0.2em] text-foreground/50">
-                            Limited
-                        </span>
+                    <Link href="/" className="group relative z-[1001] flex items-center gap-3" onClick={() => setMenuOpen(false)}>
+                        <BrandLogo className="w-10 h-10 transition-transform duration-700 group-hover:rotate-180" />
+                        <div className="flex flex-col">
+                            <span className="font-serif text-xl font-bold leading-none tracking-wide text-foreground transition-colors group-hover:text-primary">
+                                FASHION ASIA
+                            </span>
+                            <span className="text-[0.65rem] uppercase tracking-[0.2em] text-foreground/50">
+                                Limited
+                            </span>
+                        </div>
                     </Link>
 
                     <nav className="hidden items-center gap-8 lg:flex z-[1001]">
@@ -46,7 +50,7 @@ export default function Header() {
                         ))}
                         <Link
                             href="/contact"
-                            className="rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-secondary"
+                            className="rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
                         >
                             Connect
                         </Link>
