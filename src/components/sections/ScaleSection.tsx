@@ -28,7 +28,7 @@ export default function ScaleSection() {
             <div className="absolute inset-0 z-0 h-[130%] w-full -top-[15%]">
                 <img
                     ref={bgRef}
-                    src="https://images.unsplash.com/photo-1504917595217-d4f3915ce113?auto=format&fit=crop&q=80&w=2000"
+                    src="/images/client/4-copy.jpg"
                     alt="Factory Scale"
                     className="h-full w-full object-cover brightness-[0.25] mix-blend-luminosity grayscale"
                 />
