@@ -36,6 +36,7 @@
 - `src/app/actions/form-actions.ts` -> Server Actions for Supabase mutations
 
 ## 4. CHANGELOG
+- **[v1.1.0]** - Media Center CMS: Created `media_assets` Supabase schema and `media` storage bucket policies. Built `/admin/media` dashboard with Server Actions for publishing News and uploading Gallery images to Storage. Wired up `(website)/media` frontend to fetch and render dynamic masonry galleries and news cards.
 - **[v1.0.3]** - Navigation Dropdowns & CMS Submissions UI: Added nested video concept dropdown to Desktop Header and Mobile Accordion Menu. Removed VideoSwitcher. Built `/admin/submissions` Server Component to securely fetch JSONB payloads from Supabase via searchParams tabs. Committed 720 extracted JPEG frames. Frame format changed from WebP to JPEG due to FFmpeg codec availability.
 - **[v1.0.0]** - Admin UI Scaffolded: Refactored Next.js structure. Moved all frontend routes into a `(website)` route group to isolate the cinematic layouts. Created a separate layout for `/admin`. Implemented Supabase Auth Middleware and Login Server Actions. Updated `.gitignore` to block raw MP4s.
 - **[v0.9.7]** - Frame Scrubber Restored: HTML5 video scrubbing is ineffective on mobile. Reverted to `DynamicCanvasEngine.tsx` with dynamic routing (`v1-v6`). Created `scripts/extract_frames.sh` to downsample 4K MP4s into memory-safe 1080p WebP frame sequences for performant 60fps scrolling. Wrapped Preloader in Suspense to dynamically preload the correct frames.

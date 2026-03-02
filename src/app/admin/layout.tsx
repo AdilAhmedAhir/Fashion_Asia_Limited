@@ -1,6 +1,6 @@
 import { logoutAction } from "@/app/actions/auth-actions";
 import Link from "next/link";
-import { LogOut, LayoutDashboard, FileText, Inbox, ShieldCheck } from "lucide-react";
+import { LogOut, LayoutDashboard, Image as ImageIcon, Inbox, ShieldCheck } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export const metadata = { title: "Admin Dashboard | Fashion Asia Limited" };
@@ -8,7 +8,6 @@ export const metadata = { title: "Admin Dashboard | Fashion Asia Limited" };
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex min-h-screen bg-[#0a0a0a]">
-            {/* Sidebar */}
             <aside className="w-64 flex-shrink-0 border-r border-white/5 bg-black p-6 flex-col hidden md:flex">
                 <div className="mb-12 flex items-center gap-3">
                     <BrandLogo className="h-8 w-8" />
@@ -17,13 +16,13 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
                 <nav className="flex flex-col gap-2 flex-grow">
                     <span className="mb-2 text-[0.65rem] font-bold uppercase tracking-widest text-white/30">System</span>
-                    <Link href="/admin" className="flex items-center gap-3 rounded-lg bg-primary/10 px-4 py-3 text-sm font-medium text-primary">
+                    <Link href="/admin" className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors">
                         <LayoutDashboard size={18} /> Dashboard
                     </Link>
 
                     <span className="mb-2 mt-6 text-[0.65rem] font-bold uppercase tracking-widest text-white/30">Management</span>
-                    <Link href="/admin/pages" className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors">
-                        <FileText size={18} /> Content Pages
+                    <Link href="/admin/media" className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors">
+                        <ImageIcon size={18} /> Media Center
                     </Link>
                     <Link href="/admin/submissions" className="flex items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium text-white/50 hover:bg-white/5 hover:text-white transition-colors">
                         <Inbox size={18} /> Submissions
@@ -46,7 +45,6 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 </div>
             </aside>
 
-            {/* Main Content */}
             <main className="flex-grow flex flex-col max-h-screen overflow-y-auto">
                 <div className="p-8 md:p-12">
                     {children}
