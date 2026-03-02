@@ -5,16 +5,25 @@ import ScaleSection from "@/components/sections/ScaleSection";
 import MarqueeSection from "@/components/sections/MarqueeSection";
 import ContactSection from "@/components/sections/ContactSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { VideoSwitcher } from "@/components/ui/VideoSwitcher";
 
-export default function Home() {
+type Props = {
+    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
+}
+
+export default async function Home(props: Props) {
+    const searchParams = await props.searchParams;
+    const v = typeof searchParams.v === 'string' ? searchParams.v : "1";
+
     return (
         <div className="flex flex-col">
-            <HeroSection />
+            <VideoSwitcher />
+            <HeroSection videoIndex={v} />
 
             <section className="bg-black py-24 text-center">
                 <div className="container max-w-3xl flex flex-col items-center">
                     <ScrollReveal>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Scroll-Driven Experience</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Cinematic Experience</span>
                     </ScrollReveal>
                     <ScrollReveal delay={0.1}>
                         <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-5xl">Innovation in Motion</h2>
@@ -32,7 +41,6 @@ export default function Home() {
             <ScaleSection />
             <MarqueeSection />
             <ContactSection />
-
         </div>
     );
 }

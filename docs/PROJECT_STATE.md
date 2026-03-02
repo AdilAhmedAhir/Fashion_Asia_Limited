@@ -36,6 +36,7 @@
 - `src/app/actions/form-actions.ts` -> Server Actions for Supabase mutations
 
 ## 4. CHANGELOG
+- **[v0.9.6]** - Hero Engine Migration: Replaced heavy canvas image scrubber with high-performance `<VideoEngine>` natively playing 4K MP4s with GSAP scrolling scale/parallax. Added client `VideoSwitcher` preview dropdown via Next.js `searchParams`. Decoupled Preloader from WebP loading for fast 1.8s mobile streaming.
 - **[v0.9.3]** - Frontend Content Integration: Injected official client copywriting into the Who We Are, Business, and Sustainability pages. Structured layouts with Tier 3 ScrollReveal motion architecture.
 - **[v0.9.2]** - Branding Integration: Ingested local client images to replace generic placeholders. Built SVG `<BrandLogo>` component and injected into Header. Overhauled Preloader into a cinematic "thread-weaving" experience.
 - **[v0.9.1]** - UI Polish: Redesigned PreloaderManager into a premium cinematic brand experience (abstract SVG heritage logo, massive typography, edge-to-edge loading bar). Generated AI Logo Prompt.

@@ -1,12 +1,12 @@
-import CanvasEngine from "@/components/canvas/CanvasEngine";
+import VideoEngine from "@/components/canvas/VideoEngine";
 import HeroOverlay from "./HeroOverlay";
 
-export default function HeroSection() {
+export default function HeroSection({ videoIndex = "1" }: { videoIndex?: string }) {
     return (
         <section className="relative w-full">
-            <CanvasEngine>
+            <VideoEngine videoIndex={videoIndex}>
                 <HeroOverlay />
-            </CanvasEngine>
+            </VideoEngine>
         </section>
     );
 }
