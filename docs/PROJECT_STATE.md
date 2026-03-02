@@ -36,6 +36,7 @@
 - `src/app/actions/form-actions.ts` -> Server Actions for Supabase mutations
 
 ## 4. CHANGELOG
+- **[v1.2.0] (FINAL)** - SEO & Production Polish: Added dynamic `sitemap.ts` and `robots.ts` (blocking `/admin`). Upgraded root `layout.tsx` with comprehensive OpenGraph, Twitter, and localized Metadata mapping for perfect social sharing. Added custom `not-found.tsx` for resilient UI routing. Project MVP is 100% complete and production-ready.
 - **[v1.1.0]** - Media Center CMS: Created `media_assets` Supabase schema and `media` storage bucket policies. Built `/admin/media` dashboard with Server Actions for publishing News and uploading Gallery images to Storage. Wired up `(website)/media` frontend to fetch and render dynamic masonry galleries and news cards.
 - **[v1.0.3]** - Navigation Dropdowns & CMS Submissions UI: Added nested video concept dropdown to Desktop Header and Mobile Accordion Menu. Removed VideoSwitcher. Built `/admin/submissions` Server Component to securely fetch JSONB payloads from Supabase via searchParams tabs. Committed 720 extracted JPEG frames. Frame format changed from WebP to JPEG due to FFmpeg codec availability.
 - **[v1.0.0]** - Admin UI Scaffolded: Refactored Next.js structure. Moved all frontend routes into a `(website)` route group to isolate the cinematic layouts. Created a separate layout for `/admin`. Implemented Supabase Auth Middleware and Login Server Actions. Updated `.gitignore` to block raw MP4s.
