@@ -5,7 +5,6 @@ import ScaleSection from "@/components/sections/ScaleSection";
 import MarqueeSection from "@/components/sections/MarqueeSection";
 import ContactSection from "@/components/sections/ContactSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { VideoSwitcher } from "@/components/ui/VideoSwitcher";
 
 type Props = {
     searchParams: Promise<{ [key: string]: string | string[] | undefined }>
@@ -17,7 +16,6 @@ export default async function Home(props: Props) {
 
     return (
         <div className="flex flex-col">
-            <VideoSwitcher />
             <HeroSection videoIndex={v} />
 
             <section className="bg-black py-24 text-center">

@@ -27,7 +27,7 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
         const images: HTMLImageElement[] = [];
         for (let i = 1; i <= TOTAL_FRAMES; i++) {
             const img = new Image();
-            img.src = `/sequence/v${videoIndex}/frame_${i}.webp`;
+            img.src = `/sequence/v${videoIndex}/frame_${i}.jpg`;
             images.push(img);
         }
         imagesRef.current = images;

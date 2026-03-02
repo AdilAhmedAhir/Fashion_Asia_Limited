@@ -4,7 +4,17 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import MobileOverlayMenu from "./MobileOverlayMenu";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+const homeVariants = [
+    { id: "1", name: "Concept 1: Flow" },
+    { id: "2", name: "Concept 2: Yarn Spools A" },
+    { id: "3", name: "Concept 3: Fibers Weaving A" },
+    { id: "4", name: "Concept 4: Yarn Spools B" },
+    { id: "5", name: "Concept 5: Fibers Weaving B" },
+    { id: "6", name: "Concept 6: Yarn Spools C" },
+];
 
 export default function Header() {
     const [scrolled, setScrolled] = useState(false);
@@ -38,14 +48,37 @@ export default function Header() {
                     </Link>
 
                     <nav className="hidden items-center gap-8 lg:flex z-[1001]">
-                        {["Home", "Who We Are", "Business", "Sustainability", "Media"].map((item) => (
+
+                        {/* Dropdown for Home */}
+                        <div className="group relative py-6 font-sans text-sm font-medium text-foreground cursor-pointer">
+                            <div className="flex items-center gap-1 transition-colors group-hover:text-primary">
+                                Home <ChevronDown size={14} className="transition-transform duration-300 group-hover:rotate-180" />
+                            </div>
+                            <span className="absolute bottom-4 left-0 h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-full"></span>
+
+                            <div className="absolute left-0 top-full mt-0 w-56 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 flex flex-col rounded-xl border border-white/10 bg-black/95 p-2 shadow-2xl backdrop-blur-xl">
+                                <span className="px-3 py-2 text-[0.65rem] font-bold uppercase tracking-widest text-primary/50">Video Concepts</span>
+                                {homeVariants.map((v) => (
+                                    <Link
+                                        key={v.id}
+                                        href={`/?v=${v.id}`}
+                                        className="flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-white/70 hover:bg-white/10 hover:text-white transition-colors"
+                                    >
+                                        {v.name}
+                                    </Link>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Standard Links */}
+                        {["Who We Are", "Business", "Sustainability", "Media"].map((item) => (
                             <Link
                                 key={item}
-                                href={item === "Home" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                                className="group relative font-sans text-sm font-medium text-foreground"
+                                href={`/${item.toLowerCase().replace(/\s+/g, "-")}`}
+                                className="group relative font-sans text-sm font-medium text-foreground py-6"
                             >
                                 {item}
-                                <span className="absolute -bottom-1 left-0 h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-full"></span>
+                                <span className="absolute bottom-4 left-0 h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-full"></span>
                             </Link>
                         ))}
                         <Link
