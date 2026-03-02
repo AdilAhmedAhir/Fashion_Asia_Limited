@@ -1,8 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, Suspense } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+
+const TOTAL_FRAMES = 120;
+const CRITICAL_FRAMES: number = 30; // Wait for first 30 frames (2 secs of scroll)
 
 const LOADING_MESSAGES = [
     "Weaving Digital Infrastructure...",
@@ -11,36 +15,61 @@ const LOADING_MESSAGES = [
     "Experience Ready."
 ];
 
-export default function PreloaderManager() {
-    const [progressPercentage, setProgressPercentage] = useState(0);
+function PreloaderContent() {
+    const searchParams = useSearchParams();
+    const currentV = searchParams.get("v") || "1";
+    const [loadedFrames, setLoadedFrames] = useState(0);
     const [isReady, setIsReady] = useState(false);
 
     useEffect(() => {
         document.body.style.overflow = "hidden";
+        let loadedCount = 0;
+        let isMounted = true;
 
-        // Fast simulated load since videos stream asynchronously via HTML5
-        const duration = 1800; // 1.8 seconds total preloader time
-        const interval = 30; // update every 30ms
-        const steps = duration / interval;
-        let currentStep = 0;
+        // Reset readiness when video switches
+        setIsReady(false);
+        setLoadedFrames(0);
 
-        const timer = setInterval(() => {
-            currentStep++;
-            const newProgress = Math.min(Math.round((currentStep / steps) * 100), 100);
-            setProgressPercentage(newProgress);
-
-            if (currentStep >= steps) {
-                clearInterval(timer);
+        const checkReady = () => {
+            if (loadedCount >= CRITICAL_FRAMES) {
                 setIsReady(true);
                 document.body.style.overflow = "";
             }
-        }, interval);
+        };
+
+        const preloadImage = (index: number) => {
+            const img = new Image();
+            img.src = `/sequence/v${currentV}/frame_${index}.webp`;
+            const handleLoad = () => {
+                if (!isMounted) return;
+                loadedCount++;
+                setLoadedFrames(loadedCount);
+                checkReady();
+            };
+            img.onload = handleLoad;
+            img.onerror = handleLoad; // Proceed even if frame is missing to avoid infinite lock
+        };
+
+        for (let i = 1; i <= TOTAL_FRAMES; i++) {
+            preloadImage(i);
+        }
+
+        // Safety fallback: auto-unlock after 6 seconds if network hangs or frames not generated yet
+        const timeout = setTimeout(() => {
+            if (isMounted) {
+                setIsReady(true);
+                document.body.style.overflow = "";
+            }
+        }, 6000);
 
         return () => {
-            clearInterval(timer);
+            isMounted = false;
             document.body.style.overflow = "";
+            clearTimeout(timeout);
         };
-    }, []);
+    }, [currentV]);
+
+    const progressPercentage = Math.min(Math.round((loadedFrames / CRITICAL_FRAMES) * 100), 100);
 
     const messageIndex = Math.min(
         Math.floor((progressPercentage / 100) * LOADING_MESSAGES.length),
@@ -65,16 +94,6 @@ export default function PreloaderManager() {
                                 initial={{ scaleX: 0, opacity: 0 }}
                                 animate={{ scaleX: 1, opacity: [0, 0.5, 0] }}
                                 transition={{ duration: 3, repeat: Infinity, delay: i * 0.2, ease: "easeInOut" }}
-                            />
-                        ))}
-                        {[...Array(15)].map((_, i) => (
-                            <motion.div
-                                key={`v-${i}`}
-                                className="absolute w-[1px] bg-[#019329]/30"
-                                style={{ left: `${(i + 1) * 6}%`, top: 0, bottom: 0 }}
-                                initial={{ scaleY: 0, opacity: 0 }}
-                                animate={{ scaleY: 1, opacity: [0, 0.5, 0] }}
-                                transition={{ duration: 4, repeat: Infinity, delay: i * 0.15, ease: "easeInOut" }}
                             />
                         ))}
                     </div>
@@ -139,5 +158,13 @@ export default function PreloaderManager() {
                 </motion.div>
             )}
         </AnimatePresence>
+    );
+}
+
+export default function PreloaderManager() {
+    return (
+        <Suspense fallback={null}>
+            <PreloaderContent />
+        </Suspense>
     );
 }
