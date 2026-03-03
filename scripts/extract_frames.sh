@@ -1,58 +1,56 @@
 #!/bin/bash
-# Extracts 192 JPEG frames per video (24fps × 8s) with bookend quality boost.
-# First 20 frames & last 20 frames: q:v 1 (max quality, crisp hero entrance/exit)
-# Middle frames: q:v 4 (standard quality, keeps payload manageable)
-# Resolution: 1920x1080 (optimal for web — 4K frames would be ~500KB+ each)
+# Maximum quality WebP extraction — optimize down later, never up.
+# 20fps × 8s = 160 frames per video
+# ALL frames at q95 (near-lossless) — we can always dial this down later.
+# Also generates a poster.webp (frame 1 at lossless quality) for instant loading.
 
-echo "Starting 24fps HQ bookend frame extraction for 6 video variants..."
-echo "  192 frames per video (24fps × 8s) — smoother scroll than previous 120 frames."
+TOTAL_FRAMES=160
+FPS=20
+WEBP_QUALITY=95  # Near-lossless for all frames — start premium, optimize later
+
+echo "Starting MAX QUALITY WebP extraction (${FPS}fps, ${TOTAL_FRAMES} frames, all q${WEBP_QUALITY})..."
 echo ""
-
-TOTAL_FRAMES=192
-HQ_COUNT=20
 
 mkdir -p public/sequence/{v1,v2,v3,v4,v5,v6}
 
 for i in {1..6}; do
   if [ -f "public/videos/v${i}.mp4" ]; then
     echo "=== Processing v${i}.mp4 ==="
+    DIR="public/sequence/v${i}"
 
-    # Pass 1: Extract ALL frames at standard quality
-    echo "  [1/3] Extracting $TOTAL_FRAMES frames at standard quality (q:v 4)..."
-    ffmpeg -y -i "public/videos/v${i}.mp4" -vf "scale=1920:-1,fps=24" -vframes $TOTAL_FRAMES -q:v 4 "public/sequence/v${i}/frame_%d.jpg" 2>/dev/null
+    # Clean previous frames
+    rm -f "$DIR"/frame_*.jpg "$DIR"/frame_*.webp "$DIR"/poster.webp
 
-    # Pass 2: Overwrite first 20 frames at MAX quality
-    echo "  [2/3] Boosting first $HQ_COUNT frames to max quality (q:v 1)..."
-    ffmpeg -y -i "public/videos/v${i}.mp4" -vf "scale=1920:-1,fps=24" -vframes $HQ_COUNT -q:v 1 "public/sequence/v${i}/frame_%d.jpg" 2>/dev/null
+    # Extract ALL frames as max-quality JPEG intermediates
+    echo "  [1/4] Extracting ${TOTAL_FRAMES} max-quality JPEG intermediates..."
+    ffmpeg -y -i "public/videos/v${i}.mp4" -vf "scale=1920:-1,fps=${FPS}" -vframes $TOTAL_FRAMES -q:v 1 "$DIR/frame_%d.jpg" 2>/dev/null
 
-    # Pass 3: Overwrite last 20 frames at MAX quality
-    # Frame 173 at 24fps starts at t = 172/24 ≈ 7.167s
-    TAIL_START=$(echo "scale=3; ($TOTAL_FRAMES - $HQ_COUNT) / 24" | bc)
-    echo "  [3/3] Boosting last $HQ_COUNT frames to max quality (from t=${TAIL_START}s)..."
-    ffmpeg -y -ss "$TAIL_START" -i "public/videos/v${i}.mp4" -vf "scale=1920:-1,fps=24" -vframes $HQ_COUNT -q:v 1 "/tmp/hq_tail_%d.jpg" 2>/dev/null
-
-    for j in $(seq 1 $HQ_COUNT); do
-      target=$(($TOTAL_FRAMES - $HQ_COUNT + $j))
-      if [ -f "/tmp/hq_tail_${j}.jpg" ]; then
-        mv "/tmp/hq_tail_${j}.jpg" "public/sequence/v${i}/frame_${target}.jpg"
-      fi
+    # Convert ALL to WebP at q95
+    echo "  [2/4] Converting all ${TOTAL_FRAMES} frames to WebP q${WEBP_QUALITY}..."
+    for j in $(seq 1 $TOTAL_FRAMES); do
+      cwebp -q $WEBP_QUALITY "$DIR/frame_${j}.jpg" -o "$DIR/frame_${j}.webp" 2>/dev/null
     done
 
-    # Clean up any stale frames beyond 192 from previous 120-frame extractions
-    for f in public/sequence/v${i}/frame_*.jpg; do
-      num=$(basename "$f" | sed 's/frame_\([0-9]*\)\.jpg/\1/')
-      if [ "$num" -gt "$TOTAL_FRAMES" ]; then
-        rm "$f"
-      fi
-    done
+    # Generate poster (frame 1 at absolute max quality for instant hero display)
+    echo "  [3/4] Generating poster.webp (lossless first frame)..."
+    cwebp -q 100 "$DIR/frame_1.jpg" -o "$DIR/poster.webp" 2>/dev/null
 
-    COUNT=$(ls public/sequence/v${i}/ | wc -l | tr -d ' ')
-    SIZE=$(du -sh public/sequence/v${i}/ | cut -f1)
-    echo "  Done: v${i} — ${COUNT} frames, ${SIZE}"
+    # Remove intermediate JPEGs
+    echo "  [4/4] Cleaning up JPEG intermediates..."
+    rm -f "$DIR"/frame_*.jpg
+
+    COUNT=$(ls "$DIR"/frame_*.webp 2>/dev/null | wc -l | tr -d ' ')
+    SIZE=$(du -sh "$DIR/" | cut -f1)
+    POSTER_SIZE=$(ls -lh "$DIR/poster.webp" | awk '{print $5}')
+    echo "  Done: v${i} — ${COUNT} frames, ${SIZE} total, poster: ${POSTER_SIZE}"
     echo ""
   else
     echo "Warning: public/videos/v${i}.mp4 not found."
   fi
 done
 
-echo "Extraction complete. 24fps sequences saved to public/sequence/v1 through v6."
+TOTAL_SIZE=$(du -sh public/sequence/ | cut -f1)
+echo "Extraction complete. Total: ${TOTAL_SIZE}"
+echo "Format: WebP q${WEBP_QUALITY} | FPS: ${FPS} | Frames: ${TOTAL_FRAMES} | Resolution: 1920×1080"
+echo ""
+echo "To optimize later, just change WEBP_QUALITY to a lower value (e.g., 82) and re-run."
