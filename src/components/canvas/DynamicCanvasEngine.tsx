@@ -5,7 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-const TOTAL_FRAMES = 160; // 8 seconds at 20fps — Apple's sweet spot
+const TOTAL_FRAMES = 160; // 8 seconds at 20fps
 
 export default function DynamicCanvasEngine({ videoIndex, children }: { videoIndex: string, children: React.ReactNode }) {
     const containerRef = useRef<HTMLDivElement>(null);
@@ -40,29 +40,42 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
             const img = imagesRef.current[index - 1];
             if (!img || !img.complete || img.naturalWidth === 0) return;
 
+            // Use natural (backing store) resolution for sharp rendering
             const cw = canvas.width;
             const ch = canvas.height;
-            const iw = img.width;
-            const ih = img.height;
+            const iw = img.naturalWidth;
+            const ih = img.naturalHeight;
 
             const scale = Math.max(cw / iw, ch / ih);
             const x = (cw / 2) - (iw / 2) * scale;
             const y = (ch / 2) - (ih / 2) * scale;
 
-            ctx.fillStyle = "#1a1f1a";
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "high";
+            ctx.fillStyle = "#0a0a0a";
             ctx.fillRect(0, 0, cw, ch);
             ctx.drawImage(img, x, y, iw * scale, ih * scale);
         };
 
         const handleResize = () => {
-            canvas.width = window.innerWidth;
-            canvas.height = window.innerHeight;
+            // KEY FIX: Render at device pixel ratio for retina-sharp canvas
+            const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2x to avoid excess memory
+            const displayWidth = window.innerWidth;
+            const displayHeight = window.innerHeight;
+
+            // Set canvas backing store to DPR-scaled resolution
+            canvas.width = displayWidth * dpr;
+            canvas.height = displayHeight * dpr;
+
+            // Keep CSS size at viewport dimensions
+            canvas.style.width = `${displayWidth}px`;
+            canvas.style.height = `${displayHeight}px`;
+
             render(Math.round(frameRef.current.frame));
         };
 
         window.addEventListener("resize", handleResize);
 
-        // Once first frame loads, draw it and fade out poster
         if (images[0]) {
             images[0].onload = () => {
                 handleResize();
@@ -99,7 +112,7 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
 
     return (
         <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-background">
-            {/* Poster: shows instantly while WebP frames load — critical for slow connections */}
+            {/* Poster: instant fallback for slow connections */}
             <img
                 src={`/sequence/v${videoIndex}/poster.webp`}
                 alt=""
