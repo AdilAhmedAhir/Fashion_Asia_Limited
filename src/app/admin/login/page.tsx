@@ -1,9 +1,11 @@
+"use client";
+
+import { useActionState } from "react";
 import { loginAction } from "@/app/actions/auth-actions";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
-export default async function LoginPage(props: { searchParams: Promise<{ error?: string }> }) {
-    const searchParams = await props.searchParams;
-    const error = searchParams?.error;
+export default function LoginPage() {
+    const [state, formAction, isPending] = useActionState(loginAction, null);
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] p-4">
@@ -14,13 +16,13 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
                     <p className="mt-2 text-xs uppercase tracking-widest text-white/40">Secure Access Portal</p>
                 </div>
 
-                {error && (
+                {state?.error && (
                     <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-center text-sm font-medium text-red-500">
-                        Invalid email or password.
+                        {state.error}
                     </div>
                 )}
 
-                <form action={loginAction} className="flex flex-col gap-5">
+                <form action={formAction} className="flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
                         <label className="text-xs font-bold uppercase tracking-widest text-white/50">Admin Email</label>
                         <input name="email" type="email" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
@@ -29,8 +31,12 @@ export default async function LoginPage(props: { searchParams: Promise<{ error?:
                         <label className="text-xs font-bold uppercase tracking-widest text-white/50">Password</label>
                         <input name="password" type="password" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                     </div>
-                    <button type="submit" className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-bold uppercase tracking-widest text-black transition-all hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.3)]">
-                        Authenticate
+                    <button
+                        type="submit"
+                        disabled={isPending}
+                        className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-bold uppercase tracking-widest text-black transition-all hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isPending ? "Authenticating..." : "Authenticate"}
                     </button>
                 </form>
             </div>
