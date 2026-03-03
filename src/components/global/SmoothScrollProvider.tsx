@@ -20,34 +20,31 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
     const lenisRef = useRef<Lenis | null>(null);
 
     useEffect(() => {
-        // Initialize Lenis
+        // Skip Lenis on touch devices — native scroll works better with GSAP on tablets/phones
+        const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+        if (isTouch) return;
+
         const lenis = new Lenis({
             duration: 1.2,
-            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)), // Expo ease-out
+            easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
             orientation: "vertical",
             gestureOrientation: "vertical",
             smoothWheel: true,
             wheelMultiplier: 1,
-            touchMultiplier: 2,
         });
 
         lenisRef.current = lenis;
 
-        // Sync Lenis with GSAP ScrollTrigger
         lenis.on("scroll", ScrollTrigger.update);
 
-        // Sync GSAP ticker with Lenis requestAnimationFrame
         const update = (time: number) => {
             lenis.raf(time * 1000);
         };
 
         gsap.ticker.add(update);
-
-        // Disable GSAP's default lag smoothing to prevent conflicts with Lenis
         gsap.ticker.lagSmoothing(0);
 
         return () => {
-            // Cleanup on unmount
             gsap.ticker.remove(update);
             lenis.destroy();
             lenisRef.current = null;
