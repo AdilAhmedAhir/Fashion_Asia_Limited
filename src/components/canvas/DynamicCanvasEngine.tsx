@@ -5,7 +5,7 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-const TOTAL_FRAMES = 120; // 8 seconds at 15fps
+const TOTAL_FRAMES = 192; // 8 seconds at 24fps for buttery-smooth scroll
 
 export default function DynamicCanvasEngine({ videoIndex, children }: { videoIndex: string, children: React.ReactNode }) {
     const containerRef = useRef<HTMLDivElement>(null);
