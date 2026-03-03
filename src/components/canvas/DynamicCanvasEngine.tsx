@@ -1,25 +1,25 @@
 "use client";
 
-import { useRef, useEffect } from "react";
+import { useRef, useEffect, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-const TOTAL_FRAMES = 192; // 8 seconds at 24fps for buttery-smooth scroll
+const TOTAL_FRAMES = 160; // 8 seconds at 20fps — Apple's sweet spot
 
 export default function DynamicCanvasEngine({ videoIndex, children }: { videoIndex: string, children: React.ReactNode }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imagesRef = useRef<HTMLImageElement[]>([]);
-    const frameRef = useRef({ frame: 1 }); // ffmpeg %d starts at 1
+    const frameRef = useRef({ frame: 1 });
+    const [canvasReady, setCanvasReady] = useState(false);
 
-    // Ensure scroll is at the top when switching concepts
     useEffect(() => {
         window.scrollTo({ top: 0, behavior: "instant" });
+        setCanvasReady(false);
     }, [videoIndex]);
 
     useGSAP(() => {
-        // Prevent old ScrollTriggers from bleeding when switching versions
         ScrollTrigger.getAll().forEach(t => {
             if (t.vars.trigger === containerRef.current) t.kill();
         });
@@ -27,7 +27,7 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
         const images: HTMLImageElement[] = [];
         for (let i = 1; i <= TOTAL_FRAMES; i++) {
             const img = new Image();
-            img.src = `/sequence/v${videoIndex}/frame_${i}.jpg`;
+            img.src = `/sequence/v${videoIndex}/frame_${i}.webp`;
             images.push(img);
         }
         imagesRef.current = images;
@@ -37,7 +37,7 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
         if (!canvas || !ctx) return;
 
         const render = (index: number) => {
-            const img = imagesRef.current[index - 1]; // Array is 0-indexed, frames are 1-indexed
+            const img = imagesRef.current[index - 1];
             if (!img || !img.complete || img.naturalWidth === 0) return;
 
             const cw = canvas.width;
@@ -62,9 +62,12 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
 
         window.addEventListener("resize", handleResize);
 
-        // Initial draw — wait until first frame loads
+        // Once first frame loads, draw it and fade out poster
         if (images[0]) {
-            images[0].onload = handleResize;
+            images[0].onload = () => {
+                handleResize();
+                setCanvasReady(true);
+            };
         } else {
             handleResize();
         }
@@ -74,7 +77,7 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
                 trigger: containerRef.current,
                 start: "top top",
                 end: "+=300%",
-                scrub: 1, // 1-second lag smoothing for cinematic feel
+                scrub: 1,
                 pin: true,
                 anticipatePin: 1,
             }
@@ -96,6 +99,12 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
 
     return (
         <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-background">
+            {/* Poster: shows instantly while WebP frames load — critical for slow connections */}
+            <img
+                src={`/sequence/v${videoIndex}/poster.webp`}
+                alt=""
+                className={`absolute inset-0 z-[1] h-full w-full object-cover transition-opacity duration-700 ${canvasReady ? "opacity-0 pointer-events-none" : "opacity-100"}`}
+            />
             <canvas ref={canvasRef} className="absolute inset-0 z-0 h-full w-full object-cover transform-gpu" />
             <div className="absolute inset-0 z-10 bg-gradient-to-b from-black/60 via-black/20 to-black/80 pointer-events-none" />
             <div className="hero-overlay-wrapper absolute inset-0 z-20 flex flex-col items-center justify-center">
