@@ -85,12 +85,15 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
             handleResize();
         }
 
+        // Touch devices need shorter scroll distance & snappier response
+        const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
+
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: containerRef.current,
                 start: "top top",
-                end: "+=300%",
-                scrub: 1,
+                end: isTouch ? "+=150%" : "+=300%",  // Fewer swipes on tablet
+                scrub: isTouch ? 0.3 : 1,             // Snappier on touch, cinematic on desktop
                 pin: true,
                 anticipatePin: 1,
             }
