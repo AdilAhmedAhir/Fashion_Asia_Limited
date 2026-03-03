@@ -21,12 +21,12 @@ export default function HeroOverlay() {
         <div ref={overlayRef} className="container relative flex h-full w-full flex-col items-center justify-center pt-20">
 
             <div className="flex flex-col items-center text-center pointer-events-auto">
-                <span className="hero-tag mb-6 text-xs font-bold uppercase tracking-[0.3em] text-primary">
+                <span className="hero-tag mb-6 text-xs font-bold uppercase tracking-[0.3em] text-primary" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
                     Northern Tosrifa Group
                 </span>
-                <h1 className="hero-title mb-8 font-serif text-[clamp(3rem,8vw,7rem)] font-bold leading-[1.1] text-foreground">
+                <h1 className="hero-title mb-8 font-serif text-[clamp(3rem,8vw,7rem)] font-bold leading-[1.1] text-foreground" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.6), 0 0px 8px rgba(0,0,0,0.4)' }}>
                     Green Powered <br className="hidden md:block" />
-                    <span className="text-gradient">Innovation</span>
+                    <span className="text-gradient" style={{ textShadow: '0 2px 30px rgba(14,201,122,0.3), 0 0px 60px rgba(14,201,122,0.15)' }}>Innovation</span>
                 </h1>
                 <div className="hero-subtitle flex flex-wrap items-center justify-center gap-3 font-sans text-sm md:text-lg text-white/80">
                     <span>LEED Gold Certified</span>
