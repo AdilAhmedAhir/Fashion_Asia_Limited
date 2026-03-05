@@ -5,32 +5,20 @@ import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-const TOTAL_FRAMES = 160; // 8 seconds at 20fps
+const TOTAL_FRAMES = 160;
+const PRIORITY_COUNT = 8; // Load first 8 frames immediately for instant scroll readiness
 
-export default function DynamicCanvasEngine({ videoIndex, children }: { videoIndex: string, children: React.ReactNode }) {
+export default function DynamicCanvasEngine({ children }: { children: React.ReactNode }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const imagesRef = useRef<HTMLImageElement[]>([]);
     const frameRef = useRef({ frame: 1 });
     const [canvasReady, setCanvasReady] = useState(false);
 
-    useEffect(() => {
-        window.scrollTo({ top: 0, behavior: "instant" });
-        setCanvasReady(false);
-    }, [videoIndex]);
-
     useGSAP(() => {
         ScrollTrigger.getAll().forEach(t => {
             if (t.vars.trigger === containerRef.current) t.kill();
         });
-
-        const images: HTMLImageElement[] = [];
-        for (let i = 1; i <= TOTAL_FRAMES; i++) {
-            const img = new Image();
-            img.src = `/sequence/v${videoIndex}/frame_${i}.webp`;
-            images.push(img);
-        }
-        imagesRef.current = images;
 
         const canvas = canvasRef.current;
         const ctx = canvas?.getContext("2d", { alpha: false });
@@ -40,7 +28,6 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
             const img = imagesRef.current[index - 1];
             if (!img || !img.complete || img.naturalWidth === 0) return;
 
-            // Use natural (backing store) resolution for sharp rendering
             const cw = canvas.width;
             const ch = canvas.height;
             const iw = img.naturalWidth;
@@ -58,42 +45,70 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
         };
 
         const handleResize = () => {
-            // KEY FIX: Render at device pixel ratio for retina-sharp canvas
-            const dpr = Math.min(window.devicePixelRatio || 1, 2); // Cap at 2x to avoid excess memory
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
             const displayWidth = window.innerWidth;
             const displayHeight = window.innerHeight;
-
-            // Set canvas backing store to DPR-scaled resolution
             canvas.width = displayWidth * dpr;
             canvas.height = displayHeight * dpr;
-
-            // Keep CSS size at viewport dimensions
             canvas.style.width = `${displayWidth}px`;
             canvas.style.height = `${displayHeight}px`;
-
             render(Math.round(frameRef.current.frame));
         };
 
         window.addEventListener("resize", handleResize);
 
-        if (images[0]) {
-            images[0].onload = () => {
-                handleResize();
-                setCanvasReady(true);
-            };
-        } else {
-            handleResize();
+        // === Priority Loading Strategy ===
+        // 1. Load first PRIORITY_COUNT frames immediately (covers initial scroll)
+        // 2. Once first frame renders, show canvas (hide poster)
+        // 3. Load remaining frames in background
+
+        const images: HTMLImageElement[] = new Array(TOTAL_FRAMES);
+
+        const loadFrame = (i: number): Promise<void> => {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.src = `/sequence/hero/frame_${i}.webp`;
+                img.onload = () => resolve();
+                img.onerror = () => resolve(); // Don't block on missing frames
+                images[i - 1] = img;
+            });
+        };
+
+        // Phase 1: Load priority frames (1-8) in parallel
+        const priorityPromises = [];
+        for (let i = 1; i <= PRIORITY_COUNT; i++) {
+            priorityPromises.push(loadFrame(i));
         }
 
-        // Touch devices need shorter scroll distance & snappier response
+        Promise.all(priorityPromises).then(() => {
+            imagesRef.current = images;
+            handleResize();
+            setCanvasReady(true);
+
+            // Phase 2: Load remaining frames in background (small batches to avoid blocking)
+            const loadRemaining = async () => {
+                const BATCH = 10;
+                for (let start = PRIORITY_COUNT + 1; start <= TOTAL_FRAMES; start += BATCH) {
+                    const batch = [];
+                    for (let i = start; i < Math.min(start + BATCH, TOTAL_FRAMES + 1); i++) {
+                        batch.push(loadFrame(i));
+                    }
+                    await Promise.all(batch);
+                    imagesRef.current = images; // Update ref as batches complete
+                }
+            };
+            loadRemaining();
+        });
+
+        // Touch-optimized ScrollTrigger
         const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
         const tl = gsap.timeline({
             scrollTrigger: {
                 trigger: containerRef.current,
                 start: "top top",
-                end: isTouch ? "+=150%" : "+=300%",  // Fewer swipes on tablet
-                scrub: isTouch ? 0.3 : 1,             // Snappier on touch, cinematic on desktop
+                end: isTouch ? "+=150%" : "+=300%",
+                scrub: isTouch ? 0.3 : 1,
                 pin: true,
                 anticipatePin: 1,
             }
@@ -111,13 +126,13 @@ export default function DynamicCanvasEngine({ videoIndex, children }: { videoInd
         tl.to(".hero-overlay-wrapper", { opacity: 0, ease: "none" }, 0.6);
 
         return () => window.removeEventListener("resize", handleResize);
-    }, { scope: containerRef, dependencies: [videoIndex] });
+    }, { scope: containerRef });
 
     return (
         <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-background">
-            {/* Poster: instant fallback for slow connections */}
+            {/* Poster: instant fallback — shows while priority frames load */}
             <img
-                src={`/sequence/v${videoIndex}/poster.webp`}
+                src="/sequence/hero/poster.webp"
                 alt=""
                 className={`absolute inset-0 z-[1] h-full w-full object-cover transition-opacity duration-700 ${canvasReady ? "opacity-0 pointer-events-none" : "opacity-100"}`}
             />

@@ -6,17 +6,10 @@ import MarqueeSection from "@/components/sections/MarqueeSection";
 import ContactSection from "@/components/sections/ContactSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
-type Props = {
-    searchParams: Promise<{ [key: string]: string | string[] | undefined }>
-}
-
-export default async function Home(props: Props) {
-    const searchParams = await props.searchParams;
-    const v = typeof searchParams.v === 'string' ? searchParams.v : "1";
-
+export default function Home() {
     return (
         <div className="flex flex-col">
-            <HeroSection videoIndex={v} />
+            <HeroSection />
 
             <section className="bg-black py-24 text-center">
                 <div className="container max-w-3xl flex flex-col items-center">
