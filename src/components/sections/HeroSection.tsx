@@ -1,10 +1,10 @@
 import DynamicCanvasEngine from "@/components/canvas/DynamicCanvasEngine";
 import HeroOverlay from "./HeroOverlay";
 
-export default function HeroSection({ videoIndex = "1" }: { videoIndex?: string }) {
+export default function HeroSection() {
     return (
         <section className="relative w-full">
-            <DynamicCanvasEngine videoIndex={videoIndex}>
+            <DynamicCanvasEngine>
                 <HeroOverlay />
             </DynamicCanvasEngine>
         </section>
