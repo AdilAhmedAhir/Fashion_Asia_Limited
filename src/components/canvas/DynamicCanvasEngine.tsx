@@ -37,9 +37,6 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
             const x = (cw / 2) - (iw / 2) * scale;
             const y = (ch / 2) - (ih / 2) * scale;
 
-            ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = "high";
-            ctx.fillStyle = "#0a0a0a";
             ctx.fillRect(0, 0, cw, ch);
             ctx.drawImage(img, x, y, iw * scale, ih * scale);
         };
@@ -52,6 +49,12 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
             canvas.height = displayHeight * dpr;
             canvas.style.width = `${displayWidth}px`;
             canvas.style.height = `${displayHeight}px`;
+
+            // Set smoothing once after resize, not per-frame
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = "medium";
+            ctx.fillStyle = "#0a0a0a";
+
             render(Math.round(frameRef.current.frame));
         };
 
@@ -116,11 +119,8 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
 
         tl.to(frameRef.current, {
             frame: TOTAL_FRAMES,
-            snap: "frame",
             ease: "none",
-            onUpdate: () => {
-                requestAnimationFrame(() => render(Math.round(frameRef.current.frame)));
-            }
+            onUpdate: () => render(Math.round(frameRef.current.frame)),
         }, 0);
 
         tl.to(".hero-overlay-wrapper", { opacity: 0, ease: "none" }, 0.6);
