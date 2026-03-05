@@ -1,7 +1,10 @@
 import HeroSection from "@/components/sections/HeroSection";
 import AboutSection from "@/components/sections/AboutSection";
+import BusinessPreviewSection from "@/components/sections/BusinessPreviewSection";
 import PillarsSection from "@/components/sections/PillarsSection";
 import ScaleSection from "@/components/sections/ScaleSection";
+import SustainabilityPreviewSection from "@/components/sections/SustainabilityPreviewSection";
+import MediaPreviewSection from "@/components/sections/MediaPreviewSection";
 import MarqueeSection from "@/components/sections/MarqueeSection";
 import ContactSection from "@/components/sections/ContactSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
@@ -28,8 +31,11 @@ export default function Home() {
             </section>
 
             <AboutSection />
+            <BusinessPreviewSection />
             <PillarsSection />
             <ScaleSection />
+            <SustainabilityPreviewSection />
+            <MediaPreviewSection />
             <MarqueeSection />
             <ContactSection />
         </div>
