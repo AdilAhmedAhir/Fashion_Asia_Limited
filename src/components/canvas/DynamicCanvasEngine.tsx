@@ -1,17 +1,17 @@
 "use client";
 
-import { useRef, useEffect, useState } from "react";
+import { useRef, useState } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
 const TOTAL_FRAMES = 160;
-const PRIORITY_COUNT = 8; // Load first 8 frames immediately for instant scroll readiness
 
 export default function DynamicCanvasEngine({ children }: { children: React.ReactNode }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const imagesRef = useRef<HTMLImageElement[]>([]);
+    const imagesRef = useRef<HTMLImageElement[]>(new Array(TOTAL_FRAMES));
+    const loadedRef = useRef<boolean[]>(new Array(TOTAL_FRAMES).fill(false));
     const frameRef = useRef({ frame: 1 });
     const [canvasReady, setCanvasReady] = useState(false);
 
@@ -24,8 +24,28 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
         const ctx = canvas?.getContext("2d", { alpha: false });
         if (!canvas || !ctx) return;
 
+        const images = imagesRef.current;
+        const loaded = loadedRef.current;
+
+        // Find the nearest loaded frame to the requested index
+        const findNearestLoaded = (target: number): number => {
+            if (loaded[target - 1]) return target;
+
+            // Search outward from target in both directions
+            for (let offset = 1; offset < TOTAL_FRAMES; offset++) {
+                const before = target - offset;
+                const after = target + offset;
+                if (before >= 1 && loaded[before - 1]) return before;
+                if (after <= TOTAL_FRAMES && loaded[after - 1]) return after;
+            }
+            return -1; // Nothing loaded yet
+        };
+
         const render = (index: number) => {
-            const img = imagesRef.current[index - 1];
+            const nearest = findNearestLoaded(index);
+            if (nearest === -1) return;
+
+            const img = images[nearest - 1];
             if (!img || !img.complete || img.naturalWidth === 0) return;
 
             const cw = canvas.width;
@@ -50,7 +70,6 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
             canvas.style.width = `${displayWidth}px`;
             canvas.style.height = `${displayHeight}px`;
 
-            // Set smoothing once after resize, not per-frame
             ctx.imageSmoothingEnabled = true;
             ctx.imageSmoothingQuality = "medium";
             ctx.fillStyle = "#0a0a0a";
@@ -60,44 +79,37 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
 
         window.addEventListener("resize", handleResize);
 
-        // === Priority Loading Strategy ===
-        // 1. Load first PRIORITY_COUNT frames immediately (covers initial scroll)
-        // 2. Once first frame renders, show canvas (hide poster)
-        // 3. Load remaining frames in background
-
-        const images: HTMLImageElement[] = new Array(TOTAL_FRAMES);
+        // === Progressive Loading ===
+        // Frame 1 loads first (HQ), then rest stream in background.
+        // Scroll is always enabled — renders nearest available frame.
 
         const loadFrame = (i: number): Promise<void> => {
             return new Promise((resolve) => {
                 const img = new Image();
                 img.src = `/sequence/hero/frame_${i}.webp`;
-                img.onload = () => resolve();
-                img.onerror = () => resolve(); // Don't block on missing frames
-                images[i - 1] = img;
+                img.onload = () => {
+                    images[i - 1] = img;
+                    loaded[i - 1] = true;
+                    resolve();
+                };
+                img.onerror = () => resolve();
             });
         };
 
-        // Phase 1: Load priority frames (1-8) in parallel
-        const priorityPromises = [];
-        for (let i = 1; i <= PRIORITY_COUNT; i++) {
-            priorityPromises.push(loadFrame(i));
-        }
-
-        Promise.all(priorityPromises).then(() => {
-            imagesRef.current = images;
+        // Phase 1: Load frame 1 immediately → show canvas
+        loadFrame(1).then(() => {
             handleResize();
             setCanvasReady(true);
 
-            // Phase 2: Load remaining frames in background (small batches to avoid blocking)
+            // Phase 2: Stream remaining frames in small batches
             const loadRemaining = async () => {
-                const BATCH = 10;
-                for (let start = PRIORITY_COUNT + 1; start <= TOTAL_FRAMES; start += BATCH) {
+                const BATCH = 8;
+                for (let start = 2; start <= TOTAL_FRAMES; start += BATCH) {
                     const batch = [];
                     for (let i = start; i < Math.min(start + BATCH, TOTAL_FRAMES + 1); i++) {
                         batch.push(loadFrame(i));
                     }
                     await Promise.all(batch);
-                    imagesRef.current = images; // Update ref as batches complete
                 }
             };
             loadRemaining();
@@ -130,7 +142,7 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
 
     return (
         <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-background">
-            {/* Poster: instant fallback — shows while priority frames load */}
+            {/* Poster: instant fallback — shows before frame 1 loads */}
             <img
                 src="/sequence/hero/poster.webp"
                 alt=""
