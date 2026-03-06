@@ -26,7 +26,7 @@ export default function Preloader() {
         finishedRef.current = true;
 
         const elapsed = Date.now() - startTime.current;
-        const minTime = 2200;
+        const minTime = 1500;
         const remaining = Math.max(0, minTime - elapsed);
 
         setTimeout(() => {
@@ -57,7 +57,7 @@ export default function Preloader() {
             img.onerror = onDone;
         }
 
-        const safety = setTimeout(finishLoading, 6000);
+        const safety = setTimeout(finishLoading, 2000);
         return () => {
             clearTimeout(safety);
             document.body.style.overflow = "";
