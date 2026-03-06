@@ -38,7 +38,7 @@ export default function Header() {
                     </Link>
 
                     <nav className="hidden items-center gap-8 lg:flex z-[1001]">
-                        {["Home", "Who We Are", "Business", "Sustainability", "Media"].map((item) => (
+                        {["Home", "Who We Are", "Business", "Sustainability", "Reports", "Media"].map((item) => (
                             <Link
                                 key={item}
                                 href={item === "Home" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`}
