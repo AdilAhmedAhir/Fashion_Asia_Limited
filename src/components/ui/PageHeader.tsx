@@ -9,7 +9,7 @@ interface PageHeaderProps {
 export default function PageHeader({ tag, title, description }: PageHeaderProps) {
     return (
         <section className="relative flex min-h-[50vh] flex-col items-center justify-center overflow-hidden bg-black pt-32 pb-16 text-center">
-            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#0EC97A_0%,transparent_40%)] opacity-10 blur-3xl pointer-events-none" />
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_top,#016138_0%,transparent_40%)] opacity-10 blur-3xl pointer-events-none" />
             <div className="container relative z-10 flex max-w-4xl flex-col items-center">
                 <ScrollReveal>
                     <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary">{tag}</span>

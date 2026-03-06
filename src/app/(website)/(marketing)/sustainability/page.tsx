@@ -57,7 +57,7 @@ export default async function SustainabilityPage() {
                         {initiatives.map((item: string, i: number) => (
                             <ScrollReveal key={i} delay={i * 0.1}>
                                 <div className="flex items-start gap-4 p-8 rounded-2xl border border-white/5 bg-black/40 hover:border-primary/20 transition-colors h-full">
-                                    <div className="mt-1 h-3 w-3 rounded-full bg-primary flex-shrink-0 shadow-[0_0_10px_#0EC97A]" />
+                                    <div className="mt-1 h-3 w-3 rounded-full bg-primary flex-shrink-0 shadow-[0_0_10px_#016138]" />
                                     <p className="text-white/80 font-sans leading-relaxed text-lg">{item}</p>
                                 </div>
                             </ScrollReveal>

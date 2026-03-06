@@ -33,7 +33,7 @@ export default async function AdminDashboard() {
             <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-8 shadow-lg">
                 <h2 className="font-serif text-2xl font-bold mb-6 text-white">Database Status</h2>
                 <div className="flex items-center p-6 border border-white/10 rounded-xl bg-black">
-                    <div className="h-3 w-3 rounded-full bg-[#0EC97A] shadow-[0_0_10px_#0EC97A] mr-4" />
+                    <div className="h-3 w-3 rounded-full bg-[#016138] shadow-[0_0_10px_#016138] mr-4" />
                     <p className="text-sm font-bold uppercase tracking-widest text-white/80">Supabase Connection Active</p>
                 </div>
             </div>

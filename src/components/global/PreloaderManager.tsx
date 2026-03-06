@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { BrandLogo } from "@/components/ui/BrandLogo";
+
 
 const TOTAL_FRAMES = 120;
 const CRITICAL_FRAMES: number = 30; // Wait for first 30 frames (2 secs of scroll)
@@ -98,25 +98,25 @@ function PreloaderContent() {
                         ))}
                     </div>
 
-                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#0EC97A_0%,transparent_35%)] opacity-10 blur-[80px] pointer-events-none" />
+                    <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,#016138_0%,transparent_35%)] opacity-10 blur-[80px] pointer-events-none" />
 
                     <div className="relative z-10 flex flex-col items-center">
                         <motion.div
                             animate={{
                                 scale: 1 + (progressPercentage / 500),
-                                filter: `drop-shadow(0 0 ${progressPercentage / 3}px rgba(14,201,122,0.6))`
+                                filter: `drop-shadow(0 0 ${progressPercentage / 3}px rgba(1,97,56,0.6))`
                             }}
                             transition={{ duration: 0.3 }}
                             className="mb-10"
                         >
-                            <BrandLogo className="w-24 h-24" animated={true} />
+                            <img src="/icon.png" alt="" className="w-24 h-24" />
                         </motion.div>
 
                         <div className="flex items-start overflow-hidden">
                             <motion.span
                                 initial={{ y: 50, opacity: 0 }}
                                 animate={{ y: 0, opacity: 1 }}
-                                className="font-serif text-[clamp(5rem,12vw,9rem)] font-black leading-none text-transparent bg-clip-text bg-gradient-to-br from-white via-primary to-[#019329]"
+                                className="font-serif text-[clamp(5rem,12vw,9rem)] font-black leading-none text-transparent bg-clip-text bg-gradient-to-br from-white via-primary to-[#016138]"
                             >
                                 {progressPercentage}
                             </motion.span>
@@ -150,7 +150,7 @@ function PreloaderContent() {
 
                     <div className="absolute bottom-12 w-[80%] max-w-md h-[2px] bg-white/10 overflow-hidden backdrop-blur-sm">
                         <motion.div
-                            className="h-full bg-gradient-to-r from-[#019329] via-primary to-white shadow-[0_0_15px_#0EC97A]"
+                            className="h-full bg-gradient-to-r from-[#016138] via-primary to-white shadow-[0_0_15px_#016138]"
                             animate={{ width: `${progressPercentage}%` }}
                             transition={{ duration: 0.1, ease: "linear" }}
                         />
