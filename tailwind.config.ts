@@ -17,6 +17,7 @@ const config: Config = {
                 foreground: "#f5faf5",
                 primary: "#016138",
                 secondary: "#02894f",
+                accent: "#0EC97A",
                 surface: "#0a0a0a",
             },
             fontFamily: {
