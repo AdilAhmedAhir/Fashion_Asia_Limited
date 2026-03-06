@@ -2,8 +2,15 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
-export default function AboutSection() {
-    const stats = [
+interface Props {
+    tag?: string;
+    title?: string;
+    description?: string;
+    stats?: { value: string; label: string }[];
+}
+
+export default function AboutSection({ tag, title, description, stats }: Props) {
+    const finalStats = stats?.length ? stats : [
         { label: "Right First Time", value: "99.2%" },
         { label: "On-Time Delivery", value: "98.5%" },
         { label: "Pieces/Month", value: "800K" },
@@ -15,23 +22,23 @@ export default function AboutSection() {
 
                 <div className="flex flex-col justify-center">
                     <ScrollReveal delay={0}>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">About Fashion Asia Limited</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{tag || "About Fashion Asia Limited"}</span>
                     </ScrollReveal>
 
                     <ScrollReveal delay={0.1}>
                         <h2 className="mt-4 font-serif text-[clamp(2.5rem,5vw,4rem)] font-bold leading-tight text-foreground">
-                            Where Bold <span className="text-gradient">Vision</span> Meets Precise <span className="text-gradient">Execution</span>
+                            {title || <>Where Bold <span className="text-gradient">Vision</span> Meets Precise <span className="text-gradient">Execution</span></>}
                         </h2>
                     </ScrollReveal>
 
                     <ScrollReveal delay={0.2}>
                         <p className="mt-6 max-w-2xl font-sans text-lg leading-relaxed text-white/70">
-                            As a proud sister concern of Northern Tosrifa Group (NTG), which has over 34 years of excellence in the apparel industry, we continue the legacy of quality, innovation, and responsible manufacturing from our modern, compliant facility in Sreepur, Gazipur.
+                            {description || "As a proud sister concern of Northern Tosrifa Group (NTG), which has over 34 years of excellence in the apparel industry, we continue the legacy of quality, innovation, and responsible manufacturing from our modern, compliant facility in Sreepur, Gazipur."}
                         </p>
                     </ScrollReveal>
 
                     <div className="mt-12 grid grid-cols-2 gap-8 sm:grid-cols-3">
-                        {stats.map((stat, i) => (
+                        {finalStats.map((stat, i) => (
                             <ScrollReveal key={stat.label} delay={0.3 + i * 0.1}>
                                 <div className="group flex flex-col items-start gap-2 rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-500 hover:-translate-y-2 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_10px_30px_rgba(14,201,122,0.1)]">
                                     <span className="text-3xl font-bold text-gradient">{stat.value}</span>
