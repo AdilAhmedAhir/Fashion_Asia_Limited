@@ -49,7 +49,7 @@ export default function Footer() {
                         </p>
                         <div className="flex items-center gap-4 mt-2">
                             {["BSCI", "WRAP", "SEDEX", "GOTS"].map(cert => (
-                                <span key={cert} className="rounded-full border border-primary/20 bg-primary/5 px-3 py-1 text-[0.55rem] font-bold uppercase tracking-widest text-primary/70">
+                                <span key={cert} className="rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-[0.55rem] font-bold uppercase tracking-widest text-accent/70">
                                     {cert}
                                 </span>
                             ))}
@@ -59,13 +59,13 @@ export default function Footer() {
                     {/* Link Columns */}
                     {footerLinks.map(group => (
                         <div key={group.title} className="flex flex-col gap-5">
-                            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{group.title}</h4>
+                            <h4 className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{group.title}</h4>
                             <ul className="flex flex-col gap-3">
                                 {group.links.map(link => (
                                     <li key={link.label}>
                                         <Link
                                             href={link.href}
-                                            className="text-sm text-white/50 transition-colors hover:text-primary"
+                                            className="text-sm text-white/50 transition-colors hover:text-accent"
                                         >
                                             {link.label}
                                         </Link>
