@@ -8,8 +8,13 @@ import MediaPreviewSection from "@/components/sections/MediaPreviewSection";
 import MarqueeSection from "@/components/sections/MarqueeSection";
 import ContactSection from "@/components/sections/ContactSection";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { getSettings } from "@/app/actions/settings-actions";
 
-export default function Home() {
+export const revalidate = 60;
+
+export default async function Home() {
+    const hp = await getSettings("homepage");
+
     return (
         <div className="flex flex-col">
             <HeroSection />
@@ -20,24 +25,41 @@ export default function Home() {
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Cinematic Experience</span>
                     </ScrollReveal>
                     <ScrollReveal delay={0.1}>
-                        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-5xl">Innovation in Motion</h2>
+                        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-5xl">{hp.heroTagline || "Innovation in Motion"}</h2>
                     </ScrollReveal>
                     <ScrollReveal delay={0.2}>
                         <p className="mt-6 font-sans text-sm leading-relaxed text-white/60 md:text-base">
-                            From automated cutting to precision sewing, every step of our manufacturing process is designed for absolute quality and a zero defect philosophy.
+                            {hp.heroSubtitle || "From automated cutting to precision sewing, every step of our manufacturing process is designed for absolute quality and a zero defect philosophy."}
                         </p>
                     </ScrollReveal>
                 </div>
             </section>
 
-            <AboutSection />
-            <BusinessPreviewSection />
+            <AboutSection
+                tag={hp.aboutTag}
+                title={hp.aboutTitle}
+                description={hp.aboutDescription}
+                stats={hp.aboutStats}
+            />
+            <BusinessPreviewSection
+                tag={hp.businessTag}
+                title={hp.businessTitle}
+                description={hp.businessDescription}
+                products={hp.businessProducts}
+                stats={hp.businessStats}
+            />
             <PillarsSection />
-            <ScaleSection />
-            <SustainabilityPreviewSection />
+            <ScaleSection stats={hp.scaleStats} />
+            <SustainabilityPreviewSection
+                tag={hp.sustainabilityTag}
+                title={hp.sustainabilityTitle}
+                description={hp.sustainabilityDescription}
+                certs={hp.sustainabilityCerts}
+                highlights={hp.sustainabilityHighlights}
+            />
             <MediaPreviewSection />
             <MarqueeSection />
-            <ContactSection />
+            <ContactSection cards={hp.contactCards} />
         </div>
     );
 }

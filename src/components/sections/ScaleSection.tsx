@@ -5,7 +5,11 @@ import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 
-export default function ScaleSection() {
+interface Props {
+    stats?: { value: string; label: string }[];
+}
+
+export default function ScaleSection({ stats }: Props) {
     const containerRef = useRef<HTMLElement>(null);
     const bgRef = useRef<HTMLImageElement>(null);
 

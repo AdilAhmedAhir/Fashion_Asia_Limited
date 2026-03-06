@@ -1,8 +1,12 @@
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { ArrowUpRight } from "lucide-react";
 
-export default function ContactSection() {
-    const infoCards = [
+interface Props {
+    cards?: { label: string; value: string }[];
+}
+
+export default function ContactSection({ cards }: Props) {
+    const infoCards = cards?.length ? cards : [
         { label: "Phone", value: "+880 1711 691 366" },
         { label: "Factory", value: "Teprirbari, Sreepur, Gazipur" },
         { label: "Corporate", value: "Gopalpur, Munnu Nagar, Tongi" },
@@ -12,7 +16,6 @@ export default function ContactSection() {
         <section id="contact" className="bg-gradient-to-b from-[#0a0a0a] to-black py-24 md:py-32">
             <div className="container grid grid-cols-1 gap-16 lg:grid-cols-[1.5fr_1fr] lg:gap-24">
 
-                {/* Left Column: CTA */}
                 <div className="flex flex-col justify-center">
                     <ScrollReveal delay={0}>
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Let&apos;s Talk</span>
@@ -42,7 +45,6 @@ export default function ContactSection() {
                     </ScrollReveal>
                 </div>
 
-                {/* Right Column: Info Cards */}
                 <div className="flex flex-col justify-center gap-6">
                     {infoCards.map((card, i) => (
                         <ScrollReveal key={card.label} delay={0.4 + (i * 0.1)}>

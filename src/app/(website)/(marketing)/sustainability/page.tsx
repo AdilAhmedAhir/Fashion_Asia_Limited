@@ -1,21 +1,24 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import { getSettings } from "@/app/actions/settings-actions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Sustainability | Fashion Asia Limited",
 };
 
-export default function SustainabilityPage() {
-    const certifications = ['BSCI', 'WRAP', 'SEDEX', 'SLCP', 'OCS', 'GOTS', 'FEM'];
+export const revalidate = 60;
 
-    const initiatives = [
+export default async function SustainabilityPage() {
+    const data = await getSettings("sustainability");
+    const certifications = data.certifications?.length ? data.certifications : ['BSCI', 'WRAP', 'SEDEX', 'SLCP', 'OCS', 'GOTS', 'FEM'];
+    const initiatives = data.initiatives?.length ? data.initiatives : [
         "Use of renewable and solar energy",
         "Rainwater harvesting systems",
         "Energy-efficient production processes",
         "Waste reduction and responsible resource management",
         "Fair Price Shop facility for employees",
-        "Educational support through the '100 Dream School Program' under Jaggo Foundation (sponsoring 20 underprivileged children)"
+        "Educational support through the '100 Dream School Program' under Jaggo Foundation",
     ];
 
     return (
@@ -33,7 +36,7 @@ export default function SustainabilityPage() {
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Reports &amp; Compliance</span>
                         <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl mb-8">Integral to our Business Model</h2>
                         <p className="text-white/70 leading-relaxed text-lg">
-                            Sustainability and compliance are integral to our business model. We maintain transparent documentation and reporting aligned with international standards and buyer requirements. Our factory regularly undergoes third-party audits to ensure ethical sourcing, labor rights protection, and environmental responsibility.
+                            {data.description || "Sustainability and compliance are integral to our business model. We maintain transparent documentation and reporting aligned with international standards and buyer requirements."}
                         </p>
                     </div>
                 </ScrollReveal>
@@ -51,7 +54,7 @@ export default function SustainabilityPage() {
                     </ScrollReveal>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {initiatives.map((item, i) => (
+                        {initiatives.map((item: string, i: number) => (
                             <ScrollReveal key={i} delay={i * 0.1}>
                                 <div className="flex items-start gap-4 p-8 rounded-2xl border border-white/5 bg-black/40 hover:border-primary/20 transition-colors h-full">
                                     <div className="mt-1 h-3 w-3 rounded-full bg-primary flex-shrink-0 shadow-[0_0_10px_#0EC97A]" />
@@ -73,7 +76,7 @@ export default function SustainabilityPage() {
                             These certifications demonstrate our commitment to ethical business conduct, responsible sourcing, environmental management, and international labor standards.
                         </p>
                         <div className="flex flex-wrap justify-center gap-4">
-                            {certifications.map((cert, i) => (
+                            {certifications.map((cert: string, i: number) => (
                                 <ScrollReveal key={cert} delay={i * 0.1}>
                                     <span className="inline-block rounded-full border border-primary/30 bg-primary/10 px-8 py-3 text-sm font-bold tracking-widest text-primary hover:bg-primary hover:text-black transition-colors cursor-default">
                                         {cert}
