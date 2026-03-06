@@ -21,7 +21,7 @@ export default function HeroOverlay() {
         <div ref={overlayRef} className="container relative flex h-full w-full flex-col items-center justify-center pt-20">
 
             <div className="flex flex-col items-center text-center pointer-events-auto">
-                <span className="hero-tag mb-6 text-xs font-bold uppercase tracking-[0.3em] text-primary" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
+                <span className="hero-tag mb-6 text-xs font-bold uppercase tracking-[0.3em] text-accent" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
                     Northern Tosrifa Group
                 </span>
                 <h1 className="hero-title mb-8 font-serif text-[clamp(3rem,8vw,7rem)] font-bold leading-[1.1] text-foreground" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.6), 0 0px 8px rgba(0,0,0,0.4)' }}>
@@ -30,9 +30,9 @@ export default function HeroOverlay() {
                 </h1>
                 <div className="hero-subtitle flex flex-wrap items-center justify-center gap-3 font-sans text-sm md:text-lg text-white/80">
                     <span>LEED Gold Certified</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/50" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent/50" />
                     <span>800K Monthly</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-primary/50" />
+                    <span className="h-1.5 w-1.5 rounded-full bg-accent/50" />
                     <span>Est. 2000</span>
                 </div>
             </div>
@@ -53,7 +53,7 @@ export default function HeroOverlay() {
             <div className="scroll-indicator absolute bottom-12 flex flex-col items-center gap-4">
                 <span className="text-[0.65rem] uppercase tracking-widest text-white/50">Scroll to explore</span>
                 <div className="relative h-12 w-[1px] overflow-hidden bg-white/10">
-                    <div className="absolute inset-0 h-full w-full origin-top animate-[pulse_2s_ease-in-out_infinite] bg-gradient-to-b from-primary to-transparent" />
+                    <div className="absolute inset-0 h-full w-full origin-top animate-[pulse_2s_ease-in-out_infinite] bg-gradient-to-b from-accent to-transparent" />
                 </div>
             </div>
 
