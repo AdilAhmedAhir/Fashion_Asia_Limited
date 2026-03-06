@@ -9,7 +9,8 @@ const menuLinks = [
     { num: "02", label: "Who We Are", href: "/who-we-are" },
     { num: "03", label: "Business", href: "/business" },
     { num: "04", label: "Sustainability", href: "/sustainability" },
-    { num: "05", label: "Media", href: "/media" },
+    { num: "05", label: "Reports", href: "/reports" },
+    { num: "06", label: "Media", href: "/media" },
 ];
 
 export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean; onClose: () => void }) {
