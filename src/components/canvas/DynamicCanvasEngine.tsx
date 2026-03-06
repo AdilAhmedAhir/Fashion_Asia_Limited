@@ -1,19 +1,25 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useRef, useState, useEffect } from "react";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
 
-const TOTAL_FRAMES = 160;
+const TOTAL_FRAMES_DESKTOP = 160;
+const TOTAL_FRAMES_MOBILE = 40; // Every 4th frame on mobile
 
 export default function DynamicCanvasEngine({ children }: { children: React.ReactNode }) {
     const containerRef = useRef<HTMLDivElement>(null);
     const canvasRef = useRef<HTMLCanvasElement>(null);
-    const imagesRef = useRef<HTMLImageElement[]>(new Array(TOTAL_FRAMES));
-    const loadedRef = useRef<boolean[]>(new Array(TOTAL_FRAMES).fill(false));
+    const imagesRef = useRef<HTMLImageElement[]>([]);
+    const loadedRef = useRef<boolean[]>([]);
     const frameRef = useRef({ frame: 1 });
     const [canvasReady, setCanvasReady] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
+
+    useEffect(() => {
+        setIsMobile(window.innerWidth < 768);
+    }, []);
 
     useGSAP(() => {
         ScrollTrigger.getAll().forEach(t => {
@@ -24,21 +30,25 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
         const ctx = canvas?.getContext("2d", { alpha: false });
         if (!canvas || !ctx) return;
 
+        const mobile = window.innerWidth < 768;
+        const totalFrames = mobile ? TOTAL_FRAMES_MOBILE : TOTAL_FRAMES_DESKTOP;
+        const frameStep = mobile ? 4 : 1; // On mobile, load every 4th frame
+
+        imagesRef.current = new Array(totalFrames);
+        loadedRef.current = new Array(totalFrames).fill(false);
+
         const images = imagesRef.current;
         const loaded = loadedRef.current;
 
-        // Find the nearest loaded frame to the requested index
         const findNearestLoaded = (target: number): number => {
-            if (loaded[target - 1]) return target;
-
-            // Search outward from target in both directions
-            for (let offset = 1; offset < TOTAL_FRAMES; offset++) {
+            if (target >= 1 && target <= totalFrames && loaded[target - 1]) return target;
+            for (let offset = 1; offset < totalFrames; offset++) {
                 const before = target - offset;
                 const after = target + offset;
                 if (before >= 1 && loaded[before - 1]) return before;
-                if (after <= TOTAL_FRAMES && loaded[after - 1]) return after;
+                if (after <= totalFrames && loaded[after - 1]) return after;
             }
-            return -1; // Nothing loaded yet
+            return -1;
         };
 
         const render = (index: number) => {
@@ -62,7 +72,8 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
         };
 
         const handleResize = () => {
-            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            // Mobile: 1x DPR, Desktop: up to 2x
+            const dpr = mobile ? 1 : Math.min(window.devicePixelRatio || 1, 2);
             const displayWidth = window.innerWidth;
             const displayHeight = window.innerHeight;
             canvas.width = displayWidth * dpr;
@@ -71,7 +82,7 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
             canvas.style.height = `${displayHeight}px`;
 
             ctx.imageSmoothingEnabled = true;
-            ctx.imageSmoothingQuality = "medium";
+            ctx.imageSmoothingQuality = mobile ? "low" : "medium";
             ctx.fillStyle = "#0a0a0a";
 
             render(Math.round(frameRef.current.frame));
@@ -79,34 +90,33 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
 
         window.addEventListener("resize", handleResize);
 
-        // === Progressive Loading ===
-        // Frame 1 loads first (HQ), then rest stream in background.
-        // Scroll is always enabled — renders nearest available frame.
-
-        const loadFrame = (i: number): Promise<void> => {
+        // Load frame helper — maps local index to actual file index
+        const loadFrame = (localIndex: number): Promise<void> => {
             return new Promise((resolve) => {
+                const fileIndex = mobile ? (localIndex * frameStep) : localIndex;
+                const actualFileIndex = Math.min(fileIndex, TOTAL_FRAMES_DESKTOP);
                 const img = new Image();
-                img.src = `/sequence/hero/frame_${i}.webp`;
+                img.src = `/sequence/hero/frame_${actualFileIndex}.webp`;
                 img.onload = () => {
-                    images[i - 1] = img;
-                    loaded[i - 1] = true;
+                    images[localIndex - 1] = img;
+                    loaded[localIndex - 1] = true;
                     resolve();
                 };
                 img.onerror = () => resolve();
             });
         };
 
-        // Phase 1: Load frame 1 immediately → show canvas
+        // Phase 1: Load frame 1 → show canvas immediately
         loadFrame(1).then(() => {
             handleResize();
             setCanvasReady(true);
 
-            // Phase 2: Stream remaining frames in small batches
+            // Phase 2: Stream remaining frames
             const loadRemaining = async () => {
-                const BATCH = 8;
-                for (let start = 2; start <= TOTAL_FRAMES; start += BATCH) {
+                const BATCH = mobile ? 4 : 8;
+                for (let start = 2; start <= totalFrames; start += BATCH) {
                     const batch = [];
-                    for (let i = start; i < Math.min(start + BATCH, TOTAL_FRAMES + 1); i++) {
+                    for (let i = start; i < Math.min(start + BATCH, totalFrames + 1); i++) {
                         batch.push(loadFrame(i));
                     }
                     await Promise.all(batch);
@@ -115,7 +125,6 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
             loadRemaining();
         });
 
-        // Touch-optimized ScrollTrigger
         const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
 
         const tl = gsap.timeline({
@@ -130,7 +139,7 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
         });
 
         tl.to(frameRef.current, {
-            frame: TOTAL_FRAMES,
+            frame: totalFrames,
             ease: "none",
             onUpdate: () => render(Math.round(frameRef.current.frame)),
         }, 0);
@@ -138,14 +147,16 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
         tl.to(".hero-overlay-wrapper", { opacity: 0, ease: "none" }, 0.6);
 
         return () => window.removeEventListener("resize", handleResize);
-    }, { scope: containerRef });
+    }, { scope: containerRef, dependencies: [isMobile] });
 
     return (
         <div ref={containerRef} className="relative h-screen w-full overflow-hidden bg-background">
-            {/* Poster: instant fallback — shows before frame 1 loads */}
+            {/* Poster: high-priority LCP image */}
             <img
                 src="/sequence/hero/poster.webp"
-                alt=""
+                alt="Fashion Asia Limited Factory"
+                fetchPriority="high"
+                decoding="async"
                 className={`absolute inset-0 z-[1] h-full w-full object-cover transition-opacity duration-700 ${canvasReady ? "opacity-0 pointer-events-none" : "opacity-100"}`}
             />
             <canvas ref={canvasRef} className="absolute inset-0 z-0 h-full w-full object-cover transform-gpu" />
