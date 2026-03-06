@@ -4,11 +4,10 @@ import { useEffect, useState, useRef, useCallback } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 
 /**
- * Premium cinematic preloader.
+ * Cinematic split-screen preloader.
  * 
- * Design: Clean dark screen → staggered letter reveal of "FASHION ASIA"
- * with a thin progress line. On complete, screen splits vertically
- * (top slides up, bottom slides down) to dramatically reveal the site.
+ * MOBILE: Pure branding animation only (no frame preloading).
+ * DESKTOP: Preloads frames while showing branding, 2s max.
  */
 
 const TOTAL_FRAMES = 160;
@@ -26,12 +25,11 @@ export default function Preloader() {
         finishedRef.current = true;
 
         const elapsed = Date.now() - startTime.current;
-        const minTime = 1500;
+        const minTime = 1200;
         const remaining = Math.max(0, minTime - elapsed);
 
         setTimeout(() => {
             setPhase("complete");
-            // After the "complete" animation plays, trigger exit
             setTimeout(() => {
                 setPhase("exit");
                 document.body.style.overflow = "";
@@ -43,8 +41,27 @@ export default function Preloader() {
         document.body.style.overflow = "hidden";
         window.scrollTo(0, 0);
 
-        let loaded = 0;
+        const isMobile = window.innerWidth < 768;
 
+        if (isMobile) {
+            // Mobile: NO frame preloading — just branding animation, dismiss after 1.5s
+            const timer = setTimeout(finishLoading, 1500);
+            // Fake progress for visual feedback
+            let fakeProgress = 0;
+            const interval = setInterval(() => {
+                fakeProgress += 8;
+                setProgress(Math.min(fakeProgress, 100));
+                if (fakeProgress >= 100) clearInterval(interval);
+            }, 100);
+            return () => {
+                clearTimeout(timer);
+                clearInterval(interval);
+                document.body.style.overflow = "";
+            };
+        }
+
+        // Desktop: preload frames (2s safety net)
+        let loaded = 0;
         for (let i = 1; i <= TOTAL_FRAMES; i++) {
             const img = new Image();
             img.src = `/sequence/hero/frame_${i}.webp`;
@@ -70,7 +87,6 @@ export default function Preloader() {
         <AnimatePresence onExitComplete={() => setDismissed(true)}>
             {phase !== "exit" && (
                 <>
-                    {/* Top Half */}
                     <motion.div
                         key="top"
                         initial={{ y: 0 }}
@@ -79,8 +95,6 @@ export default function Preloader() {
                         exit={{ y: "-100%", transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] } }}
                         className="fixed inset-x-0 top-0 h-1/2 z-[9999] bg-[#050505]"
                     />
-
-                    {/* Bottom Half */}
                     <motion.div
                         key="bottom"
                         initial={{ y: 0 }}
@@ -89,8 +103,6 @@ export default function Preloader() {
                         exit={{ y: "100%", transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] } }}
                         className="fixed inset-x-0 bottom-0 h-1/2 z-[9999] bg-[#050505]"
                     />
-
-                    {/* Center Content — floats above both halves */}
                     <motion.div
                         key="content"
                         initial={{ opacity: 1 }}
@@ -99,7 +111,6 @@ export default function Preloader() {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[10000] flex flex-col items-center justify-center pointer-events-none"
                     >
-                        {/* Staggered Letter Reveal */}
                         <div className="flex overflow-hidden">
                             {COMPANY.split("").map((letter, i) => (
                                 <motion.span
@@ -118,8 +129,6 @@ export default function Preloader() {
                                 </motion.span>
                             ))}
                         </div>
-
-                        {/* "LIMITED" subtitle */}
                         <motion.span
                             initial={{ opacity: 0, letterSpacing: "0.8em" }}
                             animate={{ opacity: 0.4, letterSpacing: "0.4em" }}
@@ -128,10 +137,7 @@ export default function Preloader() {
                         >
                             LIMITED
                         </motion.span>
-
-                        {/* Progress line + counter */}
                         <div className="absolute bottom-[15%] flex flex-col items-center gap-4 w-full">
-                            {/* Thin progress bar */}
                             <div className="w-32 md:w-48 h-[1px] bg-white/10 overflow-hidden">
                                 <motion.div
                                     className="h-full bg-primary"
@@ -140,8 +146,6 @@ export default function Preloader() {
                                     transition={{ duration: 0.2, ease: "linear" }}
                                 />
                             </div>
-
-                            {/* Percentage */}
                             <motion.span
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 0.3 }}
