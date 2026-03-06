@@ -5,7 +5,7 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
 const playfair = Playfair_Display({ subsets: ["latin"], variable: "--font-playfair", display: "swap" });
 
-const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fashionasia.vercel.app';
+const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fashionasialtd.com';
 
 export const viewport: Viewport = {
     themeColor: "#0a0a0a",
