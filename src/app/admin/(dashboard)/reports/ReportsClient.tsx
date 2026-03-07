@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { createReport, updateReport, deleteReport } from "@/app/actions/settings-actions";
-import { Plus, Pencil, Trash2, X, FileText, Loader2 } from "lucide-react";
+import { useState, useTransition, useRef } from "react";
+import { createReport, updateReport, deleteReport, uploadFile } from "@/app/actions/settings-actions";
+import { Plus, Pencil, Trash2, X, FileText, Loader2, Upload, CheckCircle } from "lucide-react";
 
 const CATEGORIES = ["financial", "audit", "compliance", "environmental", "csr"] as const;
 const CATEGORY_COLORS: Record<string, string> = {
@@ -23,13 +23,35 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
     const [modal, setModal] = useState<Report | null>(null);
     const [isNew, setIsNew] = useState(false);
     const [isPending, startTransition] = useTransition();
+    const [uploading, setUploading] = useState(false);
+    const [uploadedFileName, setUploadedFileName] = useState("");
+    const fileInputRef = useRef<HTMLInputElement>(null);
 
     const openNew = () => {
         setModal({ id: "", title: "", category: "financial", year: new Date().getFullYear(), file_url: "", published: false, created_at: "" });
         setIsNew(true);
+        setUploadedFileName("");
     };
 
-    const openEdit = (r: Report) => { setModal({ ...r }); setIsNew(false); };
+    const openEdit = (r: Report) => { setModal({ ...r }); setIsNew(false); setUploadedFileName(""); };
+
+    const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0];
+        if (!file || !modal) return;
+
+        setUploading(true);
+        try {
+            const fd = new FormData();
+            fd.set("file", file);
+            const url = await uploadFile(fd, "reports");
+            setModal({ ...modal, file_url: url });
+            setUploadedFileName(file.name);
+        } catch (err) {
+            alert("Upload failed: " + (err instanceof Error ? err.message : "Unknown error"));
+        } finally {
+            setUploading(false);
+        }
+    };
 
     const handleSave = () => {
         if (!modal) return;
@@ -43,7 +65,6 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
         startTransition(async () => {
             if (isNew) { await createReport(fd); } else { await updateReport(modal.id, fd); }
             setModal(null);
-            // Refresh page
             window.location.reload();
         });
     };
@@ -60,7 +81,7 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Management</span>
                     <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">Reports & Publications</h1>
                 </div>
-                <button onClick={openNew} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black hover:bg-primary/90 transition-colors">
+                <button onClick={openNew} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors">
                     <Plus size={16} /> Publish New Report
                 </button>
             </header>
@@ -134,19 +155,56 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
                                         className="rounded-lg border border-white/10 bg-black px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none" />
                                 </div>
                             </div>
+
+                            {/* PDF Upload Section */}
                             <div className="flex flex-col gap-2">
-                                <label className="text-xs font-bold uppercase tracking-widest text-white/40">PDF File URL</label>
-                                <input type="text" value={modal.file_url || ""} onChange={e => setModal({ ...modal, file_url: e.target.value })} placeholder="https://..."
-                                    className="rounded-lg border border-white/10 bg-black px-4 py-3 text-sm text-white focus:border-primary/50 focus:outline-none" />
+                                <label className="text-xs font-bold uppercase tracking-widest text-white/40">PDF File</label>
+                                <input type="file" ref={fileInputRef} accept=".pdf" onChange={handleFileUpload} className="hidden" />
+
+                                {modal.file_url ? (
+                                    <div className="flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-3">
+                                        <CheckCircle size={16} className="text-primary flex-shrink-0" />
+                                        <span className="text-sm text-white/70 truncate flex-grow">
+                                            {uploadedFileName || "File attached"}
+                                        </span>
+                                        <button
+                                            type="button"
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="text-xs text-primary hover:text-primary/80 font-bold uppercase tracking-wider flex-shrink-0"
+                                        >
+                                            Replace
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <button
+                                        type="button"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={uploading}
+                                        className="flex items-center justify-center gap-3 rounded-lg border border-dashed border-white/20 bg-white/[0.02] px-4 py-6 text-sm text-white/50 hover:border-primary/40 hover:text-white/70 hover:bg-white/[0.04] transition-all disabled:opacity-50"
+                                    >
+                                        {uploading ? (
+                                            <>
+                                                <Loader2 size={18} className="animate-spin text-primary" />
+                                                <span>Uploading...</span>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Upload size={18} />
+                                                <span>Click to upload PDF file</span>
+                                            </>
+                                        )}
+                                    </button>
+                                )}
                             </div>
+
                             <label className="flex items-center gap-3 cursor-pointer">
                                 <input type="checkbox" checked={modal.published} onChange={e => setModal({ ...modal, published: e.target.checked })}
                                     className="h-4 w-4 rounded border-white/20 bg-black accent-primary" />
                                 <span className="text-sm text-white/70">Published (visible to public)</span>
                             </label>
                         </div>
-                        <button onClick={handleSave} disabled={isPending}
-                            className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-black hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                        <button onClick={handleSave} disabled={isPending || uploading}
+                            className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
                             {isPending ? <Loader2 size={16} className="animate-spin" /> : null}
                             {isPending ? "Saving..." : isNew ? "Publish Report" : "Save Changes"}
                         </button>
