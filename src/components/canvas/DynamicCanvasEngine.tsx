@@ -106,12 +106,11 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
             });
         };
 
-        // Phase 1: Load frame 1 → show canvas immediately
+        // Phase 1: Load frame 1 → render it on canvas (behind poster)
         loadFrame(1).then(() => {
             handleResize();
-            setCanvasReady(true);
 
-            // Phase 2: Stream remaining frames
+            // Phase 2: Stream ALL remaining frames, reveal canvas only when done
             const loadRemaining = async () => {
                 const BATCH = mobile ? 4 : 8;
                 for (let start = 2; start <= totalFrames; start += BATCH) {
@@ -121,8 +120,13 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
                     }
                     await Promise.all(batch);
                 }
+                // ALL frames loaded → swap poster for canvas
+                setCanvasReady(true);
             };
             loadRemaining();
+
+            // Safety: if frames take too long, reveal canvas anyway after 8s
+            setTimeout(() => setCanvasReady(true), 8000);
         });
 
         const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
