@@ -135,7 +135,7 @@ export default function DynamicCanvasEngine({ children }: { children: React.Reac
             scrollTrigger: {
                 trigger: containerRef.current,
                 start: "top top",
-                end: isTouch ? "+=150%" : "+=300%",
+                end: isTouch ? "+=80%" : "+=300%",
                 scrub: isTouch ? 0.3 : 1,
                 pin: true,
                 anticipatePin: 1,
