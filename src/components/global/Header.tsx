@@ -50,7 +50,7 @@ export default function Header() {
                         ))}
                         <Link
                             href="/contact"
-                            className="rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-black transition-transform hover:-translate-y-0.5 hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
+                            className="rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
                         >
                             Connect
                         </Link>
