@@ -52,7 +52,7 @@ export default function PillarsSection() {
                                         {pillar.num}
                                     </div>
                                     {pillar.featured && (
-                                        <div className="absolute left-4 top-4 rounded-full bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-black">LEED GOLD</div>
+                                        <div className="absolute left-4 top-4 rounded-full bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white">LEED GOLD</div>
                                     )}
                                 </div>
 
@@ -63,7 +63,7 @@ export default function PillarsSection() {
                                     </div>
                                     <div className="mt-8 flex flex-wrap gap-2">
                                         {pillar.tags.map(tag => (
-                                            <span key={tag} className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.65rem] uppercase tracking-wider text-primary">
+                                            <span key={tag} className="rounded-full border border-primary/30 bg-primary/10 px-3 py-1 text-[0.65rem] uppercase tracking-wider text-white">
                                                 {tag}
                                             </span>
                                         ))}
