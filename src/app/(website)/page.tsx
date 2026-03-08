@@ -59,6 +59,25 @@ export default async function Home() {
             />
             <MediaPreviewSection />
             <MarqueeSection />
+
+            {/* Trusted By */}
+            <section className="bg-background py-20 md:py-28">
+                <div className="container text-center">
+                    <ScrollReveal>
+                        <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Trusted By</span>
+                    </ScrollReveal>
+                    <div className="mt-12 flex flex-wrap items-center justify-center gap-12 md:gap-20">
+                        {["El Corte Inglés", "KappAhl", "U.S. Polo Assn."].map((brand, i) => (
+                            <ScrollReveal key={brand} delay={0.1 + i * 0.15}>
+                                <span className="font-serif text-2xl md:text-3xl font-semibold text-foreground/70 transition-colors hover:text-foreground cursor-default">
+                                    {brand}
+                                </span>
+                            </ScrollReveal>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             <ContactSection cards={hp.contactCards} />
         </div>
     );
