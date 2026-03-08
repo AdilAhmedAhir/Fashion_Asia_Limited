@@ -109,7 +109,7 @@ function PreloaderContent() {
                             transition={{ duration: 0.3 }}
                             className="mb-10"
                         >
-                            <img src="/icon.png" alt="" className="w-24 h-24" />
+                            <img src="/logo.png" alt="" className="w-24 h-24" />
                         </motion.div>
 
                         <div className="flex items-start overflow-hidden">
