@@ -1,13 +1,45 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Minus, MapPin, Clock, Calendar } from "lucide-react";
+import { Plus, Minus, MapPin, Clock, Calendar, Users } from "lucide-react";
 import type { Job } from "@/app/actions/jobs-actions";
+
+/* Only render a section if the text is non-empty */
+function Section({ title, text, list = false }: { title: string; text: string | null; list?: boolean }) {
+    if (!text?.trim()) return null;
+    return (
+        <div className="mb-6">
+            <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">{title}</h4>
+            {list ? (
+                <ul className="flex flex-col gap-2">
+                    {text.split("\n").filter(Boolean).map((line, i) => (
+                        <li key={i} className="flex items-start gap-2 text-sm text-white/70">
+                            <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
+                            {line.trim()}
+                        </li>
+                    ))}
+                </ul>
+            ) : (
+                <p className="text-sm text-white/70 leading-relaxed whitespace-pre-line">{text}</p>
+            )}
+        </div>
+    );
+}
+
+function Badge({ icon: Icon, text }: { icon: React.ElementType; text: string }) {
+    return (
+        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-white/60">
+            <Icon size={10} /> {text}
+        </span>
+    );
+}
 
 export default function JobAccordion({ jobs }: { jobs: Job[] }) {
     const [openId, setOpenId] = useState<string | null>(null);
-
     const toggle = (id: string) => setOpenId(openId === id ? null : id);
+
+    const fmtDate = (d: string) =>
+        new Date(d).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" });
 
     return (
         <div className="flex flex-col rounded-2xl border border-white/5 overflow-hidden">
@@ -15,7 +47,7 @@ export default function JobAccordion({ jobs }: { jobs: Job[] }) {
                 const isOpen = openId === job.id;
                 return (
                     <div key={job.id} className={i > 0 ? "border-t border-white/5" : ""}>
-                        {/* Collapsed Row */}
+                        {/* Collapsed row */}
                         <button
                             onClick={() => toggle(job.id)}
                             className={`w-full flex items-center gap-4 px-6 py-5 text-left transition-colors ${isOpen ? "bg-primary/10" : "bg-white/[0.02] hover:bg-white/[0.04]"
@@ -30,65 +62,46 @@ export default function JobAccordion({ jobs }: { jobs: Job[] }) {
                                 {job.title}
                             </span>
                             <span className="hidden sm:block text-xs text-white/40 flex-shrink-0">
-                                Published: {new Date(job.published_at).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" })}
+                                Published: {fmtDate(job.published_at)}
                             </span>
                             {job.deadline && (
                                 <span className="hidden sm:block text-xs text-white/40 flex-shrink-0">
-                                    Deadline: {new Date(job.deadline).toLocaleDateString("en-US", { year: "numeric", month: "short", day: "2-digit" })}
+                                    Deadline: {fmtDate(job.deadline)}
                                 </span>
                             )}
                         </button>
 
-                        {/* Expanded Content */}
-                        <div
-                            className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-[2000px] opacity-100" : "max-h-0 opacity-0"
-                                }`}
-                        >
+                        {/* Expanded content */}
+                        <div className={`overflow-hidden transition-all duration-300 ease-in-out ${isOpen ? "max-h-[4000px] opacity-100" : "max-h-0 opacity-0"
+                            }`}>
                             <div className="px-6 py-8 bg-white/[0.01] border-t border-white/5">
+                                {/* Header */}
+                                <h3 className="text-lg font-bold text-white mb-1">{job.title}</h3>
+                                <p className="text-sm text-white/50 mb-1">Fashion Asia Limited</p>
+                                {job.vacancy > 1 && <p className="text-sm text-white/50 mb-4">Vacancy: {String(job.vacancy).padStart(2, "0")}</p>}
+
                                 {/* Meta badges */}
-                                <div className="flex flex-wrap gap-3 mb-6">
+                                <div className="flex flex-wrap gap-2 mb-8">
                                     {job.department && (
                                         <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs text-primary font-medium">
                                             {job.department}
                                         </span>
                                     )}
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-white/60">
-                                        <Clock size={10} /> {job.employment_type}
-                                    </span>
-                                    <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-white/60">
-                                        <MapPin size={10} /> {job.location}
-                                    </span>
-                                    {job.deadline && (
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-white/5 border border-white/10 px-3 py-1 text-xs text-white/60">
-                                            <Calendar size={10} /> Deadline: {new Date(job.deadline).toLocaleDateString()}
-                                        </span>
-                                    )}
+                                    <Badge icon={Clock} text={job.employment_type} />
+                                    <Badge icon={MapPin} text={job.location} />
+                                    {job.deadline && <Badge icon={Calendar} text={`Deadline: ${fmtDate(job.deadline)}`} />}
                                 </div>
 
-                                {/* Description */}
-                                {job.description && (
-                                    <div className="mb-6">
-                                        <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Job Description</h4>
-                                        <div className="text-sm text-white/70 leading-relaxed whitespace-pre-line">
-                                            {job.description}
-                                        </div>
-                                    </div>
-                                )}
-
-                                {/* Requirements */}
-                                {job.requirements && (
-                                    <div>
-                                        <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">Requirements</h4>
-                                        <ul className="flex flex-col gap-2">
-                                            {job.requirements.split("\n").filter(Boolean).map((req, idx) => (
-                                                <li key={idx} className="flex items-start gap-2 text-sm text-white/70">
-                                                    <span className="mt-1.5 w-1.5 h-1.5 rounded-full bg-primary flex-shrink-0" />
-                                                    {req.trim()}
-                                                </li>
-                                            ))}
-                                        </ul>
-                                    </div>
-                                )}
+                                {/* Dynamic sections — only render if content exists */}
+                                <Section title="Job Responsibilities" text={job.responsibilities} list />
+                                <Section title="Employment Status" text={job.employment_type} />
+                                <Section title="Educational Requirements" text={job.educational_requirements} list />
+                                <Section title="Experience Requirements" text={job.experience_requirements} list />
+                                <Section title="Additional Requirements" text={job.additional_requirements} list />
+                                {job.workplace && <Section title="Workplace" text={job.workplace} />}
+                                {job.location && <Section title="Job Location" text={job.location} />}
+                                {job.salary && <Section title="Salary" text={job.salary} />}
+                                <Section title="Compensation & Other Benefits" text={job.compensation} list />
                             </div>
                         </div>
                     </div>
