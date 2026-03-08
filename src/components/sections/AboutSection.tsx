@@ -51,7 +51,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
                     <ScrollReveal delay={0.5} className="mt-10 w-fit">
                         <Link
                             href="/who-we-are"
-                            className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-black hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
+                            className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                         >
                             Discover Our Story
                             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
