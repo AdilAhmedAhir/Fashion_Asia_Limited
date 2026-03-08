@@ -23,7 +23,7 @@ const footerLinks = [
     {
         title: "Connect",
         links: [
-            { label: "contact@fashionasialtd.com", href: "mailto:contact@fashionasialtd.com" },
+            { label: "admin@fashionasialtd.com", href: "mailto:admin@fashionasialtd.com" },
             { label: "+880 1711 691 366", href: "tel:+8801711691366" },
         ],
     },

@@ -36,7 +36,7 @@ export default function ContactSection({ cards }: Props) {
 
                     <ScrollReveal delay={0.3} className="mt-12 w-fit">
                         <a
-                            href="mailto:contact@fashionasia.ltd"
+                            href="mailto:admin@fashionasialtd.com"
                             className="group flex items-center gap-4 rounded-full border-2 border-primary bg-transparent px-8 py-4 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                         >
                             Start a Conversation

@@ -59,7 +59,7 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
                         transition={{ delay: 0.5, duration: 0.5 }}
                         className="mt-16 pt-8"
                     >
-                        <p className="font-sans text-sm text-white/50">contact@fashionasia.ltd</p>
+                        <p className="font-sans text-sm text-white/50">admin@fashionasialtd.com</p>
                         <p className="font-sans text-sm text-white/50">+880 1711 691 366</p>
                     </motion.div>
                 </motion.div>
