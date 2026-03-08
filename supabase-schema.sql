@@ -2,6 +2,27 @@
 -- Run this SQL in your Supabase SQL Editor
 
 -- ================================================================
+-- 0. Jobs Table (Career Page Job Postings) — NEW
+-- ================================================================
+CREATE TABLE IF NOT EXISTS public.jobs (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    title VARCHAR(255) NOT NULL,
+    department VARCHAR(100),
+    location VARCHAR(100) DEFAULT 'Sreepur, Bangladesh',
+    employment_type VARCHAR(50) DEFAULT 'Full-time',
+    description TEXT,
+    requirements TEXT,
+    published_at DATE DEFAULT CURRENT_DATE,
+    deadline DATE,
+    is_active BOOLEAN DEFAULT true,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+ALTER TABLE public.jobs ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read on active jobs" ON public.jobs FOR SELECT TO anon USING (is_active = true);
+CREATE POLICY "Allow authenticated full access to jobs" ON public.jobs FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- ================================================================
 -- 1. Submissions Table (Contact, Career, Grievance) — EXISTING
 -- ================================================================
 CREATE TABLE IF NOT EXISTS public.submissions (
