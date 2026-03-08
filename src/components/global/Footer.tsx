@@ -15,7 +15,7 @@ const footerLinks = [
     {
         title: "Careers",
         links: [
-            { label: "Apply Now", href: "/career" },
+            { label: "Career", href: "/career" },
             { label: "Contact Us", href: "/contact" },
             { label: "Grievance Policy", href: "/grievance" },
         ],

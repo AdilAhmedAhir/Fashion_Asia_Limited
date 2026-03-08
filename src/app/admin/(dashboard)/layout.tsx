@@ -23,6 +23,7 @@ const navItems = [
     },
     {
         group: "Management", items: [
+            { href: "/admin/careers", icon: Briefcase, label: "Careers" },
             { href: "/admin/reports", icon: FileText, label: "Reports" },
             { href: "/admin/media", icon: ImageIcon, label: "Media Center" },
             { href: "/admin/submissions", icon: Inbox, label: "Submissions" },
