@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Minus, MapPin, Clock, Calendar, Users } from "lucide-react";
+import { Plus, Minus, MapPin, Clock, Calendar, Send } from "lucide-react";
 import type { Job } from "@/app/actions/jobs-actions";
 
 /* Only render a section if the text is non-empty */
@@ -34,7 +34,7 @@ function Badge({ icon: Icon, text }: { icon: React.ElementType; text: string }) 
     );
 }
 
-export default function JobAccordion({ jobs }: { jobs: Job[] }) {
+export default function JobAccordion({ jobs, onApply }: { jobs: Job[]; onApply: (title: string) => void }) {
     const [openId, setOpenId] = useState<string | null>(null);
     const toggle = (id: string) => setOpenId(openId === id ? null : id);
 
@@ -102,6 +102,14 @@ export default function JobAccordion({ jobs }: { jobs: Job[] }) {
                                 {job.location && <Section title="Job Location" text={job.location} />}
                                 {job.salary && <Section title="Salary" text={job.salary} />}
                                 <Section title="Compensation & Other Benefits" text={job.compensation} list />
+
+                                {/* Apply button */}
+                                <button
+                                    onClick={() => onApply(job.title)}
+                                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-bold text-white hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/20"
+                                >
+                                    <Send size={14} /> Apply for this Position
+                                </button>
                             </div>
                         </div>
                     </div>
