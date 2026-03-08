@@ -111,6 +111,14 @@ export default function Preloader() {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 z-[10000] flex flex-col items-center justify-center pointer-events-none"
                     >
+                        <motion.img
+                            src="/logo.png"
+                            alt=""
+                            className="w-16 h-16 md:w-20 md:h-20 mb-6"
+                            initial={{ scale: 0.5, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            transition={{ duration: 0.8, ease: [0.22, 1, 0.36, 1] }}
+                        />
                         <div className="flex overflow-hidden">
                             {COMPANY.split("").map((letter, i) => (
                                 <motion.span
