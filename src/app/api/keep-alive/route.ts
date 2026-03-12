@@ -1,4 +1,4 @@
-import { createClient } from "@/lib/supabase/server";
+import { createClient } from "@supabase/supabase-js";
 import { NextResponse } from "next/server";
 
 export const dynamic = "force-dynamic";
@@ -14,32 +14,23 @@ export async function GET(request: Request) {
     }
 
     try {
-        const supabase = await createClient();
+        // Use the direct Supabase client (no cookies needed for cron)
+        const supabase = createClient(
+            process.env.NEXT_PUBLIC_SUPABASE_URL!,
+            process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+        );
 
         // Lightweight query to keep the Supabase project active
-        const { error } = await supabase.rpc("ping", undefined);
-
-        // Fallback: if the RPC doesn't exist, just run a raw health check
-        if (error) {
-            const { error: fallbackError } = await supabase
-                .from("_keep_alive")
-                .select("*")
-                .limit(1);
-
-            // Even if the table doesn't exist, the API call itself
-            // registers activity and prevents pausing
-            if (fallbackError) {
-                console.log(
-                    "[keep-alive] Fallback query ran (table may not exist, but activity registered)",
-                    fallbackError.message
-                );
-            }
-        }
+        const { data, error } = await supabase
+            .from("site_settings")
+            .select("id")
+            .limit(1);
 
         return NextResponse.json({
             success: true,
             timestamp: new Date().toISOString(),
             message: "Supabase project kept alive",
+            dbReachable: !error,
         });
     } catch (err) {
         console.error("[keep-alive] Error:", err);
