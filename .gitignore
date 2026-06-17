@@ -33,7 +33,9 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-# large media assets (deploy via CDN/Vercel)
+# large media assets (deploy via CDN/Vercel) — keep the two the site actually serves
 public/videos/*.mp4
+!public/videos/hero.mp4
+!public/videos/about.mp4
 /Video/
 /Images_From_Client/
