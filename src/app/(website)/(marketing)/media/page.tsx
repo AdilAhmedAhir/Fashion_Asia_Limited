@@ -1,20 +1,15 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { createClient } from "@/lib/supabase/server";
+import { MEDIA_ASSETS } from "@/lib/site-content";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Media Center | Fashion Asia Limited",
 };
 
-export const revalidate = 60; // Cache for 60 seconds (ISR)
-
-export default async function MediaPage() {
-    const supabase = await createClient();
-    const { data: media } = await supabase.from("media_assets").select("*").order("created_at", { ascending: false });
-
-    const galleryItems = media?.filter(m => m.type === "gallery") || [];
-    const newsItems = media?.filter(m => m.type === "news") || [];
+export default function MediaPage() {
+    const galleryItems = MEDIA_ASSETS.filter((m) => m.type === "gallery");
+    const newsItems = MEDIA_ASSETS.filter((m) => m.type === "news");
 
     return (
         <div className="flex flex-col bg-background min-h-screen">
