@@ -3,12 +3,12 @@ import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
 export default function MediaPreviewSection() {
-    // Static preview images from the client folder
+    // Amenity images — grid order: top-left, top-right, bottom-left, bottom-right
     const previewImages = [
-        { src: "/images/client/box2-copy.jpg", title: "Production Floor" },
-        { src: "/images/client/box3-copy.jpg", title: "Quality Control" },
-        { src: "/images/client/box4-copy.jpg", title: "Cutting Section" },
-        { src: "/images/client/box6-copy.jpg", title: "Finishing Line" },
+        { src: "/images/client/box6-copy.jpg", title: "Medical Center" },
+        { src: "/images/client/box4-copy.jpg", title: "Day Care" },
+        { src: "/images/client/box3-copy.jpg", title: "Shera Shop" },
+        { src: "/images/client/box2-copy.jpg", title: "Bicycle Parking" },
     ];
 
     return (
@@ -16,11 +16,11 @@ export default function MediaPreviewSection() {
             <div className="container">
                 <div className="flex flex-col items-center text-center mb-16">
                     <ScrollReveal delay={0}>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Inside the Factory</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Life at Fashion Asia</span>
                     </ScrollReveal>
                     <ScrollReveal delay={0.1}>
                         <h2 className="mt-4 font-serif text-[clamp(2.5rem,5vw,4rem)] font-bold text-foreground">
-                            See It in <span className="text-gradient">Action</span>
+                            More Than a <span className="text-gradient">Workplace</span>
                         </h2>
                     </ScrollReveal>
                     <ScrollReveal delay={0.2}>
