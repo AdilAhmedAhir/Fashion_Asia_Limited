@@ -23,17 +23,31 @@ export default async function WhoWeArePage() {
 
             {/* About Us */}
             <section className="container py-24 md:py-32">
-                <ScrollReveal>
-                    <div className="mx-auto max-w-4xl text-center">
-                        <h2 className="font-serif text-3xl font-bold text-gradient md:text-4xl mb-8">About Us</h2>
-                        <p className="text-white/70 leading-relaxed text-lg mb-6">
-                            {data.aboutParagraph1 || "Fashion Asia Ltd. is a 100% export-oriented Ready-Made Garments (RMG) manufacturing company specializing in knitwear. Located in Sreepur, Gazipur, one of Bangladesh's key industrial hubs, our factory operates with modern infrastructure and advanced production technology."}
-                        </p>
-                        <p className="text-white/70 leading-relaxed text-lg">
-                            {data.aboutParagraph2 || "As part of Northern Tosrifa Group, we inherit decades of industry expertise, strong governance, and global market experience."}
-                        </p>
-                    </div>
-                </ScrollReveal>
+                <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.2fr_1fr] lg:gap-20">
+                    <ScrollReveal>
+                        <div>
+                            <h2 className="font-serif text-3xl font-bold text-gradient md:text-4xl mb-8">About Us</h2>
+                            <p className="text-white/70 leading-relaxed text-lg mb-6">
+                                {data.aboutParagraph1 || "Fashion Asia Ltd. is a 100% export-oriented Ready-Made Garments (RMG) manufacturing company specializing in knitwear. Located in Sreepur, Gazipur, one of Bangladesh's key industrial hubs, our factory operates with modern infrastructure and advanced production technology."}
+                            </p>
+                            <p className="text-white/70 leading-relaxed text-lg">
+                                {data.aboutParagraph2 || "As part of Northern Tosrifa Group, we inherit decades of industry expertise, strong governance, and global market experience."}
+                            </p>
+                        </div>
+                    </ScrollReveal>
+                    <ScrollReveal delay={0.2}>
+                        <div className="relative mx-auto aspect-[2/3] w-full max-w-sm overflow-hidden rounded-2xl border border-white/10">
+                            <img
+                                src="/images/client/who-we-are.jpg"
+                                alt="Fashion Asia Limited knitwear"
+                                className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
+                            />
+                            <div className="absolute bottom-5 left-5 rounded-full border border-primary/60 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary backdrop-blur-md">
+                                Knitwear Craftsmanship
+                            </div>
+                        </div>
+                    </ScrollReveal>
+                </div>
             </section>
 
             {/* Mission & Vision */}
