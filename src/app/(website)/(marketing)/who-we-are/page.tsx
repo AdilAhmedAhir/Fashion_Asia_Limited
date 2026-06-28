@@ -27,12 +27,11 @@ export default async function WhoWeArePage() {
                     <ScrollReveal>
                         <div>
                             <h2 className="font-serif text-3xl font-bold text-gradient md:text-4xl mb-8">About Us</h2>
-                            <p className="text-white/70 leading-relaxed text-lg mb-6">
-                                {data.aboutParagraph1 || "Fashion Asia Ltd. is a 100% export-oriented Ready-Made Garments (RMG) manufacturing company specializing in knitwear. Located in Sreepur, Gazipur, one of Bangladesh's key industrial hubs, our factory operates with modern infrastructure and advanced production technology."}
-                            </p>
-                            <p className="text-white/70 leading-relaxed text-lg">
-                                {data.aboutParagraph2 || "As part of Northern Tosrifa Group, we inherit decades of industry expertise, strong governance, and global market experience."}
-                            </p>
+                            <div className="flex flex-col gap-6">
+                                {(data.aboutParagraphs || []).map((para: string, i: number) => (
+                                    <p key={i} className="text-white/70 leading-relaxed text-lg">{para}</p>
+                                ))}
+                            </div>
                         </div>
                     </ScrollReveal>
                     <ScrollReveal delay={0.2}>
@@ -66,11 +65,36 @@ export default async function WhoWeArePage() {
                         <div className="p-8 md:p-12 rounded-3xl border border-white/10 bg-black/50 h-full hover:border-primary/30 transition-colors">
                             <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Mission</span>
                             <h3 className="mt-4 font-serif text-2xl md:text-3xl font-bold text-foreground">{data.missionTitle || "Responsible Manufacturing"}</h3>
-                            <p className="mt-6 text-white/60 leading-relaxed text-lg">
-                                {data.missionDescription || "To deliver superior knit garments through innovation, efficiency, and responsible manufacturing while ensuring employee welfare, environmental protection, and long-term value creation for our stakeholders."}
-                            </p>
+                            <ul className="mt-6 flex flex-col gap-4">
+                                {(data.missionPoints || []).map((point: string, i: number) => (
+                                    <li key={i} className="flex items-start gap-3 text-white/60 leading-relaxed text-lg">
+                                        <span className="mt-2.5 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary shadow-[0_0_10px_#016138]" />
+                                        {point}
+                                    </li>
+                                ))}
+                            </ul>
                         </div>
                     </ScrollReveal>
+                </div>
+            </section>
+
+            {/* Values */}
+            <section className="container py-24 md:py-32 border-b border-white/5">
+                <div className="mx-auto max-w-3xl text-center mb-16">
+                    <ScrollReveal>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">What Drives Us</span>
+                        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Our Values</h2>
+                    </ScrollReveal>
+                </div>
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                    {(data.values || []).map((v: { title: string; description: string }, i: number) => (
+                        <ScrollReveal key={v.title} delay={i * 0.1}>
+                            <div className="h-full rounded-2xl border border-white/10 bg-white/[0.02] p-8 transition-colors hover:border-primary/30">
+                                <h3 className="font-serif text-xl font-bold text-foreground mb-3">{v.title}</h3>
+                                <p className="text-white/60 leading-relaxed">{v.description}</p>
+                            </div>
+                        </ScrollReveal>
+                    ))}
                 </div>
             </section>
 
@@ -105,7 +129,7 @@ export default async function WhoWeArePage() {
                         </div>
                     ) : (
                         <div className="mt-12 p-8 border border-dashed border-white/20 rounded-2xl bg-white/[0.01]">
-                            <p className="text-xs uppercase tracking-widest text-white/30 font-bold">Leadership profiles can be managed via the Admin Panel</p>
+                            <p className="text-xs uppercase tracking-widest text-white/30 font-bold">Leadership profiles coming soon</p>
                         </div>
                     )}
                 </div>
