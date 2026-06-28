@@ -85,9 +85,18 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             { title: "Innovation & Continuous Improvement", description: "We embrace technology, creativity, and learning to enhance efficiency, quality, and value." },
             { title: "Sustainability & Integrity", description: "We conduct business ethically and responsibly, protecting the environment and contributing to a sustainable future." },
         ],
+        lifeAtFAL: [
+            { title: "Our People", description: "At Fashion Asia, our people are our greatest strength. We foster a culture of teamwork, respect, inclusion, and shared success, where every employee is valued, heard, and empowered to contribute." },
+            { title: "Rewards & Recognition", description: "We recognize performance, dedication, and innovation through competitive compensation, career advancement opportunities, and employee recognition programs. Our support also includes fair-price shopping facilities, salary advance options, and other initiatives designed to improve employees' quality of life." },
+            { title: "Wellbeing, Safety & Respect", description: "We are committed to providing a safe, healthy, and respectful workplace where human rights and employee wellbeing are fully protected. Our employees benefit from maternity support, on-site medical services, healthcare assistance, childcare facilities, hygienic canteens, and a strong culture of safety, dignity, and ethical conduct." },
+            { title: "Learning & Growth", description: "We invest in continuous learning, skills development, and leadership training to help our employees build rewarding careers. Through structured training programs and growth opportunities, we empower our people to reach their full potential." },
+        ],
     },
 
     business: {
+        whatWeDoText:
+            "Fashion Asia transforms ideas into world-class knitwear solutions. We turn creativity into reality. We specialize in developing and manufacturing all types of knitted garments for every market, age group, gender, climate, and lifestyle. From everyday essentials to complex fashion-forward designs, we work with a wide range of fabrics, finishes, and innovative constructions to bring our customers' visions to life. Whether inspired by the latest global trends or a completely new concept, our experienced team turns creative ideas into commercially successful products.",
+        whatWeDoTagline: "If you can imagine it, Fashion Asia can make it happen.",
         products: [
             "T-Shirts", "Polo Shirts", "Tank Tops", "Dresses",
             "Sleepwear", "Leggings", "Sportswear", "Heavy Jersey Products",
