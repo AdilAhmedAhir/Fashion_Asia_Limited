@@ -98,6 +98,29 @@ export default async function WhoWeArePage() {
                 </div>
             </section>
 
+            {/* Life at Fashion Asia */}
+            <section className="bg-surface py-24 md:py-32 border-b border-white/5">
+                <div className="container">
+                    <div className="mx-auto max-w-3xl text-center mb-16">
+                        <ScrollReveal>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Culture</span>
+                            <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Life at Fashion Asia</h2>
+                            <p className="mt-4 text-white/70 text-lg">More than a workplace — a community built on respect, growth, and shared success.</p>
+                        </ScrollReveal>
+                    </div>
+                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                        {(data.lifeAtFAL || []).map((item: { title: string; description: string }, i: number) => (
+                            <ScrollReveal key={item.title} delay={i * 0.1}>
+                                <div className="h-full rounded-2xl border border-white/10 bg-black/40 p-8 transition-colors hover:border-primary/30">
+                                    <h3 className="font-serif text-xl font-bold text-foreground mb-3">{item.title}</h3>
+                                    <p className="text-white/60 leading-relaxed">{item.description}</p>
+                                </div>
+                            </ScrollReveal>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
             {/* Leadership */}
             <section className="container py-24 md:py-32">
                 <div className="mx-auto max-w-4xl text-center">

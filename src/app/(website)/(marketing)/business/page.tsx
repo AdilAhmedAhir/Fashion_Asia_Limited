@@ -28,6 +28,22 @@ export default async function BusinessPage() {
                 description="Delivering efficiency, transparency, and precision at every stage of production for the global apparel market."
             />
 
+            {/* What We Do */}
+            {data.whatWeDoText && (
+                <section className="container py-24 border-b border-white/5">
+                    <ScrollReveal>
+                        <div className="mx-auto max-w-4xl text-center">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">What We Do</span>
+                            <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl mb-8">Ideas Into World-Class Knitwear</h2>
+                            <p className="text-white/70 leading-relaxed text-lg">{data.whatWeDoText}</p>
+                            {data.whatWeDoTagline && (
+                                <p className="mt-8 font-serif text-2xl md:text-3xl font-bold text-gradient">{data.whatWeDoTagline}</p>
+                            )}
+                        </div>
+                    </ScrollReveal>
+                </section>
+            )}
+
             {/* Product Catalog */}
             <section className="container py-24 border-b border-white/5">
                 <ScrollReveal>
