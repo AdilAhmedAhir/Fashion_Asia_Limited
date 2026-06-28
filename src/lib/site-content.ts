@@ -63,16 +63,28 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     },
 
     who_we_are: {
-        aboutParagraph1:
-            "Fashion Asia Ltd. is a 100% export-oriented Ready-Made Garments (RMG) manufacturing company specializing in knitwear. Located in Sreepur, Gazipur, one of Bangladesh's key industrial hubs, our factory operates with modern infrastructure and advanced production technology.",
-        aboutParagraph2:
-            "As part of Northern Tosrifa Group, we inherit decades of industry expertise, strong governance, and global market experience. Our operational model focuses on quality excellence, production efficiency, social compliance, and environmental responsibility. We are committed to building long-term partnerships with international brands through reliability, transparency, and ethical business practices.",
-        visionTitle: "A Globally Recognized Leader",
+        aboutParagraphs: [
+            "Fashion Asia Ltd. is a modern, compliant, and sustainability-driven knit garments manufacturer based in Sreepur, Gazipur, Bangladesh. As a proud sister concern of Northern Tosrifa Group (NTG), which has over 34 years of excellence in the apparel industry, Fashion Asia continues the legacy of quality, innovation, and responsible manufacturing.",
+            "With 26 production lines and a monthly capacity of 800,000 pieces, we specialize in producing a diverse range of knit garments including t-shirts, polo shirts, tank tops, dresses, sleepwear, leggings, sportswear, and heavy jersey products. Our factory is designed as a Green Manufacturing Facility, integrating renewable energy, solar power systems, and rainwater harvesting to reduce environmental impact.",
+            "Equipped with state-of-the-art machinery such as auto spreaders, plotters, and auto cutters, and supported by advanced software solutions across cutting, sewing, merchandising, store, HR, payroll, and accounts, Fashion Asia delivers efficiency, transparency, and precision at every stage of production.",
+            "With a dedicated workforce of 2,000 skilled employees and an annual turnover of USD 30 million, we are committed to delivering value to our global customers while maintaining the highest standards of compliance and sustainability.",
+        ],
+        visionTitle: "Most Trusted & Preferred",
         visionDescription:
-            "To be a globally recognized knitwear manufacturer known for sustainable practices, technological advancement, and excellence in product quality.",
-        missionTitle: "Responsible Manufacturing",
-        missionDescription:
-            "To deliver superior knit garments through innovation, efficiency, and responsible manufacturing while ensuring employee welfare, environmental protection, and long-term value creation for our stakeholders.",
+            "We are committed to becoming the most trusted and preferred organization for our customers, employees, suppliers, shareholders, and the communities we serve.",
+        missionTitle: "Our Commitments",
+        missionPoints: [
+            "Excellence in quality, innovation, and on-time delivery.",
+            "A safe workplace built on dignity, respect, and human rights.",
+            "Sustainable and ethical business for a better future.",
+        ],
+        values: [
+            { title: "Quality Excellence", description: "We are committed to delivering products that consistently meet the highest standards of quality and customer expectations." },
+            { title: "Reliability & Accountability", description: "We honor our commitments through on-time delivery, transparency, and dependable service." },
+            { title: "Respect for People", description: "We uphold human rights and foster a safe, inclusive, and empowering workplace for all." },
+            { title: "Innovation & Continuous Improvement", description: "We embrace technology, creativity, and learning to enhance efficiency, quality, and value." },
+            { title: "Sustainability & Integrity", description: "We conduct business ethically and responsibly, protecting the environment and contributing to a sustainable future." },
+        ],
     },
 
     business: {
@@ -198,7 +210,11 @@ export interface Leader {
     sort_order: number;
 }
 
-export const LEADERS: Leader[] = [];
+export const LEADERS: Leader[] = [
+    { id: "1", name: "Sharifur Rahman", title: "Chairman", bio: null, photo_url: null, sort_order: 0 },
+    { id: "2", name: "Alif Nadvi Rahman", title: "Managing Director", bio: null, photo_url: null, sort_order: 1 },
+    { id: "3", name: "Aqib Jafri Sharif", title: "Director", bio: null, photo_url: null, sort_order: 2 },
+];
 
 // ---------------------------------------------------------------------------
 // Media Center gallery (/media). type: 'gallery' | 'news'.
