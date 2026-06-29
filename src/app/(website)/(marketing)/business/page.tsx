@@ -12,7 +12,6 @@ export const revalidate = 60;
 export default async function BusinessPage() {
     const data = await getSettings("business");
     const products = data.products?.length ? data.products : ['T-Shirts', 'Polo Shirts', 'Tank Tops', 'Dresses', 'Sleepwear', 'Leggings', 'Sportswear', 'Heavy Jersey Products'];
-    const customers = data.customers?.length ? data.customers : ['Elcort ECI', 'Kappahl', 'Tamurakoma', 'Max India'];
     const capacityStats = data.capacityStats?.length ? data.capacityStats : [
         { value: "26", label: "Production Lines" },
         { value: "800K", label: "Pieces Monthly" },
@@ -103,11 +102,31 @@ export default async function BusinessPage() {
                     </ScrollReveal>
                 </div>
 
-                <div className="flex flex-wrap justify-center gap-6 md:gap-12">
-                    {customers.map((customer: string, i: number) => (
-                        <ScrollReveal key={customer} delay={i * 0.1}>
-                            <div className="px-12 py-6 rounded-full border border-white/10 bg-white/[0.02] text-xl font-serif text-white/80 transition-colors hover:border-primary/50 hover:text-primary cursor-default">
-                                {customer}
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                    {[
+                        { name: "El Corte Inglés", src: "/images/client/logos/el-corte-ingles.png" },
+                        { name: "Kappahl", src: "/images/client/logos/kappahl.png" },
+                        { name: "Sports Direct", src: "/images/client/logos/sports-direct.png" },
+                        { name: "Renner", src: "/images/client/logos/renner.png" },
+                        { name: "Kenneth Cole New York", src: "/images/client/logos/kenneth-cole.png" },
+                        { name: "Beverly Hills Polo Club", src: "/images/client/logos/beverly-hills-polo-club.png" },
+                        { name: "Ochnik", src: "/images/client/logos/ochnik.png" },
+                        { name: "Piazza Italia", src: "/images/client/logos/piazza-italia.png" },
+                        { name: "American Holic", src: "/images/client/logos/american-holic.png" },
+                        { name: "Lakole", src: "/images/client/logos/lakole.png" },
+                        { name: "Paper Denim & Cloth", src: "/images/client/logos/paper-denim-cloth.png" },
+                        { name: "Gym Glamour", src: "/images/client/logos/gym-glamour.png" },
+                        { name: "Free Planet", src: "/images/client/logos/free-planet.png" },
+                        { name: "JVZ", src: "/images/client/logos/jvz.png" },
+                    ].map((customer, i) => (
+                        <ScrollReveal key={customer.name} delay={0.05 + (i % 4) * 0.08}>
+                            <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md md:h-28">
+                                <img
+                                    src={customer.src}
+                                    alt={customer.name}
+                                    loading="lazy"
+                                    className="max-h-12 w-auto max-w-full object-contain md:max-h-14"
+                                />
                             </div>
                         </ScrollReveal>
                     ))}
