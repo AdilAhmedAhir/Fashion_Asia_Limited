@@ -66,12 +66,37 @@ export default async function Home() {
                     <ScrollReveal>
                         <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Trusted By</span>
                     </ScrollReveal>
-                    <div className="mt-12 flex flex-wrap items-center justify-center gap-12 md:gap-20">
-                        {["El Corte Inglés", "KappAhl", "U.S. Polo Assn."].map((brand, i) => (
-                            <ScrollReveal key={brand} delay={0.1 + i * 0.15}>
-                                <span className="font-serif text-2xl md:text-3xl font-semibold text-foreground/70 transition-colors hover:text-foreground cursor-default">
-                                    {brand}
-                                </span>
+                    <ScrollReveal delay={0.1}>
+                        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
+                            Trusted by Leading Global Brands
+                        </h2>
+                    </ScrollReveal>
+                    <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:mt-16 md:gap-6 lg:grid-cols-4">
+                        {[
+                            { name: "El Corte Inglés", src: "/images/client/logos/el-corte-ingles.png" },
+                            { name: "Kappahl", src: "/images/client/logos/kappahl.png" },
+                            { name: "Sports Direct", src: "/images/client/logos/sports-direct.png" },
+                            { name: "Renner", src: "/images/client/logos/renner.png" },
+                            { name: "Kenneth Cole New York", src: "/images/client/logos/kenneth-cole.png" },
+                            { name: "Beverly Hills Polo Club", src: "/images/client/logos/beverly-hills-polo-club.png" },
+                            { name: "Ochnik", src: "/images/client/logos/ochnik.png" },
+                            { name: "Piazza Italia", src: "/images/client/logos/piazza-italia.png" },
+                            { name: "American Holic", src: "/images/client/logos/american-holic.png" },
+                            { name: "Lakole", src: "/images/client/logos/lakole.png" },
+                            { name: "Paper Denim & Cloth", src: "/images/client/logos/paper-denim-cloth.png" },
+                            { name: "Gym Glamour", src: "/images/client/logos/gym-glamour.png" },
+                            { name: "Free Planet", src: "/images/client/logos/free-planet.png" },
+                            { name: "JVZ", src: "/images/client/logos/jvz.png" },
+                        ].map((brand, i) => (
+                            <ScrollReveal key={brand.name} delay={0.05 + (i % 4) * 0.08}>
+                                <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md md:h-28">
+                                    <img
+                                        src={brand.src}
+                                        alt={brand.name}
+                                        loading="lazy"
+                                        className="max-h-12 w-auto max-w-full object-contain md:max-h-14"
+                                    />
+                                </div>
                             </ScrollReveal>
                         ))}
                     </div>
