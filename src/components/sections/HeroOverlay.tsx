@@ -4,8 +4,25 @@ import { useRef } from "react";
 import { gsap } from "gsap";
 import { useGSAP } from "@gsap/react";
 
-export default function HeroOverlay() {
+interface HeroOverlayProps {
+    kicker?: string;
+    titleTop?: string;
+    titleAccent?: string;
+    facts?: string[];
+    stats?: { label: string; value: string }[];
+}
+
+const FALLBACK_FACTS = ["LEED Gold Certified", "800K Monthly", "Sreepur, Bangladesh"];
+const FALLBACK_STATS = [
+    { label: "Legacy", value: "34+ Yrs" },
+    { label: "Machines", value: "750" },
+    { label: "Annual Revenue", value: "$30M" },
+];
+
+export default function HeroOverlay({ kicker, titleTop, titleAccent, facts, stats }: HeroOverlayProps) {
     const overlayRef = useRef<HTMLDivElement>(null);
+    const heroFacts = facts?.length ? facts : FALLBACK_FACTS;
+    const heroStats = stats?.length ? stats : FALLBACK_STATS;
 
     useGSAP(() => {
         const tl = gsap.timeline({ delay: 0.5 });
@@ -22,27 +39,24 @@ export default function HeroOverlay() {
 
             <div className="flex flex-col items-center text-center pointer-events-auto">
                 <span className="hero-tag mb-6 text-xs font-bold uppercase tracking-[0.3em] text-accent" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
-                    Northern Tosrifa Group
+                    {kicker || "Northern Tosrifa Group"}
                 </span>
                 <h1 className="hero-title mb-8 font-serif text-[clamp(3rem,8vw,7rem)] font-extrabold leading-[1.1] text-foreground" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.6), 0 0px 8px rgba(0,0,0,0.4)' }}>
-                    Green Powered <br className="hidden md:block" />
-                    <span className="text-gradient" style={{ textShadow: '0 2px 30px rgba(14,201,122,0.3), 0 0px 60px rgba(14,201,122,0.15)' }}>Innovation</span>
+                    {titleTop || "Green Powered"} <br className="hidden md:block" />
+                    <span className="text-gradient" style={{ textShadow: '0 2px 30px rgba(14,201,122,0.3), 0 0px 60px rgba(14,201,122,0.15)' }}>{titleAccent || "Innovation"}</span>
                 </h1>
                 <div className="hero-subtitle flex flex-wrap items-center justify-center gap-3 font-sans text-sm md:text-lg text-white/80">
-                    <span>LEED Gold Certified</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent/50" />
-                    <span>800K Monthly</span>
-                    <span className="h-1.5 w-1.5 rounded-full bg-accent/50" />
-                    <span>Est. 2000</span>
+                    {heroFacts.map((fact, i) => (
+                        <span key={fact} className="flex items-center gap-3">
+                            {i > 0 && <span className="h-1.5 w-1.5 rounded-full bg-accent/50" />}
+                            {fact}
+                        </span>
+                    ))}
                 </div>
             </div>
 
             <div className="hero-stats mt-16 flex flex-row gap-6 pointer-events-auto md:absolute md:right-16 md:top-32 md:mt-0 md:flex-col md:gap-8">
-                {[
-                    { label: "Legacy", value: "24+ Yrs" },
-                    { label: "Machines", value: "750" },
-                    { label: "Annual Revenue", value: "$30M" },
-                ].map((stat) => (
+                {heroStats.map((stat) => (
                     <div key={stat.label} className="stat-item flex flex-col items-center md:items-end">
                         <span className="text-3xl md:text-4xl font-bold text-gradient">{stat.value}</span>
                         <span className="text-[0.65rem] uppercase tracking-widest text-white/50">{stat.label}</span>

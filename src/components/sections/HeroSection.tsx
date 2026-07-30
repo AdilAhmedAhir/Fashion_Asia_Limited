@@ -1,6 +1,14 @@
 import HeroOverlay from "./HeroOverlay";
 
-export default function HeroSection() {
+interface HeroSectionProps {
+    kicker?: string;
+    titleTop?: string;
+    titleAccent?: string;
+    facts?: string[];
+    stats?: { label: string; value: string }[];
+}
+
+export default function HeroSection({ kicker, titleTop, titleAccent, facts, stats }: HeroSectionProps) {
     return (
         <section className="relative h-screen min-h-[680px] w-full overflow-hidden bg-black">
             {/* Background video */}
@@ -27,7 +35,13 @@ export default function HeroSection() {
 
             {/* Headline / stats / scroll indicator */}
             <div className="hero-overlay-wrapper absolute inset-0 z-10 flex flex-col items-center justify-center">
-                <HeroOverlay />
+                <HeroOverlay
+                    kicker={kicker}
+                    titleTop={titleTop}
+                    titleAccent={titleAccent}
+                    facts={facts}
+                    stats={stats}
+                />
             </div>
         </section>
     );

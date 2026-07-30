@@ -3,7 +3,11 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import ContactForm from "./ContactForm";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Contact Us | Fashion Asia Limited" };
+export const metadata: Metadata = {
+    title: "Contact Us",
+    description:
+        "Get in touch with Fashion Asia Limited — factory in Teprirbari, Sreepur, Gazipur and corporate office in Gopalpur, Munnu Nagar, Tongi.",
+};
 
 export default function ContactPage() {
     return (

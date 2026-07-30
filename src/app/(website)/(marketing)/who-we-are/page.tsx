@@ -4,7 +4,9 @@ import { getSettings, getLeaders } from "@/app/actions/settings-actions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Who We Are | Fashion Asia Limited",
+    title: "Who We Are",
+    description:
+        "Fashion Asia Limited — a knit garments manufacturer in Sreepur, Gazipur and sister concern of Northern Tosrifa Group. Our vision, values, milestones, and leadership.",
 };
 
 export const revalidate = 60;
@@ -77,6 +79,43 @@ export default async function WhoWeArePage() {
                     </ScrollReveal>
                 </div>
             </section>
+
+            {/* Milestones & Achievements */}
+            {(data.milestones || []).length > 0 && (
+                <section className="container py-24 md:py-32 border-b border-white/5">
+                    <div className="mx-auto max-w-3xl text-center mb-16">
+                        <ScrollReveal>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Journey</span>
+                            <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Milestones &amp; Achievements</h2>
+                            <p className="mt-4 text-white/70 text-lg">Three decades of steady, deliberate growth — from a single group venture to a green facility serving buyers worldwide.</p>
+                        </ScrollReveal>
+                    </div>
+
+                    <div className="relative mx-auto max-w-3xl">
+                        {/* Vertical spine */}
+                        <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gradient-to-b from-primary/60 via-primary/20 to-transparent md:left-1/2 md:-translate-x-1/2" aria-hidden="true" />
+
+                        <ol className="flex flex-col gap-10">
+                            {(data.milestones || []).map((m: { year: string; title: string; description: string }, i: number) => (
+                                <li key={m.year + m.title}>
+                                    <ScrollReveal delay={i * 0.08}>
+                                        <div className={`relative pl-10 md:w-1/2 md:pl-0 ${i % 2 === 0 ? "md:pr-12 md:text-right" : "md:ml-auto md:pl-12"}`}>
+                                            {/* Node */}
+                                            <span
+                                                className={`absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_12px_rgba(1,97,56,0.8)] md:left-auto ${i % 2 === 0 ? "md:-right-2" : "md:-left-2"}`}
+                                                aria-hidden="true"
+                                            />
+                                            <span className="font-serif text-2xl font-bold text-gradient">{m.year}</span>
+                                            <h3 className="mt-1 font-serif text-xl font-bold text-foreground">{m.title}</h3>
+                                            <p className="mt-2 leading-relaxed text-white/60">{m.description}</p>
+                                        </div>
+                                    </ScrollReveal>
+                                </li>
+                            ))}
+                        </ol>
+                    </div>
+                </section>
+            )}
 
             {/* Values */}
             <section className="container py-24 md:py-32 border-b border-white/5">

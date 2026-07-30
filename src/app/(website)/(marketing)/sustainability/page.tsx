@@ -4,7 +4,9 @@ import { getSettings } from "@/app/actions/settings-actions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Sustainability | Fashion Asia Limited",
+    title: "Sustainability",
+    description:
+        "Green manufacturing at Fashion Asia Limited — solar power, rainwater harvesting, waste reduction, and BSCI, WRAP, SEDEX, SLCP, OCS, GOTS and FEM certification.",
 };
 
 export const revalidate = 60;

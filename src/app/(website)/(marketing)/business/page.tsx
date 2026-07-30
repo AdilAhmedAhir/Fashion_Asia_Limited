@@ -1,10 +1,15 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings } from "@/app/actions/settings-actions";
+import { CLIENT_LOGOS } from "@/lib/site-content";
+import Link from "next/link";
+import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Business | Fashion Asia Limited",
+    title: "What We Do",
+    description:
+        "Knit garment manufacturing at scale — 26 production lines, 800,000 pieces monthly, from t-shirts and polos to sportswear and heavy jersey.",
 };
 
 export const revalidate = 60;
@@ -23,7 +28,7 @@ export default async function BusinessPage() {
         <div className="flex flex-col bg-background">
             <PageHeader
                 tag="Scale & Precision"
-                title="Our Business"
+                title="What We Do"
                 description="Delivering efficiency, transparency, and precision at every stage of production for the global apparel market."
             />
 
@@ -32,7 +37,7 @@ export default async function BusinessPage() {
                 <section className="container py-24 border-b border-white/5">
                     <ScrollReveal>
                         <div className="mx-auto max-w-4xl text-center">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">What We Do</span>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Craft</span>
                             <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl mb-8">Ideas Into World-Class Knitwear</h2>
                             <p className="text-white/70 leading-relaxed text-lg">{data.whatWeDoText}</p>
                             {data.whatWeDoTagline && (
@@ -103,22 +108,7 @@ export default async function BusinessPage() {
                 </div>
 
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
-                    {[
-                        { name: "El Corte Inglés", src: "/images/client/logos/el-corte-ingles.png" },
-                        { name: "Kappahl", src: "/images/client/logos/kappahl.png" },
-                        { name: "Sports Direct", src: "/images/client/logos/sports-direct.png" },
-                        { name: "Renner", src: "/images/client/logos/renner.png" },
-                        { name: "Kenneth Cole New York", src: "/images/client/logos/kenneth-cole.png" },
-                        { name: "Beverly Hills Polo Club", src: "/images/client/logos/beverly-hills-polo-club.png" },
-                        { name: "Ochnik", src: "/images/client/logos/ochnik.png" },
-                        { name: "Piazza Italia", src: "/images/client/logos/piazza-italia.png" },
-                        { name: "American Holic", src: "/images/client/logos/american-holic.png" },
-                        { name: "Lakole", src: "/images/client/logos/lakole.png" },
-                        { name: "Paper Denim & Cloth", src: "/images/client/logos/paper-denim-cloth.png" },
-                        { name: "Gym Glamour", src: "/images/client/logos/gym-glamour.png" },
-                        { name: "Free Planet", src: "/images/client/logos/free-planet.png" },
-                        { name: "JVZ", src: "/images/client/logos/jvz.png" },
-                    ].map((customer, i) => (
+                    {CLIENT_LOGOS.map((customer, i) => (
                         <ScrollReveal key={customer.name} delay={0.05 + (i % 4) * 0.08}>
                             <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md md:h-28">
                                 <img
@@ -131,6 +121,18 @@ export default async function BusinessPage() {
                         </ScrollReveal>
                     ))}
                 </div>
+
+                <ScrollReveal delay={0.2}>
+                    <div className="mt-12 flex justify-center">
+                        <Link
+                            href="/who-we-work-with"
+                            className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
+                        >
+                            How We Partner
+                            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+                        </Link>
+                    </div>
+                </ScrollReveal>
             </section>
         </div>
     );
