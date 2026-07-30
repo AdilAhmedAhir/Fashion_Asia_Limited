@@ -3,7 +3,11 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import GrievanceForm from "./GrievanceForm";
 import type { Metadata } from "next";
 
-export const metadata: Metadata = { title: "Grievance | Fashion Asia Limited" };
+export const metadata: Metadata = {
+    title: "Grievance",
+    description:
+        "Raise a grievance with Fashion Asia Limited. Our grievance procedure is confidential and open to employees, suppliers, and community members.",
+};
 
 export default function GrievancePage() {
     return (

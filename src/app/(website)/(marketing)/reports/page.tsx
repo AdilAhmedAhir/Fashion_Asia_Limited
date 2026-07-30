@@ -5,7 +5,9 @@ import { Download, FileText } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Reports & Publications | Fashion Asia Limited",
+    title: "Reports & Publications",
+    description:
+        "Compliance, audit, environmental and CSR reports published by Fashion Asia Limited for buyers and stakeholders.",
 };
 
 export const revalidate = 60;

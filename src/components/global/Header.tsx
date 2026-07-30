@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import MobileOverlayMenu from "./MobileOverlayMenu";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { MAIN_NAV, NAV_CTA } from "@/lib/nav";
 import { cn } from "@/lib/utils";
 
 export default function Header() {
@@ -37,27 +38,27 @@ export default function Header() {
                         </div>
                     </Link>
 
-                    <nav className="hidden items-center gap-8 lg:flex z-[1001]">
-                        {["Home", "Who We Are", "Business", "Sustainability", "Reports", "Media"].map((item) => (
+                    <nav className="hidden items-center gap-5 xl:flex z-[1001]">
+                        {MAIN_NAV.map((item) => (
                             <Link
-                                key={item}
-                                href={item === "Home" ? "/" : `/${item.toLowerCase().replace(/\s+/g, "-")}`}
-                                className="group relative font-sans text-sm font-medium text-foreground py-6"
+                                key={item.href}
+                                href={item.href}
+                                className="group relative whitespace-nowrap font-sans text-sm font-medium text-foreground py-6"
                             >
-                                {item}
+                                {item.label}
                                 <span className="absolute bottom-4 left-0 h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-full"></span>
                             </Link>
                         ))}
                         <Link
-                            href="/contact"
-                            className="rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
+                            href={NAV_CTA.href}
+                            className="whitespace-nowrap rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
                         >
-                            Connect
+                            {NAV_CTA.label}
                         </Link>
                     </nav>
 
                     <button
-                        className="relative z-[1001] flex h-6 w-8 flex-col items-end justify-between lg:hidden"
+                        className="relative z-[1001] flex h-6 w-8 flex-col items-end justify-between xl:hidden"
                         onClick={() => setMenuOpen(!menuOpen)}
                         aria-label="Toggle Menu"
                     >

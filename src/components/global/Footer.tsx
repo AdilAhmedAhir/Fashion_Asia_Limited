@@ -6,10 +6,11 @@ const footerLinks = [
         title: "Company",
         links: [
             { label: "Who We Are", href: "/who-we-are" },
-            { label: "Business", href: "/business" },
+            { label: "What We Do", href: "/business" },
+            { label: "Who We Work With", href: "/who-we-work-with" },
             { label: "Sustainability", href: "/sustainability" },
+            { label: "Life at Fashion Asia", href: "/media" },
             { label: "Reports", href: "/reports" },
-            { label: "Media Center", href: "/media" },
         ],
     },
     {

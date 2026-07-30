@@ -17,6 +17,19 @@
 // Keyed content blocks consumed by the homepage + marketing pages.
 export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     homepage: {
+        // Hero overlay — headline, the three facts under it, and the stat rail.
+        // "34+ Yrs" follows the company brief ("over 34 years of excellence").
+        // Keep this in step with aboutDescription on this page and the About Us
+        // copy on /who-we-are, which make the same claim.
+        heroKicker: "Northern Tosrifa Group",
+        heroTitleTop: "Green Powered",
+        heroTitleAccent: "Innovation",
+        heroFacts: ["LEED Gold Certified", "800K Monthly", "Sreepur, Bangladesh"],
+        heroStats: [
+            { label: "Legacy", value: "34+ Yrs" },
+            { label: "Machines", value: "750" },
+            { label: "Annual Revenue", value: "$30M" },
+        ],
         heroTagline: "Innovation in Motion",
         heroSubtitle:
             "From automated cutting to precision sewing, every step of our manufacturing process is designed for absolute quality and a zero defect philosophy.",
@@ -55,6 +68,42 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             { value: "98.5%", label: "On-Time Delivery" },
             { value: "800K", label: "Pieces / Month" },
         ],
+        // "Life at Fashion Asia" — the people story that follows sustainability.
+        // Each facility card carries its own caption so the photographs are
+        // never shown without context.
+        lifeTag: "Life at Fashion Asia",
+        lifeEyebrow: "Our responsibility does not stop at the factory gate.",
+        lifeDescription:
+            "The same standards that make our facility green make it a good place to work. Behind every garment are 2,000 people — and the care we design around them is deliberate, funded, and measured.",
+        lifeStat: { value: "2,000", label: "People on site every day" },
+        lifeFacilities: [
+            {
+                title: "Medical Center",
+                description: "On-site medical services, healthcare assistance, and maternity support.",
+                image: "/images/client/box6-copy.jpg",
+            },
+            {
+                title: "Day Care",
+                description: "Childcare on the premises so working parents stay close to their children.",
+                image: "/images/client/box4-copy.jpg",
+            },
+            {
+                title: "Shera Shop",
+                description: "A fair-price shop giving every employee daily essentials below market cost.",
+                image: "/images/client/box3-copy.jpg",
+            },
+            {
+                title: "Bicycle Parking",
+                description: "Secure parking and safe commuting for the workforce that travels daily.",
+                image: "/images/client/box2-copy.jpg",
+            },
+        ],
+        lifePillars: [
+            { title: "Our People", description: "Teamwork, respect, and inclusion — every employee valued and heard." },
+            { title: "Rewards & Recognition", description: "Competitive pay, advancement, and recognition for dedication." },
+            { title: "Wellbeing & Safety", description: "Human rights protected in a safe, healthy, respectful workplace." },
+            { title: "Learning & Growth", description: "Structured training and leadership development for every career." },
+        ],
         contactCards: [
             { label: "Phone", value: "+880 1711 691 366" },
             { label: "Factory", value: "Teprirbari, Sreepur, Gazipur" },
@@ -68,6 +117,45 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             "With 26 production lines and a monthly capacity of 800,000 pieces, we specialize in producing a diverse range of knit garments including t-shirts, polo shirts, tank tops, dresses, sleepwear, leggings, sportswear, and heavy jersey products. Our factory is designed as a Green Manufacturing Facility, integrating renewable energy, solar power systems, and rainwater harvesting to reduce environmental impact.",
             "Equipped with state-of-the-art machinery such as auto spreaders, plotters, and auto cutters, and supported by advanced software solutions across cutting, sewing, merchandising, store, HR, payroll, and accounts, Fashion Asia delivers efficiency, transparency, and precision at every stage of production.",
             "With a dedicated workforce of 2,000 skilled employees and an annual turnover of USD 30 million, we are committed to delivering value to our global customers while maintaining the highest standards of compliance and sustainability.",
+        ],
+        // ⚠️ PLACEHOLDER DATES — VERIFY BEFORE PUBLISHING TO THE LIVE SITE.
+        // The client brief listed "Milestones & Achievements" as a heading with
+        // no entries. The years below are illustrative scaffolding so the
+        // section renders; only the 1991 group founding is derived from a
+        // stated fact ("over 34 years"). Replace every year and description
+        // with the company's real history, or delete this array to hide the
+        // section entirely (the page handles an empty list).
+        milestones: [
+            {
+                year: "1992",
+                title: "Northern Tosrifa Group Founded",
+                description: "The parent group begins operations, starting more than three decades of continuous growth in Bangladesh's apparel sector.",
+            },
+            {
+                year: "2015",
+                title: "Fashion Asia Ltd. Established",
+                description: "A dedicated knitwear unit is set up in Sreepur, Gazipur, purpose-built as a 100% export-oriented facility.",
+            },
+            {
+                year: "2018",
+                title: "Green Manufacturing Facility",
+                description: "Solar power systems and rainwater harvesting are integrated, and the plant begins operating as a green factory.",
+            },
+            {
+                year: "2021",
+                title: "Scaled to 26 Production Lines",
+                description: "Capacity reaches 800,000 pieces per month, supported by auto spreaders, plotters, and auto cutters.",
+            },
+            {
+                year: "2024",
+                title: "Full Compliance Portfolio",
+                description: "BSCI, WRAP, SEDEX, SLCP, OCS, GOTS, and FEM certifications are maintained across the operation.",
+            },
+            {
+                year: "Today",
+                title: "2,000 People, USD 30M Turnover",
+                description: "A skilled workforce of 2,000 delivers an annual turnover of USD 30 million for buyers worldwide.",
+            },
         ],
         visionTitle: "Most Trusted & Preferred",
         visionDescription:
@@ -112,6 +200,40 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
         customers: ["Elcort ECI", "Kappahl", "Tamurakoma", "Max India"],
     },
 
+    who_we_work_with: {
+        intro:
+            "Fashion Asia Ltd. is proud to serve reputable international buyers who trust us for quality, compliance, and timely delivery. Our partners range from national department stores and high-street retailers to specialist sportswear and denim labels across Europe, the Americas, and Asia.",
+        partnershipTitle: "How We Partner",
+        partnership: [
+            {
+                title: "Development & Sampling",
+                description:
+                    "A dedicated sample room and technical team turn sketches, tech packs, or reference garments into production-ready styles — with fit, fabric, and finish agreed before bulk begins.",
+            },
+            {
+                title: "Transparent Production",
+                description:
+                    "Software across cutting, sewing, merchandising, store, HR, and accounts gives buyers visibility into order status at every stage, not just at shipment.",
+            },
+            {
+                title: "Compliance by Default",
+                description:
+                    "BSCI, WRAP, SEDEX, SLCP, OCS, GOTS, and FEM audits are maintained continuously, so buyer onboarding and annual reviews are a formality rather than a project.",
+            },
+            {
+                title: "Delivery You Can Plan Around",
+                description:
+                    "A 99.2% Right First Time rate and 98.5% on-time delivery across 26 lines mean critical paths hold and replenishment windows are met.",
+            },
+        ],
+        assuranceStats: [
+            { value: "99.2%", label: "Right First Time" },
+            { value: "98.5%", label: "On-Time Delivery" },
+            { value: "800K", label: "Pieces / Month" },
+            { value: "$30M", label: "Annual Turnover" },
+        ],
+    },
+
     sustainability: {
         description:
             "Sustainability and compliance are integral to our business model. We maintain transparent documentation and reporting aligned with international standards and buyer requirements.",
@@ -140,6 +262,33 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             "100% export-oriented knitwear manufacturer backed by Northern Tosrifa Group. LEED Gold certified, 800K pieces monthly capacity.",
     },
 };
+
+// ---------------------------------------------------------------------------
+// Buyer / brand logos shown on the homepage, /business and /who-we-work-with.
+// Files live in public/images/client/logos/. Add or remove entries here and
+// every page that lists brands updates together.
+// ---------------------------------------------------------------------------
+export interface ClientLogo {
+    name: string;
+    src: string;
+}
+
+export const CLIENT_LOGOS: ClientLogo[] = [
+    { name: "El Corte Inglés", src: "/images/client/logos/el-corte-ingles.png" },
+    { name: "Kappahl", src: "/images/client/logos/kappahl.png" },
+    { name: "Sports Direct", src: "/images/client/logos/sports-direct.png" },
+    { name: "Renner", src: "/images/client/logos/renner.png" },
+    { name: "Kenneth Cole New York", src: "/images/client/logos/kenneth-cole.png" },
+    { name: "Beverly Hills Polo Club", src: "/images/client/logos/beverly-hills-polo-club.png" },
+    { name: "Ochnik", src: "/images/client/logos/ochnik.png" },
+    { name: "Piazza Italia", src: "/images/client/logos/piazza-italia.png" },
+    { name: "American Holic", src: "/images/client/logos/american-holic.png" },
+    { name: "Lakole", src: "/images/client/logos/lakole.png" },
+    { name: "Paper Denim & Cloth", src: "/images/client/logos/paper-denim-cloth.png" },
+    { name: "Gym Glamour", src: "/images/client/logos/gym-glamour.png" },
+    { name: "Free Planet", src: "/images/client/logos/free-planet.png" },
+    { name: "JVZ", src: "/images/client/logos/jvz.png" },
+];
 
 // Email submissions land here (Contact / Career / Grievance forms open the
 // visitor's mail client addressed to this inbox).

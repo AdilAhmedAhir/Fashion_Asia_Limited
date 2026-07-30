@@ -4,7 +4,9 @@ import { MEDIA_ASSETS } from "@/lib/site-content";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Media Center | Fashion Asia Limited",
+    title: "Media Center",
+    description:
+        "Photographs from inside Fashion Asia Limited — the production floor, green facility, and the welfare facilities our 2,000 employees use every day.",
 };
 
 export default function MediaPage() {
