@@ -100,6 +100,15 @@ export default async function WhoWeArePage() {
                                 <li key={m.year + m.title}>
                                     <ScrollReveal delay={i * 0.08}>
                                         <div className={`relative pl-10 md:w-1/2 md:pl-0 ${i % 2 === 0 ? "md:pr-12 md:text-right" : "md:ml-auto md:pl-12"}`}>
+                                            {/* Node. Left-column entries anchor to the right edge of
+                                                their box, right-column entries to the left edge — both
+                                                land on the centre spine. Only one of `left`/`right` may
+                                                be set per side, or the dot falls back to its static
+                                                position and floats above the text. */}
+                                            <span
+                                                className={`absolute top-1.5 left-0 h-4 w-4 rounded-full border-2 border-primary bg-primary shadow-[0_0_12px_rgba(1,97,56,0.8)] ${i % 2 === 0 ? "md:left-auto md:-right-2" : "md:-left-2"}`}
+                                                aria-hidden="true"
+                                            />
                                             <span className="font-serif text-2xl font-bold text-gradient">{m.year}</span>
                                             <h3 className="mt-1 font-serif text-xl font-bold text-foreground">{m.title}</h3>
                                             <p className="mt-2 leading-relaxed text-white/60">{m.description}</p>
