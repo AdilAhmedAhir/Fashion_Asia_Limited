@@ -91,29 +91,20 @@ export default async function WhoWeArePage() {
                         </ScrollReveal>
                     </div>
 
-                    <div className="relative mx-auto max-w-3xl">
-                        {/* Vertical spine */}
-                        <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gradient-to-b from-primary/60 via-primary/20 to-transparent md:left-1/2 md:-translate-x-1/2" aria-hidden="true" />
-
-                        <ol className="flex flex-col gap-10">
-                            {(data.milestones || []).map((m: { year: string; title: string; description: string }, i: number) => (
-                                <li key={m.year + m.title}>
-                                    <ScrollReveal delay={i * 0.08}>
-                                        <div className={`relative pl-10 md:w-1/2 md:pl-0 ${i % 2 === 0 ? "md:pr-12 md:text-right" : "md:ml-auto md:pl-12"}`}>
-                                            {/* Node */}
-                                            <span
-                                                className={`absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-primary bg-background shadow-[0_0_12px_rgba(1,97,56,0.8)] md:left-auto ${i % 2 === 0 ? "md:-right-2" : "md:-left-2"}`}
-                                                aria-hidden="true"
-                                            />
-                                            <span className="font-serif text-2xl font-bold text-gradient">{m.year}</span>
-                                            <h3 className="mt-1 font-serif text-xl font-bold text-foreground">{m.title}</h3>
-                                            <p className="mt-2 leading-relaxed text-white/60">{m.description}</p>
-                                        </div>
-                                    </ScrollReveal>
-                                </li>
-                            ))}
-                        </ol>
-                    </div>
+                    <ol className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                        {(data.milestones || []).map((m: { year: string; title: string; description: string }, i: number) => (
+                            <li key={m.year + m.title} className="h-full">
+                                <ScrollReveal delay={i * 0.08}>
+                                    <div className="h-full rounded-2xl border border-white/10 bg-white/[0.02] p-8 transition-colors hover:border-primary/30">
+                                        <span className="font-serif text-3xl font-bold text-gradient">{m.year}</span>
+                                        <span className="mt-4 block h-[2px] w-10 bg-primary" aria-hidden="true" />
+                                        <h3 className="mt-4 font-serif text-xl font-bold text-foreground">{m.title}</h3>
+                                        <p className="mt-3 leading-relaxed text-white/60">{m.description}</p>
+                                    </div>
+                                </ScrollReveal>
+                            </li>
+                        ))}
+                    </ol>
                 </section>
             )}
 
