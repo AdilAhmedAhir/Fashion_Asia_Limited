@@ -2,21 +2,18 @@ import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings } from "@/app/actions/settings-actions";
 import { CLIENT_LOGOS } from "@/lib/site-content";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
     title: "Who We Work With",
     description:
-        "The international retailers and labels that rely on Fashion Asia Limited for knitwear manufacturing, and how we partner with them.",
+        "The international retailers and labels that rely on Fashion Asia Limited for knitwear manufacturing.",
 };
 
 export const revalidate = 60;
 
 export default async function WhoWeWorkWithPage() {
     const data = await getSettings("who_we_work_with");
-    const partnership: { title: string; description: string }[] = data.partnership || [];
     const assuranceStats: { value: string; label: string }[] = data.assuranceStats || [];
 
     return (
@@ -77,43 +74,9 @@ export default async function WhoWeWorkWithPage() {
                 </div>
             </section>
 
-            {/* How we partner */}
-            <section className="bg-surface py-24 border-b border-white/5">
-                <div className="container max-w-6xl">
-                    <ScrollReveal>
-                        <div className="mb-16 max-w-3xl">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                                Working Together
-                            </span>
-                            <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
-                                {data.partnershipTitle || "How We Partner"}
-                            </h2>
-                            <p className="mt-6 text-lg leading-relaxed text-white/70">
-                                A buyer relationship is more than a purchase order. From first sample to final
-                                shipment, these are the commitments our partners can hold us to.
-                            </p>
-                        </div>
-                    </ScrollReveal>
-
-                    <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
-                        {partnership.map((item, i) => (
-                            <ScrollReveal key={item.title} delay={i * 0.1}>
-                                <div className="flex h-full flex-col gap-4 rounded-2xl border border-white/10 bg-black/40 p-8 transition-colors hover:border-primary/30">
-                                    <span className="font-serif text-sm font-bold text-primary">
-                                        {String(i + 1).padStart(2, "0")}
-                                    </span>
-                                    <h3 className="font-serif text-xl font-bold text-foreground">{item.title}</h3>
-                                    <p className="leading-relaxed text-white/60">{item.description}</p>
-                                </div>
-                            </ScrollReveal>
-                        ))}
-                    </div>
-                </div>
-            </section>
-
             {/* Assurance numbers */}
             {assuranceStats.length > 0 && (
-                <section className="container py-24 border-b border-white/5">
+                <section className="container py-24">
                     <ScrollReveal>
                         <div className="mx-auto mb-16 max-w-3xl text-center">
                             <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
@@ -139,36 +102,6 @@ export default async function WhoWeWorkWithPage() {
                 </section>
             )}
 
-            {/* CTA */}
-            <section className="container py-24">
-                <ScrollReveal>
-                    <div className="mx-auto max-w-3xl text-center">
-                        <h2 className="font-serif text-3xl font-bold text-foreground md:text-4xl">
-                            Considering Bangladesh for your next programme?
-                        </h2>
-                        <p className="mt-6 text-lg leading-relaxed text-white/70">
-                            We are happy to walk you through our capacity, compliance portfolio, and sampling
-                            process — and to arrange a visit to the facility in Sreepur.
-                        </p>
-                        <div className="mt-10 flex flex-wrap justify-center gap-4">
-                            <Link
-                                href="/contact"
-                                className="group flex items-center gap-3 rounded-full bg-primary px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-secondary hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
-                            >
-                                Start a Conversation
-                                <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
-                            </Link>
-                            <Link
-                                href="/business"
-                                className="group flex items-center gap-3 rounded-full border-2 border-white/15 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white/80 transition-all duration-300 hover:border-white/40 hover:text-white"
-                            >
-                                See What We Do
-                                <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
-                            </Link>
-                        </div>
-                    </div>
-                </ScrollReveal>
-            </section>
         </div>
     );
 }
