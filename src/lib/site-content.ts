@@ -206,29 +206,6 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     who_we_work_with: {
         intro:
             "Fashion Asia Ltd. is proud to serve reputable international buyers who trust us for quality, compliance, and timely delivery. Our partners range from national department stores and high-street retailers to specialist sportswear and denim labels across Europe, the Americas, and Asia.",
-        partnershipTitle: "How We Partner",
-        partnership: [
-            {
-                title: "Development & Sampling",
-                description:
-                    "A dedicated sample room and technical team turn sketches, tech packs, or reference garments into production-ready styles — with fit, fabric, and finish agreed before bulk begins.",
-            },
-            {
-                title: "Transparent Production",
-                description:
-                    "Software across cutting, sewing, merchandising, store, HR, and accounts gives buyers visibility into order status at every stage, not just at shipment.",
-            },
-            {
-                title: "Compliance by Default",
-                description:
-                    "BSCI, WRAP, SEDEX, SLCP, OCS, GOTS, and FEM audits are maintained continuously, so buyer onboarding and annual reviews are a formality rather than a project.",
-            },
-            {
-                title: "Delivery You Can Plan Around",
-                description:
-                    "A 99.2% Right First Time rate and 98.5% on-time delivery across 26 lines mean critical paths hold and replenishment windows are met.",
-            },
-        ],
         assuranceStats: [
             { value: "99.2%", label: "Right First Time" },
             { value: "98.5%", label: "On-Time Delivery" },
