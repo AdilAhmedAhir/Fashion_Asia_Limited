@@ -1,25 +1,47 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { MEDIA_ASSETS } from "@/lib/site-content";
+import { getSettings } from "@/app/actions/settings-actions";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Media Center",
+    title: "Life at Fashion Asia",
     description:
-        "Photographs from inside Fashion Asia Limited — the production floor, green facility, and the welfare facilities our 2,000 employees use every day.",
+        "The culture, welfare, and working life behind Fashion Asia Limited — our people, rewards, wellbeing and safety, and learning — plus photographs from inside the facility.",
 };
 
-export default function MediaPage() {
+export default async function MediaPage() {
     const galleryItems = MEDIA_ASSETS.filter((m) => m.type === "gallery");
     const newsItems = MEDIA_ASSETS.filter((m) => m.type === "news");
+    const culture = await getSettings("who_we_are");
+    const lifeAtFAL: { title: string; description: string }[] = culture.lifeAtFAL || [];
 
     return (
         <div className="flex flex-col bg-background min-h-screen">
             <PageHeader
-                tag="Press & Gallery"
-                title="Media Center"
-                description="Latest news, press releases, and visual insights into our manufacturing excellence."
+                tag="Our Culture"
+                title="Life at Fashion Asia"
+                description="More than a workplace — a community built on respect, growth, and shared success."
             />
+
+            {/* Culture pillars — moved here from /who-we-are so this page opens
+                on the people rather than on the gallery. */}
+            {lifeAtFAL.length > 0 && (
+                <section className="bg-surface py-24 md:py-32 border-b border-white/5">
+                    <div className="container">
+                        <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                            {lifeAtFAL.map((item, i) => (
+                                <ScrollReveal key={item.title} delay={i * 0.1}>
+                                    <div className="h-full rounded-2xl border border-white/10 bg-black/40 p-8 transition-colors hover:border-primary/30">
+                                        <h3 className="mb-3 font-serif text-xl font-bold text-foreground">{item.title}</h3>
+                                        <p className="leading-relaxed text-white/60">{item.description}</p>
+                                    </div>
+                                </ScrollReveal>
+                            ))}
+                        </div>
+                    </div>
+                </section>
+            )}
 
             {/* Latest News Section */}
             {newsItems.length > 0 && (

@@ -35,16 +35,41 @@ export default async function BusinessPage() {
             {/* What We Do */}
             {data.whatWeDoText && (
                 <section className="container py-24 border-b border-white/5">
-                    <ScrollReveal>
-                        <div className="mx-auto max-w-4xl text-center">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Craft</span>
-                            <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl mb-8">Ideas Into World-Class Knitwear</h2>
-                            <p className="text-white/70 leading-relaxed text-lg">{data.whatWeDoText}</p>
-                            {data.whatWeDoTagline && (
-                                <p className="mt-8 font-serif text-2xl md:text-3xl font-bold text-gradient">{data.whatWeDoTagline}</p>
-                            )}
-                        </div>
-                    </ScrollReveal>
+                    <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
+                        <ScrollReveal>
+                            <div>
+                                <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Craft</span>
+                                <h2 className="mt-4 mb-8 font-serif text-3xl font-bold text-foreground md:text-4xl">Ideas Into World-Class Knitwear</h2>
+                                <p className="text-lg leading-relaxed text-white/70">{data.whatWeDoText}</p>
+                                {data.whatWeDoTagline && (
+                                    <p className="mt-8 font-serif text-2xl font-bold text-gradient md:text-3xl">{data.whatWeDoTagline}</p>
+                                )}
+                            </div>
+                        </ScrollReveal>
+
+                        {/* Cutting-room clip. Muted + playsInline so it can
+                            autoplay on mobile; the poster covers the gap before
+                            the file arrives. */}
+                        <ScrollReveal delay={0.2}>
+                            <div className="relative mx-auto aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:max-w-[360px]">
+                                <video
+                                    src="/videos/cutting.mp4"
+                                    poster="/images/client/cutting-poster.webp"
+                                    autoPlay
+                                    muted
+                                    loop
+                                    playsInline
+                                    preload="metadata"
+                                    aria-label="Automated fabric cutting on the production floor"
+                                    className="h-full w-full object-cover"
+                                />
+                                <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
+                                <div className="absolute bottom-5 left-5 rounded-full border border-primary/60 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary backdrop-blur-md">
+                                    Precision Cutting
+                                </div>
+                            </div>
+                        </ScrollReveal>
+                    </div>
                 </section>
             )}
 
