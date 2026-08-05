@@ -157,10 +157,13 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
                 description: "A skilled workforce of 2,000 delivers an annual turnover of USD 30 million for buyers worldwide.",
             },
         ],
-        visionTitle: "Most Trusted & Preferred",
+        // The eyebrows above these already read "Our Vision" / "Our Mission",
+        // so the headings say where we are going and how we get there rather
+        // than repeating the label.
+        visionTitle: "The Company We Intend to Be",
         visionDescription:
             "We are committed to becoming the most trusted and preferred organization for our customers, employees, suppliers, shareholders, and the communities we serve.",
-        missionTitle: "Our Commitments",
+        missionTitle: "How We Get There",
         missionPoints: [
             "Excellence in quality, innovation, and on-time delivery.",
             "A safe workplace built on dignity, respect, and human rights.",

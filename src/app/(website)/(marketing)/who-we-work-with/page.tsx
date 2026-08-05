@@ -53,13 +53,18 @@ export default async function WhoWeWorkWithPage() {
 
             {/* Showroom band */}
             <section className="relative h-[280px] w-full overflow-hidden md:h-[400px]">
+                {/* The showroom photograph is near-white. Rather than stacking
+                    scrims heavy enough to bury it, dim the image itself the way
+                    ScaleSection does — the room stays legible and white type
+                    sits cleanly on top. */}
                 <img
-                    src="/images/client/bg-who-we-work-with-copy.jpg"
-                    alt="Sample showroom at Fashion Asia Limited, with garment racks and trim collections"
+                    src="/images/client/showroom.jpg"
+                    alt="Sample showroom at Fashion Asia Limited, with garment rails and display plinths"
                     loading="lazy"
-                    className="h-full w-full object-cover"
+                    className="h-full w-full object-cover brightness-[0.45] grayscale"
                 />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-background/70" />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/30 to-transparent" />
                 <div className="absolute inset-0 flex items-center">
                     <div className="container">
                         <ScrollReveal>

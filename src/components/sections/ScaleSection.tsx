@@ -32,8 +32,9 @@ export default function ScaleSection({ stats }: Props) {
             <div className="absolute inset-0 z-0 h-[130%] w-full -top-[15%]">
                 <img
                     ref={bgRef}
-                    src="/images/client/4-copy.jpg"
-                    alt="Factory Scale"
+                    src="/images/client/scale-bg.jpg"
+                    alt=""
+                    aria-hidden="true"
                     className="h-full w-full object-cover brightness-[0.25] mix-blend-luminosity grayscale"
                 />
                 <div className="absolute inset-0 bg-gradient-to-b from-background via-transparent to-background" />

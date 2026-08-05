@@ -9,8 +9,8 @@ const footerLinks = [
             { label: "What We Do", href: "/business" },
             { label: "Who We Work With", href: "/who-we-work-with" },
             { label: "Sustainability", href: "/sustainability" },
+            { label: "Reports & Publications", href: "/sustainability#reports" },
             { label: "Life at Fashion Asia", href: "/media" },
-            { label: "Reports", href: "/reports" },
         ],
     },
     {
