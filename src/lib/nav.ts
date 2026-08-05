@@ -24,7 +24,6 @@ export const MAIN_NAV: NavLink[] = [
     { label: "Who We Work With", href: "/who-we-work-with" },
     { label: "Sustainability", href: "/sustainability" },
     { label: "Life at Fashion Asia", href: "/media" },
-    { label: "Reports", href: "/reports" },
 ];
 
 // The primary call-to-action, shown as a button rather than a plain nav link.
