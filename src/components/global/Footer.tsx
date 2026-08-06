@@ -49,7 +49,7 @@ export default function Footer() {
                             A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh.
                         </p>
                         <div className="flex items-center gap-4 mt-2">
-                            {["BSCI", "WRAP", "SEDEX", "GOTS"].map(cert => (
+                            {["LEED Gold", "WRAP", "BSCI", "GOTS"].map(cert => (
                                 <span key={cert} className="rounded-full border border-accent/20 bg-accent/5 px-3 py-1 text-[0.55rem] font-bold uppercase tracking-widest text-accent/70">
                                     {cert}
                                 </span>
