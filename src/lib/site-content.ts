@@ -217,7 +217,9 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     sustainability: {
         description:
             "Sustainability and compliance are integral to our business model. We maintain transparent documentation and reporting aligned with international standards and buyer requirements.",
-        certifications: ["BSCI", "WRAP", "SEDEX", "SLCP", "OCS", "GOTS", "FEM"],
+        // NOTE: /sustainability now renders the certification marks from the
+        // CERTIFICATIONS array below rather than a list of abbreviations, so
+        // edit that array to add or remove a certification.
         initiatives: [
             "Use of renewable and solar energy",
             "Rainwater harvesting systems",
@@ -268,6 +270,30 @@ export const CLIENT_LOGOS: ClientLogo[] = [
     { name: "Gym Glamour", src: "/images/client/logos/gym-glamour.png" },
     { name: "Free Planet", src: "/images/client/logos/free-planet.png" },
     { name: "JVZ", src: "/images/client/logos/jvz.png" },
+];
+
+// ---------------------------------------------------------------------------
+// Certification marks shown on /sustainability. Files live in
+// public/images/client/certifications/. `name` is the accessible label and the
+// caption under each mark, so spell it the way the scheme does.
+// ---------------------------------------------------------------------------
+export interface Certification {
+    name: string;
+    src: string;
+}
+
+export const CERTIFICATIONS: Certification[] = [
+    { name: "LEED Gold", src: "/images/client/certifications/leed-gold.jpg" },
+    { name: "WRAP", src: "/images/client/certifications/wrap.jpg" },
+    { name: "SMETA", src: "/images/client/certifications/smeta.jpg" },
+    { name: "SLCP", src: "/images/client/certifications/slcp.jpg" },
+    { name: "Higg Index", src: "/images/client/certifications/higg-index.jpg" },
+    { name: "GOTS", src: "/images/client/certifications/gots.jpg" },
+    { name: "OCS 100", src: "/images/client/certifications/ocs.jpg" },
+    { name: "Global Recycled Standard", src: "/images/client/certifications/grs.jpg" },
+    { name: "OEKO-TEX Standard 100", src: "/images/client/certifications/oeko-tex.jpg" },
+    { name: "Better Cotton Initiative", src: "/images/client/certifications/bci.jpg" },
+    { name: "RMG Sustainability Council", src: "/images/client/certifications/rsc.jpg" },
 ];
 
 // Email submissions land here (Contact / Career / Grievance forms open the

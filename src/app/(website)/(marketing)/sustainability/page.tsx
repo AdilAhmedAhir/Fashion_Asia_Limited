@@ -1,6 +1,7 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings, getReports } from "@/app/actions/settings-actions";
+import { CERTIFICATIONS } from "@/lib/site-content";
 import { Download, FileText } from "lucide-react";
 import type { Metadata } from "next";
 
@@ -24,7 +25,6 @@ const CATEGORY_COLORS: Record<string, string> = {
 export default async function SustainabilityPage() {
     const data = await getSettings("sustainability");
     const reports = await getReports(true); // only published
-    const certifications = data.certifications?.length ? data.certifications : ['BSCI', 'WRAP', 'SEDEX', 'SLCP', 'OCS', 'GOTS', 'FEM'];
     const initiatives = data.initiatives?.length ? data.initiatives : [
         "Use of renewable and solar energy",
         "Rainwater harvesting systems",
@@ -81,23 +81,37 @@ export default async function SustainabilityPage() {
 
             {/* Certifications */}
             <section className="container py-24">
-                <div className="mx-auto max-w-4xl text-center">
+                <div className="mx-auto mb-16 max-w-4xl text-center">
                     <ScrollReveal>
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Global Recognition</span>
-                        <h2 className="mt-4 font-serif text-3xl font-bold mb-6">Certifications &amp; Audits</h2>
-                        <p className="text-white/70 leading-relaxed text-lg mb-12">
+                        <h2 className="mt-4 mb-6 font-serif text-3xl font-bold md:text-4xl">Certifications &amp; Audits</h2>
+                        <p className="text-lg leading-relaxed text-white/70">
                             These certifications demonstrate our commitment to ethical business conduct, responsible sourcing, environmental management, and international labor standards.
                         </p>
-                        <div className="flex flex-wrap justify-center gap-4">
-                            {certifications.map((cert: string, i: number) => (
-                                <ScrollReveal key={cert} delay={i * 0.1}>
-                                    <span className="inline-block rounded-full border border-primary/30 bg-primary/10 px-8 py-3 text-sm font-bold tracking-widest text-primary hover:bg-primary hover:text-black transition-colors cursor-default">
-                                        {cert}
-                                    </span>
-                                </ScrollReveal>
-                            ))}
-                        </div>
                     </ScrollReveal>
+                </div>
+
+                {/* The marks are supplied as artwork on white, so each sits on a
+                    white card — the same treatment the buyer logos use, and the
+                    only way most of them stay legible on the dark background. */}
+                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
+                    {CERTIFICATIONS.map((cert, i) => (
+                        <ScrollReveal key={cert.name} delay={0.05 + (i % 4) * 0.08}>
+                            <figure className="flex h-full flex-col items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md">
+                                <div className="flex h-16 flex-1 items-center justify-center md:h-20">
+                                    <img
+                                        src={cert.src}
+                                        alt={`${cert.name} certification`}
+                                        loading="lazy"
+                                        className="max-h-16 w-auto max-w-full object-contain md:max-h-20"
+                                    />
+                                </div>
+                                <figcaption className="text-center text-[0.65rem] font-bold uppercase tracking-widest text-black/50">
+                                    {cert.name}
+                                </figcaption>
+                            </figure>
+                        </ScrollReveal>
+                    ))}
                 </div>
             </section>
 
