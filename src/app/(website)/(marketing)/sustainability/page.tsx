@@ -8,7 +8,7 @@ import type { Metadata } from "next";
 export const metadata: Metadata = {
     title: "Sustainability",
     description:
-        "Green manufacturing at Fashion Asia Limited — solar power, rainwater harvesting, waste reduction, BSCI/WRAP/SEDEX/SLCP/OCS/GOTS/FEM certification, and our published reports.",
+        "Green manufacturing at Fashion Asia Limited — solar power, rainwater harvesting, waste reduction, and LEED Gold, WRAP, BSCI, SMETA, SLCP, Higg Index, GOTS, OCS, GRS, OEKO-TEX, BCI and RSC certification.",
 };
 
 export const revalidate = 60;

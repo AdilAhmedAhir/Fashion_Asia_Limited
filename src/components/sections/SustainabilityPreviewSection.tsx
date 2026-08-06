@@ -11,7 +11,7 @@ interface Props {
 }
 
 export default function SustainabilityPreviewSection({ tag, title, description, certs, highlights }: Props) {
-    const finalCerts = certs?.length ? certs : ['BSCI', 'WRAP', 'SEDEX', 'GOTS', 'OCS', 'SLCP', 'FEM'];
+    const finalCerts = certs?.length ? certs : ['LEED Gold', 'WRAP', 'BSCI', 'SMETA', 'SLCP', 'Higg Index', 'GOTS', 'OCS 100', 'GRS', 'OEKO-TEX', 'BCI', 'RSC'];
     const finalHighlights = highlights?.length ? highlights : [
         { icon: "☀️", label: "Solar Powered" },
         { icon: "💧", label: "Zero Discharge" },

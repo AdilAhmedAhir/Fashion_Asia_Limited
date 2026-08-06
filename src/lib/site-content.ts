@@ -56,7 +56,13 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
         sustainabilityTitle: "LEED Gold Certified",
         sustainabilityDescription:
             "Solar powered. Zero salt dyeing. Rainwater harvesting. Our factory operates as a fully compliant green facility, setting the benchmark for responsible garment manufacturing.",
-        sustainabilityCerts: ["BSCI", "WRAP", "SEDEX", "GOTS", "OCS", "SLCP", "FEM"],
+        // Named to match the certification artwork on /sustainability. BSCI is
+        // held but no mark was supplied, so it appears here in text only —
+        // see the note above CERTIFICATIONS.
+        sustainabilityCerts: [
+            "LEED Gold", "WRAP", "BSCI", "SMETA", "SLCP", "Higg Index",
+            "GOTS", "OCS 100", "GRS", "OEKO-TEX", "BCI", "RSC",
+        ],
         sustainabilityHighlights: [
             { icon: "☀️", label: "Solar Powered" },
             { icon: "💧", label: "Zero Discharge" },
@@ -149,7 +155,7 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             {
                 year: "2024",
                 title: "Full Compliance Portfolio",
-                description: "BSCI, WRAP, SEDEX, SLCP, OCS, GOTS, and FEM certifications are maintained across the operation.",
+                description: "LEED Gold, WRAP, BSCI, SMETA, SLCP, Higg Index, GOTS, OCS, GRS, OEKO-TEX, BCI and RSC certifications are maintained across the operation.",
             },
             {
                 year: "Today",
@@ -276,6 +282,22 @@ export const CLIENT_LOGOS: ClientLogo[] = [
 // Certification marks shown on /sustainability. Files live in
 // public/images/client/certifications/. `name` is the accessible label and the
 // caption under each mark, so spell it the way the scheme does.
+//
+// Names below follow the supplied artwork. Two notes for whoever maintains it:
+//
+//  1. BSCI is held but no mark was supplied (the client's Certifications-01
+//     export came through empty). It therefore appears in the text lists —
+//     homepage sustainabilityCerts and the Footer badges — but not in this
+//     grid. Drop the artwork into public/images/client/certifications/ and add
+//     an entry here to include it.
+//  2. BCI (Better Cotton Initiative, cotton sourcing) and BSCI (amfori
+//     Business Social Compliance Initiative, social audit) are different
+//     schemes. The company holds both. Do not merge or "correct" one into the
+//     other — the near-identical acronyms make that an easy mistake.
+//
+// Two further names differ from the abbreviations the site used before:
+// SMETA is the audit conducted under Sedex, and the Higg Index covers what
+// was previously listed as FEM.
 // ---------------------------------------------------------------------------
 export interface Certification {
     name: string;
