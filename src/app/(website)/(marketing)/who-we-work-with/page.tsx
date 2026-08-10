@@ -14,7 +14,6 @@ export const revalidate = 60;
 
 export default async function WhoWeWorkWithPage() {
     const data = await getSettings("who_we_work_with");
-    const assuranceStats: { value: string; label: string }[] = data.assuranceStats || [];
 
     return (
         <div className="flex flex-col bg-background">
@@ -73,34 +72,6 @@ export default async function WhoWeWorkWithPage() {
                     </div>
                 </div>
             </section>
-
-            {/* Assurance numbers */}
-            {assuranceStats.length > 0 && (
-                <section className="container py-24">
-                    <ScrollReveal>
-                        <div className="mx-auto mb-16 max-w-3xl text-center">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
-                                The Numbers
-                            </span>
-                            <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
-                                What Partners Can Count On
-                            </h2>
-                        </div>
-                    </ScrollReveal>
-                    <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
-                        {assuranceStats.map((stat, i) => (
-                            <ScrollReveal key={stat.label} delay={i * 0.1}>
-                                <div className="flex flex-col items-start gap-2 rounded-2xl border border-white/5 bg-black p-6 md:p-8">
-                                    <span className="text-3xl font-bold text-gradient md:text-4xl">{stat.value}</span>
-                                    <span className="text-[0.65rem] uppercase tracking-widest text-white/50 md:text-xs">
-                                        {stat.label}
-                                    </span>
-                                </div>
-                            </ScrollReveal>
-                        ))}
-                    </div>
-                </section>
-            )}
 
         </div>
     );
