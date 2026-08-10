@@ -4,12 +4,14 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { MEDIA_ASSETS, type MediaAsset } from "@/lib/site-content";
 
-// The table is authoritative: whatever the admin media manager holds is what
-// the gallery shows, and an empty table means an empty gallery. The built-in
-// photos in site-content.ts are only a fallback for when the read itself fails,
-// so an outage degrades to something rather than a blank page — if we fell back
-// on an empty result instead, deleting every photo would be impossible and an
-// RLS misconfiguration would look like normal content.
+// The gallery is the built-in photographs plus whatever the client has uploaded
+// through the media manager — both, without anyone having to press a button.
+//
+// Once any built-in has been imported as a real row, the client is curating
+// them, so the table takes over completely and deletions stick. Until then the
+// built-ins are appended from code, which is what keeps them on the site out of
+// the box. Ordering puts uploads first, since built-ins carry a backdated
+// created_at and would otherwise bury new photographs.
 export async function getMediaAssets(): Promise<MediaAsset[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -22,7 +24,13 @@ export async function getMediaAssets(): Promise<MediaAsset[]> {
         return MEDIA_ASSETS as MediaAsset[];
     }
 
-    return (data ?? []) as MediaAsset[];
+    const stored = (data ?? []) as MediaAsset[];
+    const storedUrls = new Set(stored.map(asset => asset.url));
+    const anyBuiltInImported = MEDIA_ASSETS.some(asset => storedUrls.has(asset.url));
+
+    if (anyBuiltInImported) return stored;
+
+    return [...stored, ...(MEDIA_ASSETS.filter(asset => !storedUrls.has(asset.url)) as MediaAsset[])];
 }
 
 // Adds the built-in photos from site-content.ts to the gallery, skipping any
