@@ -27,9 +27,10 @@ export default function ImportBuiltInGallery() {
         <div className="rounded-2xl border border-white/10 bg-white/[0.02] p-6">
             <h3 className="font-serif text-lg font-bold text-white">Built-in factory photos</h3>
             <p className="mt-2 max-w-xl text-xs leading-relaxed text-white/50">
-                The site ships with a set of factory photographs. They only appear on the live
-                gallery once they exist here as items you can retitle, reorder or delete.
-                Photos already in the gallery are skipped.
+                The site ships with a set of factory photographs, and they already show on the
+                gallery alongside your uploads. Import them here only if you want to retitle,
+                reorder or delete them — after importing, this list controls the gallery
+                completely. Photos already imported are skipped.
             </p>
             <button
                 onClick={run}
