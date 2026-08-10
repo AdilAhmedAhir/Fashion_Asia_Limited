@@ -8,7 +8,7 @@ export default function PillarsSection() {
             title: "Quality",
             desc: "Zero-defect philosophy with Optitex precision and rigorous 4-point inspection.",
             tags: ["Optitex CAD", "AQL 2.5", "Gemini"],
-            img: "/images/client/box10-copy.jpg",
+            img: "/images/client/box10-copy.webp",
             featured: false
         },
         {
@@ -16,7 +16,7 @@ export default function PillarsSection() {
             title: "Sustainability",
             desc: "Solar powered. Zero salt dyeing. Water recycling. 100% compliance.",
             tags: ["Solar Power", "Zero Discharge", "Certified"],
-            img: "/images/client/csr-main-copy.jpg",
+            img: "/images/client/csr-main-copy.webp",
             featured: true
         },
         {
@@ -24,7 +24,7 @@ export default function PillarsSection() {
             title: "Delivery",
             desc: "Bullmar auto-cutting. Real-time tracking. Agile production systems.",
             tags: ["Bullmar", "45K/Day", "Agile"],
-            img: "/images/client/box12-copy.jpg",
+            img: "/images/client/box12-copy.webp",
             featured: false
         }
     ];

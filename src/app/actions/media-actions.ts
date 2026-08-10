@@ -4,8 +4,12 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { MEDIA_ASSETS, type MediaAsset } from "@/lib/site-content";
 
-// Falls back to the static gallery in site-content.ts so the page still renders
-// if the table is empty — the admin media manager writes to media_assets.
+// The table is authoritative: whatever the admin media manager holds is what
+// the gallery shows, and an empty table means an empty gallery. The built-in
+// photos in site-content.ts are only a fallback for when the read itself fails,
+// so an outage degrades to something rather than a blank page — if we fell back
+// on an empty result instead, deleting every photo would be impossible and an
+// RLS misconfiguration would look like normal content.
 export async function getMediaAssets(): Promise<MediaAsset[]> {
     const supabase = await createClient();
     const { data, error } = await supabase
@@ -18,7 +22,36 @@ export async function getMediaAssets(): Promise<MediaAsset[]> {
         return MEDIA_ASSETS as MediaAsset[];
     }
 
-    return data?.length ? (data as MediaAsset[]) : (MEDIA_ASSETS as MediaAsset[]);
+    return (data ?? []) as MediaAsset[];
+}
+
+// Adds the built-in photos from site-content.ts to the gallery, skipping any
+// whose url is already there. Idempotent, so it is safe to press twice.
+export async function importBuiltInGallery() {
+    const supabase = await createClient();
+    const {
+        data: { user }
+    } = await supabase.auth.getUser();
+
+    if (!user) throw new Error("Not authenticated");
+
+    const { data: existing, error: readError } = await supabase.from("media_assets").select("url");
+    if (readError) throw new Error(readError.message);
+
+    const present = new Set((existing ?? []).map(row => row.url as string));
+    const missing = MEDIA_ASSETS.filter(asset => !present.has(asset.url));
+
+    if (!missing.length) return { added: 0 };
+
+    const { error } = await supabase.from("media_assets").insert(
+        missing.map(({ type, title, url, content }) => ({ type, title, url, content }))
+    );
+    if (error) throw new Error(error.message);
+
+    revalidatePath("/admin/media");
+    revalidatePath("/media");
+
+    return { added: missing.length };
 }
 
 export async function addMediaAction(formData: FormData) {

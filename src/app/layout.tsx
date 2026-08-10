@@ -31,7 +31,7 @@ export const metadata: Metadata = {
         siteName: "Fashion Asia Limited",
         images: [
             {
-                url: "/images/client/2.jpg",
+                url: "/images/client/og-image.jpg",
                 width: 1200,
                 height: 630,
                 alt: "Fashion Asia Production Facility",
@@ -42,7 +42,7 @@ export const metadata: Metadata = {
         card: "summary_large_image",
         title: "Fashion Asia Limited | Green Powered Innovation",
         description: "Modern, compliant, and sustainability-driven knit garments manufacturer.",
-        images: ["/images/client/2.jpg"],
+        images: ["/images/client/og-image.jpg"],
     },
     robots: {
         index: true,

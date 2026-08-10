@@ -22,7 +22,7 @@ export default function SustainabilityPreviewSection({ tag, title, description, 
     return (
         <section className="relative bg-gradient-to-b from-background to-[#0a0a0a] py-24 md:py-32 overflow-hidden">
             <div className="absolute inset-0 z-0">
-                <img src="/images/client/csr-main-copy.jpg" alt="Sustainability" className="h-full w-full object-cover opacity-10 grayscale" />
+                <img src="/images/client/csr-main-copy.webp" alt="Sustainability" className="h-full w-full object-cover opacity-10 grayscale" />
                 <div className="absolute inset-0 bg-gradient-to-b from-background via-background/80 to-[#0a0a0a]" />
             </div>
 

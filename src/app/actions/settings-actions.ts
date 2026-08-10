@@ -23,6 +23,19 @@ export async function getSettings(key: string): Promise<Record<string, any>> {
     return { ...defaults, ...(stored as Record<string, unknown>) };
 }
 
+// Which public route each settings key actually renders on. Deriving the path
+// from the key does not work: String.replace only swaps the first underscore,
+// so who_we_work_with became "/who-we_work_with" and the page was never
+// revalidated. homepage and general have no page of their own.
+const SETTINGS_ROUTES: Record<string, string> = {
+    homepage: "/",
+    who_we_are: "/who-we-are",
+    business: "/business",
+    who_we_work_with: "/who-we-work-with",
+    sustainability: "/sustainability",
+    contact: "/contact"
+};
+
 export async function updateSettings(key: string, value: Record<string, unknown>) {
     const supabase = await createClient();
     const { error } = await supabase
@@ -31,10 +44,20 @@ export async function updateSettings(key: string, value: Record<string, unknown>
 
     if (error) throw new Error(error.message);
 
-    // Revalidate both admin and public pages
     revalidatePath("/admin");
+
+    // general drives the footer and site metadata, so it has to clear the layout.
+    if (key === "general") {
+        revalidatePath("/", "layout");
+        return;
+    }
+
     revalidatePath("/");
-    revalidatePath(`/${key.replace("_", "-")}`);
+    const route = SETTINGS_ROUTES[key];
+    if (route && route !== "/") revalidatePath(route);
+
+    // who_we_are also supplies the culture pillars rendered on /media.
+    if (key === "who_we_are") revalidatePath("/media");
 }
 
 // Writes the defaults from site-content.ts into site_settings for the named
@@ -107,7 +130,7 @@ export async function createReport(formData: FormData) {
 
     if (error) throw new Error(error.message);
     revalidatePath("/admin/reports");
-    revalidatePath("/reports");
+    revalidatePath("/sustainability");
 }
 
 export async function updateReport(id: string, formData: FormData) {
@@ -125,7 +148,7 @@ export async function updateReport(id: string, formData: FormData) {
 
     if (error) throw new Error(error.message);
     revalidatePath("/admin/reports");
-    revalidatePath("/reports");
+    revalidatePath("/sustainability");
 }
 
 export async function deleteReport(id: string) {
@@ -133,7 +156,7 @@ export async function deleteReport(id: string) {
     const { error } = await supabase.from("reports").delete().eq("id", id);
     if (error) throw new Error(error.message);
     revalidatePath("/admin/reports");
-    revalidatePath("/reports");
+    revalidatePath("/sustainability");
 }
 
 // ============================================
