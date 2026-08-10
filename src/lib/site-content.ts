@@ -136,45 +136,12 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             "Equipped with state-of-the-art machinery such as auto spreaders, plotters, and auto cutters, and supported by advanced software solutions across cutting, sewing, merchandising, store, HR, payroll, and accounts, Fashion Asia delivers efficiency, transparency, and precision at every stage of production.",
             "With a dedicated workforce of 2,000 skilled employees and an annual turnover of USD 30 million, we are committed to delivering value to our global customers while maintaining the highest standards of compliance and sustainability.",
         ],
-        // ⚠️ PLACEHOLDER DATES — VERIFY BEFORE PUBLISHING TO THE LIVE SITE.
-        // The client brief listed "Milestones & Achievements" as a heading with
-        // no entries. The years below are illustrative scaffolding so the
-        // section renders; only the 1991 group founding is derived from a
-        // stated fact ("over 34 years"). Replace every year and description
-        // with the company's real history, or delete this array to hide the
-        // section entirely (the page handles an empty list).
-        milestones: [
-            {
-                year: "1992",
-                title: "Northern Tosrifa Group Founded",
-                description: "The parent group begins operations, starting more than three decades of continuous growth in Bangladesh's apparel sector.",
-            },
-            {
-                year: "2015",
-                title: "Fashion Asia Ltd. Established",
-                description: "A dedicated knitwear unit is set up in Sreepur, Gazipur, purpose-built as a 100% export-oriented facility.",
-            },
-            {
-                year: "2018",
-                title: "Green Manufacturing Facility",
-                description: "Solar power systems and rainwater harvesting are integrated, and the plant begins operating as a green factory.",
-            },
-            {
-                year: "2021",
-                title: "Scaled to 26 Production Lines",
-                description: "Capacity reaches 800,000 pieces per month, supported by auto spreaders, plotters, and auto cutters.",
-            },
-            {
-                year: "2024",
-                title: "Full Compliance Portfolio",
-                description: "LEED Gold, WRAP, BSCI, SMETA, SLCP, Higg Index, GOTS, OCS, GRS, OEKO-TEX, BCI and RSC certifications are maintained across the operation.",
-            },
-            {
-                year: "Today",
-                title: "2,000 People, USD 30M Turnover",
-                description: "A skilled workforce of 2,000 delivers an annual turnover of USD 30 million for buyers worldwide.",
-            },
-        ],
+        // Empty on purpose. This list previously held invented years and
+        // descriptions that reached the live site — the only sourced fact was
+        // "over 34 years", everything else was scaffolding. The section hides
+        // itself while this is empty. Add real milestones here, or through
+        // /admin → Who We Are → Milestones, once the dates are confirmed.
+        milestones: [] as { year: string; title: string; description: string }[],
         // The eyebrows above these already read "Our Vision" / "Our Mission",
         // so the headings say where we are going and how we get there rather
         // than repeating the label.
@@ -403,6 +370,18 @@ export interface Leader {
     bio: string | null;
     photo_url: string | null;
     sort_order: number;
+}
+
+// "Add Leader" in the admin creates the row immediately, so an unfilled one is
+// publicly visible until somebody types over it. These are the values it starts
+// with; the public page skips any leader still carrying them.
+export const NEW_LEADER_NAME = "New Leader";
+export const NEW_LEADER_TITLE = "Title";
+
+export function isLeaderPublishable(leader: { name?: string | null; title?: string | null }) {
+    const name = leader.name?.trim();
+    if (!name) return false;
+    return !(name === NEW_LEADER_NAME && leader.title?.trim() === NEW_LEADER_TITLE);
 }
 
 export const LEADERS: Leader[] = [

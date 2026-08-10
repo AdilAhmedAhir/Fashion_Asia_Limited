@@ -1,6 +1,7 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings, getLeaders } from "@/app/actions/settings-actions";
+import { isLeaderPublishable } from "@/lib/site-content";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -13,7 +14,7 @@ export const revalidate = 60;
 
 export default async function WhoWeArePage() {
     const data = await getSettings("who_we_are");
-    const leaders = await getLeaders();
+    const leaders = (await getLeaders()).filter(isLeaderPublishable);
     const assuranceStats: { value: string; label: string }[] = data.assuranceStats || [];
 
     return (
