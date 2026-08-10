@@ -135,7 +135,7 @@ export default function HomepageSettingsClient({ initial }: { initial: HomepageD
                         fields={[
                             { key: "title", label: "Title" },
                             { key: "description", label: "Description", type: "textarea" },
-                            { key: "image", label: "Image path (e.g. /images/client/box6-copy.jpg)" },
+                            { key: "image", label: "Image path (e.g. /images/client/box6-copy.webp)" },
                         ]}
                     />
                     <ObjectListEditor

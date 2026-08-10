@@ -23,10 +23,10 @@ interface MediaPreviewSectionProps {
 }
 
 const FALLBACK_FACILITIES: Facility[] = [
-    { title: "Medical Center", description: "On-site medical services, healthcare assistance, and maternity support.", image: "/images/client/box6-copy.jpg" },
-    { title: "Day Care", description: "Childcare on the premises so working parents stay close to their children.", image: "/images/client/box4-copy.jpg" },
-    { title: "Shera Shop", description: "A fair-price shop giving every employee daily essentials below market cost.", image: "/images/client/box3-copy.jpg" },
-    { title: "Bicycle Parking", description: "Secure parking and safe commuting for the workforce that travels daily.", image: "/images/client/box2-copy.jpg" },
+    { title: "Medical Center", description: "On-site medical services, healthcare assistance, and maternity support.", image: "/images/client/box6-copy.webp" },
+    { title: "Day Care", description: "Childcare on the premises so working parents stay close to their children.", image: "/images/client/box4-copy.webp" },
+    { title: "Shera Shop", description: "A fair-price shop giving every employee daily essentials below market cost.", image: "/images/client/box3-copy.webp" },
+    { title: "Bicycle Parking", description: "Secure parking and safe commuting for the workforce that travels daily.", image: "/images/client/box2-copy.webp" },
 ];
 
 export default function MediaPreviewSection({

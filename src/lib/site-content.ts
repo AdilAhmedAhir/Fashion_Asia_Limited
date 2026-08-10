@@ -3,9 +3,14 @@
  *  SITE CONTENT — single source of truth for all editable text on the site
  * ============================================================================
  *
- *  This is a static, backend-free site. There is NO database and NO admin panel.
- *  To change wording, stats, products, certifications, jobs, reports, or the
- *  media gallery, edit the plain objects in THIS file and redeploy.
+ *  These are the DEFAULTS. The site is backed by Supabase and edited through
+ *  /admin — a stored value always wins over what is written here. This file is
+ *  what renders when a page has no stored row yet, and what the admin
+ *  "Sync content from code" panel writes into the database.
+ *
+ *  So: edit here for a new baseline (then sync), edit in /admin for day-to-day
+ *  copy changes. Editing here alone will NOT change a page the client has
+ *  already saved from the dashboard.
  *
  *  Images live in   public/images/client/   (referenced as /images/client/...)
  *  Videos live in    public/videos/          (referenced as /videos/...)
@@ -86,22 +91,22 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             {
                 title: "Medical Center",
                 description: "On-site medical services, healthcare assistance, and maternity support.",
-                image: "/images/client/box6-copy.jpg",
+                image: "/images/client/box6-copy.webp",
             },
             {
                 title: "Day Care",
                 description: "Childcare on the premises so working parents stay close to their children.",
-                image: "/images/client/box4-copy.jpg",
+                image: "/images/client/box4-copy.webp",
             },
             {
                 title: "Shera Shop",
                 description: "A fair-price shop giving every employee daily essentials below market cost.",
-                image: "/images/client/box3-copy.jpg",
+                image: "/images/client/box3-copy.webp",
             },
             {
                 title: "Bicycle Parking",
                 description: "Secure parking and safe commuting for the workforce that travels daily.",
-                image: "/images/client/box2-copy.jpg",
+                image: "/images/client/box2-copy.webp",
             },
         ],
         lifePillars: [
@@ -420,12 +425,13 @@ export interface MediaAsset {
 }
 
 export const MEDIA_ASSETS: MediaAsset[] = [
-    { id: "g1", type: "gallery", title: "Quality Control", url: "/images/client/box10-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g2", type: "gallery", title: "Green Facility", url: "/images/client/csr-main-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g3", type: "gallery", title: "Finishing & Delivery", url: "/images/client/box12-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g4", type: "gallery", title: "Production Scale", url: "/images/client/4-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g5", type: "gallery", title: "Medical Center", url: "/images/client/box6-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g6", type: "gallery", title: "Day Care", url: "/images/client/box4-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g7", type: "gallery", title: "Shera Shop", url: "/images/client/box3-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g8", type: "gallery", title: "Bicycle Parking", url: "/images/client/box2-copy.jpg", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g1", type: "gallery", title: "Quality Control", url: "/images/client/box10-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g2", type: "gallery", title: "Green Facility", url: "/images/client/csr-main-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g3", type: "gallery", title: "Finishing & Delivery", url: "/images/client/box12-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g4", type: "gallery", title: "Production Scale", url: "/images/client/4-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g5", type: "gallery", title: "Medical Center", url: "/images/client/box6-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g6", type: "gallery", title: "Day Care", url: "/images/client/box4-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g7", type: "gallery", title: "Shera Shop", url: "/images/client/box3-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g8", type: "gallery", title: "Bicycle Parking", url: "/images/client/box2-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
+    { id: "g9", type: "gallery", title: "Facility Entrance", url: "/images/client/facility-entrance.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
 ];

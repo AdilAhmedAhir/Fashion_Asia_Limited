@@ -2,6 +2,7 @@ import { createClient } from "@/lib/supabase/server";
 import { addMediaAction, deleteMediaAction } from "@/app/actions/media-actions";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { Trash2 } from "lucide-react";
+import ImportBuiltInGallery from "./ImportBuiltInGallery";
 
 export const revalidate = 0;
 
@@ -16,6 +17,8 @@ export default async function AdminMediaPage() {
                 <h1 className="font-serif text-3xl font-bold text-white md:text-4xl">Media &amp; News Center</h1>
                 <p className="text-white/50">Publish photo galleries and press releases to the live website.</p>
             </header>
+
+            <ImportBuiltInGallery />
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Publish Form */}
