@@ -242,6 +242,8 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
         email: "admin@fashionasialtd.com",
         factoryAddress: "Teprirbari, Sreepur, Gazipur",
         corporateAddress: "Gopalpur, Munnu Nagar, Tongi",
+        mapsUrl: "https://maps.app.goo.gl/En3k5dJ8yZTiwFAp8",
+        socialLinks: [] as { platform: string; url: string }[],
     },
 
     general: {
@@ -249,6 +251,7 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
         seoTitle: "Fashion Asia Limited — Premium Knitwear Manufacturing",
         seoDescription:
             "100% export-oriented knitwear manufacturer backed by Northern Tosrifa Group. LEED Gold certified, 800K pieces monthly capacity.",
+        footerCopyright: "© 2026 Fashion Asia Limited. All rights reserved.",
     },
 };
 
