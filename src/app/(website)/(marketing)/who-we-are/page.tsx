@@ -14,6 +14,7 @@ export const revalidate = 60;
 export default async function WhoWeArePage() {
     const data = await getSettings("who_we_are");
     const leaders = await getLeaders();
+    const assuranceStats: { value: string; label: string }[] = data.assuranceStats || [];
 
     return (
         <div className="flex flex-col bg-background">
@@ -50,6 +51,35 @@ export default async function WhoWeArePage() {
                     </ScrollReveal>
                 </div>
             </section>
+
+            {/* The Numbers — moved here from /who-we-work-with. Sits directly
+                under About Us, which makes the same claims in prose. */}
+            {assuranceStats.length > 0 && (
+                <section className="container pb-24 md:pb-32">
+                    <ScrollReveal>
+                        <div className="mx-auto mb-16 max-w-3xl text-center">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                                The Numbers
+                            </span>
+                            <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
+                                What Partners Can Count On
+                            </h2>
+                        </div>
+                    </ScrollReveal>
+                    <div className="grid grid-cols-2 gap-6 lg:grid-cols-4">
+                        {assuranceStats.map((stat: { value: string; label: string }, i: number) => (
+                            <ScrollReveal key={stat.label} delay={i * 0.1}>
+                                <div className="flex flex-col items-start gap-2 rounded-2xl border border-white/5 bg-black p-6 md:p-8">
+                                    <span className="text-3xl font-bold text-gradient md:text-4xl">{stat.value}</span>
+                                    <span className="text-[0.65rem] uppercase tracking-widest text-white/50 md:text-xs">
+                                        {stat.label}
+                                    </span>
+                                </div>
+                            </ScrollReveal>
+                        ))}
+                    </div>
+                </section>
+            )}
 
             {/* Mission & Vision */}
             <section className="bg-surface py-24 border-y border-white/5">

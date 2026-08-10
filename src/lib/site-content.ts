@@ -118,6 +118,13 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     },
 
     who_we_are: {
+        // Headline figures shown under About Us on /who-we-are.
+        assuranceStats: [
+            { value: "99.2%", label: "Right First Time" },
+            { value: "98.5%", label: "On-Time Delivery" },
+            { value: "800K", label: "Pieces / Month" },
+            { value: "$30M", label: "Annual Turnover" },
+        ],
         aboutParagraphs: [
             "Fashion Asia Ltd. is a modern, compliant, and sustainability-driven knit garments manufacturer based in Sreepur, Gazipur, Bangladesh. As a proud sister concern of Northern Tosrifa Group (NTG), which has over 34 years of excellence in the apparel industry, Fashion Asia continues the legacy of quality, innovation, and responsible manufacturing.",
             "With 26 production lines and a monthly capacity of 800,000 pieces, we specialize in producing a diverse range of knit garments including t-shirts, polo shirts, tank tops, dresses, sleepwear, leggings, sportswear, and heavy jersey products. Our factory is designed as a Green Manufacturing Facility, integrating renewable energy, solar power systems, and rainwater harvesting to reduce environmental impact.",
@@ -212,12 +219,6 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     who_we_work_with: {
         intro:
             "Fashion Asia Ltd. is proud to serve reputable international buyers who trust us for quality, compliance, and timely delivery. Our partners range from national department stores and high-street retailers to specialist sportswear and denim labels across Europe, the Americas, and Asia.",
-        assuranceStats: [
-            { value: "99.2%", label: "Right First Time" },
-            { value: "98.5%", label: "On-Time Delivery" },
-            { value: "800K", label: "Pieces / Month" },
-            { value: "$30M", label: "Annual Turnover" },
-        ],
     },
 
     sustainability: {

@@ -1,9 +1,6 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings } from "@/app/actions/settings-actions";
-import { CLIENT_LOGOS } from "@/lib/site-content";
-import Link from "next/link";
-import { ArrowUpRight } from "lucide-react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -120,45 +117,6 @@ export default async function BusinessPage() {
                 </div>
             </section>
 
-            {/* Customers */}
-            <section className="container py-24">
-                <div className="max-w-3xl mx-auto text-center mb-16">
-                    <ScrollReveal>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">03. Customers</span>
-                        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Trusted Global Partners</h2>
-                        <p className="mt-6 text-white/70 leading-relaxed text-lg">
-                            Fashion Asia Ltd. is proud to serve reputable international buyers who trust us for quality, compliance, and timely delivery.
-                        </p>
-                    </ScrollReveal>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
-                    {CLIENT_LOGOS.map((customer, i) => (
-                        <ScrollReveal key={customer.name} delay={0.05 + (i % 4) * 0.08}>
-                            <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md md:h-28">
-                                <img
-                                    src={customer.src}
-                                    alt={customer.name}
-                                    loading="lazy"
-                                    className="max-h-12 w-auto max-w-full object-contain md:max-h-14"
-                                />
-                            </div>
-                        </ScrollReveal>
-                    ))}
-                </div>
-
-                <ScrollReveal delay={0.2}>
-                    <div className="mt-12 flex justify-center">
-                        <Link
-                            href="/who-we-work-with"
-                            className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
-                        >
-                            See All Partners
-                            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
-                        </Link>
-                    </div>
-                </ScrollReveal>
-            </section>
         </div>
     );
 }
