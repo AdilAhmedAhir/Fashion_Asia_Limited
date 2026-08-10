@@ -1,39 +1,24 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useActionState, useRef, useState } from "react";
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { FormInput } from "@/components/ui/FormInput";
 import { SubmitButton } from "@/components/ui/SubmitButton";
-import { CONTACT_EMAIL } from "@/lib/site-content";
+import { FormStatusMessage } from "@/components/ui/FormStatusMessage";
+import { submitCareerAction, type SubmitState } from "@/app/actions/form-actions";
 import JobAccordion from "./JobAccordion";
 import type { Job } from "@/app/actions/jobs-actions";
 
 export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
-    const formRef = useRef<HTMLFormElement>(null);
     const formSectionRef = useRef<HTMLDivElement>(null);
     const [position, setPosition] = useState("");
-    const [sent, setSent] = useState(false);
+    const [state, formAction] = useActionState<SubmitState, FormData>(submitCareerAction, null);
 
     const handleApply = (jobTitle: string) => {
         setPosition(jobTitle);
         // Scroll to form section
         formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
-    };
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const fd = new FormData(e.currentTarget);
-        const name = String(fd.get("name") || "");
-        const phone = String(fd.get("phone") || "");
-        const pos = String(fd.get("position") || position || "");
-        const cv = String(fd.get("cv_link") || "");
-
-        const body = `Name: ${name}\nPhone: ${phone}\nPosition: ${pos}\nCV Link: ${cv}`;
-        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-            "Career Application: " + pos
-        )}&body=${encodeURIComponent(body)}`;
-        setSent(true);
     };
 
     return (
@@ -56,7 +41,7 @@ export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
                 <ScrollReveal>
                     <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">Submit Your Application</h2>
                     <p className="text-sm text-white/40 mb-8">Don&apos;t see a position that fits? Send us your CV and we&apos;ll keep it on file.</p>
-                    <form ref={formRef} onSubmit={handleSubmit} className="flex flex-col gap-6 rounded-3xl border border-white/5 bg-white/[0.02] p-8 md:p-12 backdrop-blur-sm">
+                    <form action={formAction} className="flex flex-col gap-6 rounded-3xl border border-white/5 bg-white/[0.02] p-8 md:p-12 backdrop-blur-sm">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
                             <FormInput label="Full Name" name="name" />
                             <FormInput label="Phone Number" name="phone" type="tel" />
@@ -81,12 +66,7 @@ export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
                         </div>
                         <FormInput label="Link to CV (Google Drive, LinkedIn, etc.)" name="cv_link" type="url" />
                         <div className="mt-4"><SubmitButton label="Submit Application" /></div>
-                        {sent && (
-                            <p className="text-sm text-primary">
-                                Your email app should now open with your application ready to send. If it didn&apos;t,
-                                email us directly at {CONTACT_EMAIL}.
-                            </p>
-                        )}
+                        <FormStatusMessage state={state} />
                     </form>
                 </ScrollReveal>
             </section>

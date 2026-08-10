@@ -1,6 +1,6 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import { MEDIA_ASSETS } from "@/lib/site-content";
+import { getMediaAssets } from "@/app/actions/media-actions";
 import { getSettings } from "@/app/actions/settings-actions";
 import type { Metadata } from "next";
 
@@ -11,8 +11,9 @@ export const metadata: Metadata = {
 };
 
 export default async function MediaPage() {
-    const galleryItems = MEDIA_ASSETS.filter((m) => m.type === "gallery");
-    const newsItems = MEDIA_ASSETS.filter((m) => m.type === "news");
+    const mediaAssets = await getMediaAssets();
+    const galleryItems = mediaAssets.filter((m) => m.type === "gallery");
+    const newsItems = mediaAssets.filter((m) => m.type === "news");
     const culture = await getSettings("who_we_are");
     const lifeAtFAL: { title: string; description: string }[] = culture.lifeAtFAL || [];
 

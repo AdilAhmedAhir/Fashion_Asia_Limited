@@ -1,33 +1,16 @@
 "use client";
 
-import { useState } from "react";
+import { useActionState } from "react";
 import { FormInput } from "@/components/ui/FormInput";
-import { CONTACT_EMAIL } from "@/lib/site-content";
+import { SubmitButton } from "@/components/ui/SubmitButton";
+import { FormStatusMessage } from "@/components/ui/FormStatusMessage";
+import { submitGrievanceAction, type SubmitState } from "@/app/actions/form-actions";
 
 export default function GrievanceForm() {
-    const [sent, setSent] = useState(false);
-
-    const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault();
-        const fd = new FormData(e.currentTarget);
-        const category = String(fd.get("category") || "");
-        const details = String(fd.get("details") || "");
-        const name = String(fd.get("name") || "");
-        const department = String(fd.get("department") || "");
-
-        const body =
-            `Nature of Grievance: ${category}\n\n` +
-            `Details:\n${details}\n\n` +
-            `Name: ${name || "(anonymous)"}\n` +
-            `Department: ${department || "(not provided)"}`;
-        window.location.href = `mailto:${CONTACT_EMAIL}?subject=${encodeURIComponent(
-            "Grievance Submission"
-        )}&body=${encodeURIComponent(body)}`;
-        setSent(true);
-    };
+    const [state, formAction] = useActionState<SubmitState, FormData>(submitGrievanceAction, null);
 
     return (
-        <form onSubmit={handleSubmit} className="flex flex-col gap-6 rounded-3xl border border-red-500/20 bg-white/[0.02] p-8 md:p-12 backdrop-blur-sm">
+        <form action={formAction} className="flex flex-col gap-6 rounded-3xl border border-red-500/20 bg-white/[0.02] p-8 md:p-12 backdrop-blur-sm">
             <div className="flex flex-col gap-2">
                 <label htmlFor="category" className="font-sans text-xs font-bold uppercase tracking-widest text-white/50">Nature of Grievance <span className="text-primary">*</span></label>
                 <select required id="category" name="category" defaultValue="" className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-4 py-4 font-sans text-white focus:border-primary focus:outline-none appearance-none">
@@ -50,19 +33,9 @@ export default function GrievanceForm() {
             </div>
 
             <div className="mt-4">
-                <button
-                    type="submit"
-                    className="group relative flex w-full md:w-fit items-center justify-center gap-4 overflow-hidden rounded-full border-2 border-primary bg-primary px-8 py-4 font-sans text-sm font-bold uppercase tracking-widest text-black transition-all duration-300 hover:bg-transparent hover:text-primary hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
-                >
-                    Submit Securely
-                </button>
+                <SubmitButton label="Submit Securely" />
             </div>
-            {sent && (
-                <p className="text-sm text-primary">
-                    Your email app should now open with the grievance ready to send. If it didn&apos;t,
-                    email us directly at {CONTACT_EMAIL}.
-                </p>
-            )}
+            <FormStatusMessage state={state} />
         </form>
     );
 }
