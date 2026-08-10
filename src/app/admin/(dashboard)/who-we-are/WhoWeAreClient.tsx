@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { updateSettings } from "@/app/actions/settings-actions";
 import { SettingsHeader, SettingsCard, TextInput, TextArea, StatsList, ListEditor, ObjectListEditor } from "@/components/admin/SettingsForm";
 import { createLeader, updateLeader, deleteLeader } from "@/app/actions/settings-actions";
+import { NEW_LEADER_NAME, NEW_LEADER_TITLE, isLeaderPublishable } from "@/lib/site-content";
 import { Plus, Trash2 } from "lucide-react";
 
 export interface WhoWeAreData {
@@ -32,7 +33,7 @@ export default function WhoWeAreClient({ settings: init, leaders: initLeaders }:
 
     const addLeader = () => startTransition(async () => {
         const fd = new FormData();
-        fd.set("name", "New Leader"); fd.set("title", "Title"); fd.set("bio", ""); fd.set("photo_url", ""); fd.set("sort_order", leaders.length.toString());
+        fd.set("name", NEW_LEADER_NAME); fd.set("title", NEW_LEADER_TITLE); fd.set("bio", ""); fd.set("photo_url", ""); fd.set("sort_order", leaders.length.toString());
         await createLeader(fd);
         window.location.reload();
     });
@@ -128,6 +129,11 @@ export default function WhoWeAreClient({ settings: init, leaders: initLeaders }:
                 <div className="flex flex-col gap-6">
                     {leaders.map((leader, i) => (
                         <div key={leader.id} className="rounded-xl border border-white/10 bg-black/50 p-6">
+                            {!isLeaderPublishable(leader) && (
+                                <p className="mb-4 rounded-lg border border-amber-500/20 bg-amber-500/5 px-3 py-2 text-[0.7rem] text-amber-300/80">
+                                    Not shown on the site yet — give this leader a real name to publish them.
+                                </p>
+                            )}
                             <div className="grid grid-cols-2 gap-4 mb-4">
                                 <div className="flex flex-col gap-2">
                                     <label className="text-xs font-bold uppercase tracking-widest text-white/40">Name</label>
