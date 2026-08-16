@@ -14,9 +14,9 @@ export default function PillarsSection() {
         {
             num: "02",
             title: "Sustainability",
-            desc: "Solar powered. Zero salt dyeing. Water recycling. 100% compliance.",
+            desc: "Rainwater harvesting systems, solar-powered. Zero salt dyeing. 100% compliance.",
             tags: ["Solar Power", "Zero Discharge", "Certified"],
-            img: "/images/client/csr-main-copy.webp",
+            img: "/images/client/green-building-aerial.webp",
             featured: true
         },
         {

@@ -61,12 +61,13 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
         sustainabilityTitle: "LEED Gold Certified",
         sustainabilityDescription:
             "Solar powered. Zero salt dyeing. Rainwater harvesting. Our factory operates as a fully compliant green facility, setting the benchmark for responsible garment manufacturing.",
-        // Named to match the certification artwork on /sustainability. BSCI is
+        // Short abbreviations here; /sustainability spells the same
+        // certifications out in full beside their artwork. Amfori (BSCI) is
         // held but no mark was supplied, so it appears here in text only —
         // see the note above CERTIFICATIONS.
         sustainabilityCerts: [
-            "LEED Gold", "WRAP", "BSCI", "SMETA", "SLCP", "Higg Index",
-            "GOTS", "OCS 100", "GRS", "OEKO-TEX", "BCI", "RSC",
+            "LEED Gold", "WRAP", "Amfori (BSCI)", "SMETA", "SLCP", "Higg Index",
+            "GOTS", "OCS", "GRS", "OEKO-TEX", "BCI", "RSC",
         ],
         sustainabilityHighlights: [
             { icon: "☀️", label: "Solar Powered" },
@@ -130,18 +131,33 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             { value: "800K", label: "Pieces / Month" },
             { value: "$30M", label: "Annual Turnover" },
         ],
+        // **bold** is rendered as <strong> by the About section. The client's
+        // copy marked these phrases with asterisks; the markers were unbalanced,
+        // so they are normalised here to the phrases they clearly wrapped.
         aboutParagraphs: [
-            "Fashion Asia Ltd. is a modern, compliant, and sustainability-driven knit garments manufacturer based in Sreepur, Gazipur, Bangladesh. As a proud sister concern of Northern Tosrifa Group (NTG), which has over 34 years of excellence in the apparel industry, Fashion Asia continues the legacy of quality, innovation, and responsible manufacturing.",
-            "With 26 production lines and a monthly capacity of 800,000 pieces, we specialize in producing a diverse range of knit garments including t-shirts, polo shirts, tank tops, dresses, sleepwear, leggings, sportswear, and heavy jersey products. Our factory is designed as a Green Manufacturing Facility, integrating renewable energy, solar power systems, and rainwater harvesting to reduce environmental impact.",
-            "Equipped with state-of-the-art machinery such as auto spreaders, plotters, and auto cutters, and supported by advanced software solutions across cutting, sewing, merchandising, store, HR, payroll, and accounts, Fashion Asia delivers efficiency, transparency, and precision at every stage of production.",
-            "With a dedicated workforce of 2,000 skilled employees and an annual turnover of USD 30 million, we are committed to delivering value to our global customers while maintaining the highest standards of compliance and sustainability.",
+            "**Fashion Asia Ltd.** is a modern and responsible knitwear manufacturer based in Sreepur, Gazipur, Bangladesh. As a sister concern of **Northern Tosrifa Group (NTG)**, with over 34 years of apparel industry experience, we focus on quality, innovation, and responsible manufacturing.",
+            "With **26 production lines and a monthly capacity of 800,000 pieces**, we serve global customers with a wide range of knit garments. Our **Green Building** factory, supported by solar power, rainwater harvesting, advanced technology, and 2,000 skilled employees, reflects our strong commitment to **sustainability, quality, and compliance**.",
         ],
-        // Empty on purpose. This list previously held invented years and
-        // descriptions that reached the live site — the only sourced fact was
-        // "over 34 years", everything else was scaffolding. The section hides
-        // itself while this is empty. Add real milestones here, or through
-        // /admin → Who We Are → Milestones, once the dates are confirmed.
-        milestones: [] as { year: string; title: string; description: string }[],
+        // Supplied by the client, 2026-08-16. These replace the invented dates
+        // that previously shipped. Each entry is the client's sentence verbatim
+        // as the heading — nothing has been embellished into a description, so
+        // the detail line is left empty and the card omits it.
+        milestones: [
+            {
+                year: "1967",
+                title: "Northern Steel Re-Rolling Mill Ltd. was founded by Shafiuddin Ahmed and Tosrifa Khatoon.",
+                description: "",
+            },
+            { year: "2000", title: "Fashion Asia Ltd. was established.", description: "" },
+            { year: "2017", title: "Construction of the new factory building started.", description: "" },
+            {
+                year: "2019",
+                title: "Achieved LEED Certification and started operations in our Green Building.",
+                description: "",
+            },
+            { year: "2021", title: "Achieved Grade ‘A’ in the amfori BSCI Audit.", description: "" },
+            { year: "2024", title: "Awarded Responsible Supplier by Kappahl.", description: "" },
+        ],
         // The eyebrows above these already read "Our Vision" / "Our Mission",
         // so the headings say where we are going and how we get there rather
         // than repeating the label.
@@ -287,7 +303,7 @@ export const CERTIFICATIONS: Certification[] = [
     { name: "SLCP", src: "/images/client/certifications/slcp.jpg" },
     { name: "Higg Index", src: "/images/client/certifications/higg-index.jpg" },
     { name: "GOTS", src: "/images/client/certifications/gots.jpg" },
-    { name: "OCS 100", src: "/images/client/certifications/ocs.jpg" },
+    { name: "Organic Content Standard", src: "/images/client/certifications/ocs.jpg" },
     { name: "Global Recycled Standard", src: "/images/client/certifications/grs.jpg" },
     { name: "OEKO-TEX Standard 100", src: "/images/client/certifications/oeko-tex.jpg" },
     { name: "Better Cotton Initiative", src: "/images/client/certifications/bci.jpg" },
@@ -412,5 +428,4 @@ export const MEDIA_ASSETS: MediaAsset[] = [
     { id: "g6", type: "gallery", title: "Day Care", url: "/images/client/box4-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
     { id: "g7", type: "gallery", title: "Shera Shop", url: "/images/client/box3-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
     { id: "g8", type: "gallery", title: "Bicycle Parking", url: "/images/client/box2-copy.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
-    { id: "g9", type: "gallery", title: "Facility Entrance", url: "/images/client/facility-entrance.webp", content: "", created_at: "2026-01-01T00:00:00Z" },
 ];
