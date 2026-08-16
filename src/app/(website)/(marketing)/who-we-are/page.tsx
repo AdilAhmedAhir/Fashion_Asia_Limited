@@ -2,6 +2,7 @@ import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings, getLeaders } from "@/app/actions/settings-actions";
 import { isLeaderPublishable } from "@/lib/site-content";
+import { RichText } from "@/components/ui/RichText";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -33,7 +34,7 @@ export default async function WhoWeArePage() {
                             <h2 className="font-serif text-3xl font-bold text-gradient md:text-4xl mb-8">About Us</h2>
                             <div className="flex flex-col gap-6">
                                 {(data.aboutParagraphs || []).map((para: string, i: number) => (
-                                    <p key={i} className="text-white/70 leading-relaxed text-lg">{para}</p>
+                                    <p key={i} className="text-white/70 leading-relaxed text-lg"><RichText text={para} /></p>
                                 ))}
                             </div>
                         </div>
@@ -118,7 +119,7 @@ export default async function WhoWeArePage() {
                         <ScrollReveal>
                             <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Journey</span>
                             <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Milestones &amp; Achievements</h2>
-                            <p className="mt-4 text-white/70 text-lg">Three decades of steady, deliberate growth — from a single group venture to a green facility serving buyers worldwide.</p>
+                            <p className="mt-4 text-white/70 text-lg">From the founding of the group in 1967 to a LEED-certified green facility serving buyers worldwide.</p>
                         </ScrollReveal>
                     </div>
 
@@ -142,7 +143,9 @@ export default async function WhoWeArePage() {
                                             />
                                             <span className="font-serif text-2xl font-bold text-gradient">{m.year}</span>
                                             <h3 className="mt-1 font-serif text-xl font-bold text-foreground">{m.title}</h3>
-                                            <p className="mt-2 leading-relaxed text-white/60">{m.description}</p>
+                                            {m.description && (
+                                                <p className="mt-2 leading-relaxed text-white/60">{m.description}</p>
+                                            )}
                                         </div>
                                     </ScrollReveal>
                                 </li>
