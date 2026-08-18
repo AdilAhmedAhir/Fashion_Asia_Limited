@@ -2,10 +2,9 @@
 
 import { useState, useTransition } from "react";
 import { updateSettings } from "@/app/actions/settings-actions";
-import { SettingsHeader, SettingsCard, TextArea, ListEditor } from "@/components/admin/SettingsForm";
+import { SettingsHeader, SettingsCard, ListEditor } from "@/components/admin/SettingsForm";
 
 export interface SustainabilityData {
-    description: string;
     initiatives: string[];
 }
 
@@ -22,10 +21,6 @@ export default function SustainabilityClient({ initial }: { initial: Sustainabil
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
             <SettingsHeader tag="Page Settings" title="Sustainability" onSave={save} saving={isPending} />
-
-            <SettingsCard title="Main Content">
-                <TextArea label="Overview Description" value={data.description} onChange={v => set("description", v)} rows={5} />
-            </SettingsCard>
 
             <SettingsCard title="Certifications & Audits">
                 <p className="text-xs leading-relaxed text-white/40">

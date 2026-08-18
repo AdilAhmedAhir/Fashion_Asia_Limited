@@ -1,6 +1,8 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings } from "@/app/actions/settings-actions";
+import { ArrowRight } from "lucide-react";
+import { Fragment } from "react";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -14,12 +16,9 @@ export const revalidate = 60;
 export default async function BusinessPage() {
     const data = await getSettings("business");
     const products = data.products?.length ? data.products : ['T-Shirts', 'Polo Shirts', 'Tank Tops', 'Dresses', 'Sleepwear', 'Leggings', 'Sportswear', 'Heavy Jersey Products'];
-    const capacityStats = data.capacityStats?.length ? data.capacityStats : [
-        { value: "26", label: "Production Lines" },
-        { value: "800K", label: "Pieces Monthly" },
-        { value: "2,000+", label: "Skilled Employees" },
-        { value: "$30M", label: "Annual Turnover" },
-    ];
+    const processSteps: string[] = data.processSteps?.length ? data.processSteps : [];
+    // Blank lines separate paragraphs, so the copy stays a single textarea in the admin.
+    const craftParagraphs: string[] = (data.whatWeDoText || "").split(/\n\s*\n/).map((p: string) => p.trim()).filter(Boolean);
 
     return (
         <div className="flex flex-col bg-background">
@@ -29,17 +28,34 @@ export default async function BusinessPage() {
                 description="Delivering efficiency, transparency, and precision at every stage of production for the global apparel market."
             />
 
-            {/* What We Do */}
-            {data.whatWeDoText && (
+            {/* End-to-end process. The pipeline reads as chips joined by arrows,
+                echoing how the steps were written, and wraps rather than
+                squeezing seven items onto one line. */}
+            {processSteps.length > 0 && (
                 <section className="container py-24 border-b border-white/5">
                     <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
                         <ScrollReveal>
                             <div>
                                 <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Craft</span>
-                                <h2 className="mt-4 mb-8 font-serif text-3xl font-bold text-foreground md:text-4xl">Ideas Into World-Class Knitwear</h2>
-                                <p className="text-lg leading-relaxed text-white/70">{data.whatWeDoText}</p>
+                                <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
+                                    {data.processTitle || "A complete solution from start to finish."}
+                                </h2>
+
+                                <ol className="mt-10 flex flex-wrap items-center gap-x-3 gap-y-4">
+                                    {processSteps.map((step, i) => (
+                                        <Fragment key={step}>
+                                            {i > 0 && (
+                                                <ArrowRight className="h-4 w-4 shrink-0 text-primary" aria-hidden="true" />
+                                            )}
+                                            <li className="rounded-full border border-primary/30 bg-primary/10 px-5 py-2.5 font-sans text-sm font-semibold text-foreground transition-all duration-300 hover:border-primary/60 hover:bg-primary/20">
+                                                {step}
+                                            </li>
+                                        </Fragment>
+                                    ))}
+                                </ol>
+
                                 {data.whatWeDoTagline && (
-                                    <p className="mt-8 font-serif text-2xl font-bold text-gradient md:text-3xl">{data.whatWeDoTagline}</p>
+                                    <p className="mt-10 font-serif text-2xl font-bold text-gradient md:text-3xl">{data.whatWeDoTagline}</p>
                                 )}
                             </div>
                         </ScrollReveal>
@@ -61,7 +77,7 @@ export default async function BusinessPage() {
                                     className="h-full w-full object-cover"
                                 />
                                 <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
-                                <div className="absolute bottom-5 left-5 rounded-full border border-primary/60 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary backdrop-blur-md">
+                                <div className="absolute bottom-5 left-5 rounded-full border border-primary/60 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-accent backdrop-blur-md">
                                     Precision Cutting
                                 </div>
                             </div>
@@ -76,16 +92,21 @@ export default async function BusinessPage() {
                     <div className="max-w-3xl mb-16">
                         <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">01. Product Catalog</span>
                         <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Comprehensive Range</h2>
-                        <p className="mt-6 text-white/70 leading-relaxed text-lg">
-                            Fashion Asia Ltd. produces a comprehensive range of high-quality knit garments for global markets. We are capable of handling diverse fabric compositions, designs, and finishing techniques.
-                        </p>
+                        <div className="mt-6 flex flex-col gap-5">
+                            {craftParagraphs.map((para, i) => (
+                                <p key={i} className="text-white/70 leading-relaxed text-lg">{para}</p>
+                            ))}
+                        </div>
                     </div>
                 </ScrollReveal>
 
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-8">
                     {products.map((product: string, i: number) => (
                         <ScrollReveal key={product} delay={i * 0.1}>
-                            <div className="flex h-32 items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] text-center font-serif text-lg text-white/80 transition-all hover:border-primary/50 hover:bg-primary/5 hover:text-primary hover:-translate-y-1">
+                            {/* Green-tinted by default rather than on hover. The label uses
+                                accent, not primary — primary on this background is about
+                                1.8:1 and unreadable at this size. */}
+                            <div className="flex h-32 items-center justify-center rounded-xl border border-primary/40 bg-primary/[0.07] text-center font-serif text-lg text-accent transition-all hover:border-primary hover:bg-primary/20 hover:-translate-y-1">
                                 {product}
                             </div>
                         </ScrollReveal>
@@ -93,26 +114,26 @@ export default async function BusinessPage() {
                 </div>
             </section>
 
-            {/* Capacity */}
-            <section className="bg-surface py-24 border-b border-white/5">
-                <div className="container grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-                    <ScrollReveal>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">02. Capacity</span>
-                        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Built for Global Scale</h2>
-                        <p className="mt-6 text-white/70 leading-relaxed text-lg">
-                            {data.capacityDescription || "Our factory operates 26 production lines with a monthly production capacity of 800,000 pieces of knit garments."}
-                        </p>
-                    </ScrollReveal>
-
-                    <div className="grid grid-cols-2 gap-6">
-                        {capacityStats.map((stat: { value: string; label: string }, i: number) => (
-                            <ScrollReveal key={stat.label} delay={0.2 + (i * 0.1)}>
-                                <div className="flex flex-col items-start gap-2 p-6 md:p-8 rounded-2xl border border-white/5 bg-black">
-                                    <span className="text-3xl md:text-4xl font-bold text-gradient">{stat.value}</span>
-                                    <span className="text-[0.65rem] md:text-xs uppercase tracking-widest text-white/50">{stat.label}</span>
-                                </div>
-                            </ScrollReveal>
-                        ))}
+            {/* Showroom band — moved here from /who-we-work-with. The photograph is
+                near-white, so the image itself is dimmed rather than buried under
+                scrims, keeping the room legible behind white type. */}
+            <section className="relative h-[280px] w-full overflow-hidden md:h-[400px]">
+                <img
+                    src="/images/client/showroom.jpg"
+                    alt="Sample showroom at Fashion Asia Limited, with garment rails and display plinths"
+                    loading="lazy"
+                    className="h-full w-full object-cover brightness-[0.45] grayscale"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
+                <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/30 to-transparent" />
+                <div className="absolute inset-0 flex items-center">
+                    <div className="container">
+                        <ScrollReveal>
+                            <p className="max-w-xl font-serif text-2xl font-bold leading-tight text-foreground md:text-3xl">
+                                Every partnership starts in the sample room — with fit, fabric, and finish
+                                agreed before a single bulk piece is cut.
+                            </p>
+                        </ScrollReveal>
                     </div>
                 </div>
             </section>

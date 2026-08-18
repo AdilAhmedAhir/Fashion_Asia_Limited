@@ -186,32 +186,31 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     },
 
     business: {
+        // Blank lines separate paragraphs on /business. Kept as one string so the
+        // admin stays a single textarea.
         whatWeDoText:
-            "Fashion Asia transforms ideas into world-class knitwear solutions. We turn creativity into reality. We specialize in developing and manufacturing all types of knitted garments for every market, age group, gender, climate, and lifestyle. From everyday essentials to complex fashion-forward designs, we work with a wide range of fabrics, finishes, and innovative constructions to bring our customers' visions to life. Whether inspired by the latest global trends or a completely new concept, our experienced team turns creative ideas into commercially successful products.",
+            "Fashion Asia transforms ideas into world-class knitwear solutions. We turn creativity into reality.\n\n" +
+            "We specialize in developing and manufacturing all types of knitted garments for every market, age group, gender, climate, and lifestyle.\n\n" +
+            "From everyday essentials to fashion-forward designs, we use diverse fabrics, finishes, and innovative constructions to bring our customers\u2019 ideas to life and turn creative concepts into commercially successful products.",
         whatWeDoTagline: "If you can imagine it, Fashion Asia can make it happen.",
+        // The end-to-end pipeline shown as arrow-joined chips under Our Craft.
+        processTitle: "A complete solution from start to finish.",
+        processSteps: [
+            "Concept", "Product Development", "Sourcing", "Manufacturing",
+            "Quality Control", "Compliance", "Final Delivery",
+        ],
         products: [
             "T-Shirts", "Polo Shirts", "Tank Tops", "Dresses",
             "Sleepwear", "Leggings", "Sportswear", "Heavy Jersey Products",
         ],
-        capacityDescription:
-            "Our factory operates 26 production lines with a monthly production capacity of 800,000 pieces of knit garments. Supported by 2,000 skilled employees and modern production planning systems.",
-        capacityStats: [
-            { value: "26", label: "Production Lines" },
-            { value: "800K", label: "Pieces Monthly" },
-            { value: "2,000+", label: "Skilled Employees" },
-            { value: "$30M", label: "Annual Turnover" },
-        ],
-        customers: ["Elcort ECI", "Kappahl", "Tamurakoma", "Max India"],
     },
 
     who_we_work_with: {
         intro:
-            "Fashion Asia Ltd. is proud to serve reputable international buyers who trust us for quality, compliance, and timely delivery. Our partners range from national department stores and high-street retailers to specialist sportswear and denim labels across Europe, the Americas, and Asia.",
+            "We are proud to partner with leading international fashion brands and buyers across global markets. Our long-standing partnerships reflect their confidence in our quality, compliance, innovation, sustainability, and reliable on-time delivery, making Fashion Asia a trusted manufacturing partner.",
     },
 
     sustainability: {
-        description:
-            "Sustainability and compliance are integral to our business model. We maintain transparent documentation and reporting aligned with international standards and buyer requirements.",
         // NOTE: /sustainability now renders the certification marks from the
         // CERTIFICATIONS array below rather than a list of abbreviations, so
         // edit that array to add or remove a certification.

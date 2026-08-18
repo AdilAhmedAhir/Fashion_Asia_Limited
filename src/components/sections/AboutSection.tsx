@@ -63,7 +63,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
                     <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f1a] to-black z-0"></div>
                     <video
                         src="/videos/about.mp4"
-                        poster="/images/client/about-us-copy.jpg"
+                        poster="/images/client/about-poster.webp"
                         autoPlay
                         muted
                         loop

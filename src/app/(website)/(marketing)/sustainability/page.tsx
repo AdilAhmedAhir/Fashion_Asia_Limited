@@ -42,18 +42,6 @@ export default async function SustainabilityPage() {
                 description="Operating as a Green Factory with a strong commitment to environmental stewardship and social responsibility."
             />
 
-            {/* Reports & Compliance */}
-            <section className="container py-24 border-b border-white/5">
-                <ScrollReveal>
-                    <div className="max-w-4xl mx-auto text-center">
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Reports &amp; Compliance</span>
-                        <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl mb-8">Integral to our Business Model</h2>
-                        <p className="text-white/70 leading-relaxed text-lg">
-                            {data.description || "Sustainability and compliance are integral to our business model. We maintain transparent documentation and reporting aligned with international standards and buyer requirements."}
-                        </p>
-                    </div>
-                </ScrollReveal>
-            </section>
 
             {/* Initiatives */}
             <section className="bg-surface py-24 border-b border-white/5">
