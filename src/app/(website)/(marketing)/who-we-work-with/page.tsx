@@ -18,9 +18,9 @@ export default async function WhoWeWorkWithPage() {
     return (
         <div className="flex flex-col bg-background">
             <PageHeader
-                tag="Our Partners"
+                tag="Relationships"
                 title="Who We Work With"
-                description="Reputable international buyers who trust us for quality, compliance, and timely delivery."
+                description="Trusted by leading international buyers for quality, compliance, and on-time delivery."
             />
 
             {/* Brand wall */}
@@ -47,31 +47,6 @@ export default async function WhoWeWorkWithPage() {
                 </div>
             </section>
 
-            {/* Showroom band */}
-            <section className="relative h-[280px] w-full overflow-hidden md:h-[400px]">
-                {/* The showroom photograph is near-white. Rather than stacking
-                    scrims heavy enough to bury it, dim the image itself the way
-                    ScaleSection does — the room stays legible and white type
-                    sits cleanly on top. */}
-                <img
-                    src="/images/client/showroom.jpg"
-                    alt="Sample showroom at Fashion Asia Limited, with garment rails and display plinths"
-                    loading="lazy"
-                    className="h-full w-full object-cover brightness-[0.45] grayscale"
-                />
-                <div className="absolute inset-0 bg-gradient-to-t from-background via-transparent to-background/50" />
-                <div className="absolute inset-0 bg-gradient-to-r from-background/85 via-background/30 to-transparent" />
-                <div className="absolute inset-0 flex items-center">
-                    <div className="container">
-                        <ScrollReveal>
-                            <p className="max-w-xl font-serif text-2xl font-bold leading-tight text-foreground md:text-3xl">
-                                Every partnership starts in the sample room — with fit, fabric, and finish
-                                agreed before a single bulk piece is cut.
-                            </p>
-                        </ScrollReveal>
-                    </div>
-                </div>
-            </section>
 
         </div>
     );

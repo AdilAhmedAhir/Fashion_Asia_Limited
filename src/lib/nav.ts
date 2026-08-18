@@ -21,7 +21,7 @@ export const MAIN_NAV: NavLink[] = [
     { label: "Home", href: "/" },
     { label: "Who We Are", href: "/who-we-are" },
     { label: "What We Do", href: "/business" },
-    { label: "Who We Work With", href: "/who-we-work-with" },
+    { label: "Global Partner", href: "/who-we-work-with" },
     { label: "Sustainability", href: "/sustainability" },
     { label: "Life at Fashion Asia", href: "/media" },
 ];
