@@ -1,6 +1,7 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings } from "@/app/actions/settings-actions";
+import { PRODUCT_IMAGES, PRODUCT_IMAGE_FALLBACK } from "@/lib/site-content";
 import { ArrowRight } from "lucide-react";
 import { Fragment } from "react";
 import type { Metadata } from "next";
@@ -100,14 +101,25 @@ export default async function BusinessPage() {
                     </div>
                 </ScrollReveal>
 
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-8">
+                {/* Photo cards per the client's reference — photograph behind,
+                    name on a scrim at the bottom left. Photos are real production
+                    shots (no per-product photography exists), B&W for cohesion. */}
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
                     {products.map((product: string, i: number) => (
                         <ScrollReveal key={product} delay={i * 0.1}>
-                            {/* Green-tinted by default rather than on hover. The label uses
-                                accent, not primary — primary on this background is about
-                                1.8:1 and unreadable at this size. */}
-                            <div className="flex h-32 items-center justify-center rounded-xl border border-primary/40 bg-primary/[0.07] text-center font-serif text-lg text-accent transition-all hover:border-primary hover:bg-primary/20 hover:-translate-y-1">
-                                {product}
+                            <div className="group relative h-48 overflow-hidden rounded-xl border border-white/10 bg-surface md:h-56">
+                                <img
+                                    src={PRODUCT_IMAGES[product] ?? PRODUCT_IMAGE_FALLBACK}
+                                    alt=""
+                                    aria-hidden="true"
+                                    loading="lazy"
+                                    decoding="async"
+                                    className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-700 group-hover:scale-105 group-hover:opacity-90"
+                                />
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+                                <span className="absolute bottom-4 left-4 right-4 font-serif text-lg font-bold leading-snug text-white">
+                                    {product}
+                                </span>
                             </div>
                         </ScrollReveal>
                     ))}

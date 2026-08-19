@@ -290,6 +290,22 @@ export const CLIENT_LOGOS: ClientLogo[] = [
 // SMETA is the audit conducted under Sedex, and the Higg Index covers what
 // was previously listed as FEM.
 // ---------------------------------------------------------------------------
+// Photographs behind the product cards on /business. Keyed by the product
+// name as it appears in the CMS products list; anything unmapped falls back
+// to the knit-texture shot so client-added products still render as a card.
+export const PRODUCT_IMAGES: Record<string, string> = {
+    "T-Shirts": "/images/client/product-tshirts.webp",
+    "Polo Shirts": "/images/client/box12-copy.webp",
+    "Tank Tops": "/images/client/product-tanktops.webp",
+    "Dresses": "/images/client/product-dresses.webp",
+    "Sleepwear": "/images/client/product-sleepwear.webp",
+    "Leggings": "/images/client/box10-copy.webp",
+    "Sportswear": "/images/client/cutting-poster.webp",
+    "Heavy Jersey Products": "/images/client/4-copy.webp",
+};
+
+export const PRODUCT_IMAGE_FALLBACK = "/images/client/4-copy.webp";
+
 export interface Certification {
     name: string;
     src: string;
