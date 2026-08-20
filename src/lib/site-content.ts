@@ -300,7 +300,7 @@ export const PRODUCT_IMAGES: Record<string, string> = {
     "Dresses": "/images/client/product-dresses.webp",
     "Sleepwear": "/images/client/product-sleepwear.webp",
     "Leggings": "/images/client/box10-copy.webp",
-    "Sportswear": "/images/client/cutting-poster.webp",
+    "Sportswear": "/images/client/product-sportswear.webp",
     "Heavy Jersey Products": "/images/client/4-copy.webp",
 };
 
