@@ -75,7 +75,7 @@ CREATE POLICY "Allow public read on site_settings" ON public.site_settings FOR S
 -- Settings keys will be:
 -- 'homepage'       → { hero, about, business, sustainability, scale, contact }
 -- 'who_we_are'     → { aboutText, vision, mission }
--- 'business'       → { products, capacity, customers }
+-- 'business'       → { processTitle, processSteps, whatWeDoTagline, products }
 -- 'sustainability' → { description, certifications, initiatives }
 -- 'contact'        → { phone, email, factoryAddress, corporateAddress, mapsUrl, socialLinks }
 -- 'general'        → { companyName, seoTitle, seoDescription, footerCopyright }
@@ -152,10 +152,59 @@ INSERT INTO public.site_settings (key, value) VALUES
 }'::jsonb),
 
 ('business', '{
-  "products": ["T-Shirts", "Polo Shirts", "Tank Tops", "Dresses", "Sleepwear", "Leggings", "Sportswear", "Heavy Jersey Products"],
-  "capacityDescription": "Our factory operates 26 production lines with a monthly production capacity of 800,000 pieces of knit garments. Supported by 2,000 skilled employees and modern production planning systems.",
-  "capacityStats": [{"value": "26", "label": "Production Lines"}, {"value": "800K", "label": "Pieces Monthly"}, {"value": "2,000+", "label": "Skilled Employees"}, {"value": "$30M", "label": "Annual Turnover"}],
-  "customers": ["Elcort ECI", "Kappahl", "Tamurakoma", "Max India"]
+  "processTitle": "A complete solution from start to finish.",
+  "processSteps": [
+    "Concept",
+    "Product Development",
+    "Sourcing",
+    "Manufacturing",
+    "Quality Control",
+    "Compliance",
+    "Final Delivery"
+  ],
+  "whatWeDoTagline": "If you can imagine it, Fashion Asia can make it happen.",
+  "products": [
+    {
+      "title": "T-Shirts",
+      "description": "",
+      "image": "/images/client/product-tshirts.webp"
+    },
+    {
+      "title": "Polo Shirts",
+      "description": "",
+      "image": "/images/client/box12-copy.webp"
+    },
+    {
+      "title": "Tank Tops",
+      "description": "",
+      "image": "/images/client/product-tanktops.webp"
+    },
+    {
+      "title": "Dresses",
+      "description": "",
+      "image": "/images/client/product-dresses.webp"
+    },
+    {
+      "title": "Sleepwear",
+      "description": "",
+      "image": "/images/client/product-sleepwear.webp"
+    },
+    {
+      "title": "Leggings",
+      "description": "",
+      "image": "/images/client/box10-copy.webp"
+    },
+    {
+      "title": "Sportswear",
+      "description": "",
+      "image": "/images/client/product-sportswear.webp"
+    },
+    {
+      "title": "Heavy Jersey Products",
+      "description": "",
+      "image": "/images/client/4-copy.webp"
+    }
+  ]
 }'::jsonb),
 
 ('sustainability', '{

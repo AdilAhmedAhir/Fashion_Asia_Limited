@@ -30,8 +30,8 @@ export async function getSettings(key: string): Promise<Record<string, any>> {
 const SETTINGS_ROUTES: Record<string, string> = {
     homepage: "/",
     who_we_are: "/who-we-are",
-    business: "/business",
-    who_we_work_with: "/who-we-work-with",
+    business: "/what-we-do",
+    who_we_work_with: "/global-partner",
     sustainability: "/sustainability",
     contact: "/contact"
 };
@@ -56,8 +56,8 @@ export async function updateSettings(key: string, value: Record<string, unknown>
     const route = SETTINGS_ROUTES[key];
     if (route && route !== "/") revalidatePath(route);
 
-    // who_we_are also supplies the culture pillars rendered on /media.
-    if (key === "who_we_are") revalidatePath("/media");
+    // who_we_are also supplies the culture pillars rendered on /life-at-fashion-asia.
+    if (key === "who_we_are") revalidatePath("/life-at-fashion-asia");
 }
 
 // Writes the defaults from site-content.ts into site_settings for the named

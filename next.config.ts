@@ -10,6 +10,11 @@ const nextConfig: NextConfig = {
                 destination: "/sustainability#reports",
                 permanent: true,
             },
+            // Routes renamed to match their menu names. These paths were live and
+            // indexed, so they redirect permanently rather than 404.
+            { source: "/business", destination: "/what-we-do", permanent: true },
+            { source: "/who-we-work-with", destination: "/global-partner", permanent: true },
+            { source: "/media", destination: "/life-at-fashion-asia", permanent: true },
         ];
     },
 };

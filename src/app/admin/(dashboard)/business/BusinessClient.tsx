@@ -2,14 +2,15 @@
 
 import { useState, useTransition } from "react";
 import { updateSettings } from "@/app/actions/settings-actions";
-import { SettingsHeader, SettingsCard, TextInput, TextArea, ChipList } from "@/components/admin/SettingsForm";
+import { SettingsHeader, SettingsCard, TextInput, TextArea, ChipList, ObjectListEditor } from "@/components/admin/SettingsForm";
+import type { Product } from "@/lib/site-content";
 
 export interface BusinessData {
     processTitle: string;
     processSteps: string[];
     whatWeDoTagline: string;
     whatWeDoText: string;
-    products: string[];
+    products: Product[];
 }
 
 export default function BusinessClient({ initial }: { initial: BusinessData }) {
@@ -37,7 +38,17 @@ export default function BusinessClient({ initial }: { initial: BusinessData }) {
             <SettingsCard title="Product Catalog">
                 <div className="flex flex-col gap-6">
                     <TextArea label="Intro Copy — leave a blank line between paragraphs" value={data.whatWeDoText} onChange={v => set("whatWeDoText", v)} rows={10} />
-                    <ChipList label="Products" items={data.products} onChange={v => set("products", v)} />
+                    <ObjectListEditor
+                        label="Product Cards"
+                        items={data.products}
+                        onChange={v => set("products", v)}
+                        addLabel="Add Product"
+                        fields={[
+                            { key: "title", label: "Title" },
+                            { key: "description", label: "Short Description (optional — hidden when blank)", type: "textarea" },
+                            { key: "image", label: "Image path (e.g. /images/client/product-tshirts.webp)" },
+                        ]}
+                    />
                 </div>
             </SettingsCard>
         </div>

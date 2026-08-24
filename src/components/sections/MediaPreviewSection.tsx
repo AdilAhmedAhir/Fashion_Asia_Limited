@@ -137,7 +137,7 @@ export default function MediaPreviewSection({
 
                 <ScrollReveal delay={0.3} className="mt-16 flex flex-wrap justify-center gap-4">
                     <Link
-                        href="/media"
+                        href="/life-at-fashion-asia"
                         className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                     >
                         Life at Fashion Asia

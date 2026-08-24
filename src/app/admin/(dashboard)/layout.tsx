@@ -18,7 +18,7 @@ const navItems = [
             { href: "/admin/homepage", icon: Home, label: "Homepage" },
             { href: "/admin/who-we-are", icon: Users, label: "Who We Are" },
             { href: "/admin/business", icon: Briefcase, label: "What We Do" },
-            { href: "/admin/who-we-work-with", icon: Globe, label: "Who We Work With" },
+            { href: "/admin/who-we-work-with", icon: Globe, label: "Global Partner" },
             { href: "/admin/sustainability", icon: Leaf, label: "Sustainability" },
         ]
     },
@@ -26,7 +26,7 @@ const navItems = [
         group: "Management", items: [
             { href: "/admin/careers", icon: Briefcase, label: "Careers" },
             { href: "/admin/reports", icon: FileText, label: "Reports (on /sustainability)" },
-            { href: "/admin/media", icon: ImageIcon, label: "Media Center" },
+            { href: "/admin/media", icon: ImageIcon, label: "Life at Fashion Asia" },
             { href: "/admin/submissions", icon: Inbox, label: "Submissions" },
         ]
     },

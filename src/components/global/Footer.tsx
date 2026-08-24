@@ -6,11 +6,11 @@ const footerLinks = [
         title: "Company",
         links: [
             { label: "Who We Are", href: "/who-we-are" },
-            { label: "What We Do", href: "/business" },
-            { label: "Global Partner", href: "/who-we-work-with" },
+            { label: "What We Do", href: "/what-we-do" },
+            { label: "Global Partner", href: "/global-partner" },
             { label: "Sustainability", href: "/sustainability" },
             { label: "Reports & Publications", href: "/sustainability#reports" },
-            { label: "Life at Fashion Asia", href: "/media" },
+            { label: "Life at Fashion Asia", href: "/life-at-fashion-asia" },
         ],
     },
     {
@@ -18,7 +18,7 @@ const footerLinks = [
         links: [
             { label: "Career", href: "/career" },
             { label: "Contact Us", href: "/contact" },
-            { label: "Grievance Policy", href: "/grievance" },
+            { label: "Grievance Cell", href: "/grievance" },
         ],
     },
     {

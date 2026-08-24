@@ -20,10 +20,10 @@ export interface NavLink {
 export const MAIN_NAV: NavLink[] = [
     { label: "Home", href: "/" },
     { label: "Who We Are", href: "/who-we-are" },
-    { label: "What We Do", href: "/business" },
-    { label: "Global Partner", href: "/who-we-work-with" },
+    { label: "What We Do", href: "/what-we-do" },
+    { label: "Global Partner", href: "/global-partner" },
     { label: "Sustainability", href: "/sustainability" },
-    { label: "Life at Fashion Asia", href: "/media" },
+    { label: "Life at Fashion Asia", href: "/life-at-fashion-asia" },
 ];
 
 // The primary call-to-action, shown as a button rather than a plain nav link.

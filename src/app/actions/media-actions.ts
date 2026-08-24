@@ -57,7 +57,7 @@ export async function importBuiltInGallery() {
     if (error) throw new Error(error.message);
 
     revalidatePath("/admin/media");
-    revalidatePath("/media");
+    revalidatePath("/life-at-fashion-asia");
 
     return { added: missing.length };
 }
@@ -90,7 +90,7 @@ export async function addMediaAction(formData: FormData) {
     if (error) console.error("[Database Insert Error]", error);
 
     revalidatePath("/admin/media");
-    revalidatePath("/media");
+    revalidatePath("/life-at-fashion-asia");
 }
 
 export async function deleteMediaAction(formData: FormData) {
@@ -108,5 +108,5 @@ export async function deleteMediaAction(formData: FormData) {
     await supabase.from("media_assets").delete().eq("id", id);
 
     revalidatePath("/admin/media");
-    revalidatePath("/media");
+    revalidatePath("/life-at-fashion-asia");
 }

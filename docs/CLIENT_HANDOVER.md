@@ -32,7 +32,7 @@ All secure forms submitted on the website are routed directly to your CMS databa
    - **Grievance:** Confidential factory reports.
 
 ## 4. PUBLISHING TO THE MEDIA CENTER
-You have full control over the `/media` page. You can upload photos to the Factory Gallery or publish text-based Press Releases.
+You have full control over the `/life-at-fashion-asia` page. You can upload photos to the Gallery or publish text-based Press Releases.
 1. Log into the CMS and click **Media Center**.
 2. **To upload a Photo Gallery Image:**
    - Enter a Title (e.g., "Factory Floor").
