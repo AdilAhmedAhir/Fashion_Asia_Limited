@@ -14,6 +14,8 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
     metadataBase: new URL(baseUrl),
+    // Homepage self-canonical; every other page sets its own.
+    alternates: { canonical: "/" },
     title: {
         default: "Fashion Asia Limited | Green Powered Innovation",
         template: "%s | Fashion Asia Limited",

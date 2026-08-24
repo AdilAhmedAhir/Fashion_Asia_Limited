@@ -14,7 +14,7 @@ const LABELS: Record<string, string> = {
     homepage: "Homepage",
     who_we_are: "Who We Are",
     business: "What We Do",
-    who_we_work_with: "Who We Work With",
+    who_we_work_with: "Global Partner",
     sustainability: "Sustainability",
     contact: "Contact details",
     general: "General / SEO"

@@ -17,13 +17,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/business`,
+            url: `${baseUrl}/what-we-do`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/who-we-work-with`,
+            url: `${baseUrl}/global-partner`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
@@ -35,7 +35,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
             priority: 0.8,
         },
         {
-            url: `${baseUrl}/media`,
+            url: `${baseUrl}/life-at-fashion-asia`,
             lastModified: new Date(),
             changeFrequency: 'daily',
             priority: 0.7,

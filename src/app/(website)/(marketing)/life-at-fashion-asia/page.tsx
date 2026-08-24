@@ -8,6 +8,16 @@ export const metadata: Metadata = {
     title: "Life at Fashion Asia",
     description:
         "The culture, welfare, and working life behind Fashion Asia Limited — our people, rewards, wellbeing and safety, and learning — plus photographs from inside the facility.",
+    // Self-referencing canonical and per-page OG. Without these every page
+    // inherited the homepage's og:url, which matters most right after a
+    // URL rename when crawlers are re-resolving these paths.
+    alternates: { canonical: "/life-at-fashion-asia" },
+    openGraph: {
+        url: "/life-at-fashion-asia",
+        title: "Life at Fashion Asia",
+        description:
+                    "The culture, welfare, and working life behind Fashion Asia Limited — our people, rewards, wellbeing and safety, and learning — plus photographs from inside the facility.",
+    },
 };
 
 export default async function MediaPage() {

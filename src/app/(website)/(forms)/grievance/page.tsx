@@ -7,6 +7,16 @@ export const metadata: Metadata = {
     title: "Grievance",
     description:
         "Raise a grievance with Fashion Asia Limited. Our grievance procedure is confidential and open to employees, suppliers, and community members.",
+    // Self-referencing canonical and per-page OG. Without these every page
+    // inherited the homepage's og:url, which matters most right after a
+    // URL rename when crawlers are re-resolving these paths.
+    alternates: { canonical: "/grievance" },
+    openGraph: {
+        url: "/grievance",
+        title: "Grievance",
+        description:
+                    "Raise a grievance with Fashion Asia Limited. Our grievance procedure is confidential and open to employees, suppliers, and community members.",
+    },
 };
 
 export default function GrievancePage() {

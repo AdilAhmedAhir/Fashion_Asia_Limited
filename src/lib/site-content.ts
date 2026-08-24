@@ -186,7 +186,7 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
     },
 
     business: {
-        // Blank lines separate paragraphs on /business. Kept as one string so the
+        // Blank lines separate paragraphs on /what-we-do. Kept as one string so the
         // admin stays a single textarea.
         whatWeDoText:
             "Fashion Asia transforms ideas into world-class knitwear solutions. We turn creativity into reality.\n\n" +
@@ -199,9 +199,18 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
             "Concept", "Product Development", "Sourcing", "Manufacturing",
             "Quality Control", "Compliance", "Final Delivery",
         ],
+        // Each card carries a title, an optional short description, and its own
+        // photograph. Descriptions ship empty on purpose — the card hides the
+        // line until someone writes it in /admin, so nothing invented goes live.
         products: [
-            "T-Shirts", "Polo Shirts", "Tank Tops", "Dresses",
-            "Sleepwear", "Leggings", "Sportswear", "Heavy Jersey Products",
+            { title: "T-Shirts", description: "", image: "/images/client/product-tshirts.webp" },
+            { title: "Polo Shirts", description: "", image: "/images/client/box12-copy.webp" },
+            { title: "Tank Tops", description: "", image: "/images/client/product-tanktops.webp" },
+            { title: "Dresses", description: "", image: "/images/client/product-dresses.webp" },
+            { title: "Sleepwear", description: "", image: "/images/client/product-sleepwear.webp" },
+            { title: "Leggings", description: "", image: "/images/client/box10-copy.webp" },
+            { title: "Sportswear", description: "", image: "/images/client/product-sportswear.webp" },
+            { title: "Heavy Jersey Products", description: "", image: "/images/client/4-copy.webp" },
         ],
     },
 
@@ -243,7 +252,7 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
 };
 
 // ---------------------------------------------------------------------------
-// Buyer / brand logos shown on the homepage, /business and /who-we-work-with.
+// Buyer / brand logos shown on the homepage, /what-we-do and /global-partner.
 // Files live in public/images/client/logos/. Add or remove entries here and
 // every page that lists brands updates together.
 // ---------------------------------------------------------------------------
@@ -290,7 +299,7 @@ export const CLIENT_LOGOS: ClientLogo[] = [
 // SMETA is the audit conducted under Sedex, and the Higg Index covers what
 // was previously listed as FEM.
 // ---------------------------------------------------------------------------
-// Photographs behind the product cards on /business. Keyed by the product
+// Photographs behind the product cards on /what-we-do. Keyed by the product
 // name as it appears in the CMS products list; anything unmapped falls back
 // to the knit-texture shot so client-added products still render as a card.
 export const PRODUCT_IMAGES: Record<string, string> = {
@@ -305,6 +314,44 @@ export const PRODUCT_IMAGES: Record<string, string> = {
 };
 
 export const PRODUCT_IMAGE_FALLBACK = "/images/client/4-copy.webp";
+
+export type Product = {
+    title: string;
+    description: string;
+    image: string;
+};
+
+// `products` used to be a plain list of names. Stored rows still hold that shape
+// until the migration runs, and a client can always save a half-filled row, so
+// accept both forms and fill the gaps: a missing image falls back to the one
+// that name used to resolve to, a missing description simply hides the line.
+// Entries without a usable title are dropped rather than rendered as blank cards.
+export function normalizeProducts(raw: unknown): Product[] {
+    if (!Array.isArray(raw)) return [];
+
+    return raw.reduce<Product[]>((acc, item) => {
+        if (typeof item === "string") {
+            const title = item.trim();
+            if (title) acc.push({ title, description: "", image: PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK });
+            return acc;
+        }
+
+        if (item && typeof item === "object" && !Array.isArray(item)) {
+            const row = item as Record<string, unknown>;
+            const title = typeof row.title === "string" ? row.title.trim() : "";
+            if (!title) return acc;
+
+            const image = typeof row.image === "string" && row.image.trim()
+                ? row.image.trim()
+                : PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK;
+            const description = typeof row.description === "string" ? row.description.trim() : "";
+
+            acc.push({ title, description, image });
+        }
+
+        return acc;
+    }, []);
+}
 
 export interface Certification {
     name: string;
@@ -422,7 +469,7 @@ export const LEADERS: Leader[] = [
 ];
 
 // ---------------------------------------------------------------------------
-// Media Center gallery (/media). type: 'gallery' | 'news'.
+// Media Center gallery (/life-at-fashion-asia). type: 'gallery' | 'news'.
 // Drop new images into public/images/client/ and add entries here.
 // ---------------------------------------------------------------------------
 export interface MediaAsset {

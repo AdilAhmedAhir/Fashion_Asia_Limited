@@ -18,7 +18,7 @@ export default function WhoWeWorkWithClient({ initial }: { initial: WhoWeWorkWit
 
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
-            <SettingsHeader tag="Page Settings" title="Who We Work With" onSave={save} saving={isPending} />
+            <SettingsHeader tag="Page Settings" title="Global Partner" onSave={save} saving={isPending} />
 
             <SettingsCard title="Introduction">
                 <TextArea

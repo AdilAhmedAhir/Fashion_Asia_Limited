@@ -9,6 +9,16 @@ export const metadata: Metadata = {
     title: "Who We Are",
     description:
         "Fashion Asia Limited — a knit garments manufacturer in Sreepur, Gazipur and sister concern of Northern Tosrifa Group. Our vision, values, milestones, and leadership.",
+    // Self-referencing canonical and per-page OG. Without these every page
+    // inherited the homepage's og:url, which matters most right after a
+    // URL rename when crawlers are re-resolving these paths.
+    alternates: { canonical: "/who-we-are" },
+    openGraph: {
+        url: "/who-we-are",
+        title: "Who We Are",
+        description:
+                    "Fashion Asia Limited — a knit garments manufacturer in Sreepur, Gazipur and sister concern of Northern Tosrifa Group. Our vision, values, milestones, and leadership.",
+    },
 };
 
 export const revalidate = 60;
@@ -54,7 +64,7 @@ export default async function WhoWeArePage() {
                 </div>
             </section>
 
-            {/* The Numbers — moved here from /who-we-work-with. Sits directly
+            {/* The Numbers — moved here from /global-partner. Sits directly
                 under About Us, which makes the same claims in prose. */}
             {assuranceStats.length > 0 && (
                 <section className="container pb-24 md:pb-32">

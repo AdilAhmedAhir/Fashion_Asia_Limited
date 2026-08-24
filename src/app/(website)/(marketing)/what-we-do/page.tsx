@@ -1,7 +1,7 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings } from "@/app/actions/settings-actions";
-import { PRODUCT_IMAGES, PRODUCT_IMAGE_FALLBACK } from "@/lib/site-content";
+import { normalizeProducts } from "@/lib/site-content";
 import { ArrowRight } from "lucide-react";
 import { Fragment } from "react";
 import type { Metadata } from "next";
@@ -10,13 +10,23 @@ export const metadata: Metadata = {
     title: "What We Do",
     description:
         "Knit garment manufacturing at scale — 26 production lines, 800,000 pieces monthly, from t-shirts and polos to sportswear and heavy jersey.",
+    // Self-referencing canonical and per-page OG. Without these every page
+    // inherited the homepage's og:url, which matters most right after a
+    // URL rename when crawlers are re-resolving these paths.
+    alternates: { canonical: "/what-we-do" },
+    openGraph: {
+        url: "/what-we-do",
+        title: "What We Do",
+        description:
+                    "Knit garment manufacturing at scale — 26 production lines, 800,000 pieces monthly, from t-shirts and polos to sportswear and heavy jersey.",
+    },
 };
 
 export const revalidate = 60;
 
 export default async function BusinessPage() {
     const data = await getSettings("business");
-    const products = data.products?.length ? data.products : ['T-Shirts', 'Polo Shirts', 'Tank Tops', 'Dresses', 'Sleepwear', 'Leggings', 'Sportswear', 'Heavy Jersey Products'];
+    const products = normalizeProducts(data.products);
     const processSteps: string[] = data.processSteps?.length ? data.processSteps : [];
     // Blank lines separate paragraphs, so the copy stays a single textarea in the admin.
     const craftParagraphs: string[] = (data.whatWeDoText || "").split(/\n\s*\n/).map((p: string) => p.trim()).filter(Boolean);
@@ -105,28 +115,42 @@ export default async function BusinessPage() {
                     name on a scrim at the bottom left. Photos are real production
                     shots (no per-product photography exists), B&W for cohesion. */}
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
-                    {products.map((product: string, i: number) => (
-                        <ScrollReveal key={product} delay={i * 0.1}>
+                    {/* Titles are client-entered and can repeat, so the key pairs
+                        the title with its position rather than trusting uniqueness. */}
+                    {products.map((product, i) => (
+                        <ScrollReveal key={`${product.title}-${i}`} delay={i * 0.1}>
                             <div className="group relative h-48 overflow-hidden rounded-xl border border-white/10 bg-surface md:h-56">
                                 <img
-                                    src={PRODUCT_IMAGES[product] ?? PRODUCT_IMAGE_FALLBACK}
+                                    src={product.image}
                                     alt=""
                                     aria-hidden="true"
                                     loading="lazy"
                                     decoding="async"
                                     className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-700 group-hover:scale-105 group-hover:opacity-90"
                                 />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
-                                <span className="absolute bottom-4 left-4 right-4 font-serif text-lg font-bold leading-snug text-white">
-                                    {product}
-                                </span>
+                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+                                {/* Title and description share one bottom block so the
+                                    card looks right whether or not a description is set. */}
+                                <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-4">
+                                    <span className="line-clamp-2 font-serif text-lg font-bold leading-snug text-white">
+                                        {product.title}
+                                    </span>
+                                    {/* Clamped: the card is a fixed height and the description is
+                                        free text, so an over-long one would otherwise grow this
+                                        block past the top of the card and clip the title. */}
+                                    {product.description && (
+                                        <p className="line-clamp-3 text-xs leading-relaxed text-white/70">
+                                            {product.description}
+                                        </p>
+                                    )}
+                                </div>
                             </div>
                         </ScrollReveal>
                     ))}
                 </div>
             </section>
 
-            {/* Showroom band — moved here from /who-we-work-with. The photograph is
+            {/* Showroom band — moved here from /global-partner. The photograph is
                 near-white, so the image itself is dimmed rather than buried under
                 scrims, keeping the room legible behind white type. */}
             <section className="relative h-[280px] w-full overflow-hidden md:h-[400px]">

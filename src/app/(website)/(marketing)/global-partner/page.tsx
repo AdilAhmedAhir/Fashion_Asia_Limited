@@ -5,9 +5,19 @@ import { CLIENT_LOGOS } from "@/lib/site-content";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-    title: "Who We Work With",
+    title: "Global Partner",
     description:
         "The international retailers and labels that rely on Fashion Asia Limited for knitwear manufacturing.",
+    // Self-referencing canonical and per-page OG. Without these every page
+    // inherited the homepage's og:url, which matters most right after a
+    // URL rename when crawlers are re-resolving these paths.
+    alternates: { canonical: "/global-partner" },
+    openGraph: {
+        url: "/global-partner",
+        title: "Global Partner",
+        description:
+                    "The international retailers and labels that rely on Fashion Asia Limited for knitwear manufacturing.",
+    },
 };
 
 export const revalidate = 60;
@@ -19,7 +29,7 @@ export default async function WhoWeWorkWithPage() {
         <div className="flex flex-col bg-background">
             <PageHeader
                 tag="Relationships"
-                title="Who We Work With"
+                title="Global Partner"
                 description="Trusted by leading international buyers for quality, compliance, and on-time delivery."
             />
 

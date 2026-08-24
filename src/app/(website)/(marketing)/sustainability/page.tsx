@@ -9,6 +9,16 @@ export const metadata: Metadata = {
     title: "Sustainability",
     description:
         "Green manufacturing at Fashion Asia Limited — solar power, rainwater harvesting, waste reduction, and LEED Gold, WRAP, BSCI, SMETA, SLCP, Higg Index, GOTS, OCS, GRS, OEKO-TEX, BCI and RSC certification.",
+    // Self-referencing canonical and per-page OG. Without these every page
+    // inherited the homepage's og:url, which matters most right after a
+    // URL rename when crawlers are re-resolving these paths.
+    alternates: { canonical: "/sustainability" },
+    openGraph: {
+        url: "/sustainability",
+        title: "Sustainability",
+        description:
+                    "Green manufacturing at Fashion Asia Limited — solar power, rainwater harvesting, waste reduction, and LEED Gold, WRAP, BSCI, SMETA, SLCP, Higg Index, GOTS, OCS, GRS, OEKO-TEX, BCI and RSC certification.",
+    },
 };
 
 export const revalidate = 60;

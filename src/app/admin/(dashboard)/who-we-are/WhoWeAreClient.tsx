@@ -114,7 +114,7 @@ export default function WhoWeAreClient({ settings: init, leaders: initLeaders }:
 
             <SettingsCard title="Life at Fashion Asia">
                 <ObjectListEditor
-                    label="Culture Pillars (also shown on /media)"
+                    label="Culture Pillars (also shown on /life-at-fashion-asia)"
                     items={data.lifeAtFAL}
                     onChange={v => set("lifeAtFAL", v)}
                     addLabel="Add Pillar"

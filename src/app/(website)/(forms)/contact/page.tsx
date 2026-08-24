@@ -7,6 +7,16 @@ export const metadata: Metadata = {
     title: "Contact Us",
     description:
         "Get in touch with Fashion Asia Limited — factory in Teprirbari, Sreepur, Gazipur and corporate office in Gopalpur, Munnu Nagar, Tongi.",
+    // Self-referencing canonical and per-page OG. Without these every page
+    // inherited the homepage's og:url, which matters most right after a
+    // URL rename when crawlers are re-resolving these paths.
+    alternates: { canonical: "/contact" },
+    openGraph: {
+        url: "/contact",
+        title: "Contact Us",
+        description:
+                    "Get in touch with Fashion Asia Limited — factory in Teprirbari, Sreepur, Gazipur and corporate office in Gopalpur, Munnu Nagar, Tongi.",
+    },
 };
 
 export default function ContactPage() {
