@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { X, Plus, Save, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { ImageUploadField } from "@/components/admin/ImageUploadField";
 
 // ============================================
 // Generic form components for settings pages
@@ -131,7 +132,7 @@ export function StatsList({ label, items, onChange }: {
 
 // Editor for a list of objects with a fixed set of text fields — covers the
 // stat, pillar, facility and milestone shapes used across the site content.
-export type ObjectField = { key: string; label: string; type?: "text" | "textarea" };
+export type ObjectField = { key: string; label: string; type?: "text" | "textarea" | "image" };
 
 export function ObjectListEditor<T extends Record<string, string>>({
     label, items, fields, onChange, addLabel = "Add Item"
@@ -187,7 +188,14 @@ export function ObjectListEditor<T extends Record<string, string>>({
                             </div>
                         </div>
                         <div className="flex flex-col gap-3">
-                            {fields.map(f => (
+                            {fields.map(f => f.type === "image" ? (
+                                <ImageUploadField
+                                    key={f.key}
+                                    label={f.label}
+                                    value={item[f.key] ?? ""}
+                                    onChange={v => update(i, f.key, v)}
+                                />
+                            ) : (
                                 <div key={f.key} className="flex flex-col gap-1.5">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-white/30">{f.label}</label>
                                     {f.type === "textarea" ? (
