@@ -46,7 +46,7 @@ export default function BusinessClient({ initial }: { initial: BusinessData }) {
                         fields={[
                             { key: "title", label: "Title" },
                             { key: "description", label: "Short Description (optional — hidden when blank)", type: "textarea" },
-                            { key: "image", label: "Image path (e.g. /images/client/product-tshirts.webp)" },
+                            { key: "image", label: "Card image", type: "image" },
                         ]}
                     />
                 </div>
