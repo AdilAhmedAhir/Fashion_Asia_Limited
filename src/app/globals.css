@@ -7,9 +7,23 @@
   html,
   body {
     @apply bg-background text-foreground antialiased;
+    /* `overflow-x: hidden` forces overflow-y to compute to `auto`, which makes
+       the document a scroll container and silently disables position:sticky for
+       everything inside it — that is what stopped the admin sidebar sticking.
+       `clip` hides the same horizontal overflow without creating a scroll
+       container, so sticky keeps working. `hidden` remains below as the
+       fallback for Safari earlier than 16. */
     overflow-x: hidden;
     -webkit-overflow-scrolling: touch;
     /* Smooth momentum scrolling on iOS */
+  }
+
+  @supports (overflow: clip) {
+
+    html,
+    body {
+      overflow-x: clip;
+    }
   }
 
   html {
