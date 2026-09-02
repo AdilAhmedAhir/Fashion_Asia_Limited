@@ -40,7 +40,7 @@ const navItems = [
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
     return (
         <div className="flex min-h-screen bg-[#0a0a0a]">
-            <aside className="w-64 flex-shrink-0 border-r border-white/5 bg-black p-6 flex-col hidden md:flex">
+            <aside className="sticky top-0 h-screen w-64 flex-shrink-0 border-r border-white/5 bg-black p-6 flex-col hidden md:flex">
                 <div className="mb-8 flex items-center gap-3">
                     <BrandLogo className="h-8 w-8" />
                     <span className="font-serif text-lg font-bold tracking-widest text-white">FA CMS</span>
@@ -82,7 +82,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 </div>
             </aside>
 
-            <main className="flex-grow flex flex-col max-h-screen overflow-y-auto">
+            <main className="min-w-0 flex-grow">
                 <div className="p-8 md:p-12">
                     {children}
                 </div>
