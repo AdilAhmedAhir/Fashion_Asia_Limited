@@ -76,6 +76,14 @@ CREATE POLICY "Allow public read on site_settings" ON public.site_settings FOR S
 -- 'homepage'       → { hero, about, business, sustainability, scale, contact }
 -- 'who_we_are'     → { aboutText, vision, mission }
 -- 'business'       → { processTitle, processSteps, whatWeDoTagline, products }
+--                     NOTE (T-001): `products` here means CATEGORIES (T-Shirts,
+--                     Polo Shirts, ...) — the name predates the products-within-
+--                     category feature and was kept as-is to avoid a live-data
+--                     rename. Each entry now also carries a `slug` (stable,
+--                     assigned once, never recomputed). The actual per-category
+--                     catalog items live in the separate `products` TABLE
+--                     (section 6 above), keyed by `category_slug`. Do not
+--                     conflate the two — see docs/TECH_STACK.md → Database.
 -- 'sustainability' → { description, certifications, initiatives }
 -- 'contact'        → { phone, email, factoryAddress, corporateAddress, mapsUrl, socialLinks }
 -- 'general'        → { companyName, seoTitle, seoDescription, footerCopyright }
@@ -118,7 +126,47 @@ ALTER TABLE public.leaders ENABLE ROW LEVEL SECURITY;
 CREATE POLICY "Allow public read on leaders" ON public.leaders FOR SELECT TO anon USING (true);
 
 -- ================================================================
--- 6. Seed Default Settings
+-- 6. Products Table — NEW (T-001, db/migrations/0001_products-within-category.sql)
+-- Individual catalog items inside a category. Categories themselves are NOT
+-- a table — they stay in site_settings.business.products (JSONB, see the
+-- note on section 3 below) and are unaffected by this table. category_slug
+-- is an application-enforced link to a category's `slug` field in that
+-- JSONB array; there is no DB-level foreign key, because categories are not
+-- table rows. Full decision record: docs/TECH_STACK.md → Database →
+-- "Products-within-category schema".
+-- ================================================================
+CREATE TABLE IF NOT EXISTS public.products (
+    id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
+    category_slug VARCHAR(255) NOT NULL,
+    name VARCHAR(255) NOT NULL DEFAULT '',
+    description TEXT NOT NULL DEFAULT '',
+    image TEXT NOT NULL DEFAULT '',
+    sort_order INTEGER NOT NULL DEFAULT 0,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS idx_products_category_sort ON public.products (category_slug, sort_order);
+
+-- Explicit table-level grants (2026-09-26 follow-up) — RLS policies below
+-- only filter rows a role already has table privileges for; do not rely on
+-- Supabase's project-level default-privilege auto-grant for new tables, which
+-- is being phased out platform-wide (enforced on existing projects from
+-- 2026-10-30 — see db/migrations/0001_products-within-category.sql and
+-- docs/TECH_STACK.md → Database for the full citation). The other five NEW-
+-- marked tables in this file predate that change and were auto-granted at
+-- creation time (default privileges are create-time-only, so they are not
+-- retroactively affected) — this is the first table in this file to need an
+-- explicit grant stated outright.
+GRANT SELECT ON TABLE public.products TO anon;
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.products TO authenticated;
+
+ALTER TABLE public.products ENABLE ROW LEVEL SECURITY;
+CREATE POLICY "Allow public read on products" ON public.products FOR SELECT TO anon USING (true);
+CREATE POLICY "Allow authenticated full access to products" ON public.products FOR ALL TO authenticated USING (true) WITH CHECK (true);
+
+-- ================================================================
+-- 7. Seed Default Settings
 -- ================================================================
 INSERT INTO public.site_settings (key, value) VALUES
 ('homepage', '{
@@ -166,41 +214,49 @@ INSERT INTO public.site_settings (key, value) VALUES
   "products": [
     {
       "title": "T-Shirts",
+      "slug": "t-shirts",
       "description": "",
       "image": "/images/client/product-tshirts.webp"
     },
     {
       "title": "Polo Shirts",
+      "slug": "polo-shirts",
       "description": "",
       "image": "/images/client/box12-copy.webp"
     },
     {
       "title": "Tank Tops",
+      "slug": "tank-tops",
       "description": "",
       "image": "/images/client/product-tanktops.webp"
     },
     {
       "title": "Dresses",
+      "slug": "dresses",
       "description": "",
       "image": "/images/client/product-dresses.webp"
     },
     {
       "title": "Sleepwear",
+      "slug": "sleepwear",
       "description": "",
       "image": "/images/client/product-sleepwear.webp"
     },
     {
       "title": "Leggings",
+      "slug": "leggings",
       "description": "",
       "image": "/images/client/box10-copy.webp"
     },
     {
       "title": "Sportswear",
+      "slug": "sportswear",
       "description": "",
       "image": "/images/client/product-sportswear.webp"
     },
     {
       "title": "Heavy Jersey Products",
+      "slug": "heavy-jersey-products",
       "description": "",
       "image": "/images/client/4-copy.webp"
     }
