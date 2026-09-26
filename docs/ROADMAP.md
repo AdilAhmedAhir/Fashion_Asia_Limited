@@ -21,7 +21,7 @@ Status: first `/pm` pass on this repo. No prior `ROADMAP.md` entries exist to am
   - **Sequence:** `/git Start` → `/architect Review schema` → **HARD STOP: user confirms SQL applied** → `/lead-dev` (types only) → `/cso review` (new RLS policies) → `/qa static` → `/qa live` (read-only: confirm the table/columns and RLS behave as designed — no writes) → `/git Merge`
   - **Notes:** First ticket in the sprint, deliberately — every ticket below either depends on this one's SQL being applied, or doesn't. See Dependency Order.
 
-- [ ] **T-002** — Show a recommended image size and a non-blocking warning on product image uploads
+- [x] **T-002** — Show a recommended image size and a non-blocking warning on product image uploads
   - **Source:** direct — `docs/VISION.md` MVP Feature 3
   - **Files:** `src/lib/upload-limits.ts` (add recommended-size constants alongside the existing hard-limit constants), `src/components/admin/ImageUploadField.tsx` (show the recommendation; add a non-blocking warning state distinct from the existing hard-block error state)
   - **Flags:** schema-touching: **no** · sensitive: **no** · UI: **yes**
