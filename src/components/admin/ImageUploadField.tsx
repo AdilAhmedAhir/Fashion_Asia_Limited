@@ -1,14 +1,17 @@
 "use client";
 
 import { useId, useRef, useState } from "react";
-import { ImageUp, Loader2, TriangleAlert } from "lucide-react";
+import { ImageUp, Info, Loader2, TriangleAlert } from "lucide-react";
 import { uploadOptimizedImage } from "@/app/actions/media-actions";
 import {
     ALLOWED_EXTENSIONS,
     MAX_UPLOAD_BYTES,
     MAX_UPLOAD_DIMENSION,
+    RECOMMENDED_UPLOAD_HEIGHT,
+    RECOMMENDED_UPLOAD_WIDTH,
     TINYPNG_URL,
     UPLOAD_ACCEPT,
+    checkImageSizeAdvisory,
     formatBytes,
 } from "@/lib/upload-limits";
 
@@ -34,6 +37,7 @@ export function ImageUploadField({
     const [dragging, setDragging] = useState(false);
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [warning, setWarning] = useState<string | null>(null);
 
     const extList = ALLOWED_EXTENSIONS.join(", ");
 
@@ -51,42 +55,81 @@ export function ImageUploadField({
     };
 
     /** Measured in the browser only; the server cannot cheaply read dimensions. */
-    const tooBig = (file: File) =>
-        new Promise<string | null>(resolve => {
+    const readDimensions = (file: File) =>
+        new Promise<{ width: number; height: number } | null>(resolve => {
             const url = URL.createObjectURL(file);
             const img = new Image();
             img.onload = () => {
                 URL.revokeObjectURL(url);
-                const longest = Math.max(img.naturalWidth, img.naturalHeight);
-                resolve(
-                    longest > MAX_UPLOAD_DIMENSION
-                        ? `That image is ${img.naturalWidth}×${img.naturalHeight}. Resize it to ${MAX_UPLOAD_DIMENSION}px on the longest edge or smaller.`
-                        : null
-                );
+                resolve({ width: img.naturalWidth, height: img.naturalHeight });
             };
             img.onerror = () => {
                 URL.revokeObjectURL(url);
-                resolve("That file could not be read as an image.");
+                resolve(null);
             };
             img.src = url;
         });
 
+    /**
+     * Soft guidance only — called after the hard limits already passed, so
+     * this never blocks. Returns null when the image matches the
+     * recommendation closely enough that no warning is worth showing.
+     */
+    const describeSizeAdvisory = (width: number, height: number): string | null => {
+        const { tooSmall, offProportion } = checkImageSizeAdvisory(width, height);
+        const recommended = `${RECOMMENDED_UPLOAD_WIDTH}×${RECOMMENDED_UPLOAD_HEIGHT}px`;
+        // Shared close, appended to every branch below — states the fix as an
+        // optional next step (the file already uploaded), not a command.
+        const fix = `If you'd like, export a version closer to ${recommended} landscape and upload that instead.`;
+
+        if (tooSmall && offProportion) {
+            return `This image is ${width}×${height}px — smaller than the recommended ${recommended} and a noticeably different shape. It uploaded, but may look soft or be cropped awkwardly here. ${fix}`;
+        }
+        if (tooSmall) {
+            return `This image is ${width}×${height}px, smaller than the recommended ${recommended}. It uploaded, but may look soft on larger or higher-resolution screens. ${fix}`;
+        }
+        if (offProportion) {
+            return `This image is ${width}×${height}px — a noticeably different shape than the recommended ${recommended} landscape. It uploaded, but may be cropped awkwardly where it's displayed. ${fix}`;
+        }
+        return null;
+    };
+
     const handleFile = async (file: File) => {
         setError(null);
+        setWarning(null);
 
-        const localProblem = wrongType(file) ?? tooLarge(file) ?? (await tooBig(file));
-        if (localProblem) {
-            setError(localProblem);
+        const hardProblem = wrongType(file) ?? tooLarge(file);
+        if (hardProblem) {
+            setError(hardProblem);
             return;
         }
+
+        const dimensions = await readDimensions(file);
+        if (!dimensions) {
+            setError("That file could not be read as an image.");
+            return;
+        }
+
+        const { width, height } = dimensions;
+        const longest = Math.max(width, height);
+        if (longest > MAX_UPLOAD_DIMENSION) {
+            setError(`That image is ${width}×${height}. Resize it to ${MAX_UPLOAD_DIMENSION}px on the longest edge or smaller.`);
+            return;
+        }
+
+        const advisory = describeSizeAdvisory(width, height);
 
         setBusy(true);
         try {
             const body = new FormData();
             body.set("file", file);
             const result = await uploadOptimizedImage(body);
-            if (result.ok) onChange(result.url);
-            else setError(result.error);
+            if (result.ok) {
+                onChange(result.url);
+                setWarning(advisory);
+            } else {
+                setError(result.error);
+            }
         } catch {
             setError("Upload failed. Check your connection and try again.");
         } finally {
@@ -137,9 +180,14 @@ export function ImageUploadField({
                             {busy ? "Uploading…" : value ? "Replace image" : "Choose image"}
                         </label>
                         {busy && <Loader2 size={14} className="animate-spin text-accent" />}
-                        <span className="text-[11px] text-white/30">or drag one here</span>
+                        <span className="text-[11px] text-white/50">or drag one here</span>
                     </div>
-                    <p className="text-[11px] leading-relaxed text-white/30">
+                    {/* text-white/50, not the /30 used for labels elsewhere: this box
+                        sits two layers of bg-black/40 deep (ObjectListEditor's item
+                        card, then this dropzone), so the effective background is
+                        near-black — /30 measures ~2.5:1 there, below the 4.5:1 AA
+                        floor for 11px text. /50 clears ~5.3:1 on the same background. */}
+                    <p className="text-[11px] leading-relaxed text-white/50">
                         {extList} · up to {formatBytes(MAX_UPLOAD_BYTES)} · max {MAX_UPLOAD_DIMENSION}px.
                         Compress at{" "}
                         <a
@@ -151,6 +199,10 @@ export function ImageUploadField({
                             TinyPNG
                         </a>{" "}
                         before uploading.
+                    </p>
+                    <p className="text-[11px] leading-relaxed text-white/50">
+                        Recommended: {RECOMMENDED_UPLOAD_WIDTH}×{RECOMMENDED_UPLOAD_HEIGHT}px landscape,
+                        for the sharpest result wherever this appears on the site.
                     </p>
                 </div>
 
@@ -169,8 +221,26 @@ export function ImageUploadField({
 
             {error && (
                 <p role="alert" className="flex items-start gap-2 text-[11px] leading-relaxed text-red-400">
-                    <TriangleAlert size={13} className="mt-px flex-none" />
+                    <TriangleAlert size={13} className="mt-px flex-none" aria-hidden="true" />
                     {error}
+                </p>
+            )}
+
+            {/* Advisory only — never blocks. Distinct from the hard-block error
+                above in shape (bordered box, not plain text), icon (info circle,
+                not a warning triangle), colour (amber, not red), and live-region
+                priority (role="status" is polite; the error above is assertive),
+                so the difference doesn't rely on colour alone. */}
+            {warning && (
+                <p
+                    role="status"
+                    aria-live="polite"
+                    className="flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] leading-relaxed text-amber-300"
+                >
+                    <Info size={13} className="mt-px flex-none" aria-hidden="true" />
+                    <span>
+                        <strong className="font-bold">Heads up —</strong> {warning}
+                    </span>
                 </p>
             )}
 
