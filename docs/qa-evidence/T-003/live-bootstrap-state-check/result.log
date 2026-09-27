@@ -1,0 +1,45 @@
+{
+  "ok": true,
+  "real_functions_used": [
+    "readStoredCategoryIdentities",
+    "normalizeProducts"
+  ],
+  "source_file": "src/lib/site-content.ts (loaded directly via require(), type-stripped by Node 25 -- not hand-copied)",
+  "live_category_count": 8,
+  "frozen_identities_count": 0,
+  "not_yet_bootstrapped": true,
+  "live_title_slug_pairs": [
+    {
+      "title": "T-Shirts",
+      "slug": "t-shirts"
+    },
+    {
+      "title": "Polo Shirts",
+      "slug": "polo-shirts"
+    },
+    {
+      "title": "Tank Tops",
+      "slug": "tank-tops"
+    },
+    {
+      "title": "Dresses",
+      "slug": "dresses"
+    },
+    {
+      "title": "Sleepwear",
+      "slug": "sleepwear"
+    },
+    {
+      "title": "Leggings",
+      "slug": "leggings"
+    },
+    {
+      "title": "Sportswear",
+      "slug": "sportswear"
+    },
+    {
+      "title": "Heavy Jersey Products",
+      "slug": "heavy-jersey-products"
+    }
+  ]
+}
