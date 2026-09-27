@@ -1,0 +1,5 @@
+=== Image URL regression diff: T-001 what-we-do vs T-002 baseline ===
+Baseline (T-002, 2026-09-26): docs/qa-evidence/T-001/what-we-do-regression/image-urls-baseline-T-002.txt
+Current (T-001, 2026-09-27): docs/qa-evidence/T-001/what-we-do-regression/image-urls-new.txt
+
+RESULT: IDENTICAL — 0 differences, 8/8 URLs byte-for-byte match T-002's saved baseline.
