@@ -1,0 +1,736 @@
+{
+  "url": "http://localhost:3000/what-we-do/sportswear",
+  "width": 1440,
+  "height": 1800,
+  "waitMs": 4000,
+  "isMobile": false,
+  "consoleMessageCount": 20,
+  "consoleMessages": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "[HMR] connected"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 210ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 128ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 131ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 125ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 106ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 106ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 114ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 1038ms"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] rebuilding"
+    },
+    {
+      "type": "log",
+      "text": "[Fast Refresh] done in 436ms"
+    }
+  ],
+  "exceptionCount": 0,
+  "exceptions": [],
+  "totalResponses": 194,
+  "failedRequestCount": 160,
+  "failedRequests": [
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_1.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_2.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_3.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_4.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_5.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_6.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_7.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_8.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_9.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_10.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_11.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_12.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_13.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_14.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_15.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_16.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_17.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_18.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_19.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_20.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_21.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_22.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_23.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_24.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_25.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_26.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_27.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_28.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_29.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_30.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_31.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_32.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_33.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_34.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_35.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_36.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_37.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_38.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_39.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_40.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_41.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_42.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_43.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_44.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_45.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_46.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_47.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_48.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_49.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_50.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_51.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_52.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_53.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_54.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_55.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_56.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_57.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_58.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_59.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_60.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_61.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_62.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_63.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_64.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_65.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_66.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_67.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_68.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_69.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_70.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_71.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_72.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_73.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_74.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_75.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_76.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_77.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_78.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_79.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_80.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_81.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_82.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_83.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_84.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_85.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_86.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_87.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_88.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_89.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_90.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_91.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_92.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_93.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_94.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_95.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_96.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_97.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_98.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_99.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_100.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_101.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_102.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_103.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_104.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_105.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_106.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_107.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_109.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_108.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_110.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_111.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_112.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_113.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_114.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_115.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_116.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_117.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_118.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_119.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_120.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_121.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_122.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_123.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_124.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_125.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_126.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_127.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_128.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_129.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_130.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_131.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_132.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_133.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_134.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_135.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_136.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_137.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_138.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_139.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_140.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_141.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_142.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_143.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_144.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_145.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_146.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_147.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_148.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_149.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_150.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_151.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_152.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_153.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_154.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_155.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_156.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_157.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_158.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_159.webp",
+      "status": 404
+    },
+    {
+      "url": "http://localhost:3000/sequence/hero/frame_160.webp",
+      "status": 404
+    }
+  ]
+}

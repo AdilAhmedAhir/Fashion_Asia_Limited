@@ -150,11 +150,16 @@ export async function updateSettings(key: string, value: Record<string, unknown>
     // Each category's own detail page (T-005's /what-we-do/<slug> scheme),
     // in addition to /what-we-do itself (already covered by SETTINGS_ROUTES
     // above) — built only from the slugs this same save just resolved and
-    // validated, never a raw client-supplied string.
+    // validated, never a raw client-supplied string. A category add/rename/
+    // delete also changes sitemap.ts's own output (it lists one entry per
+    // live category), so the sitemap route is revalidated here too — it was
+    // not before T-005, which would have left a stale sitemap between
+    // deploys until its own time-based revalidation caught up.
     if (savedCategories) {
         for (const category of savedCategories) {
             revalidatePath(`/what-we-do/${category.slug}`);
         }
+        revalidatePath("/sitemap.xml");
     }
 }
 
