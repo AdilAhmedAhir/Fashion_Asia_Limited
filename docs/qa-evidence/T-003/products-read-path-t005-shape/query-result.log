@@ -1,0 +1,8 @@
+{
+  "ok": true,
+  "http_status": 200,
+  "error_message": null,
+  "error_code": null,
+  "exact_row_count_for_t_shirts": 0,
+  "query_shape": "select(...).eq(category_slug=t-shirts).order(sort_order asc), head:true count:exact -- mirrors getCategoryProducts exactly"
+}

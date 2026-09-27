@@ -2,7 +2,13 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
-import { SITE_SETTINGS } from "@/lib/site-content";
+import {
+    SITE_SETTINGS,
+    resolveCategoriesForSave,
+    computeRemovedCategories,
+    readStoredCategoryIdentities,
+    type Product,
+} from "@/lib/site-content";
 
 // ============================================
 // SETTINGS CRUD
@@ -36,11 +42,93 @@ const SETTINGS_ROUTES: Record<string, string> = {
     contact: "/contact"
 };
 
+// `business`'s `products` field actually holds CATEGORIES (T-Shirts, Polo
+// Shirts, ...) — see the naming-quirk note in docs/TECH_STACK.md. Every
+// category's `slug` is its permanent identity and public URL segment
+// (docs/TECH_STACK.md decision (b)); this save path is the only place that
+// is ever allowed to assign or freeze one.
 export async function updateSettings(key: string, value: Record<string, unknown>) {
     const supabase = await createClient();
+
+    // Every write action checks for an authenticated session server-side, in
+    // addition to RLS (matches the existing uploadOptimizedImage/
+    // importBuiltInGallery/seedSettingsFromDefaults pattern in this
+    // codebase) — updateSettings previously had no such check.
+    const {
+        data: { user }
+    } = await supabase.auth.getUser();
+    if (!user) throw new Error("Not authenticated");
+
+    let finalValue: Record<string, unknown> = value;
+    let savedCategories: Product[] | null = null;
+
+    if (key === "business") {
+        // Re-fetch the currently-persisted row fresh — never trust the
+        // client's own copy of what's already stored. If this read itself
+        // fails, fail the whole save closed rather than silently treating
+        // every category as brand new (which would let an already-frozen
+        // slug get silently re-derived from today's title — decision (b)
+        // promises a slug is "frozen forever" once assigned).
+        const { data: existingRow, error: existingError } = await supabase
+            .from("site_settings")
+            .select("value")
+            .eq("key", "business")
+            .maybeSingle();
+
+        if (existingError) throw new Error(existingError.message);
+
+        const existingValue = existingRow?.value as Record<string, unknown> | undefined;
+        const existingProductsRaw: unknown[] = Array.isArray(existingValue?.products)
+            ? (existingValue!.products as unknown[])
+            : [];
+
+        // Every already-stored category's own internal id, mapped to its
+        // frozen {slug, title} — matching is by id alone, never by slug,
+        // never by title (docs/TECH_STACK.md decision (d), 2026-09-27).
+        // Treated as already-possibly-untrustworthy, not just legacy
+        // pre-T-001 rows — the pre-existing, unmodified Save button could
+        // already have persisted an unvalidated slug (docs/QA_REPORT.md
+        // T-001 WARN-2) — resolveCategoriesForSave() re-validates every
+        // one of these for collisions rather than assuming membership alone
+        // makes it safe.
+        const existingById = readStoredCategoryIdentities(existingProductsRaw);
+
+        const resolution = resolveCategoriesForSave(value.products, existingById);
+        if (!resolution.ok) throw new Error(resolution.error);
+
+        // Delete guard (decision (c)): a category whose id existed before
+        // this save but is absent from the resolved output is a real
+        // delete — identified by id-diff, never slug-diff, so a rename can
+        // never be mistaken for one and a freshly-derived slug that happens
+        // to match a just-vacated one can never make a real removal
+        // invisible (closes CRIT-1 / SEC-HIGH-3). Refuse the entire save if
+        // any removed category still has >=1 product row.
+        const removed = computeRemovedCategories(existingById, resolution.categories);
+
+        if (removed.length) {
+            const removedSlugs = removed.map(r => r.slug);
+            const { data: remainingProducts, error: countError } = await supabase
+                .from("products")
+                .select("category_slug")
+                .in("category_slug", removedSlugs);
+
+            if (countError) throw new Error(countError.message);
+
+            const remainingSlugs = new Set((remainingProducts ?? []).map(row => row.category_slug as string));
+            const blocked = removed.filter(r => remainingSlugs.has(r.slug));
+            if (blocked.length) {
+                const names = blocked.map(r => r.title).join(", ");
+                throw new Error(`Remove its products first: "${names}" still has products assigned to it.`);
+            }
+        }
+
+        savedCategories = resolution.categories;
+        finalValue = { ...value, products: resolution.categories };
+    }
+
     const { error } = await supabase
         .from("site_settings")
-        .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
+        .upsert({ key, value: finalValue, updated_at: new Date().toISOString() }, { onConflict: "key" });
 
     if (error) throw new Error(error.message);
 
@@ -58,6 +146,16 @@ export async function updateSettings(key: string, value: Record<string, unknown>
 
     // who_we_are also supplies the culture pillars rendered on /life-at-fashion-asia.
     if (key === "who_we_are") revalidatePath("/life-at-fashion-asia");
+
+    // Each category's own detail page (T-005's /what-we-do/<slug> scheme),
+    // in addition to /what-we-do itself (already covered by SETTINGS_ROUTES
+    // above) — built only from the slugs this same save just resolved and
+    // validated, never a raw client-supplied string.
+    if (savedCategories) {
+        for (const category of savedCategories) {
+            revalidatePath(`/what-we-do/${category.slug}`);
+        }
+    }
 }
 
 // Writes the defaults from site-content.ts into site_settings for the named

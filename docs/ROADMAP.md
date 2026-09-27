@@ -36,7 +36,7 @@ Status: first `/pm` pass on this repo. No prior `ROADMAP.md` entries exist to am
   - **Sequence:** `/git Start` → `/lead-dev` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge`
   - **Notes:** Independent of T-001 — no schema/table dependency. Can start immediately; not stuck behind T-001's hard stop.
 
-- [ ] **T-003** — Build the products-within-category data layer, including the category delete-guard
+- [x] **T-003** — Build the products-within-category data layer, including the category delete-guard
   - **Source:** direct — `docs/VISION.md` MVP Feature 2 (data/backend half)
   - **Files:** `src/app/actions/settings-actions.ts` (most likely extension point) — or a new `src/app/actions/products-actions.ts` if T-001's schema calls for a dedicated table; exact file follows T-001's decision — `src/lib/site-content.ts` (data-access/normalize helpers matching the types T-001 added)
   - **Flags:** schema-touching: **no** (built on T-001) · sensitive: **yes** (server actions that write) · UI: **no**
