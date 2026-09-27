@@ -11,16 +11,23 @@ export interface SustainabilityData {
 export default function SustainabilityClient({ initial }: { initial: SustainabilityData }) {
     const [data, setData] = useState(initial);
     const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
 
     const set = <K extends keyof SustainabilityData>(k: K, v: SustainabilityData[K]) => setData(p => ({ ...p, [k]: v }));
 
     const save = () => startTransition(async () => {
-        await updateSettings("sustainability", data as unknown as Record<string, unknown>);
+        setError(null);
+        try {
+            const result = await updateSettings("sustainability", data as unknown as Record<string, unknown>);
+            if (!result.ok) setError(result.error);
+        } catch {
+            setError("Something went wrong saving these changes. Check your connection and try again.");
+        }
     });
 
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
-            <SettingsHeader tag="Page Settings" title="Sustainability" onSave={save} saving={isPending} />
+            <SettingsHeader tag="Page Settings" title="Sustainability" onSave={save} saving={isPending} error={error} />
 
             <SettingsCard title="Certifications & Audits">
                 <p className="text-xs leading-relaxed text-white/40">

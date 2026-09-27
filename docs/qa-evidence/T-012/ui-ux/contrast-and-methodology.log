@@ -1,0 +1,181 @@
+T-012 — /ui-ux pass, 2026-09-27
+Scope: src/components/admin/SettingsForm.tsx (SettingsHeader's new `error` slot)
+Reviewed from code only — no /admin session available to this agent (no
+credentials held by any agent; live Supabase project not written to).
+Per dispatch: "render nothing that needs a session" — the screenshots in
+this folder are a static, logged-out reproduction (see repro-source.html),
+not a live-session capture. No dev server (localhost:3000) interaction of
+any kind was used to produce them.
+
+=========================================================================
+1. CONTRAST — text-red-400 (#f87171) on the header's ACTUAL background
+=========================================================================
+
+Correction to the dispatch's own arithmetic: /lead-dev's code comment in
+SettingsForm.tsx computes text-red-400 against `#1a1f1a` (tailwind.config.ts
+`colors.background`) and gets ~6:1. That token is the PUBLIC (website) route
+group's background, not the admin shell's. Traced the actual paint order for
+the admin dashboard instead:
+
+  src/app/admin/layout.tsx            -> passthrough, no bg class at all
+  src/app/admin/(dashboard)/layout.tsx:39
+      <div className="flex min-h-screen bg-[#0a0a0a]">   <- opaque, full-bleed
+        <aside className="... bg-black ...">              (sidebar only)
+        <main className="min-w-0 flex-grow">               <- NO bg class
+          <div className="p-8 md:p-12">{children}</div>    <- NO bg class
+
+SettingsHeader is the first child rendered inside that unstyled <main>/<div>
+stack in all six client files (confirmed by grep — no wrapping SettingsCard,
+no bg-* class between the header and the dashboard's outer div). So the
+color actually behind the header's text is `#0a0a0a` (tailwind.config.ts
+`colors.surface`), not `#1a1f1a`.
+
+WCAG relative-luminance contrast, computed by hand (sRGB -> linear -> L,
+then (L1+0.05)/(L2+0.05)):
+
+  text-red-400 #f87171  -> L = 0.32962
+  bg  #0a0a0a  (surface) -> L = 0.00304   (actual, confirmed background)
+  bg  #1a1f1a  (background, public site token — NOT what renders here)
+                          -> L = 0.01275
+
+  Contrast on #0a0a0a (actual): (0.32962+0.05)/(0.00304+0.05) ≈ 7.16:1
+  Contrast on #1a1f1a (for reference only, not the real bg): ≈ 6.05:1
+    (this second number matches /lead-dev's own comment almost exactly,
+    confirming the arithmetic itself was right — only the background
+    swatch it was checked against was wrong)
+
+Both numbers clear WCAG AA (4.5:1 for normal text; text-sm/14px + normal
+weight here is not "large text", so the 4.5:1 bar applies, not 3:1) with
+comfortable margin. The real, applicable number (7.16:1) also clears AAA
+(7:1) for normal text, by a hair. VERDICT: PASS, and better than claimed.
+
+Icon (TriangleAlert, size=15) carries no color class of its own — it
+inherits `currentColor` from the parent <p className="... text-red-400">,
+exactly like ImageUploadField.tsx's existing error icon. Same 7.16:1 figure
+applies to the icon's stroke.
+
+=========================================================================
+2. CONSISTENCY WITH ImageUploadField.tsx's HARD-BLOCK ERROR (T-002)
+=========================================================================
+
+Compared field-by-field:
+  - role="alert"                         — same in both
+  - TriangleAlert icon, aria-hidden=true  — same in both
+  - red text, not color-only (icon+text) — same in both
+  - icon inherits currentColor, no own color class — same in both
+  - flex items-start gap-{2|2} layout    — same shape (gap-2 vs the field
+                                            version's gap-2 too)
+  - text-sm (header) vs text-[11px] (field) — deliberately different scale,
+    appropriate: this is a page-level message, the field one is a per-input
+    micro-error. Not an inconsistency — matches how ImageUploadField's own
+    two states (11px field errors) differ in scale from page-level copy
+    elsewhere in this codebase.
+VERDICT: one error language, correctly reused, not reinvented.
+
+=========================================================================
+3. PLACEMENT / DISCOVERABILITY (item 2 of the dispatch)
+=========================================================================
+
+Grepped all six client files: exactly one <SettingsHeader> per file, and
+its onSave is the ONLY call site of that page's save() — no second Save
+button, no floating/sticky action bar duplicating it. The admin shell's
+`sticky` class (admin/(dashboard)/layout.tsx:43) is on the sidebar <aside>
+only — SettingsHeader itself is not sticky and scrolls with page content.
+
+Consequence: since Save can only be clicked from inside the header, the
+admin is necessarily already scrolled to the header at the moment they
+click it (the button isn't reachable otherwise). The error therefore
+renders directly below the control that was just activated, inside the
+same viewport region the user's eyes/pointer already occupy — this holds
+even on the two longest pages (HomepageSettingsClient, 175 lines / three
+ObjectListEditors; WhoWeAreClient, 183 lines / leader CRUD) precisely
+because scrolling back to the header is already a precondition of
+triggering save() at all, not a new burden T-012 introduces.
+
+Agree with /lead-dev's choice not to duplicate the error into
+ObjectListEditor: a save failure (auth/collision/delete-guard) is a
+whole-page outcome, and HomepageSettingsClient alone has three separate
+ObjectListEditor instances — repeating the identical string next to each
+would misattribute a page-level failure to specific unrelated lists.
+
+role="alert" is a live region — announced on mount to assistive tech
+without requiring focus to move, matching the ImageUploadField precedent
+exactly (same conditional-mount pattern). No focus-shift or scroll-into-
+view was added, and none is needed given the above.
+
+=========================================================================
+4. LONG MESSAGES / NARROW WIDTHS (item 3 of the dispatch)
+=========================================================================
+
+Static, logged-out repro (repro-source.html, compiled with this project's
+actual tailwind.config.ts color tokens via `npx tailwindcss`, then shot with
+headless Chrome via CDP — same tool this project already used for public-
+page /qa live screenshots, no new dependency added) at 360 / 768 / 1024px:
+
+  01-error-header-mobile-360.png   — delete-guard-shaped message (4 joined
+                                      category names in quotes) and the
+                                      ContactSettingsClient "·"-joined
+                                      two-failure message both wrap cleanly
+                                      across multiple lines; no horizontal
+                                      overflow, no clipped text, no scrollbar.
+  02-error-header-tablet-768.png   — same, more headroom, same result.
+  03-error-header-desktop-1024.png — same messages stay on one line at this
+                                      width; still no overflow.
+
+No `truncate`/`whitespace-nowrap`/fixed-width ancestor sits between the
+error <p> and the viewport edge — the flex row (icon `flex-none` + text)
+wraps at normal word boundaries. This holds regardless of message length,
+so it doesn't depend on the specific sample strings used above; those were
+chosen to be at-or-beyond the longest plausible real message (all-8-category
+delete-guard names would be more extreme still, but the wrap mechanism is
+length-independent — no code path here special-cases the two samples shown).
+
+Pre-existing, out of T-012's diff, NOT fixed here (flagged only): at 360px
+the header's own title/button row (`flex items-start justify-between`,
+unchanged by this diff) wraps "Contact & General Settings" to 3 lines and
+"Save Changes" to 2 — visible in 01-error-header-mobile-360.png, case 3.
+Byte-identical class list before/after T-012's diff; not a regression this
+ticket introduced, not in this ticket's file scope to fix.
+
+=========================================================================
+5. MOTION (item 4 of the dispatch)
+=========================================================================
+
+No animation/transition class was added to the error <p> or its parent
+<header> — confirmed by reading the diff (git diff -- SettingsForm.tsx):
+zero new `transition-*`/`animate-*`/`duration-*` utilities. This matches
+ImageUploadField.tsx's own error/warning blocks, which also mount with no
+transition. Deliberately kept that way here rather than adding one: the
+dispatch's own item 1 asks whether this is "one error language" — adding
+motion to only the header's version while the field-level sibling has none
+would itself be a new inconsistency. No prefers-reduced-motion guard was
+needed because no motion was added.
+
+=========================================================================
+6. BUILD VERIFICATION
+=========================================================================
+
+npx tsc --noEmit          — run directly against the real working tree
+                             (read-only, no .next writes, safe alongside a
+                             running `next dev`): clean, exit 0.
+
+npm run build              — NOT run directly in the working tree, to avoid
+                             writing to `.next` while the orchestrator's
+                             `next dev` (port 3000) has that same directory
+                             open (Turbopack's dev/build processes are not
+                             designed to share a live .next concurrently).
+                             Instead: rsync'd the full uncommitted working
+                             tree (src/, docs/, configs, .env.local, a real
+                             copy of node_modules — a symlink was tried
+                             first but Turbopack refused to follow a
+                             symlink that crosses the /Volumes/D_Architect
+                             <-> boot-volume mount boundary) into this
+                             session's scratchpad and ran `npm run build`
+                             there. Result: "Compiled successfully", all 25
+                             routes generated including every touched
+                             settings page (/admin/business, /admin/
+                             homepage, /admin/settings, /admin/
+                             sustainability, /admin/who-we-are, /admin/
+                             who-we-work-with), zero errors. The orchestrator's
+                             dev server on :3000 was never stopped, restarted,
+                             or written to.
