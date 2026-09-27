@@ -1,0 +1,108 @@
+{
+  "ok": true,
+  "real_functions_used": [
+    "normalizeProducts",
+    "slugify"
+  ],
+  "source_file": "src/lib/site-content.ts (loaded directly via require(), type-stripped by Node 25 -- not hand-copied)",
+  "raw_title_count_from_live_site_settings": 8,
+  "normalized_category_count": 8,
+  "dropped_titleless_rows": 0,
+  "any_stored_slug_present_in_live_data_today": false,
+  "pairs": [
+    {
+      "title": "T-Shirts",
+      "slug": "t-shirts"
+    },
+    {
+      "title": "Polo Shirts",
+      "slug": "polo-shirts"
+    },
+    {
+      "title": "Tank Tops",
+      "slug": "tank-tops"
+    },
+    {
+      "title": "Dresses",
+      "slug": "dresses"
+    },
+    {
+      "title": "Sleepwear",
+      "slug": "sleepwear"
+    },
+    {
+      "title": "Leggings",
+      "slug": "leggings"
+    },
+    {
+      "title": "Sportswear",
+      "slug": "sportswear"
+    },
+    {
+      "title": "Heavy Jersey Products",
+      "slug": "heavy-jersey-products"
+    }
+  ],
+  "per_item_expectation_checks": [
+    {
+      "title": "T-Shirts",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "t-shirts",
+      "actualSlug": "t-shirts",
+      "matches": true
+    },
+    {
+      "title": "Polo Shirts",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "polo-shirts",
+      "actualSlug": "polo-shirts",
+      "matches": true
+    },
+    {
+      "title": "Tank Tops",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "tank-tops",
+      "actualSlug": "tank-tops",
+      "matches": true
+    },
+    {
+      "title": "Dresses",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "dresses",
+      "actualSlug": "dresses",
+      "matches": true
+    },
+    {
+      "title": "Sleepwear",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "sleepwear",
+      "actualSlug": "sleepwear",
+      "matches": true
+    },
+    {
+      "title": "Leggings",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "leggings",
+      "actualSlug": "leggings",
+      "matches": true
+    },
+    {
+      "title": "Sportswear",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "sportswear",
+      "actualSlug": "sportswear",
+      "matches": true
+    },
+    {
+      "title": "Heavy Jersey Products",
+      "expectation": "computed-from-real-slugify",
+      "expectedBase": "heavy-jersey-products",
+      "actualSlug": "heavy-jersey-products",
+      "matches": true
+    }
+  ],
+  "unique_slug_count": 8,
+  "collision_found": false,
+  "all_expectations_matched": true,
+  "verdict": "PASS - all live slugs unique and match real slugify() output"
+}
