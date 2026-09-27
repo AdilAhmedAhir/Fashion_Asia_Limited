@@ -1,3 +1,4 @@
+import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import { getSettings } from "@/app/actions/settings-actions";
@@ -116,10 +117,17 @@ export default async function BusinessPage() {
                     shots (no per-product photography exists), B&W for cohesion. */}
                 <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
                     {/* Titles are client-entered and can repeat, so the key pairs
-                        the title with its position rather than trusting uniqueness. */}
+                        the title with its position rather than trusting uniqueness.
+                        Each card links to its own detail page (T-005) — `slug` is
+                        already normalizeProducts()'s safe, dedupe-guaranteed output,
+                        never the raw title, so it's safe to use directly as a path
+                        segment. */}
                     {products.map((product, i) => (
                         <ScrollReveal key={`${product.title}-${i}`} delay={i * 0.1}>
-                            <div className="group relative h-48 overflow-hidden rounded-xl border border-white/10 bg-surface md:h-56">
+                            <Link
+                                href={`/what-we-do/${product.slug}`}
+                                className="group relative block h-48 overflow-hidden rounded-xl border border-white/10 bg-surface md:h-56 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                            >
                                 <img
                                     src={product.image}
                                     alt=""
@@ -144,7 +152,7 @@ export default async function BusinessPage() {
                                         </p>
                                     )}
                                 </div>
-                            </div>
+                            </Link>
                         </ScrollReveal>
                     ))}
                 </div>

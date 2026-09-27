@@ -1,0 +1,23 @@
+{
+  "url": "http://localhost:3000/what-we-do/sportswear",
+  "width": 360,
+  "height": 1400,
+  "waitMs": 4000,
+  "isMobile": true,
+  "consoleMessageCount": 2,
+  "consoleMessages": [
+    {
+      "type": "info",
+      "text": "%cDownload the React DevTools for a better development experience: https://react.dev/link/react-devtools font-weight:bold"
+    },
+    {
+      "type": "log",
+      "text": "[HMR] connected"
+    }
+  ],
+  "exceptionCount": 0,
+  "exceptions": [],
+  "totalResponses": 33,
+  "failedRequestCount": 0,
+  "failedRequests": []
+}

@@ -1,0 +1,9 @@
+HTTP/1.1 308 Permanent Redirect
+location: /what-we-do/sportswear
+Refresh: 0;url=/what-we-do/sportswear
+Date: Sun, 27 Sep 2026 13:19:52 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+/what-we-do/sportswear
