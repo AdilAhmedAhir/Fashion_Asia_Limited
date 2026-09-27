@@ -24,11 +24,18 @@ export default function WhoWeAreClient({ settings: init, leaders: initLeaders }:
     const [data, setData] = useState(init);
     const [leaders, setLeaders] = useState(initLeaders);
     const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
 
     const set = <K extends keyof WhoWeAreData>(k: K, v: WhoWeAreData[K]) => setData(p => ({ ...p, [k]: v }));
 
     const save = () => startTransition(async () => {
-        await updateSettings("who_we_are", data as unknown as Record<string, unknown>);
+        setError(null);
+        try {
+            const result = await updateSettings("who_we_are", data as unknown as Record<string, unknown>);
+            if (!result.ok) setError(result.error);
+        } catch {
+            setError("Something went wrong saving these changes. Check your connection and try again.");
+        }
     });
 
     const addLeader = () => startTransition(async () => {
@@ -57,7 +64,7 @@ export default function WhoWeAreClient({ settings: init, leaders: initLeaders }:
 
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
-            <SettingsHeader tag="Page Settings" title="Who We Are" onSave={save} saving={isPending} />
+            <SettingsHeader tag="Page Settings" title="Who We Are" onSave={save} saving={isPending} error={error} />
 
             <SettingsCard title="Assurance Stats">
                 <StatsList label="Stats" items={data.assuranceStats} onChange={v => set("assuranceStats", v)} />

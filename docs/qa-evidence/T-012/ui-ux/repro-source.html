@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>T-012 SettingsHeader error repro (static, no session)</title>
+<link rel="stylesheet" href="./output.css" />
+<style>
+  /* Match next/font fallback stack only — no network font fetch in this repro. */
+  body { font-family: ui-sans-serif, system-ui, sans-serif; }
+  .font-serif { font-family: Georgia, "Playfair Display", serif; }
+  .case { border-bottom: 1px dashed #333; padding-bottom: 40px; margin-bottom: 40px; }
+  .case:last-child { border-bottom: none; }
+  .case-label { color: #0EC97A; font: 11px/1.4 monospace; margin-bottom: 8px; }
+</style>
+</head>
+<!-- Exact background stack reproduced from src/app/admin/(dashboard)/layout.tsx:
+     outer wrapper bg-[#0a0a0a] -> <main> (no bg) -> <div class="p-8 md:p-12">
+     i.e. SettingsHeader renders directly on #0a0a0a (the "surface" token),
+     NOT on #1a1f1a (the "background" token) — confirmed by reading the
+     admin dashboard layout file, not assumed. -->
+<body class="bg-[#0a0a0a]" style="margin:0;">
+  <div style="padding:16px;">
+    <div class="case">
+      <div class="case-label">CASE 1 — short message (regression baseline, e.g. auth-expired guard)</div>
+      <div class="flex flex-col gap-8 max-w-4xl">
+        <header class="mb-10 flex flex-col gap-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-[0.2em] text-primary">Page Settings</span>
+              <h1 class="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">What We Do</h1>
+            </div>
+            <button class="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
+              Save Changes
+            </button>
+          </div>
+          <p role="alert" class="flex items-start gap-2 text-sm leading-relaxed text-red-400">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 flex-none" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            Your session expired. Sign in again and retry.
+          </p>
+        </header>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="case-label">CASE 2 — longest realistic single message (delete-guard, several blocked categories)</div>
+      <div class="flex flex-col gap-8 max-w-4xl">
+        <header class="mb-10 flex flex-col gap-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-[0.2em] text-primary">Page Settings</span>
+              <h1 class="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">What We Do</h1>
+            </div>
+            <button class="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
+              Save Changes
+            </button>
+          </div>
+          <p role="alert" class="flex items-start gap-2 text-sm leading-relaxed text-red-400">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 flex-none" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            Remove its products first: "T-Shirts, Polo Shirts, Denim Jackets, Activewear" still has products assigned to it.
+          </p>
+        </header>
+      </div>
+    </div>
+
+    <div class="case">
+      <div class="case-label">CASE 3 — ContactSettingsClient combined two-failure message (real "&middot;" join)</div>
+      <div class="flex flex-col gap-8 max-w-5xl">
+        <header class="mb-10 flex flex-col gap-3">
+          <div class="flex items-start justify-between">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-[0.2em] text-primary">Configuration</span>
+              <h1 class="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">Contact &amp; General Settings</h1>
+            </div>
+            <button class="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
+              Save Changes
+            </button>
+          </div>
+          <p role="alert" class="flex items-start gap-2 text-sm leading-relaxed text-red-400">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="mt-0.5 flex-none" aria-hidden="true"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg>
+            Contact settings: Your session expired. Sign in again and retry.  &middot;  General settings: Your session expired. Sign in again and retry.
+          </p>
+        </header>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
