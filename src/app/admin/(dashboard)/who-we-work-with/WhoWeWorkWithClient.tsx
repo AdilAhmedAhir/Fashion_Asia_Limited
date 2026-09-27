@@ -11,14 +11,21 @@ interface WhoWeWorkWithData {
 export default function WhoWeWorkWithClient({ initial }: { initial: WhoWeWorkWithData }) {
     const [data, setData] = useState(initial);
     const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
 
     const save = () => startTransition(async () => {
-        await updateSettings("who_we_work_with", data as unknown as Record<string, unknown>);
+        setError(null);
+        try {
+            const result = await updateSettings("who_we_work_with", data as unknown as Record<string, unknown>);
+            if (!result.ok) setError(result.error);
+        } catch {
+            setError("Something went wrong saving these changes. Check your connection and try again.");
+        }
     });
 
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
-            <SettingsHeader tag="Page Settings" title="Global Partner" onSave={save} saving={isPending} />
+            <SettingsHeader tag="Page Settings" title="Global Partner" onSave={save} saving={isPending} error={error} />
 
             <SettingsCard title="Introduction">
                 <TextArea

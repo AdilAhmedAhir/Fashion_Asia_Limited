@@ -1,27 +1,57 @@
 "use client";
 
 import { useState } from "react";
-import { X, Plus, Save, Loader2, ChevronUp, ChevronDown } from "lucide-react";
+import { X, Plus, Save, Loader2, ChevronUp, ChevronDown, TriangleAlert } from "lucide-react";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 
 // ============================================
 // Generic form components for settings pages
 // ============================================
 
-export function SettingsHeader({ title, tag, onSave, saving }: {
-    title: string; tag: string; onSave: () => void; saving: boolean;
+// `error` is this settings page's single save-failure slot (T-012): every
+// updateSettings() caller sets it from that action's own {ok:false, error}
+// result (or a generic message on an unexpected throw) and clears it back
+// to null at the start of its next save attempt, so a stale failure never
+// survives a retry and a successful save is never mistaken for a failed one.
+// One shared slot here, not a second copy inside ObjectListEditor: a save
+// failure (auth, collision, delete-guard) is a whole-page outcome, and
+// duplicating the identical text into every nested list editor on a page
+// that has several (e.g. HomepageSettingsClient's three) would repeat an
+// unrelated message next to lists that had nothing to do with it.
+export function SettingsHeader({ title, tag, onSave, saving, error }: {
+    title: string; tag: string; onSave: () => void; saving: boolean; error?: string | null;
 }) {
     return (
-        <header className="flex items-start justify-between mb-10">
-            <div>
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{tag}</span>
-                <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">{title}</h1>
+        <header className="mb-10 flex flex-col gap-3">
+            <div className="flex items-start justify-between">
+                <div>
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{tag}</span>
+                    <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">{title}</h1>
+                </div>
+                <button onClick={onSave} disabled={saving}
+                    className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
+                    {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
+                    {saving ? "Saving..." : "Save Changes"}
+                </button>
             </div>
-            <button onClick={onSave} disabled={saving}
-                className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
-                {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                {saving ? "Saving..." : "Save Changes"}
-            </button>
+            {/* Same visual language as ImageUploadField's hard-block error —
+                role="alert", TriangleAlert icon, plain red text, not colour
+                alone — so this is a known pattern, not a new one. Measured
+                against what actually paints behind this header — the admin
+                shell's own bg-[#0a0a0a] ("surface" in tailwind.config.ts, set
+                by admin/(dashboard)/layout.tsx's outer div; SettingsHeader
+                carries no bg- of its own, so that colour shows straight
+                through) — text-red-400 clears ~7.16:1, comfortably past the
+                4.5:1 AA floor (T-011's own bar). Not "background" (#1a1f1a):
+                that token belongs to the public (website) route group and is
+                never painted behind /admin content, so it isn't the right
+                swatch to check this placement against. */}
+            {error && (
+                <p role="alert" className="flex items-start gap-2 text-sm leading-relaxed text-red-400">
+                    <TriangleAlert size={15} className="mt-0.5 flex-none" aria-hidden="true" />
+                    {error}
+                </p>
+            )}
         </header>
     );
 }

@@ -16,16 +16,23 @@ export interface BusinessData {
 export default function BusinessClient({ initial }: { initial: BusinessData }) {
     const [data, setData] = useState(initial);
     const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
 
     const set = <K extends keyof BusinessData>(k: K, v: BusinessData[K]) => setData(p => ({ ...p, [k]: v }));
 
     const save = () => startTransition(async () => {
-        await updateSettings("business", data as unknown as Record<string, unknown>);
+        setError(null);
+        try {
+            const result = await updateSettings("business", data as unknown as Record<string, unknown>);
+            if (!result.ok) setError(result.error);
+        } catch {
+            setError("Something went wrong saving these changes. Check your connection and try again.");
+        }
     });
 
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
-            <SettingsHeader tag="Page Settings" title="What We Do" onSave={save} saving={isPending} />
+            <SettingsHeader tag="Page Settings" title="What We Do" onSave={save} saving={isPending} error={error} />
 
             <SettingsCard title="Our Craft">
                 <div className="flex flex-col gap-6">
