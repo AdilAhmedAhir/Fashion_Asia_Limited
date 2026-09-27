@@ -132,3 +132,222 @@ Traced directly in the code (`src/components/admin/ImageUploadField.tsx:97-139`,
 | 5c | Hard block — wrong format | Upload a PNG (or any non-JPG/WebP) | **Rejected** immediately — "Only webp, jpg, jpeg files are accepted." — same wording as before this ticket | |
 
 Report back per-row pass/fail. Any ❌ re-opens T-002 for `/lead-dev`.
+
+---
+
+## Static Pass — T-001 — 2026-09-27
+
+**Dispatch:** `/qa static T-001`, dispatched by `/system-architect`. Branch `feat/T-001-products-within-category`, rebased onto current `main`. Ticket: "Design the products-within-category schema and author the migration" (`docs/ROADMAP.md`, checked `[x]` in this same diff). `/architect` decided the scheme (`docs/TECH_STACK.md`), authored the migration (`db/migrations/0001_products-within-category.sql`, **STATUS: APPLIED 2026-09-27** — the user ran it by hand against the client's live Supabase database, confirmed by the dispatch, the migration's own header, and commit `96b6010 chore(db): mark migration 0001 applied`), and `/lead-dev` added the types-only follow-up to `src/lib/site-content.ts` (uncommitted at review time). `/cso` cleared T-001 for local merge (`docs/SECURITY.md`, 2026-09-27 entry) with two 🟡 fast-follow findings, SEC-MED-3 and SEC-MED-4, both scoped to `normalizeProducts()`. Per the dispatch, I read both before starting and independently re-verified them rather than taking them on trust — see Findings below; both are real, and I found a materially sharper, more urgent version of SEC-MED-3 than the CSO review describes.
+
+### Files reviewed
+- `db/migrations/0001_products-within-category.sql` — full read, all 200 lines (decision-record header, table DDL, index, grants, RLS policies, read-only verification queries).
+- `supabase-schema.sql` — diff against `main`, plus a direct read of the new §6 (Products Table) and the updated §7 seed block, to check it's a faithful rolled-up copy of the migration, not just a similarly-shaped one.
+- `docs/TECH_STACK.md` — diff against `main` (the "Products-within-category schema" decision record, (a)/(b)/(c), plus the same-day GRANT follow-up).
+- `src/lib/site-content.ts` — diff against `main` (new `slug` field on the 8 default categories, new `CategoryProduct` type, new `slugify()`/`dedupeSlug()` functions, `normalizeProducts()`'s slug-handling additions) — read in full, not just the diff hunks, to trace exactly what a caller receives.
+- `docs/ROADMAP.md` — diff (checkbox flip only, confirmed via `git diff main -- docs/ROADMAP.md`).
+- `docs/SECURITY.md` — read in full for `/cso`'s T-001-specific findings (SEC-INFO-8 through SEC-INFO-14, SEC-HIGH-2, SEC-MED-3, SEC-MED-4) and the still-open T-002-era items (SEC-HIGH-1, SEC-MED-1, SEC-MED-2) they don't duplicate or resolve.
+- `docs/VISION.md` — read the MVP Feature 2 section and the "Settled inputs… do not relitigate" paragraph, to confirm the schema decision matches what was actually asked for (image/name/description only, no "type" field, delete-guard required).
+- `docs/DECISIONS.md` — read in full; §1 (Open) and §2 (Closed) are both empty, so there is no live Counter to reconcile against this ticket.
+- **Not in T-001's file list, read anyway to trace `.slug` end-to-end** (same rationale as WARN-4 in the T-002 pass — a type change in an in-scope file can only be judged correct by reading its actual consumers): `src/app/admin/(dashboard)/business/page.tsx`, `src/app/admin/(dashboard)/business/BusinessClient.tsx`, `src/components/admin/SettingsForm.tsx` (`ObjectListEditor`), `src/app/actions/settings-actions.ts` (`getSettings`/`updateSettings`), `src/app/(website)/(marketing)/what-we-do/page.tsx`.
+
+### Scope confirmation
+`git diff main --stat`: 6 files — `db/migrations/0001_products-within-category.sql` (new), `docs/ROADMAP.md`, `docs/SECURITY.md`, `docs/TECH_STACK.md`, `src/lib/site-content.ts`, `supabase-schema.sql`. `git diff main -- package.json package-lock.json` is empty (re-confirmed independently, not just cited from `/cso`'s report). No `.env*` file touched. Grepped the diff itself for `console.` / `debugger` — zero hits. **No writes were performed against the live database by this pass** — every check below is either a static read of the diff/repo, a pure-function re-implementation run in a scratch Node script (not against the live DB), or `npx tsc --noEmit` / `npm run build` (local compilation only). The migration's own §"Verification" block (queries 1–6, read-only `SELECT`s) was read but **not executed** against the live Supabase project — this agent has no DB credentials and Supabase isn't reachable from this machine's tooling (`docs/MEMORY_BANK.md` Known Trap #3); running those queries is `/qa live`'s job, not this static pass's, and per `docs/ROADMAP.md` T-001's own sequence, `/qa live` is a separate, not-yet-run step. Nothing was committed by this pass, per the dispatch instruction.
+
+### Acceptance criteria (`docs/ROADMAP.md` T-001) — verified against the code, not taken on `/architect`'s or `/cso`'s word alone
+1. ✅ **`/architect` decided and wrote down (a)/(b)/(c) on the record.** `docs/TECH_STACK.md` → "Products-within-category schema" contains all three, with rationale; `db/migrations/0001_products-within-category.sql:1-95` repeats the same decision as a header comment, word-for-word consistent with `TECH_STACK.md`. Confirmed by reading both, not by trusting the cross-reference.
+2. 🟡 **PARTIALLY — decided and documented, but the enforcement half doesn't exist anywhere yet, and the read-time fallback that exists today has a real, verified gap wider than `/cso`'s review describes.** The *decision* ("reject the entire save on collision, never silently suffix") is on record and unambiguous. But no shipped code — not this diff, not any other file — actually rejects a save on collision; that's explicitly deferred to T-003. What *is* shipped today is `normalizeProducts()`'s read-time fallback, and I found it can be silently defeated by array order, and its output can be silently persisted by the pre-existing (unmodified) `/admin/business` Save button before T-003 ever exists. Full detail in WARN-1/WARN-2 below — this is the main substance of this pass.
+3. ✅ **RLS + GRANT, matching the `jobs` precedent, no repeat of the missing-`authenticated`-policy gap.** Verified directly by reading `db/migrations/0001_products-within-category.sql:126-150` and `supabase-schema.sql`'s new §6 side by side: `GRANT SELECT ON TABLE public.products TO anon;`, `GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.products TO authenticated;`, RLS enabled, `anon` SELECT-only policy, `authenticated` ALL policy with `USING (true) WITH CHECK (true)` — byte-for-byte the same shape as the `jobs` table policy already in `supabase-schema.sql`. No `service_role` grant (confirmed absent). The two `CREATE POLICY` statements in the migration are each wrapped in a `DO $$ ... IF NOT EXISTS (SELECT 1 FROM pg_policies …) THEN … END IF; END $$` guard — correct, since Postgres has no `CREATE POLICY IF NOT EXISTS` and this file is designed to be safely re-run.
+4. ✅ **Migration file format matches `WORKFLOW.md` §1.** Lines 1–3: `-- Ticket: T-001 — …`, `-- Author: /architect`, `-- STATUS: APPLIED 2026-09-27`. Matches the required header shape exactly.
+5. 🟡 **PARTIALLY — `CategoryProduct` exists and matches the table for 6 of 8 columns, but two gaps mean T-003 will have to partly re-derive rather than build directly against this type.** See WARN-3.
+6. ✅ **HARD STOP satisfied.** The dispatch states the user confirmed the SQL was applied by hand; the migration header reads `STATUS: APPLIED 2026-09-27`; a dedicated commit (`96b6010`) exists recording exactly that. Per `WORKFLOW.md` §5/§7, this unblocks `/qa live` and `/git Merge` for T-001 itself — it does **not** retroactively mean `/qa live` has actually been run (it hasn't, see Scope confirmation above).
+
+### Independent verification — `slugify()` / `dedupeSlug()` / `normalizeProducts()`
+Re-implemented all three functions verbatim in a scratch Node script (`slugify-check.mjs`, run outside the repo, not against the live DB) and executed them, rather than reasoning about the code by eye. Three groups of results:
+
+**1. The 8 default (title → slug) pairs, computed fresh, against the seed:** all 8 match exactly (`T-Shirts→t-shirts`, `Polo Shirts→polo-shirts`, `Tank Tops→tank-tops`, `Dresses→dresses`, `Sleepwear→sleepwear`, `Leggings→leggings`, `Sportswear→sportswear`, `Heavy Jersey Products→heavy-jersey-products`). This directly answers the dispatch's "match what `slugify` would produce from the live titles" — confirmed programmatically, not by eye.
+
+**2. `site-content.ts`'s defaults vs. `supabase-schema.sql`'s seed INSERT, byte-for-byte, per field:** a second script parsed both files' `products` arrays independently and compared `{title, slug, image}` triples positionally — **8/8 rows match exactly** across both files (see raw output below). No drift between the TypeScript fallback and the SQL seed.
+
+**3. Adversarial `slugify()` battery** (dispatch: unicode/accents, emoji, `&`, apostrophes, separators, all-symbol, long, digits):
+
+| Input | Output | Note |
+|---|---|---|
+| `"Café Wear"` | `"caf-wear"` | Accent silently dropped (not transliterated to `e`) — see INFO-1 |
+| `"🔥🔥🔥"` | `"category"` | ✅ all-symbol fallback, as the dispatch expects |
+| `"🔥 Hot Deals"` | `"hot-deals"` | ✅ leading emoji+space collapses and trims cleanly |
+| `"Tops & Tees"` | `"tops-tees"` | ✅ matches the dispatch's own example exactly |
+| `"Men's Wear"` | `"men-s-wear"` | ✅ apostrophe handled, no crash |
+| `"   T-Shirts!!   "` | `"t-shirts"` | ✅ leading/trailing whitespace+punctuation collapsed and trimmed |
+| `"T -- Shirts"` | `"t-shirts"` | ✅ consecutive separators collapse to one hyphen |
+| `"---"` | `"category"` | ✅ all-symbol fallback |
+| `"24/7 Support"` | `"24-7-support"` | ✅ digits pass through unchanged |
+| `"100% Cotton"` | `"100-cotton"` | ✅ |
+| `"2026"` | `"2026"` | ✅ pure-digit title is treated as usable, no fallback — correct, and a syntactically valid route segment |
+| `""` / `"   "` | `"category"` | ✅ empty / whitespace-only fallback (though in practice `normalizeProducts` already drops these before `slugify` is ever called — see below) |
+| 300×`"a"` | 300-char slug, unchanged | Confirms `slugify()` has **no length cap** — matches SEC-MED-4's point exactly; `products.category_slug` is `VARCHAR(255)`, so this is real and already flagged, not new |
+| `"İstanbul Style"` | `"i-stanbul-style"` | 🟢 new, narrow finding — see INFO-1. JS's locale-insensitive `.toLowerCase()` turns Turkish dotted `İ` into `i` + a combining dot, which the regex then strips as its own separator, splitting the word |
+| `"ÀÉÎÕÜ"` (letters only, no ASCII, no symbols) | `"category"` | 🟢 new, narrow finding — see INFO-1. A title that is *entirely* non-ASCII letters (not symbols) still hits the generic fallback, indistinguishable from a title that really was all-symbol |
+| `"Zürich_Line"` | `"z-rich-line"` | ✅ underscore correctly treated as a separator (matches `[a-z0-9]`, not `\w`) |
+
+**4. The order-dependence question the dispatch asked directly: "stored `t-shirts` on item 2 vs. computed `t-shirts` on item 1 — does order change the outcome, and is it stable across reads?"** Answer: **yes, order changes the outcome, and it is only stable across reads of a fixed, already-written array — not across a save that reorders or adds a colliding title.** Reproduced directly:
+
+```
+Order A — computed-slug item FIRST, stored-slug item SECOND:
+[ { title: 'T Shirts',  slug: 't-shirts' },     // computed fresh, seen was empty → no collision detected
+  { title: 'T-Shirts',  slug: 't-shirts' } ]     // storedSlug taken verbatim, never checked against `seen`
+  → BOTH items end up with the identical slug "t-shirts". Silent. No error. No log.
+
+Order B — same two items, reversed:
+[ { title: 'T-Shirts',  slug: 't-shirts' },      // storedSlug taken verbatim, added to `seen` first
+  { title: 'T Shirts',  slug: 't-shirts-2' } ]   // computed, seen already has "t-shirts" → correctly caught
+```
+
+This is the exact mechanism the dispatch asked me to hunt for, confirmed by execution, not inference.
+
+### Findings
+
+- 🟡 **WARN-1 — `normalizeProducts()`'s stored-slug bypass is order-dependent, and reachable through ordinary `/admin/business` use, not only through manual dashboard/SQL editing as `docs/SECURITY.md`'s SEC-MED-3 characterizes it.** `src/lib/site-content.ts:406-408` — `const slug = storedSlug || dedupeSlug(slugify(title), seen);` — whenever `storedSlug` is truthy, `dedupeSlug` is skipped entirely: the stored value is used as-is and only *added to* `seen` afterward, never *checked against* it first. SEC-MED-3 correctly identifies this line and its stored-vs-stored failure mode, but frames live-reachability as "possible today only via manual dashboard/SQL editing, since no shipped write path sets this field yet." I verified a **stored-vs-computed** variant of the same bug (demonstrated above, Order A) that is order-dependent: if a category *without* a stored slug is processed before a sibling *with* a colliding stored slug — which happens the instant array order places the unsaved item first, e.g. after using `ObjectListEditor`'s own "move up" button (`SettingsForm.tsx:152-158`, a plain array-position swap with no re-validation) — the collision is **not** caught at all, by either category, and both silently resolve to the same slug. This needs no dashboard/SQL access: adding a category with a title that slugifies to an existing sibling's stored slug (a plausible copy-paste/typo scenario — e.g. "T Shirts" vs. the real "T-Shirts") and then moving it above that sibling is entirely achievable through the existing, unmodified `/admin/business` UI. Not exploitable *today* in the sense that zero categories in the live database carry a stored `slug` yet (confirmed: T-001's migration never touches `site_settings`), but the trigger condition is materially broader than "manual DB editing," and directly relevant to WARN-2 below. **Also verified:** computed-vs-computed collisions (no stored slug on either side) are correctly caught regardless of order, because both go through `dedupeSlug` unconditionally — the bug is specifically and only in the stored-value bypass. **Fix note:** CSO's proposed one-liner (route the stored branch through `dedupeSlug(storedSlug, seen)` too) would trade this failure mode for a different one — it would let a sibling's processing order silently *change* an already-established category's permanent slug/URL, which is exactly what decision (b) promises never happens ("frozen forever after"). Neither "let the collision through" (today's behavior) nor "silently reassign the stored slug" (the naïve fix) matches the ticket's own "no silent resolution, ever" principle — the only fix that actually matches the decision record is detecting the collision and refusing to resolve it silently in *either* direction, which is inherently a save-time (T-003), not read-time, guarantee. **Recommend:** fold into T-003's acceptance criteria as a named, testable bullet (not just "recommend folding in" — make it explicit that T-003 must handle categories that already carry a stored slug colliding with another category's title-computed slug, which — per WARN-2 — can arise before T-003 ships).
+
+- 🟡 **WARN-2 — the "reject the entire save on collision" guarantee decision (b) promises does not exist in any shipped code yet, and — this is the new finding, distinct from anything in `docs/SECURITY.md` — the pre-existing, unmodified `/admin/business` Save button already silently *persists* whatever `normalizeProducts()` computed at page load, the moment any admin clicks Save for any reason, well before T-003 exists.** Traced the full read → state → save round trip: `business/page.tsx:8` calls `normalizeProducts(data.products)` on load, which now attaches a `slug` to every category object in memory (computed fresh if none was stored). `BusinessClient.tsx:17` puts that array straight into `useState`. `ObjectListEditor`'s `update()` (`SettingsForm.tsx:146-150`) does `next[index] = { ...next[index], [key]: val }` — it spreads the *entire* existing item (including the in-memory `slug` `normalizeProducts` attached) and only overwrites whichever field the admin actually touched (`title`/`description`/`image` — `slug` is not in `ObjectListEditor`'s `fields` list and is never shown, confirmed). Clicking "Save Changes" (`BusinessClient.tsx:22-24`) sends the *entire* `data` object, `slug` included, straight to `updateSettings("business", data)`, which (`settings-actions.ts:39-43`) does a raw `upsert({key, value, ...})` with **no field allow-list, no transform** — whatever is in the client's React state is written to `site_settings.business` verbatim. Net effect: the very first time any admin edits *anything* on `/admin/business` (a routine description typo fix, nothing to do with slugs) and clicks Save, every category's computed slug — including one already silently colliding per WARN-1 — gets **permanently frozen into storage**, with zero error, zero log, zero admin-visible signal, directly contradicting the migration file's own header prose ("a freshly computed slug that would collide… is REJECTED outright… not silently suffixed, not silently overwritten," `db/migrations/0001_products-within-category.sql:32-35`). `docs/SECURITY.md`'s SEC-MED-4 frames this risk window as opening only once "T-003 (not yet built)" starts writing slugs — I verified that framing is incomplete: the risk window actually opens at **this ticket's own merge**, through a save path this ticket doesn't touch and isn't asking to fix, but which is now newly capable of this side effect purely because `Product` gained a `slug` field it didn't have before. **Impact today:** none — nothing public-facing reads `.slug` yet. **Impact once this merges:** any category saved from `/admin/business` before T-003 ships acquires a slug that was never validated, never checked for collision at save time, and can never be told apart afterward from a "properly" T-003-assigned one — T-003's write path will have to treat *every* stored slug as already-possibly-untrustworthy from day one, not just legacy pre-T-001 rows. **Recommend:** (1) fold explicitly into T-003's acceptance criteria — T-003 cannot assume "no category has a slug yet" as a precondition; (2) flag to the user as an interim operational note: avoid adding a category whose title duplicates or nearly duplicates an existing one, and avoid reordering categories, on `/admin/business` between now and T-003 shipping, since either can be silently frozen by the very next routine Save.
+
+- 🟡 **WARN-3 — `CategoryProduct` doesn't fully satisfy T-001's own acceptance criterion that types let "T-003 build the data-access layer… without re-deriving it."** `src/lib/site-content.ts:337-344`. Two concrete gaps, found by comparing the type field-for-field against the applied migration, per the dispatch:
+
+  | Field | `CategoryProduct` | `public.products` column | Match? |
+  |---|---|---|---|
+  | `id` | `string` (required) | `UUID PRIMARY KEY DEFAULT gen_random_uuid()` | Nullability matches for a *read* row; **not safe as an insert-payload type** — `id` is DB-generated, so an insert should omit it, but the type marks it required |
+  | `category_slug` | `string` (required) | `VARCHAR(255) NOT NULL` | ✅ exact match, both sides required, neither has a default |
+  | `name` | `string` (required) | `VARCHAR(255) NOT NULL DEFAULT ''` | ✅ nullability matches; TS is *stricter* than the DB default, which is the safe direction, not a bug |
+  | `description` | `string` (required) | `TEXT NOT NULL DEFAULT ''` | ✅ same as `name` |
+  | `image` | `string` (required) | `TEXT NOT NULL DEFAULT ''` | ✅ same as `name` |
+  | `sort_order` | `number` (required) | `INTEGER NOT NULL DEFAULT 0` | ✅ exact match |
+  | *(none)* | — | `created_at TIMESTAMPTZ NOT NULL DEFAULT now()` | ❌ **column exists in the table, no TS field at all** |
+  | *(none)* | — | `updated_at TIMESTAMPTZ NOT NULL DEFAULT now()` | ❌ **column exists in the table, no TS field at all** |
+
+  Neither gap is a runtime bug — a `SELECT *`-shaped row cast `as CategoryProduct[]` simply carries two extra, silently-ignored properties (TS structural typing permits a wider actual value under a narrower asserted type), and DB-side `DEFAULT`s mean an insert omitting `id`/`created_at`/`updated_at` still works even though the type doesn't model that. But it does mean T-003 will have to define its own `Omit<CategoryProduct, "id" | "created_at" | "updated_at">`-shaped insert type (the common Supabase `Row`/`Insert` split) rather than using `CategoryProduct` directly for writes — a small amount of re-deriving this ticket's own acceptance criterion says shouldn't be necessary. **Fix proposal:** either add `created_at`/`updated_at` to the type for completeness, or — better, since nothing in T-003/T-004/T-005's acceptance criteria needs to display them — add a one-line comment on `CategoryProduct` noting it models the full DB row shape *for reads*, and that T-003 should derive an insert-specific `Omit<>` variant rather than reusing it directly. Trivial, non-blocking, same-file fast-follow for `/lead-dev`.
+
+- 🟢 **INFO-1 — Two narrow, verified Unicode edge cases in `slugify()`, both unlikely to matter for this client's current (all-plain-ASCII) category titles.** (a) JS's default, locale-insensitive `.toLowerCase()` mishandles the Turkish dotted capital `İ`, inserting an invisible combining-dot character that the regex then strips as its own separator — `"İstanbul Style"` → `"i-stanbul-style"`, splitting a word that has no visible separator in the source title. (b) A title composed entirely of non-ASCII letters (not symbols) — e.g. `"ÀÉÎÕÜ"` — collapses entirely and hits the same `"category"` fallback intended for genuinely symbol-only titles like `"---"` or `"🔥🔥🔥"`; two such categories would silently become `"category"`/`"category-2"` with no semantic trace of the original name in the URL. Neither causes a crash (SEC-INFO-12 already confirmed output stays confined to `[a-z0-9-]`); both are cosmetic/informational for a client whose 8 real category names are plain English. Not worth blocking on; worth knowing if a future category name ever uses accented or non-Latin script.
+
+- 🟢 **INFO-2 — `supabase-schema.sql`'s copy of the `products` table omits the `COMMENT ON TABLE` present in the migration file** (`db/migrations/0001_products-within-category.sql:114-115`). Cosmetic-only — table/column/index/grant/policy definitions are otherwise byte-for-byte identical between the migration and the rolled-up snapshot (verified directly, side by side), and a missing `COMMENT` has no functional effect. Worth a one-line backport next time `supabase-schema.sql` is touched, not its own ticket.
+
+- 🟢 **INFO-3 — Confirmed: `.slug` is carried but genuinely never displayed, on both consumer pages, exactly as the dispatch asked me to check.** `src/app/(website)/(marketing)/what-we-do/page.tsx` renders `product.image`, `product.title`, `product.description` only (`:124-145`) — no reference to `.slug` anywhere in the file (confirmed by grep, not just by reading the render block). `BusinessClient.tsx`'s `ObjectListEditor` field list (`:46-50`) is `title` / `description` / `image` only — `slug` is not one of the editable fields and has no UI surface. Both pages compile and render the same visual output as before this diff (see Build below).
+
+- 🟢 **INFO-4 — No regression test added.** No unit-test or E2E runner exists in this repo (`docs/TECH_STACK.md` → "Testing framework: None installed"; `docs/WORKFLOW.md` §4: "there is no test suite to run"), consistent with the T-002 static pass's INFO-2 and this pass's own dispatch, which said so directly. Flagging as a standing gap, not a silent skip: the adversarial battery in the table above (the 8 seed pairs, the emoji/accent/digit/long-title cases, and the Order-A/Order-B repro) is a ready-made test list for `slugify()`/`dedupeSlug()`/`normalizeProducts()` whenever a runner lands.
+
+- 🟢 **INFO-5 — This is a static-only pass; the live-DB half of T-001's own sequence has not run.** `docs/ROADMAP.md` T-001's Sequence line lists `/qa live (read-only: confirm the table/columns and RLS behave as designed — no writes)` as a separate step after `/qa static`, before `/git Merge`. That step was not part of this dispatch and has not been executed — the migration's own read-only verification queries (`db/migrations/0001_products-within-category.sql:156-199`, checking column shapes, RLS-enabled flag, policy roles/commands, the composite index, and table-level GRANTs) were read for correctness but not run against the live database from here (no DB credentials, `docs/MEMORY_BANK.md` Known Trap #3). Not a defect — correctly sequenced as `/qa`'s next step, not skipped silently.
+
+### Build / type-check (re-run this pass, not taken on faith)
+- `npx tsc --noEmit` — clean, zero errors, exit 0.
+- `npm run build` (`next build`, Turbopack) — clean, exit 0. All 25 routes compiled, same count and same route list as the T-002 pass (expected — T-001 adds no new route; that's T-005's job). Both real consumers of the changed type (`/admin/business`, `/what-we-do`) compiled successfully (`ƒ`, server-rendered on demand). One pre-existing, unrelated warning surfaced in the build log — `"middleware" file convention is deprecated. Please use "proxy" instead` — `src/middleware.ts` is not in this diff's file list (confirmed via `git diff main --stat`), so this is Next.js 16.1.6 itself flagging a pre-existing convention, not something T-001 introduced; noted for whoever picks up the standing lint/tooling debt (`docs/WORKFLOW.md` §8, row 1), not filed as a new item here.
+- `npm run lint` — not run; excluded from the gate per `docs/WORKFLOW.md` §4 (Known Trap #10).
+
+### Regression test
+Not added — no test runner exists in this repo to write one into (see INFO-4). The verified battery above (8 seed pairs vs. independently-computed `slugify()` output; the 8 seed rows byte-matched across `site-content.ts` and `supabase-schema.sql`; the unicode/emoji/digit/long-title adversarial table; the Order-A/Order-B stored-vs-computed collision repro) is a ready-made unit-test suite for `slugify()`, `dedupeSlug()`, and `normalizeProducts()` the moment a runner is chosen.
+
+### Verdict
+✅ **Static Pass.** Zero 🔴 CRIT. Three 🟡 WARN, all in `normalizeProducts()`'s read-time slug handling (`src/lib/site-content.ts`, in scope for this ticket) — WARN-1 sharpens `docs/SECURITY.md`'s SEC-MED-3 with a concrete, order-dependent, ordinary-admin-UI-reachable repro (not just manual DB editing, as that finding characterizes it); WARN-2 is a new finding, distinct from SEC-MED-3/SEC-MED-4, showing the "reject on collision" guarantee's exposure window opens at **this ticket's merge** via the pre-existing `/admin/business` Save button, not at T-003's future build as `docs/SECURITY.md` assumes; WARN-3 is a small, same-file type-completeness gap. All three are correctly out of *enforcement* scope for a types-and-migration-only ticket (the decision record explicitly assigns save-time rejection to T-003, not T-001) and none has a live consumer today (`.slug` is rendered nowhere yet) — so none blocks T-001's own merge — but all three should become named, explicit, testable acceptance-criteria bullets on T-003 before that ticket starts, not soft "recommendations" to fold in later. Five 🟢 INFO, two genuinely new (narrow Unicode edge cases in INFO-1; a cosmetic snapshot/migration drift in INFO-2), three procedural (INFO-3 confirms the "carried, not displayed" requirement; INFO-4/INFO-5 document the standing no-runner and not-yet-run-live gaps rather than skipping them silently). `npx tsc --noEmit` and `npm run build` both re-run this pass, both clean. Schema-vs-type field-for-field comparison, RLS/GRANT verification, and the 8-seed-row cross-check were all done independently against the code — not taken on `/architect`'s or `/cso`'s word alone, per the dispatch. No commits made by this pass. This is a **static-only** pass — `/qa live`'s read-only DB checks for T-001 have not been run.
+
+## Live Pass — T-001 — 2026-09-27
+
+**Dispatch:** `/qa live http://localhost:3000` for T-001, dispatched by `/system-architect`. Static Pass already ✅ (above, three 🟡 WARN). Branch `feat/T-001-products-within-category`; the uncommitted `src/lib/site-content.ts` diff (slugs added by `normalizeProducts`) is what the already-running dev server serves — not started, stopped, or restarted by this pass. Live Test Plan approved by the orchestrator's Standard Plan check, including Flow 4 as amended by the orchestrator (test the real exported `normalizeProducts`/`slugify`, not a re-implementation). Zero writes performed: no inserts/updates/deletes/upserts/RPCs, no uploads, no form submissions, no admin saves, no sign-in attempted, per `docs/WORKFLOW.md` §4/§7 and the dispatch's explicit hard constraints.
+
+### Browser / runner
+No unit-test/E2E tool is installed (`docs/TECH_STACK.md`). Live checks used `curl` (HTTP transcripts), headless Google Chrome (`--headless=new`, screenshots of public pages only, nothing filled or submitted on `/admin/login`), and one-off `node -e` inline commands (no script file ever written to disk — resolution of `@next/env` / `@supabase/supabase-js` confirmed via plain CJS `require()` against the project's own `node_modules` when `cwd` = project root; `src/lib/site-content.ts` loaded directly via Node 25's native TypeScript type-stripping + synchronous `require(esm)` support — the real shipped module, not a hand-copied re-implementation, confirmed by inspecting `Object.keys()` of the loaded module and by the file itself having zero imports, so no path-alias resolution was needed).
+
+### Flows
+
+| Flow | Verdict | Evidence | Console errors | Failed requests |
+|---|---|---|---|---|
+| db-products-table-readonly | ✅ Pass | `docs/qa-evidence/T-001/db-products-readonly/verify.log` | n/a — no browser JS involved | 0 |
+| what-we-do-regression | ✅ Pass | `docs/qa-evidence/T-001/what-we-do-regression/page.log`, `image-urls-baseline-T-002.txt`, `image-urls-new.txt`, `image-url-diff.log`, `slug-leak-check.log`, `01-desktop-top.png`, `02-desktop-grid.png` | not capturable — see Tooling note | 0 |
+| admin-auth-gate-regression | ✅ Pass | `docs/qa-evidence/T-001/admin-auth-gate-regression/01-admin-business.log`, `02-admin-root.log`, `03-admin-login.log`, `04-admin-login-desktop.png` | n/a — HTTP-level flow | 0 |
+| live-slug-collision-check (optional, orchestrator-approved) | ✅ Pass | `docs/qa-evidence/T-001/live-slug-collision-check/result.log` | n/a — no browser JS involved | 0 |
+
+### Flow detail
+
+**1. db-products-table-readonly.** One inline `node -e` command (exact text below, reproduced in full so this check is re-runnable without any file on disk) loaded `.env.local` via `loadEnvConfig` from `@next/env` — the identical loader Next.js itself uses — then ran a single anon `select` against `public.products` for exactly the 8 columns the migration defines, using `{ count: "exact", head: true }` so **zero row content ever left the database into this process or any log** (a `HEAD`-style request — even more conservative than the plan's fallback `limit(5)`, since it holds even if the "0 rows" expectation had been wrong). Result: `ok: true`, `http_status: 200`, `error_message: null`, `exact_row_count: 0`, all 8 columns (`id, category_slug, name, description, image, sort_order, created_at, updated_at`) accepted by PostgREST with no "column does not exist" error. This is the strongest read-only proof available from this machine that the table exists, anon holds the table-level `GRANT SELECT` the migration added, the `anon` RLS policy correctly allows it, and the column set matches the DDL exactly — a bad grant, a missing policy, or a misnamed column would each have surfaced as a non-null `error` here. **Explicitly out of scope, not attempted (untestable read-only rather than silently skipped):** proving anon `INSERT` is denied (would require a write); the migration's own SQL verification queries 1–4b/6, which need direct Postgres catalog access (`information_schema`, `pg_policies`, `pg_class`) this environment doesn't have — PostgREST/the anon client only exposes table-level REST endpoints, never arbitrary catalog SQL.
+
+Exact command run:
+```
+node -e '
+const { loadEnvConfig } = require("@next/env");
+loadEnvConfig(process.cwd());
+const { createClient } = require("@supabase/supabase-js");
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+if (!url || !key) { console.log(JSON.stringify({ ok: false, reason: "missing required env var(s) - names only" })); process.exit(1); }
+const supabase = createClient(url, key);
+const columns = ["id","category_slug","name","description","image","sort_order","created_at","updated_at"];
+(async () => {
+  const { error, status, count } = await supabase.from("products").select(columns.join(","), { count: "exact", head: true });
+  console.log(JSON.stringify({ ok: !error, http_status: status, error_message: error ? error.message : null, error_code: error ? error.code : null, exact_row_count: count, columns_requested: columns }, null, 2));
+})();
+'
+```
+
+**2. what-we-do-regression.** `curl -is http://localhost:3000/what-we-do` → `200`. Extracted the 8 product-card Supabase Storage image URLs and diffed them, byte-for-byte, against the 8 URLs already saved in T-002's Live Pass evidence (`docs/qa-evidence/T-002/what-we-do-images/page.log`) — **identical, 0 differences**, directly proving this ticket's diff changed nothing rendered on the one live consumer of `Product`. Separately, `grep -ic slug` against the full raw HTML transcript returned **0** — `.slug` is carried on every category object in memory but never reaches the DOM or any RSC-serialized payload embedded in the HTML. This is a stronger claim than the Static Pass's INFO-3 (which only confirmed "no `.slug` reference in the render code" by reading source) — a live grep of the actual response additionally rules out a leak through a Client Component boundary serializing the full object, which a source read alone cannot. Two headless-Chrome screenshots (`--window-size=1440,900` for a top-of-page sanity check, `--window-size=1440,6000` — deliberately taller than the dispatch's literal example, to get the whole product grid inside one capture, the same technique T-002's own evidence implied) both confirm all 8 cards (T-Shirts, Polo Shirts, Tank Tops, Dresses, Sleepwear, Leggings, Sportswear, Heavy Jersey Products) render real photographs with titles, no broken-image icons, no visible "slug" text anywhere. Console-error capture remains not possible (no CDP tool installed — same gap T-002's Live Pass already traced in full; not re-discovered here, just re-cited).
+
+**3. admin-auth-gate-regression.** `curl -is` with no cookies: `/admin/business` → `307` → `location: /admin/login`; `/admin` → `307` → `location: /admin/login`; `/admin/login` → `200` with real page markup. Full response-header blocks captured (not just status lines) for all three — confirmed **no `Set-Cookie` header** on any of the three anonymous requests, consistent with no session existing. One headless-Chrome screenshot of `/admin/login` (page load only — both fields visually confirmed empty, nothing typed, nothing submitted, no sign-in attempted, per the hard constraint). T-001's diff never touches middleware or auth (confirmed in the Static Pass); this live check confirms the gate still holds in practice.
+
+**4. live-slug-collision-check (optional flow, orchestrator-approved with the amendment to use the real code).** Per the orchestrator's explicit instruction, this flow calls the **actual exported `normalizeProducts` and `slugify`** from `src/lib/site-content.ts` — loaded directly via `require("./src/lib/site-content.ts")`, which Node 25 type-strips and loads natively (confirmed feasible ahead of time: the file has zero `import` statements, so the `@/*` path alias in `tsconfig.json` never enters the picture and there was nothing to report as a loading blocker) — against the **live** `site_settings` row for `key = 'business'` (anon-readable, `USING (true)`, the identical data `/what-we-do` itself renders — no incremental exposure over Flow 2). Result, logged as only `{title, slug}` pairs plus a verdict (no other row fields, no ids, no raw JSONB dump):
+
+- **8 real live categories**, exactly matching what Flow 2's screenshot shows: `T-Shirts→t-shirts`, `Polo Shirts→polo-shirts`, `Tank Tops→tank-tops`, `Dresses→dresses`, `Sleepwear→sleepwear`, `Leggings→leggings`, `Sportswear→sportswear`, `Heavy Jersey Products→heavy-jersey-products`.
+- `any_stored_slug_present_in_live_data_today: false` — **live-confirms, rather than merely assumes,** the precondition both the Static Pass and `docs/SECURITY.md`'s SEC-MED-3/SEC-MED-4 rely on ("no shipped write path sets this field yet"). Zero of the 8 real production category rows carry a stored `slug` today.
+- All 8 computed slugs are **unique** (`collision_found: false`) and every one matches the real, exported `slugify(title)` output exactly, with no dedup suffix needed (`all_expectations_matched: true`) — the real code, run against real production titles, produces exactly the URLs T-005 will need.
+- **Direct, practical read on WARN-1 / SEC-MED-3 (the order-dependent stored-slug-bypass finding from the Static Pass and CSO's review):** that defect is real in the code, but this live check confirms it is **currently dormant in production** — it has nothing to bite on yet, because no category has a stored slug. It remains correctly filed as a fast-follow for T-003 (which is the first ticket that will ever write a `slug`), not as something this ticket's merge makes exploitable today.
+
+Exact command run (same env-loading approach as Flow 1; full text preserved here since no file was left on disk):
+```
+node -e '
+const { loadEnvConfig } = require("@next/env");
+loadEnvConfig(process.cwd());
+const { createClient } = require("@supabase/supabase-js");
+const { normalizeProducts, slugify } = require("./src/lib/site-content.ts");
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+if (!url || !key) { console.log(JSON.stringify({ ok: false, reason: "missing required env var(s) - names only" })); process.exit(1); }
+const supabase = createClient(url, key);
+(async () => {
+  const { data, error } = await supabase.from("site_settings").select("value").eq("key", "business").maybeSingle();
+  if (error) { console.log(JSON.stringify({ ok: false, stage: "fetch", error_message: error.message, error_code: error.code }, null, 2)); return; }
+  if (!data) { console.log(JSON.stringify({ ok: false, stage: "fetch", reason: "no row found for key=business" }, null, 2)); return; }
+  const rawProducts = data.value && data.value.products;
+  const rawArr = Array.isArray(rawProducts) ? rawProducts : [];
+  const rawByTitle = new Map();
+  for (const item of rawArr) {
+    let title = null, storedSlug = null;
+    if (typeof item === "string") title = item.trim();
+    else if (item && typeof item === "object" && typeof item.title === "string") {
+      title = item.title.trim();
+      if (typeof item.slug === "string" && item.slug.trim()) storedSlug = item.slug.trim();
+    }
+    if (title && !rawByTitle.has(title)) rawByTitle.set(title, storedSlug);
+  }
+  const normalized = normalizeProducts(rawProducts);
+  const pairs = normalized.map(p => ({ title: p.title, slug: p.slug }));
+  const perItemChecks = normalized.map(p => {
+    const storedSlug = rawByTitle.has(p.title) ? rawByTitle.get(p.title) : undefined;
+    if (storedSlug) return { title: p.title, expectation: "stored-value-should-win", actualSlug: p.slug, matches: p.slug === storedSlug };
+    const expectedBase = slugify(p.title);
+    const matches = p.slug === expectedBase || new RegExp("^" + expectedBase.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "-\\d+$").test(p.slug);
+    return { title: p.title, expectation: "computed-from-real-slugify", expectedBase, actualSlug: p.slug, matches };
+  });
+  const rawTitleCount = rawByTitle.size;
+  const droppedCount = rawTitleCount - normalized.length;
+  const anyStoredSlugsInLiveData = Array.from(rawByTitle.values()).some(v => v !== null);
+  const slugs = pairs.map(p => p.slug);
+  const uniqueSlugs = new Set(slugs);
+  const collisionFound = uniqueSlugs.size !== slugs.length;
+  const allExpectationsMatch = perItemChecks.every(c => c.matches);
+  console.log(JSON.stringify({ ok: true, real_functions_used: ["normalizeProducts", "slugify"], source_file: "src/lib/site-content.ts (loaded directly via require(), type-stripped by Node 25 -- not hand-copied)", raw_title_count_from_live_site_settings: rawTitleCount, normalized_category_count: normalized.length, dropped_titleless_rows: droppedCount, any_stored_slug_present_in_live_data_today: anyStoredSlugsInLiveData, pairs, per_item_expectation_checks: perItemChecks, unique_slug_count: uniqueSlugs.size, collision_found: collisionFound, all_expectations_matched: allExpectationsMatch, verdict: (!collisionFound && allExpectationsMatch) ? "PASS - all live slugs unique and match real slugify() output" : "FAIL - see collision_found / per_item_expectation_checks" }, null, 2));
+})();
+'
+```
+
+### Evidence secret-scan (performed before any file was left in place)
+Every evidence file under `docs/qa-evidence/T-001/` was re-read after being written. Full response-header blocks (not just status lines) were inspected for all `curl` transcripts — no `Set-Cookie`, no `Authorization`, no `apikey` header present on any of them (expected: all requests were anonymous). A targeted grep for secret-shaped strings (`ghp_`, `gho_`, `sk_live_`, AWS-key shape, `SUPABASE_SERVICE_ROLE`, `service_role`, JWT-prefix `eyJhbGci`, `password =`, `NEXT_PUBLIC_SUPABASE*`, `Set-Cookie`) across the entire `docs/qa-evidence/T-001/` tree returned **zero hits**. The two DB-touching scripts were designed to log only booleans/counts/column names/title-slug pairs and were manually re-read in full (reproduced above) before being judged safe to reference from this report.
+
+### Saved specs
+No unit-test/E2E spec files exist in this repo (`docs/TECH_STACK.md`). Per the orchestrator's explicit instruction, no script file was left on disk for either DB-touching flow — the exact `node -e` commands are reproduced verbatim above so they remain re-runnable and auditable without a repo artifact. The `curl` transcripts and image-diff logs under `docs/qa-evidence/T-001/` are this pass's saved, re-runnable checks — re-issuing the same `curl`/Chrome commands against the same URLs reproduces every assertion above.
+
+### Verdict
+✅ **Live Pass.** All four flows' assertions passed with evidence, zero 🔴 CRIT, zero failed flows. The `products` table, its RLS, and its GRANT behave exactly as `/architect` designed, to the full extent verifiable without direct Postgres access. The `/what-we-do` and `/admin` regressions are both clean — this ticket's diff changed nothing observable on either surface. The optional live-data flow (4) upgrades WARN-1/SEC-MED-3 from "static, synthetic-data concern" to "confirmed real, but confirmed currently dormant" — a materially more precise status than either prior pass could establish alone, and still correctly non-blocking for T-001 itself. **T-001 is now both Static-Pass ✅ and Live-Pass ✅ — mergeable per `docs/WORKFLOW.md` §5, subject to the schema hard-stop already satisfied (SQL applied, user-confirmed, `STATUS: APPLIED 2026-09-27`).**

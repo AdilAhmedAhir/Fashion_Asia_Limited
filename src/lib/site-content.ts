@@ -202,15 +202,20 @@ export const SITE_SETTINGS: Record<string, Record<string, unknown>> = {
         // Each card carries a title, an optional short description, and its own
         // photograph. Descriptions ship empty on purpose — the card hides the
         // line until someone writes it in /admin, so nothing invented goes live.
+        // `slug` is hand-picked here, not derived via slugify() at runtime, and
+        // matches the seed row already written into supabase-schema.sql. It is
+        // a category's permanent identity and public URL segment (T-001/
+        // T-005) — once a category has been saved from /admin at least once,
+        // its stored slug always wins over this default (see normalizeProducts()).
         products: [
-            { title: "T-Shirts", description: "", image: "/images/client/product-tshirts.webp" },
-            { title: "Polo Shirts", description: "", image: "/images/client/box12-copy.webp" },
-            { title: "Tank Tops", description: "", image: "/images/client/product-tanktops.webp" },
-            { title: "Dresses", description: "", image: "/images/client/product-dresses.webp" },
-            { title: "Sleepwear", description: "", image: "/images/client/product-sleepwear.webp" },
-            { title: "Leggings", description: "", image: "/images/client/box10-copy.webp" },
-            { title: "Sportswear", description: "", image: "/images/client/product-sportswear.webp" },
-            { title: "Heavy Jersey Products", description: "", image: "/images/client/4-copy.webp" },
+            { title: "T-Shirts", slug: "t-shirts", description: "", image: "/images/client/product-tshirts.webp" },
+            { title: "Polo Shirts", slug: "polo-shirts", description: "", image: "/images/client/box12-copy.webp" },
+            { title: "Tank Tops", slug: "tank-tops", description: "", image: "/images/client/product-tanktops.webp" },
+            { title: "Dresses", slug: "dresses", description: "", image: "/images/client/product-dresses.webp" },
+            { title: "Sleepwear", slug: "sleepwear", description: "", image: "/images/client/product-sleepwear.webp" },
+            { title: "Leggings", slug: "leggings", description: "", image: "/images/client/box10-copy.webp" },
+            { title: "Sportswear", slug: "sportswear", description: "", image: "/images/client/product-sportswear.webp" },
+            { title: "Heavy Jersey Products", slug: "heavy-jersey-products", description: "", image: "/images/client/4-copy.webp" },
         ],
     },
 
@@ -317,22 +322,74 @@ export const PRODUCT_IMAGE_FALLBACK = "/images/client/4-copy.webp";
 
 export type Product = {
     title: string;
+    slug: string; // stable identity + public URL segment; assigned once, frozen after
     description: string;
     image: string;
 };
+
+// Individual catalog item inside a category (image/name/description) — the
+// shape of a row in the new public.products table (db/migrations/0001_
+// products-within-category.sql). Snake_case fields match the Job/Report/
+// Leader convention already used below for Supabase rows, so a row read
+// from that table needs no mapping step. Do not confuse this with `Product`
+// above: despite the name, `Product` is a CATEGORY (T-Shirts, Polo Shirts,
+// ...) — see the naming-quirk note in docs/TECH_STACK.md.
+export type CategoryProduct = {
+    id: string;
+    category_slug: string;
+    name: string;
+    description: string;
+    image: string;
+    sort_order: number;
+};
+
+// Category slug: lowercase, every run of non-alphanumeric characters
+// collapsed to a single "-", leading/trailing "-" trimmed. A title with no
+// alphanumeric characters at all would otherwise produce an empty, unusable
+// URL segment, so that case falls back to "category".
+export function slugify(title: string): string {
+    const slug = title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-+|-+$/g, "");
+    return slug || "category";
+}
+
+// Appends -2, -3, ... until `slug` no longer collides with a slug already
+// assigned earlier in the same normalizeProducts() call. This is the
+// read-time-only fallback for a legacy category that predates the `slug`
+// field (docs/TECH_STACK.md → Database, decision (b)) — an actual save
+// rejects a colliding freshly-computed slug outright instead of ever
+// reaching this function.
+function dedupeSlug(slug: string, seen: Set<string>): string {
+    if (!seen.has(slug)) return slug;
+    let suffix = 2;
+    while (seen.has(`${slug}-${suffix}`)) suffix++;
+    return `${slug}-${suffix}`;
+}
 
 // `products` used to be a plain list of names. Stored rows still hold that shape
 // until the migration runs, and a client can always save a half-filled row, so
 // accept both forms and fill the gaps: a missing image falls back to the one
 // that name used to resolve to, a missing description simply hides the line.
 // Entries without a usable title are dropped rather than rendered as blank cards.
+// A stored `slug` always wins over a fresh computation, even after a title
+// edit, so a category's public URL never moves once assigned. Freshly
+// computed slugs are deduped against every slug already assigned earlier in
+// this same call — stored or computed — via `seen`, shared across the reduce.
 export function normalizeProducts(raw: unknown): Product[] {
     if (!Array.isArray(raw)) return [];
+
+    const seen = new Set<string>();
 
     return raw.reduce<Product[]>((acc, item) => {
         if (typeof item === "string") {
             const title = item.trim();
-            if (title) acc.push({ title, description: "", image: PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK });
+            if (title) {
+                const slug = dedupeSlug(slugify(title), seen);
+                seen.add(slug);
+                acc.push({ title, slug, description: "", image: PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK });
+            }
             return acc;
         }
 
@@ -346,7 +403,11 @@ export function normalizeProducts(raw: unknown): Product[] {
                 : PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK;
             const description = typeof row.description === "string" ? row.description.trim() : "";
 
-            acc.push({ title, description, image });
+            const storedSlug = typeof row.slug === "string" ? row.slug.trim() : "";
+            const slug = storedSlug || dedupeSlug(slugify(title), seen);
+            seen.add(slug);
+
+            acc.push({ title, slug, description, image });
         }
 
         return acc;

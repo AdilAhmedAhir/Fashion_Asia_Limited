@@ -1,0 +1,17 @@
+{
+  "ok": true,
+  "http_status": 200,
+  "error_message": null,
+  "error_code": null,
+  "exact_row_count": 0,
+  "columns_requested": [
+    "id",
+    "category_slug",
+    "name",
+    "description",
+    "image",
+    "sort_order",
+    "created_at",
+    "updated_at"
+  ]
+}
