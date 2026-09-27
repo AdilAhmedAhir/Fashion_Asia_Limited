@@ -1,0 +1,8 @@
+HTTP/1.1 307 Temporary Redirect
+location: /admin/login
+Date: Sun, 27 Sep 2026 15:38:25 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+/admin/login
