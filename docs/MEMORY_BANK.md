@@ -291,3 +291,144 @@ Mapped the codebase (routes, server actions, data model, content-default pattern
 - **Deploy is currently blocked** by all of: SEC-HIGH-1 (ticketed as **T-006**, not yet started), SEC-HIGH-2 (needs the user's own confirmation of a Supabase Dashboard toggle — no code ticket), the T-002 manual admin checklist (`docs/QA_REPORT.md`, not yet run), and the T-003 manual admin checklist (`docs/QA_REPORT.md`, not yet run — see the T-003 entry above for what its Step 1 accomplishes). None of these block local merges, only the next `deploy`.
 - **T-004 additionally cannot be built to its own written spec** until SEC-HIGH-4 is resolved (see the T-003 entry above) — not yet filed as its own ticket; recommend folding into T-004 or spinning a small T-003.1.
 - **Repo hygiene note** (an observation from this compression pass, not a doc finding): `docs/qa-evidence/<ticket>/` is adding roughly 1.5 MB per ticket to the repo. Not a problem yet — worth a `/devops`/`/git` look if the pace continues across future sprints.
+
+### 2026-09-27T02:00Z — T-005: Public category detail pages under `/what-we-do`
+
+**What shipped:**
+- `src/app/(website)/(marketing)/what-we-do/[category]/page.tsx` (new) — dynamic route (`ƒ`, no `generateStaticParams`), `generateMetadata`, page body; renders a category's own products or an honest "Coming Soon" empty state.
+- `src/app/(website)/(marketing)/what-we-do/page.tsx` — wraps each category card in `<Link href="/what-we-do/<slug>">`.
+- `src/app/actions/settings-actions.ts` — added one `revalidatePath("/sitemap.xml")` line inside `updateSettings`'s existing per-category revalidation loop.
+- `src/app/sitemap.ts` — generates one `<url>` entry per live category from `normalizeProducts(business.products)`, no hardcoded literal.
+
+**Source (if marketing-originated):**
+- N/A — direct engineering ticket, `docs/VISION.md` MVP Feature 1. This project's marketing lane is still inert (`docs/WORKFLOW.md` §10).
+
+**Key decisions:**
+- The route matches the URL param against `normalizeProducts()`'s *normalized* `.slug` via exact `===` only — the raw param and any raw stored slug are never used to construct a path/query/string anywhere (closes `docs/SECURITY.md` SEC-MED-4's T-005 half; defense-in-depth even though no live write path can set an unsafe slug post-T-003).
+- Category `Product.id` (decision (d), T-003) is read nowhere in this route or `sitemap.ts` — only `.title`/`.description`/`.slug`. `CategoryProduct.id` (a different type — the DB row's own UUID) is used as a React `key`; judged acceptable since `public.products` is already fully `anon`-readable via T-001's own RLS/GRANT, so this adds zero incremental exposure.
+- `revalidatePath("/sitemap.xml")` was added but is a confirmed no-op: `createClient()` unconditionally calls `cookies()`, which forces `sitemap.ts` and the whole `/what-we-do*` tree fully dynamic (`ƒ`, confirmed via `npm run build` output) — there is no cache entry for it, or for any pre-existing `/what-we-do*` `revalidatePath` call, to purge. Kept as harmless, cheap insurance, not because it does anything today.
+
+**Known traps / debt:**
+- WARN-3 — renaming a category *before* the one-time `/admin/business` bootstrap Save changes its slug (and therefore its public URL) with **zero redirect** (`next.config.ts` has only 3 hardcoded legacy-path rules). T-005 is what makes this consequential for the first time — before it shipped, `.slug` was inert/unindexed; after, the sitemap actively advertises `/what-we-do/<slug>` to crawlers from the first crawl. **Run the bootstrap Save at/before deploy, before any other `/admin/business` edit and before search engines index the pages.** No manual checklist/runbook item currently states this. (severity: medium)
+- WARN-4 — product-photo `<img alt="" aria-hidden="true">` (carried forward from the pre-existing `/what-we-do` teaser card, not introduced here) leaves screen-reader users with zero descriptive content on a populated card whenever `description` is empty — true of every one of today's 8 categories' future products by current default (`site-content.ts`: "Descriptions ship empty on purpose"). A real WCAG 1.1.1 gap for a manufacturer whose catalog page's whole point is showing the garment. Fix both `what-we-do/page.tsx` and `[category]/page.tsx` together, e.g. `alt={product.name}`. (severity: medium)
+- WARN-2 — `sitemap.ts` becoming fully dynamic (a side effect of reading live settings) means `lastModified: new Date()` now evaluates fresh on *every* request, sitewide — all 9 pre-existing static entries included, not just the 8 new category ones — so every URL reports "just modified" on every single crawl regardless of whether anything changed. Live-confirmed by two fetches ~2s apart returning different timestamps on all 17 entries. (severity: low-medium)
+- WARN-1 — the new `revalidatePath("/sitemap.xml")` call (and every pre-existing `/what-we-do*` `revalidatePath` call in this codebase) is a confirmed no-op per the decision above; its own code comment overstates the benefit and should be corrected to say freshness comes from forced dynamic rendering, not this call. (severity: low)
+- **WARN-5 — about 160 failed `/sequence/hero/frame_N.webp` 404 requests fire on every `(website)`-group desktop page load** (0 on mobile) — a dead eager-preload loop, `Preloader.tsx:67`, global to the whole public route group, **100% pre-existing and sitewide, not a T-005 defect**. First actually *measured* this pass (prior Live Passes used a one-shot screenshot flag with no CDP session to observe `Network`; this pass built a raw-DevTools-Protocol screenshot client that also captured console/network). `public/sequence/hero/` contains only `poster.webp` — the numbered frames don't exist. For `/pm`: delete the dead loop (the poster alone already covers `HeroSection.tsx`) or restore the missing frames. (severity: low, perf/cosmetic)
+
+**Deferred QA findings (🟢):**
+- SEC-INFO-19 — `normalizeProducts()`'s unvalidated stored `slug` now reaches a new `<Link href>` sink (the `/what-we-do` card) for the first time; no live write path can ever set an unsafe value (`resolveCategoriesForSave` never reads an incoming item's `.slug` at all, post-T-003) — followup ticket: none filed, recommend gating `normalizeProducts()`'s stored-slug branch through `isWellFormedSlug()` whenever `src/lib/site-content.ts` is next touched.
+- INFO-2 — OG `images`/`siteName`/`type`/`locale` are dropped on every marketing page's metadata, `[category]` included — confirmed 100% consistent sitewide convention (8/8 sibling pages), not a T-005-specific gap — followup: pick up in a future SEO/OG polish pass.
+- INFO-4 — the populated-product-grid's variable-height card behavior (CSS Grid default row-stretch, no `line-clamp`) was reasoned through statically only; `public.products` was still empty at review time — followup: live-verifiable now that T-004 shipped real rows (see T-004 entry below).
+
+**Deferred security findings:**
+- SEC-MED-4 (T-005 half) — ✅ closed for T-005's own scope: every named sink (`revalidatePath`, `sitemap.ts`, canonical, OG) uses a validated/resolved slug or a typed, Next-serialized shape, never a raw path-construction input — tracked in `docs/SECURITY.md` §5.
+- SEC-HIGH-1 (Next.js CVE / T-006) and SEC-HIGH-2 (Supabase signup-toggle) — untouched by this ticket, both still block only the next production `deploy` — tracked in `docs/SECURITY.md` §5.
+
+**Acceptance evidence:**
+- `docs/qa-evidence/T-005/screenshots/{01-what-we-do-grid-desktop-1440,02-category-sportswear-desktop-1440,03-category-sportswear-mobile-360}.png` + matching `.console-network.json` (0 console errors on all 3)
+- `docs/qa-evidence/T-005/category-pages/`, `sitemap/`, `not-found-and-variants/`, `leak-checks/` (8/8 category pages pass, sitemap well-formed XML with all 17 entries, 7/7 malformed-slug/traversal variants fail closed, 0 UUID/slug leaks across 9 pages)
+- Static QA verdict: ✅ (0 🔴, 4 🟡 WARN all non-blocking, 5 🟢 INFO)
+- Live QA verdict: ✅ (7/7 flows pass, 0 failed flows, 0 500s across 20+ HTTP checks)
+- CSO sign-off: ✅ 2026-09-27 in `docs/SECURITY.md` (`ticket-review:T-005`, "Cleared")
+
+**Commit(s):** `27660e3` (merge); `d3ac3f5` (feat)
+
+### 2026-09-27T03:00Z — T-012: `updateSettings` result contract — converts throw-based guard failures to `{ok, error}`
+
+**What shipped:**
+- `src/app/actions/settings-actions.ts` — `updateSettings` now returns `UpdateSettingsResult = {ok:true} | {ok:false, error:string}` for every guard branch (not-authenticated, existing-row read error, collision/resolution error, delete-guard count error, delete-guard block message, final upsert error); zero `throw` remains in the function body.
+- `src/components/admin/SettingsForm.tsx` — `SettingsHeader` gains an `error?: string | null` prop, rendered as `<p role="alert" className="...text-red-400">` with a `TriangleAlert` icon. `ObjectListEditor` deliberately left untouched (see Key decisions).
+- Six admin client files wired to check the result — `BusinessClient.tsx`, `HomepageSettingsClient.tsx`, `ContactSettingsClient.tsx` (both its `contact` and `general` call sites), `SustainabilityClient.tsx`, `WhoWeAreClient.tsx`, `WhoWeWorkWithClient.tsx` — each: `setError(null)` → `try { const result = await updateSettings(...); if (!result.ok) setError(result.error); } catch { setError("Something went wrong saving these changes. Check your connection and try again."); }`.
+
+**Source (if marketing-originated):**
+- N/A — direct engineering ticket. Closes `docs/SECURITY.md` SEC-HIGH-4 (T-003's throw-based `updateSettings` contract) and `docs/QA_REPORT.md` T-003 Static Pass re-run WARN-3 — both independently named this a **blocking prerequisite for T-004**, not a discretionary fast-follow.
+
+**Key decisions:**
+- Failure convention going forward, recorded in `docs/TECH_STACK.md` ("Server Action failure-reporting convention"): a user-facing guard failure is returned as a typed `{ok:false, error}`, never thrown; `throw` is reserved for genuinely unexpected/infrastructure failures. Matches `src/app/actions/products-actions.ts`'s pre-existing shape (T-003) — this ticket brought `settings-actions.ts` in line with an already-established in-repo pattern, not a new one.
+- `ObjectListEditor` intentionally did **not** gain an error slot — only `SettingsHeader` did (Why: every settings page has exactly one Save button, so a save failure is always a whole-page outcome; `HomepageSettingsClient` alone has three separate `ObjectListEditor` instances that would each have to guess whether an unrelated failure was "theirs." Independently endorsed by both `/cso` and `/ui-ux`.)
+- `ContactSettingsClient`'s two `updateSettings` calls (`contact`, `general`) stay unconditionally independent, not short-circuited by each other's failure — a partial failure names only the side that failed, joined by " · " if both fail.
+- Spun as its own ticket rather than folded into T-004 (Why: the fix must land atomically across all six callers regardless of T-004's timeline, and it also repairs five settings pages — homepage, contact, sustainability, who-we-are, who-we-work-with — that have nothing to do with T-004's product editor).
+
+**Known traps / debt:**
+- **SEC-HIGH-5 (new, blocks next deploy)** — `ReportsClient.tsx` (`createReport`/`updateReport`/`deleteReport`) and `CareersClient.tsx` (`createJob`/`updateJob`/`deleteJob`) wrap their CRUD calls in **zero** `try`/`catch` — reproducing SEC-HIGH-4's exact pre-fix shape on live, shipped, day-to-day admin surfaces *today*, with no future-ticket precondition needed (unlike SEC-HIGH-4, which was gated behind T-004). Neither page has any error-display slot at all. Not yet filed as a ticket — `/cso` recommends a high-priority fast-follow, same pattern as T-012; joins the pre-deploy blocker list. (severity: high)
+- SEC-MED-8 (new) — raw Supabase/Postgres `error.message` strings now reach the browser verbatim from three `updateSettings` branches (existing-row read, delete-guard count, final upsert) — same already-accepted pattern as `products-actions.ts`'s SEC-INFO-15, now a second file. Not yet filed — recommend a consolidated fast-follow (map known error shapes to a generic string, log the raw one server-side only) covering both files. (severity: medium)
+- SEC-MED-9 (new) — `addMediaAction`/`deleteMediaAction` (`media-actions.ts`) return `void` and are wired as raw `<form action>` Server Actions with **no client JS wrapper at all** — zero failure signal in *any* environment, not just production (distinct from SEC-HIGH-4/5's "redacted-in-prod-only" shape); `deleteMediaAction`'s own delete error isn't even logged server-side. Needs its own design pass, not a drop-in copy of T-012's pattern (no client awaiter exists to convert). Not yet filed. (severity: medium)
+- SEC-MED-10 (new) — 10 write functions with no application-level `getUser()` check, relying solely on RLS: 7 in `settings-actions.ts` (report/leader/job CRUD + `seedSettingsFromDefaults`/`uploadFile` — distinct from `updateSettings` itself, which does check), 2 in `media-actions.ts`, 3 in `jobs-actions.ts`. Not yet filed — recommend batching with SEC-HIGH-5's fix ticket (7 of 10 functions overlap). (severity: medium)
+- WARN-1 (wording only) — T-012's own acceptance bullet 3 names both `SettingsHeader` *and* `ObjectListEditor` for the error slot; only `SettingsHeader` got one, deliberately (see Key decisions). Tighten the bullet's wording on a future `/pm` pass. (severity: low)
+
+**Deferred QA findings (🟢):**
+- INFO-1 — a narrow edge case in `ContactSettingsClient`: if the `contact` call resolves `{ok:false}` but the second `general` `await` itself throws (transient network only), the specific `"Contact settings: …"` message is replaced by the generic fallback — conservative-safe (never claims success), just less specific — followup: not ticketed, cosmetic.
+
+**Deferred security findings:**
+- SEC-HIGH-4 — ✅ closed: zero `throw` remains in `updateSettings`, independently re-verified by both `/cso` and `/qa` via direct line-by-line read of the full function body — tracked in `docs/SECURITY.md` §5.
+- SEC-HIGH-1 / SEC-HIGH-2 — untouched, still block only the next `deploy` — tracked in `docs/SECURITY.md` §5.
+
+**Acceptance evidence:**
+- `docs/qa-evidence/T-012/production-mode-boot/` — a genuine `next start -p 3001` boot: auth gate + public smoke test pass 12/12, byte-identical to the `:3000` dev-server baseline; production server cleanly stopped afterward, `:3000` confirmed undisturbed (same PID before/after).
+- `docs/qa-evidence/T-012/admin-auth-gate-regression/`, `public-regression/` (8/8 and 8/8 pass, 0 failed requests)
+- Static QA verdict: ✅ (0 🔴, 1 🟡 WARN wording-only, 2 🟢 INFO)
+- Live QA verdict: ✅ (all 3 flows pass, 28 HTTP checks, 0 failures)
+- CSO sign-off: ✅ 2026-09-27 in `docs/SECURITY.md` (`ticket-review:T-012`, "Cleared")
+- **Manual Checklist — T-012** (`docs/QA_REPORT.md`) — written, 8 steps, run under a production build by the user; **not yet run** as of this compression. Step 2 doubles as T-003's still-outstanding bootstrap-save checklist item — running one satisfies both.
+
+**Commit(s):** `d3e2bd7` (merge); `98b4a83` (fix)
+
+### 2026-09-27T04:00Z — T-004: Products-within-category admin editor on `/admin/business`
+
+**What shipped:**
+- `src/components/admin/CategoryProductsManager.tsx` (new) — the "Products Within Each Category" card: category picker, `AddProductForm`, per-row `ProductRow` (inline name/description/image edit-on-blur, delete with `confirm()`, ▲/▼ reorder).
+- `src/app/actions/products-actions.ts` — new `getAllCategoryProducts()` (one grouped read for the admin page's initial load); `createCategoryProduct` now computes `sort_order` = current category max + 1 server-side when the caller omits it.
+- `src/app/admin/(dashboard)/business/BusinessClient.tsx` — re-reads `getSettings("business")` after every successful Save, piped through `normalizeProducts()`, so a category's `id`/`slug` round-trip correctly into the next save.
+- `src/app/admin/(dashboard)/business/page.tsx` — `Promise.all([getSettings("business"), getAllCategoryProducts()])`.
+- `src/lib/site-content.ts` — `CategoryProductInput.sort_order` made optional (only content change in this file this ticket).
+
+**Source (if marketing-originated):**
+- N/A — direct engineering ticket, `docs/VISION.md` MVP Feature 2 (admin UI half). This is the client's actual requested feature this sprint existed to ship.
+
+**Key decisions:**
+- Two independent save models on one page, by design: product Name/Description/Image save immediately per-field on blur/upload (T-003's per-row CRUD actions, `requireUser()`-gated, byte-identical to `main`); the category cards above still require the pre-existing "Save Changes" button (T-001 decision (a)'s whole-blob JSONB model, unchanged). Products never touch `site_settings` at all — confirmed structurally: the new file imports nothing from `settings-actions.ts`.
+- `sort_order` computed server-side as current max + 1 at insert time — `AddProductForm` never sends a client-supplied value (closes T-003 QA's first-pass INFO-1: new products land at the **end** of a category, not the front).
+- Products may only attach to a category with a genuine, bootstrapped `id`+`slug` (`checkCategoryAttachable()`, never `normalizeProducts()`'s read-time display fallback) — un-bootstrapped categories show a named, title-specific advisory (`Info` icon, `role="status"`) and the add form stays hidden; `CategoryProductsManager` also short-circuits client-side (`bootstrapped = Boolean(selected?.id)`) before ever attempting a write.
+- `ProductRow`'s React `key` is `product.id` (stable DB UUID), not array index — deliberately avoids the still-open T-002 WARN-4 / **T-010** index-keying trap that `ObjectListEditor` still has.
+- The delete-guard message ("Remove its products first…") is now, for the first time, actually reachable (a category can finally hold products) — traced end-to-end and confirmed the T-012 mechanism holds unchanged: it's a `return`, not a `throw`, so it survives Next.js's production redaction.
+
+**Known traps / debt:**
+- **WARN-1 (reachable via ordinary UI, not a crafted call)** — a row's Image-field save and its Name/Description-field save are independent, unguarded requests to the same row: `<ImageUploadField>` has no `disabled` prop wired to the row's `busy` flag (the component's own signature has no such parameter to plumb one into), so an admin can trigger an image upload while a text save for the same row is still in flight. If the earlier (stale) text-save response arrives *after* the image-save response, its own stale snapshot's old image silently overwrites the just-uploaded one on both the DB row and the on-screen preview — both requests report "Saved," **no error shown anywhere**. Not data loss (the new file stays in Storage), recoverable by re-uploading. Fix: add a `disabled` prop to the shared `ImageUploadField` and wire `disabled={busy}`, or a per-row monotonic request-sequence token. (severity: medium)
+- **WARN-2 (reachable via ordinary UI)** — `<AddProductForm categorySlug={selected.slug} .../>` carries no `key` prop, so it is not remounted on a category switch — an in-progress draft (name/description/**an already-uploaded image**) silently survives a category change and attaches to whatever category is selected when "Add product" is eventually clicked. No corruption, but content entered for one category can land on another. Fix: `key={selected.slug}`. (severity: medium)
+- **WARN-3** — a `getAllCategoryProducts` read failure (`console.error`'d server-side only, returns `{}`) is indistinguishable in the admin UI from a category genuinely having zero products — "No products in this category yet" shows either way. Risks an admin creating a duplicate product during a transient read failure. Fix: discriminated `{ok, data}` return shape. (severity: medium) **QA and `/cso` both recommend picking these three (WARN-1/2/3) up as `/pm` fast-follow tickets.**
+- SEC-MED-11 (new, crafted-call only) — `createCategoryProduct`/`updateCategoryProduct` accept an arbitrary finite `sort_order` verbatim when a caller directly supplies one (negative/huge/non-integer) — the max+1 default only fires when omitted/non-finite. Not reachable via the shipped UI. Recommend folding into **T-014**. (severity: medium)
+- SEC-MED-12 (new, extends SEC-MED-5) — read-then-insert race in the new max+1 lookup: two concurrent adds to the *same* category can tie on the same computed `sort_order` (no `UNIQUE` constraint); self-corrects on the next reorder. Same accepted TOCTOU class as SEC-MED-5, no new ticket. (severity: medium, non-blocking)
+- **SEC-MED-13 (new — reachability correction to the pre-existing SEC-MED-7)** — `ImageUploadField`'s pre-existing hand-editable raw path `<input>` (unchanged by T-004) means the image-scheme-allow-list gap is reachable through **entirely ordinary, shipped-UI staff use — no devtools, no crafted call** — not only via a direct Server Action call as every prior entry on this finding assumed. True for both the pre-existing category-card image field *and* T-004's new product-image fields. Impact ceiling unchanged (bounded — browsers don't execute `javascript:`/SVG-`data:` via `<img src>`; worst case is an attacker- or fat-finger-controlled URL rendering site-wide) — not a merge or deploy blocker by itself, but this is the **second** time `/cso` has recommended elevating **T-014**'s scheduling priority to "practically pre-deploy-required" (first at the T-005 review). (severity: medium)
+- `/ui-ux` sitewide finding, not fixed here — `text-black` on `bg-primary` CTAs ≈ **2.77:1**, below the 4.5:1 AA bar, confirmed in **8 files** including `/admin/login`'s own sign-in button (the first control every site user touches), `src/components/ui/SubmitButton.tsx` (shared by all 3 public forms), and `SettingsHeader`'s "Save Changes" button. `AddProductForm`'s new "Add product" button correctly copied this same established (broken) convention for visual consistency rather than inventing a one-off fix. Recommend a dedicated cross-cutting follow-up, bundled with or alongside **T-011**. For `/pm`. (severity: medium, accessibility)
+
+**Deferred QA findings (🟢):**
+- INFO-1 — a narrower sibling race: deleting a row while a *different* row's reorder is in flight, followed by that reorder failing and reverting, can briefly resurrect the deleted row client-side; self-heals on any further action (server correctly returns "Product not found") or reload — not filed as its own item.
+- INFO-2 — whether a fractional `sort_order` could ever actually reach the `INTEGER NOT NULL` column via the already-accepted SEC-MED-11 crafted-call path is a genuine open question (depends on PostgREST's JSON-to-column binding), not resolved this pass — doesn't change SEC-MED-11's grading either way.
+- INFO-4 (from T-005) — the variable-height product-card grid behavior, reasoned through statically at T-005, is now confirmed live-verifiable since T-004 lets real rows exist — pick up on the next page-layout pass.
+
+**Deferred security findings:**
+- SEC-INFO-20 — `updateCategoryProduct` can structurally reassign a product to a different, already-attachable category (pre-existing T-003 behavior, soundly gated, crafted-call only — no shipped UI reaches it). No ticket — informational.
+- SEC-INFO-21 — `getAllCategoryProducts()` adds no exposure beyond what `getCategoryProducts()` and Supabase's own public REST endpoint already made available (`public.products` has been `anon`-`SELECT` + explicit `GRANT` since T-001). No ticket — informational.
+- SEC-INFO-22 — category `id`/`slug` round-trip through `BusinessClient`'s new post-Save re-read confirmed safe by direct execution (18/18 assertions, including a negative control proving the re-read line is load-bearing, not decorative) — closes the T-004 acceptance-criterion risk `docs/TECH_STACK.md`/T-003's entry flagged as open. No ticket — acceptance criterion satisfied.
+- SEC-HIGH-1 / SEC-HIGH-2 / SEC-HIGH-5 — untouched by this ticket, all still block only the next `deploy` — tracked in `docs/SECURITY.md` §5.
+
+**Acceptance evidence:**
+- `docs/qa-evidence/T-004/production-mode-boot/` — genuine `next start -p 3001` boot, 12/12 pass, byte-identical to the `:3000` baseline.
+- `docs/qa-evidence/T-004/admin-auth-gate/`, `public-regression/` (3/3 and 9/9 pass; all 8 category pages still show "Coming Soon" since no product was added by any agent pass, as required)
+- `docs/qa-evidence/T-004/ui-ux/contrast-and-methodology.log` — the sitewide `text-black`/`bg-primary` contrast trace.
+- Static QA verdict: ✅ (0 🔴, 3 🟡 WARN non-blocking, 4 🟢 INFO — all 11 of T-004's acceptance criteria, including all 5 "Folded in 2026-09-27" bullets, verified directly against the code)
+- Live QA verdict: ✅ (all 3 flows pass, 24 HTTP checks, 0 failures)
+- CSO sign-off: ✅ 2026-09-27 in `docs/SECURITY.md` (`ticket-review:T-004`, "Cleared" — no 🔴/🟠)
+- **Manual Checklist — T-004** (`docs/QA_REPORT.md`) — written, 9 steps (0–8) plus cleanup, run under a production build by the user against the live Sportswear category; **not yet run** as of this compression. **This is the real acceptance test for the client-requested feature**, not a formality — Step 1 also retroactively satisfies T-003's and T-012's own still-outstanding bootstrap/normal-save checklist items.
+
+**Commit(s):** `3c54315` (merge); `1b29887` (feat)
+
+### 2026-09-27T05:00Z — Standing state carried forward (supersedes the 2026-09-27 block above; cross-ticket, not itself a ticket — do not re-archive this heading)
+
+- **Deploy is still blocked**, now by: SEC-HIGH-1 (**T-006**, not started); SEC-HIGH-2 (user must confirm the Supabase Dashboard "Allow new users to sign up" toggle is OFF); **SEC-HIGH-5** (new this run — `ReportsClient`/`CareersClient` have zero try/catch, not yet filed as a ticket); and **all four manual admin checklists — T-002, T-003, T-012, T-004 — not yet run by the user.** T-004's checklist is the real acceptance test for the client's requested feature; running it also retroactively satisfies T-003's and T-012's own outstanding checklist steps.
+- **The one-time `/admin/business` bootstrap Save is still not done**: 0 stored category ids live as of the last live check. Every category shows "hasn't been saved yet" in the new product editor until it's run — Step 1 of the T-004 checklist is the path of least resistance to finally close this.
+- **Recommended, not blocking, before the next deploy:** elevate **T-014**'s scheduling priority (`/cso` has now recommended this twice — at T-005 and again at T-004 — since T-004 is what first lets an attacker- or fat-finger-influenced image value actually reach a live page); pick up T-004's WARN-1/WARN-2/WARN-3 as `/pm` fast-follow tickets.
+- The user still needs to rotate the plaintext GitHub token in local `.git/config` (credential hygiene, not itself in the repo — flagged separately by `/cso` at the T-002 bootstrap pass, `docs/SECURITY.md`, and intentionally not re-examined by any review since).
+- **Open process question for the user, unresolved:** `docs/WORKFLOW.md` §2 pins the commit trailer `Co-Authored-By: Claude Opus 5.5`, but every role agent runs on Sonnet 5 (`model: sonnet` in all 20 `.claude/agents/*.md`), and `/git` used `Claude Sonnet 5` on this run's four commits (`98b4a83`, `d3e2bd7`, `1b29887`, `3c54315`) as the truthful attribution instead. Ask the user whether §2 should stay pinned to a specific name or track whatever model actually did the work, then have `/director` update §2 accordingly.
+- `docs/qa-evidence/<ticket>/` continues to grow faster than the prior ~1.5 MB/ticket baseline: roughly 4.0 MB (T-005), 2.0 MB (T-012), 2.3 MB (T-004) this run, per the dispatching orchestrator (not independently re-measured by this pass — no shell tool available). Flag for `/devops`/`/git` if the pace continues.
+- `docs/ROADMAP.md`'s Dependency Order section still lists T-005/T-012/T-004 (now archived out of that file by this pass) — stale as of this compression; left for `/pm`'s next pass to rewrite, per this role's append-only/prune-only mandate.
