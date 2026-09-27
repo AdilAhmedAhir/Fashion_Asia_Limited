@@ -129,7 +129,7 @@ Status: first `/pm` pass on this repo. No prior `ROADMAP.md` entries exist to am
 
 *(T-012–T-014 appended 2026-09-27, third `/pm` pass — fast-follow findings from T-003, which had not yet been built when this Sprint 2 section was first written.)*
 
-- [ ] **T-012** — Convert `updateSettings` from throw-based to a `{ok, error}` result contract; wire all six settings-page clients to handle it
+- [x] **T-012** — Convert `updateSettings` from throw-based to a `{ok, error}` result contract; wire all six settings-page clients to handle it
   - **Source:** `docs/SECURITY.md` SEC-HIGH-4, 2026-09-27 (T-003 first-pass CSO entry, reconfirmed open in the T-003 re-review CSO entry); `docs/QA_REPORT.md` T-003 Static Pass (re-run after fix) WARN-3, 2026-09-27 — both independently name this a **blocking prerequisite for T-004**, not a discretionary fast-follow
   - **Files:** `src/app/actions/settings-actions.ts` (`updateSettings`), `src/components/admin/SettingsForm.tsx` (`SettingsHeader`/`ObjectListEditor` — add an error-display slot; today there is no `error` prop and no rendering path at all, only a `saving` boolean), `src/app/admin/(dashboard)/business/BusinessClient.tsx`, `src/app/admin/(dashboard)/homepage/HomepageSettingsClient.tsx`, `src/app/admin/(dashboard)/settings/ContactSettingsClient.tsx`, `src/app/admin/(dashboard)/sustainability/SustainabilityClient.tsx`, `src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx`, `src/app/admin/(dashboard)/who-we-work-with/WhoWeWorkWithClient.tsx`
   - **Flags:** schema-touching: **no** · sensitive: **yes** (`src/app/admin/**`, writes; every settings-page save) · UI: **yes**

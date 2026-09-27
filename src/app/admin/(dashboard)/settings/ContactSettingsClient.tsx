@@ -19,13 +19,28 @@ export default function ContactSettingsClient({ contact: initContact, general: i
     const [contact, setContact] = useState<ContactData>(initContact);
     const [general, setGeneral] = useState<GeneralData>(initGeneral);
     const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
 
     const setC = <K extends keyof ContactData>(k: K, v: ContactData[K]) => setContact(p => ({ ...p, [k]: v }));
     const setG = <K extends keyof GeneralData>(k: K, v: GeneralData[K]) => setGeneral(p => ({ ...p, [k]: v }));
 
+    // Two independent site_settings rows ("contact", "general") behind one
+    // Save button — both are attempted regardless of whether the other
+    // fails (they don't depend on each other), and any failure(s) are
+    // reported together, named by which page they belong to, rather than
+    // silently abandoning the second call the moment the first one fails.
     const save = () => startTransition(async () => {
-        await updateSettings("contact", contact as unknown as Record<string, unknown>);
-        await updateSettings("general", general as unknown as Record<string, unknown>);
+        setError(null);
+        try {
+            const contactResult = await updateSettings("contact", contact as unknown as Record<string, unknown>);
+            const generalResult = await updateSettings("general", general as unknown as Record<string, unknown>);
+            const failures: string[] = [];
+            if (!contactResult.ok) failures.push(`Contact settings: ${contactResult.error}`);
+            if (!generalResult.ok) failures.push(`General settings: ${generalResult.error}`);
+            if (failures.length) setError(failures.join("  ·  "));
+        } catch {
+            setError("Something went wrong saving these changes. Check your connection and try again.");
+        }
     });
 
     const updateSocial = (i: number, field: "platform" | "url", val: string) => {
@@ -36,7 +51,7 @@ export default function ContactSettingsClient({ contact: initContact, general: i
 
     return (
         <div className="flex flex-col gap-8 max-w-5xl">
-            <SettingsHeader tag="Configuration" title="Contact & General Settings" onSave={save} saving={isPending} />
+            <SettingsHeader tag="Configuration" title="Contact & General Settings" onSave={save} saving={isPending} error={error} />
 
             <div className="grid grid-cols-1 gap-8 lg:grid-cols-2">
                 <SettingsCard title="Contact Information">

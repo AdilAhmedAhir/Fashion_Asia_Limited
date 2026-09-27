@@ -48,17 +48,24 @@ export interface HomepageData {
 export default function HomepageSettingsClient({ initial }: { initial: HomepageData }) {
     const [data, setData] = useState<HomepageData>(initial);
     const [isPending, startTransition] = useTransition();
+    const [error, setError] = useState<string | null>(null);
 
     const set = <K extends keyof HomepageData>(key: K, val: HomepageData[K]) =>
         setData(prev => ({ ...prev, [key]: val }));
 
     const save = () => startTransition(async () => {
-        await updateSettings("homepage", data as unknown as Record<string, unknown>);
+        setError(null);
+        try {
+            const result = await updateSettings("homepage", data as unknown as Record<string, unknown>);
+            if (!result.ok) setError(result.error);
+        } catch {
+            setError("Something went wrong saving these changes. Check your connection and try again.");
+        }
     });
 
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
-            <SettingsHeader tag="Page Settings" title="Homepage" onSave={save} saving={isPending} />
+            <SettingsHeader tag="Page Settings" title="Homepage" onSave={save} saving={isPending} error={error} />
 
             <SettingsCard title="Hero Section">
                 <div className="flex flex-col gap-6">

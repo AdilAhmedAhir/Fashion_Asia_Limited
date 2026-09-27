@@ -47,7 +47,22 @@ const SETTINGS_ROUTES: Record<string, string> = {
 // category's `slug` is its permanent identity and public URL segment
 // (docs/TECH_STACK.md decision (b)); this save path is the only place that
 // is ever allowed to assign or freeze one.
-export async function updateSettings(key: string, value: Record<string, unknown>) {
+//
+// Failure-reporting convention (docs/TECH_STACK.md "Server Action
+// failure-reporting convention", 2026-09-27; docs/SECURITY.md SEC-HIGH-4;
+// T-012): every guard failure below RETURNS a typed result — never throws —
+// matching the shape src/app/actions/products-actions.ts already uses. This
+// includes the Supabase `error` branches (the existing-row read, the
+// delete-guard's product count, and the final upsert), not just the
+// hand-written app-level guards: products-actions.ts's own precedent
+// already treats a reported DB error the same way as a validation guard
+// (`return { ok: false, error: error.message }`), never a throw, so doing
+// the same here matches that file's shape exactly rather than inventing a
+// second convention for "infrastructure" errors. Every caller must check
+// `.ok` — awaiting this and ignoring the result is a bug.
+export type UpdateSettingsResult = { ok: true } | { ok: false; error: string };
+
+export async function updateSettings(key: string, value: Record<string, unknown>): Promise<UpdateSettingsResult> {
     const supabase = await createClient();
 
     // Every write action checks for an authenticated session server-side, in
@@ -57,7 +72,7 @@ export async function updateSettings(key: string, value: Record<string, unknown>
     const {
         data: { user }
     } = await supabase.auth.getUser();
-    if (!user) throw new Error("Not authenticated");
+    if (!user) return { ok: false, error: "Your session expired. Sign in again and retry." };
 
     let finalValue: Record<string, unknown> = value;
     let savedCategories: Product[] | null = null;
@@ -75,7 +90,7 @@ export async function updateSettings(key: string, value: Record<string, unknown>
             .eq("key", "business")
             .maybeSingle();
 
-        if (existingError) throw new Error(existingError.message);
+        if (existingError) return { ok: false, error: existingError.message };
 
         const existingValue = existingRow?.value as Record<string, unknown> | undefined;
         const existingProductsRaw: unknown[] = Array.isArray(existingValue?.products)
@@ -94,7 +109,7 @@ export async function updateSettings(key: string, value: Record<string, unknown>
         const existingById = readStoredCategoryIdentities(existingProductsRaw);
 
         const resolution = resolveCategoriesForSave(value.products, existingById);
-        if (!resolution.ok) throw new Error(resolution.error);
+        if (!resolution.ok) return { ok: false, error: resolution.error };
 
         // Delete guard (decision (c)): a category whose id existed before
         // this save but is absent from the resolved output is a real
@@ -112,13 +127,13 @@ export async function updateSettings(key: string, value: Record<string, unknown>
                 .select("category_slug")
                 .in("category_slug", removedSlugs);
 
-            if (countError) throw new Error(countError.message);
+            if (countError) return { ok: false, error: countError.message };
 
             const remainingSlugs = new Set((remainingProducts ?? []).map(row => row.category_slug as string));
             const blocked = removed.filter(r => remainingSlugs.has(r.slug));
             if (blocked.length) {
                 const names = blocked.map(r => r.title).join(", ");
-                throw new Error(`Remove its products first: "${names}" still has products assigned to it.`);
+                return { ok: false, error: `Remove its products first: "${names}" still has products assigned to it.` };
             }
         }
 
@@ -130,14 +145,14 @@ export async function updateSettings(key: string, value: Record<string, unknown>
         .from("site_settings")
         .upsert({ key, value: finalValue, updated_at: new Date().toISOString() }, { onConflict: "key" });
 
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false, error: error.message };
 
     revalidatePath("/admin");
 
     // general drives the footer and site metadata, so it has to clear the layout.
     if (key === "general") {
         revalidatePath("/", "layout");
-        return;
+        return { ok: true };
     }
 
     revalidatePath("/");
@@ -161,6 +176,8 @@ export async function updateSettings(key: string, value: Record<string, unknown>
         }
         revalidatePath("/sitemap.xml");
     }
+
+    return { ok: true };
 }
 
 // Writes the defaults from site-content.ts into site_settings for the named
