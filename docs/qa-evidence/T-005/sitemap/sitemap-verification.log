@@ -1,0 +1,37 @@
+XML PARSE: OK (well-formed)
+total <url> entries: 17 (expected 9 pre-existing + 8 category = 17)
+  0: https://fashionasialtd.com | changefreq=weekly | priority=1
+  1: https://fashionasialtd.com/who-we-are | changefreq=monthly | priority=0.8
+  2: https://fashionasialtd.com/what-we-do | changefreq=monthly | priority=0.8
+  3: https://fashionasialtd.com/what-we-do/t-shirts | changefreq=monthly | priority=0.6 <-- NEW category entry
+  4: https://fashionasialtd.com/what-we-do/polo-shirts | changefreq=monthly | priority=0.6 <-- NEW category entry
+  5: https://fashionasialtd.com/what-we-do/tank-tops | changefreq=monthly | priority=0.6 <-- NEW category entry
+  6: https://fashionasialtd.com/what-we-do/dresses | changefreq=monthly | priority=0.6 <-- NEW category entry
+  7: https://fashionasialtd.com/what-we-do/sleepwear | changefreq=monthly | priority=0.6 <-- NEW category entry
+  8: https://fashionasialtd.com/what-we-do/leggings | changefreq=monthly | priority=0.6 <-- NEW category entry
+  9: https://fashionasialtd.com/what-we-do/sportswear | changefreq=monthly | priority=0.6 <-- NEW category entry
+  10: https://fashionasialtd.com/what-we-do/heavy-jersey-products | changefreq=monthly | priority=0.6 <-- NEW category entry
+  11: https://fashionasialtd.com/global-partner | changefreq=monthly | priority=0.8
+  12: https://fashionasialtd.com/sustainability | changefreq=monthly | priority=0.8
+  13: https://fashionasialtd.com/life-at-fashion-asia | changefreq=daily | priority=0.7
+  14: https://fashionasialtd.com/contact | changefreq=yearly | priority=0.5
+  15: https://fashionasialtd.com/career | changefreq=yearly | priority=0.5
+  16: https://fashionasialtd.com/grievance | changefreq=yearly | priority=0.3
+
+This file's 9 pre-existing entries extracted from `git show main:src/app/sitemap.ts` (sitemap-main-source.ts):
+  ('https://fashionasialtd.com', 'weekly', '1')
+  ('https://fashionasialtd.com/who-we-are', 'monthly', '0.8')
+  ('https://fashionasialtd.com/what-we-do', 'monthly', '0.8')
+  ('https://fashionasialtd.com/global-partner', 'monthly', '0.8')
+  ('https://fashionasialtd.com/sustainability', 'monthly', '0.8')
+  ('https://fashionasialtd.com/life-at-fashion-asia', 'daily', '0.7')
+  ('https://fashionasialtd.com/contact', 'yearly', '0.5')
+  ('https://fashionasialtd.com/career', 'yearly', '0.5')
+  ('https://fashionasialtd.com/grievance', 'yearly', '0.3')
+
+Missing/mismatched pre-existing entries (loc+changefreq+priority all must match main): NONE
+Missing category entries: NONE - all 8 present
+Unexpected extra entries: NONE
+Pre-existing entries' RELATIVE ORDER preserved vs main: True
+
+VERDICT: PASS - all 9 pre-existing entries intact (content+order), all 8 category entries present, no extras

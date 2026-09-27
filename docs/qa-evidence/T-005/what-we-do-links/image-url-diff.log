@@ -1,0 +1,15 @@
+GET /what-we-do -> HTTP/1.1 200 OK
+
+=== 8 <a href="/what-we-do/<slug>"> cards found, each wrapping an <img> + non-empty title text (verified structurally) ===
+=== hrefs matching /what-we-do/<slug> (anchor tags) ===
+href="/what-we-do/dresses"
+href="/what-we-do/heavy-jersey-products"
+href="/what-we-do/leggings"
+href="/what-we-do/polo-shirts"
+href="/what-we-do/sleepwear"
+href="/what-we-do/sportswear"
+href="/what-we-do/t-shirts"
+href="/what-we-do/tank-tops"
+
+=== diff: image-urls-baseline-T-003.txt vs image-urls-new.txt (sorted) ===
+IDENTICAL - 0 differences - byte-diff clean

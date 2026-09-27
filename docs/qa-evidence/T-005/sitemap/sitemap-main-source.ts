@@ -1,27 +1,7 @@
 import { MetadataRoute } from 'next';
-import { getSettings } from '@/app/actions/settings-actions';
-import { normalizeProducts } from '@/lib/site-content';
 
-// Async per Next's documented sitemap.ts data-fetching support. Category
-// entries are generated from the live category list (normalizeProducts())
-// rather than hardcoded, so adding/removing a category in /admin changes
-// this file's output with no code change (T-005 acceptance) — and each
-// entry's `slug` is that same safe, normalized value, never a raw stored
-// string, matching the typed MetadataRoute.Sitemap shape Next.js itself
-// serializes (docs/SECURITY.md SEC-MED-4, T-005 half) rather than any
-// hand-built XML.
-export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+export default function sitemap(): MetadataRoute.Sitemap {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fashionasialtd.com';
-
-    const business = await getSettings('business');
-    const categories = normalizeProducts(business.products);
-
-    const categoryEntries: MetadataRoute.Sitemap = categories.map((category) => ({
-        url: `${baseUrl}/what-we-do/${category.slug}`,
-        lastModified: new Date(),
-        changeFrequency: 'monthly',
-        priority: 0.6,
-    }));
 
     return [
         {
@@ -42,7 +22,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             changeFrequency: 'monthly',
             priority: 0.8,
         },
-        ...categoryEntries,
         {
             url: `${baseUrl}/global-partner`,
             lastModified: new Date(),
