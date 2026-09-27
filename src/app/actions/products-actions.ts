@@ -116,6 +116,32 @@ export async function getCategoryProducts(categorySlug: string): Promise<Categor
     return (data ?? []) as CategoryProduct[];
 }
 
+// Every product across every category, grouped by category_slug and ordered
+// exactly like getCategoryProducts — one query for the whole admin page
+// (src/app/admin/(dashboard)/business/page.tsx, T-004) instead of one round
+// trip per category. Same "no auth check, anon-readable" shape as
+// getCategoryProducts above; a category with zero products simply has no key
+// in the returned record rather than an empty array entry.
+export async function getAllCategoryProducts(): Promise<Record<string, CategoryProduct[]>> {
+    const supabase = await createClient();
+    const { data, error } = await supabase
+        .from("products")
+        .select("*")
+        .order("category_slug", { ascending: true })
+        .order("sort_order", { ascending: true });
+
+    if (error) {
+        console.error("products read error:", error);
+        return {};
+    }
+
+    const grouped: Record<string, CategoryProduct[]> = {};
+    for (const row of (data ?? []) as CategoryProduct[]) {
+        (grouped[row.category_slug] ??= []).push(row);
+    }
+    return grouped;
+}
+
 export async function createCategoryProduct(input: CategoryProductInput): Promise<ProductActionResult> {
     const supabase = await createClient();
     const user = await requireUser(supabase);
@@ -134,9 +160,30 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
         };
     }
 
+    const sanitized = sanitizeInput(input);
+
+    // A newly added product with no explicit order lands at the end of the
+    // category's list, not the front (docs/ROADMAP.md T-004, folded
+    // 2026-09-27; docs/QA_REPORT.md T-003 Static Pass first-pass INFO-1) —
+    // sanitizeInput()'s own bare default is 0, which would put it at the
+    // front instead. Computed here, server-side, rather than trusted from
+    // the caller: T-004's "Add product" UI never sends one, and resolving it
+    // here means the guarantee holds for any caller, not just that one.
+    let sortOrder: number = sanitized.sort_order ?? 0;
+    if (!Number.isFinite(input.sort_order)) {
+        const { data: maxRow } = await supabase
+            .from("products")
+            .select("sort_order")
+            .eq("category_slug", categorySlug)
+            .order("sort_order", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        sortOrder = maxRow ? (maxRow.sort_order as number) + 1 : 0;
+    }
+
     const { data, error } = await supabase
         .from("products")
-        .insert({ category_slug: categorySlug, ...sanitizeInput(input) })
+        .insert({ category_slug: categorySlug, ...sanitized, sort_order: sortOrder })
         .select()
         .single();
 

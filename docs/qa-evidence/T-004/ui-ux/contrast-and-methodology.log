@@ -1,0 +1,333 @@
+T-004 — /ui-ux pass, 2026-09-27
+Scope: src/components/admin/CategoryProductsManager.tsx (new). Zero edits made
+to src/app/admin/(dashboard)/business/BusinessClient.tsx (considered, see
+item 1 below) — its diff from /lead-dev was left exactly as received.
+Reviewed from code + a static, logged-out repro only — no /admin session
+available to this agent (no credentials held by any agent; live Supabase
+project never touched: no login attempt, no writes, dev server on :3000
+never started/stopped/queried). Same methodology as the T-012 /ui-ux pass:
+markup hand-translated 1:1 from the component's real className strings,
+Tailwind compiled via this project's actual tailwind.config.ts color tokens
+(npx tailwindcss, no new dependency), lucide icon paths copied verbatim from
+the installed lucide-react package source (not approximated), screenshotted
+with headless Google Chrome driven over raw DevTools Protocol (Node's
+built-in fetch+WebSocket, no Playwright/Puppeteer installed or added).
+
+One capability used beyond T-012's pass: a real keyboard Tab-key CDP
+automation (Input.dispatchKeyEvent, up to 40 Tabs, polling
+document.activeElement) to reach a specific button and capture a GENUINE
+browser :focus-visible ring, rather than faking the ring's appearance by
+hand-applying its classes unconditionally. See item 4 below.
+
+=========================================================================
+1. TWO SAVE MODELS ON ONE PAGE — judged, then strengthened
+=========================================================================
+
+Read BusinessClient.tsx's diff in full. Structure: "Product Catalog" card
+(batch-saved category cards, unchanged) sits directly above "Products Within
+Each Category" (new), both using the identical SettingsCard chrome — same
+border/bg/title treatment — so the ONLY signal that the two behave
+differently was text, not visual weight.
+
+Verdict: the wording was already clear and specifically well-aimed (names
+the exact button, "Save Changes," not just "the button above"), but the
+banner's own visual presence was too easy to skim past — same
+border-primary/20 bg-primary/5 treatment used elsewhere in this file for
+low-stakes asides (e.g. AddProductForm's dashed border). Strengthened,
+in-scope (CategoryProductsManager.tsx only):
+  - Added a Zap icon (lucide-react, confirmed exported) — reads "instant/
+    automatic," and deliberately does NOT reuse TriangleAlert/Info, which
+    this codebase already uses for error/advisory states (would have
+    misread as "something to worry about").
+  - bg-primary/5 -> bg-primary/10, border-primary/20 -> border-primary/30,
+    text-white/70 -> text-white/80 — one step up in weight each, still the
+    same color family (no new palette entry).
+  - Reworded the lead clause to "Products save automatically." as its own
+    bolded sentence, then explains what that means and what's different.
+
+Considered and explicitly REJECTED: tinting the "Products Within Each
+Category" SettingsCard's own border via a className prop
+(e.g. `<SettingsCard className="border-accent/20">`). SettingsCard
+(SettingsForm.tsx, out of scope) concatenates className with template-string
+interpolation, not `cn()`/tailwind-merge — despite tailwind-merge being an
+installed project dependency used elsewhere (src/lib/utils.ts). Passing a
+second, conflicting `border-*-color` utility this way has an outcome that
+depends on Tailwind's internal generated-CSS ordering, not simply "the
+later class in the string wins" the way inline styles would — I was not
+willing to gamble a silently-inconsistent result for a marginal visual gain
+when the in-component banner fix above already does the real work. Flagging
+this as a real, if narrow, footgun in SettingsCard itself for whoever next
+touches it with a conflicting className — not blocking, not this ticket's
+file to fix.
+
+Simulated the actual failure mode asked about ("would an editor ever think
+they must click Save Changes after adding a product, or the reverse?"):
+adding a product never touches BusinessClient's `data` state at all (the
+component's own header comment states this, and CategoryProductsManager.tsx
+imports nothing from settings-actions.ts — verified by reading its full
+import block) — so there is no code path where staying on this page with an
+unsaved product could be lost by a stray Save Changes click, or vice versa.
+The reverse direction (adding a product, then believing category-card edits
+also auto-saved) is exactly what the strengthened banner now states up
+front, before the editor reaches the category picker.
+
+=========================================================================
+2. SAVE-ON-BLUR FEEDBACK — real bug found and fixed (client-side only)
+=========================================================================
+
+Confirmed the dispatch's description exactly: ProductRow.persist(), on a
+failed save, called setDraft() back to `product`'s last-CONFIRMED values —
+discarding whatever the editor had just typed, with only a small red line
+below as the only trace anything happened. Agreed this is the wrong
+behavior for this audience (VISION.md Target User 2 — non-technical) and
+fixed it:
+  - persist()'s failure branch no longer resets `draft`. The typed value
+    stays on screen, stays editable, and (since ProductRow's onBlur handler
+    compares draft against `product`'s last-known value) a second blur off
+    the same field will retry on its own.
+  - Added an explicit "Retry" text-button inside the error message itself
+    (not just relying on an incidental second blur) — calls persist() again
+    with the current draft, no overrides. No server-contract change: same
+    updateCategoryProduct call, same CategoryProductInput shape.
+  - Added a "Saving..."/"Saved" indicator (role="status" aria-live="polite",
+    kept permanently mounted so screen readers pick up the busy->saved
+    transition as a content change in an existing region, not a region
+    appearing from nothing) — the prior implementation's only success signal
+    was a bare aria-hidden spinner disappearing, with nothing for a user who
+    looks away mid-save and nothing at all for a screen-reader user. "Saved"
+    auto-clears after 2000ms (cleared on unmount too, via a ref + effect
+    cleanup — checked this doesn't leak a pending setTimeout across a
+    delete/unmount).
+  - Applies uniformly to name, description, AND image (all three funnel
+    through the same persist()), so an image that uploaded successfully but
+    failed to attach to the row is no longer silently discarded either.
+
+Checked for a race this change could introduce (two blur-triggered saves
+overlapping): both the Name and Description inputs already share one
+`busy` boolean and both are `disabled={busy}` — a user cannot blur/edit the
+OTHER field while a save from THIS field is in flight, so saves are already
+serialized per row. No new guard needed.
+
+Not touched, correctly: AddProductForm's own error handling already keeps
+the typed name/description/image on failure (never had this bug) — its
+retry path is just clicking "Add product" again, already clear.
+
+=========================================================================
+3. UN-BOOTSTRAPPED CATEGORY STATE — traced against real code, then fixed
+=========================================================================
+
+Read normalizeProducts() in site-content.ts in full rather than trusting a
+summary: today's 8 live categories carry no stored `id`, but DO get a
+read-time FALLBACK `slug` (storedSlug || dedupeSlug(slugify(title), seen)).
+Consequence, traced precisely:
+  - Every one of the 8 real categories renders as an ENABLED <option> in the
+    picker (disabled={!c.slug} is false for all of them) — only a category
+    added fresh THIS session (ObjectListEditor's blank(), no slug key at
+    all) would render disabled. The dispatch's phrasing ("disabled <option>
+    for a slug-less category") describes a real, correctly-implemented, but
+    narrower case than "all 8 today" — the amber banner, not the disabled
+    option, is what today's 8 actually hit.
+  - selectedSlug's initializer (`categories.find(c => c.slug)?.slug ?? ""`)
+    picks the FIRST category, which — since all 8 have a fallback slug —
+    means a category IS auto-selected on page load today. Combined with
+    bootstrapped = Boolean(selected?.id) being false for all 8, **the amber
+    banner is the first thing rendered in this card on page load, with zero
+    clicks**, exactly as the dispatch says. Confirmed by direct trace of the
+    real function, not assumed.
+
+Copy judgment: already clear and actionable as written — names the specific
+category, states the fix in one click ("no other changes needed"), tells
+the editor to come back. No wording change made.
+
+Fixed a real icon/role inconsistency: the banner was amber (this codebase's
+established non-blocking-advisory color, per ImageUploadField's warning
+state) but used TriangleAlert + role="alert" (this codebase's established
+red HARD-ERROR icon/role, used identically in 3 other places in this same
+file for genuine save failures). Changed to Info + role="status" +
+aria-live="polite" — matching amber's OTHER existing pairing exactly
+(ImageUploadField's non-blocking size/shape warning), rather than a color/
+icon combination that appears nowhere else in the app. Nothing failed here;
+this is a proactive notice shown before the editor has attempted anything,
+which is the closer fit for status/info than for alert. Kept TriangleAlert +
+role="alert" + red untouched everywhere it already correctly signals a
+genuine failure (reorderError, AddProductForm's error, ProductRow's error) —
+per the dispatch's own instruction to keep that language consistent with
+SettingsHeader/ImageUploadField, which it already was and still is.
+
+=========================================================================
+4. ROW CONTROLS — keyboard order, focus rings, aria-labels, focus retention
+=========================================================================
+
+Keyboard order: sequential DOM order (image field -> Name -> Description,
+controls cluster before them in the header), no tabindex overrides anywhere
+in the file. No issue found.
+
+Focus-visible rings: the up/down/delete buttons had ZERO focus styling of
+any kind (no focus: classes at all — not even the border-color-only
+treatment TextInput/the raw inputs elsewhere in this file use). Added
+`focus:outline-none focus-visible:ring-2 focus-visible:ring-accent
+focus-visible:ring-offset-2 focus-visible:ring-offset-surface` — this exact
+utility string already exists verbatim in this codebase (src/app/(website)/
+(marketing)/what-we-do/page.tsx and .../[category]/page.tsx), so this reuses
+an established pattern rather than inventing one; ring-offset-surface (not
+-background) because the admin shell paints #0a0a0a, matching the reasoning
+already on record from the T-012 pass. Captured a GENUINE :focus-visible
+ring via real Tab-key CDP events (not a hand-applied class) —
+04-focus-ring-1024.png — "tab-to-target: matched" confirms real keyboard
+navigation actually reached the target button.
+
+Deliberately NOT extended to the plain text inputs/select in this same file
+(Name/Description/category picker), which still use the established
+border-color-only focus treatment shared with TextInput/TextArea elsewhere
+on this exact page. Judgment call: the dispatch's own item 4 scopes the
+focus-ring ask to "row controls" specifically; the plain inputs mirror
+SettingsForm.tsx's own convention verbatim (out of scope to change), and
+giving only SOME inputs on this one page a ring while the visually-adjacent
+"Our Craft"/"Product Catalog" cards' identical-looking inputs stay ring-less
+would be a fresh, page-local inconsistency, not a fix. Recommend folding
+into T-011 if the client's actual usage surfaces a real complaint.
+
+aria-labels: were generic ("Move product up") — now interpolate the
+product's own name ("Move Basic Crew Tee up", "Delete Polo Fit Tee"), with a
+"this product" fallback for a row a staffer has edited down to an empty
+name (no server-side non-empty check on this field, confirmed by reading
+sanitizeInput in products-actions.ts — it only trims). Not verifiable by
+screenshot (attributes aren't visually rendered) — confirmed by reading the
+compiled source directly instead of claiming a screenshot proves it.
+
+Disabled states at list ends: already correct before this pass
+(index === 0 / index === total - 1, both combined with reorderBusy || busy)
+— reconfirmed, not changed. Visible in 03-desktop-1024.png, Case 3: Product
+1's up-button and Product 5's down-button both render at reduced opacity.
+
+Focus after reorder/delete — genuine gap found and fixed:
+  - DELETE: the clicked Delete button is removed from the DOM the instant
+    its row is filtered out of state. A focused element removed from the DOM
+    sends focus to <body> (standard browser behavior) — a keyboard user's
+    very next Tab would restart from the top of the page. Fixed by computing
+    the deleted row's neighbor (the row that slides into its old position,
+    or the new-last row if it was last, or null if it was the only row)
+    BEFORE filtering, then imperatively focusing that neighbor's own Delete
+    button afterward (via a small productId -> button ref map collected
+    from each ProductRow) — or the category <select> if the list is now
+    empty. The target button already exists in the DOM at the moment focus
+    is requested (only the DELETED row's node goes away), so this doesn't
+    depend on waiting for a re-render.
+  - REORDER: a subtler version of the same problem. Every row's up/down
+    buttons share one `reorderBusy` flag, so clicking "move up" disables the
+    clicked button itself for the whole in-flight round trip — and a
+    browser blurs a focused element the instant it becomes disabled. Once
+    the request resolves and reorderBusy clears, focus does NOT return on
+    its own. Fixed with a small pending-focus queue: the direction + moved
+    product's id is recorded at click time; a useEffect waits for
+    reorderBusy to actually clear (so it never races the disabled attribute
+    the same click just set), then refocuses that row's own up/down button —
+    falling back to its down/up/delete sibling if the row landed at a list
+    boundary and that exact control is now disabled for a legitimate reason
+    (e.g. moved to the very top).
+
+=========================================================================
+5. CONTRAST — every color added or touched in this file, measured on its
+   REAL background (admin shell = #0a0a0a "surface", not #1a1f1a
+   "background" — same correction T-012's pass already put on record)
+=========================================================================
+
+WCAG relative-luminance contrast, computed by hand (sRGB -> linear -> L,
+then (L1+0.05)/(L2+0.05)):
+
+  text-white/70 (old banner) on bg-primary/5 over #0a0a0a  -> ~9.8:1  PASS
+  text-white/80 (new banner) on bg-primary/10 over #0a0a0a -> ~10.4:1 PASS
+  text-accent   (banner lead + Zap icon) on same            -> ~7.4:1  PASS
+  text-amber-300 on bg-amber-400/10 over #0a0a0a             -> ~11.75:1 PASS
+  text-red-400 (existing error text, all 3 sites, unchanged) -> ~7.16:1 PASS
+    (matches SettingsHeader's own on-record figure exactly — cross-check)
+  text-red-300 (new "Retry" link, on bg-black/40 row card)   -> ~10.4:1 PASS
+  text-white/50 (all muted labels + new "Saving..." text)    -> ~5.37:1 PASS
+    (matches ImageUploadField's own on-record "~5.3:1" figure — cross-check)
+  text-white/40 (icon-only, non-text UI component — Chevron/
+    Trash icons at rest; 3:1 UI-component bar applies, not 4.5:1) -> ~3.77:1 PASS
+
+  Found, NOT introduced by this pass, NOT fixed (see below):
+  text-black on bg-primary (AddProductForm's "Add product" button) -> ~2.77:1
+    FAIL against the 4.5:1 text bar this 12px bold label needs.
+
+All figures newly computed this pass by hand against this project's actual
+tailwind.config.ts hex values (primary #016138, accent #0EC97A, surface
+#0a0a0a), not copied from a prior ticket's numbers for a different color.
+
+--- text-black on bg-primary: pre-existing, systemic, NOT fixed here ---
+grep across the whole src/ tree for the literal `bg-primary`+`text-black`
+combination: EIGHT files, including src/app/admin/login/page.tsx's actual
+sign-in button (resting state, the very first control every user of this
+site touches) and src/components/ui/SubmitButton.tsx (resting state, shared
+by all three public forms — Contact/Career/Grievance). SettingsForm.tsx's
+own SettingsHeader "Save Changes" button — the control every editor on this
+exact page uses to persist the category cards above — carries the identical
+literal className fragment. AddProductForm's "Add product" button
+(this ticket's own new file) correctly copied that SAME established
+convention for visual consistency with "Save Changes," directly above it on
+the same page.
+
+Deliberately NOT changed here: fixing only my one new button would make it
+LOOK DIFFERENT from "Save Changes" sitting a few inches above it on the same
+page — a fresh, local inconsistency — while sustaining a real, and by my
+measurement worse-than-assumed, sitewide AA failure. bg-accent (#0EC97A, a
+lighter green with black text computing to ~9.65:1) exists nowhere as a
+solid-fill button background in this codebase (grep: only ever used as a
+translucent badge/dot) — adopting it for just this one button would also
+have been inventing a new treatment, not reusing an established one. This
+is a design-token-level decision spanning 8 files, at least 2 of which
+(SettingsHeader, SubmitButton) are explicitly out of this ticket's file
+scope — recommend a dedicated cross-cutting follow-up ticket (bundling with
+or alongside T-011) rather than a partial, inconsistent fix inside T-004.
+Visible in 03-desktop-1024.png: the "Add product"/"Choose image" labels
+visibly read dimmer than the surrounding white/accent text at the same
+screenshot scale — a real, not just theoretical, legibility gap.
+
+=========================================================================
+6. RESPONSIVE — 360 / 768 / 1024, measured, not just eyeballed
+=========================================================================
+
+Static repro (all 3 cases: un-bootstrapped default state, bootstrapped-
+empty state, bootstrapped-populated 5-row state covering every busy/saved/
+error/boundary-disabled combination) captured via headless Chrome CDP,
+document.documentElement.scrollWidth vs clientWidth measured directly
+(not inferred from a screenshot alone) at each width:
+
+  360px:  scrollWidth 360  == clientWidth 360   -> no horizontal overflow
+  768px:  scrollWidth 768  == clientWidth 768   -> no horizontal overflow
+  1024px: scrollWidth 1024 == clientWidth 1024  -> no horizontal overflow
+
+(First pass of this measurement caught a REAL overflow — scrollWidth 1634px
+at all 3 widths — that traced entirely to this repro's own long-form
+developer captions, not to the component under test; shortened those
+captions and re-measured clean. Recording this so the clean numbers above
+aren't taken on faith: the tooling did catch a real overflow once, on
+scratch content, which is why the component's own numbers are trustworthy.)
+
+No `truncate`/`whitespace-nowrap`/fixed-pixel-width sits anywhere in
+CategoryProductsManager.tsx's own markup (confirmed by reading the file, not
+just by this one sample screenshot) — every row uses flex-col stacking for
+its fields and flex-wrap-free but short, bounded-content flex rows for its
+header/controls cluster (see width math in the dispatch's own item 4
+discussion: label + status text + 3 icon buttons comfortably fits a 328px
+content area after card padding at 360px).
+
+=========================================================================
+7. BUILD VERIFICATION
+=========================================================================
+
+npx tsc --noEmit  — run directly against the real working tree (read-only,
+                     safe alongside a running `next dev`): clean, exit 0.
+
+npm run build      — run directly in the working tree (per this ticket's own
+                     dispatch: "Earlier passes today ran the build in the
+                     working tree alongside next dev without harm"):
+                     "Compiled successfully", all 25 routes generated
+                     including /admin/business, zero errors, zero warnings
+                     beyond two pre-existing, unrelated notices (middleware-
+                     to-proxy deprecation notice, browserslist-data-is-stale
+                     notice — both present before this pass's changes,
+                     confirmed unrelated to this diff). The orchestrator's
+                     dev server on :3000 was never stopped, restarted, or
+                     written to by either command.
