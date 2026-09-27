@@ -1,6 +1,6 @@
 -- Ticket: T-001 — Design the products-within-category schema and author the migration
 -- Author: /architect
--- STATUS: PENDING_USER_APPLY
+-- STATUS: APPLIED 2026-09-27
 --
 -- ============================================================================
 -- DECISION RECORD (full rationale: docs/TECH_STACK.md → "Products-within-
