@@ -150,3 +150,144 @@ Mapped the codebase (routes, server actions, data model, content-default pattern
 - Post-restore: two "client feedback" copy rounds, product tiles restyled to photo cards, **URL rename to match menu names** (`/business`, `/who-we-work-with`, `/media` → new paths, with redirects — Known Traps #6) plus editable product descriptions.
 - Drag-and-drop, validated image upload for product/facility cards (`ImageUploadField` → `uploadOptimizedImage`, Known Traps #9).
 - Admin "layout preview" / motion-treatment R&D (`public/layout-preview.html`, six motion treatments, phone behaviour) and two admin-shell scroll/sticky-sidebar fixes — the current `main` HEAD.
+
+### 2026-09-26T00:00Z — T-002: Recommended image size + non-blocking upload advisory
+
+**What shipped:**
+- `src/lib/upload-limits.ts` — added recommended-size constants (1200×900 target, shape bounds 1:1–2:1) + `checkImageSizeAdvisory()`.
+- `src/components/admin/ImageUploadField.tsx` — split the old combined hard-block/dimension check apart; added a non-blocking amber "warning" state (`Info` icon, `role="status"`) distinct from the existing red hard-block "error" state (`TriangleAlert` icon, `role="alert"`).
+
+**Source (if marketing-originated):**
+- N/A — direct engineering ticket, `docs/VISION.md` MVP Feature 3. This project's marketing lane is inert (no `docs/MARKETING.md` exists yet, `docs/WORKFLOW.md` §10).
+
+**Key decisions:**
+- Advisory is computed only after all existing hard checks and the existing `uploadOptimizedImage` call have already succeeded — never short-circuits or replaces a hard check (Why: `docs/VISION.md` anti-goal forbids loosening the existing 400 KB / 2400 px / JPG-WebP-only enforcement).
+- `addMediaAction` and the generic `uploadFile` action deliberately left untouched (Why: VISION anti-goal scopes this warning to product/facility-card uploads via `ImageUploadField` only, not the Media Center gallery or the generic upload path).
+- No new npm dependency — advisory logic is plain arithmetic on `img.naturalWidth`/`naturalHeight` (Why: consistent with this project's "does it earn its keep" bar for new packages, same bar T-001 later applied to `slugify()`).
+
+**Known traps / debt:**
+- WARN-2 — `handleFile` is re-entrant with no guard; rapid double file-picks race, and whichever network round-trip resolves *last* wins, not whichever was picked last (pre-existing pattern; T-002 added a 2nd piece of state riding the same race) (severity: medium) — follow-up **T-009**.
+- WARN-4 — `ObjectListEditor` keys rows by array index, not a stable id; reordering/deleting a row hands its sibling a stale warning/error on that sibling's `ImageUploadField` (root cause pre-dates T-002, outside its diff; T-002 just made the consequence more visible) (severity: medium) — follow-up **T-010**.
+- WARN-1 — `checkImageSizeAdvisory(0,0)` mis-reports `offProportion:false` via a `NaN` comparison; narrow, likely-unreachable edge case (severity: low) — folded into **T-009**.
+- WARN-3 — hand-editing the field's raw path `<input>` doesn't clear a stale warning/error left from a prior upload on the same field instance (severity: low) — folded into **T-009**.
+- SEC-MED-1 — `MAX_UPLOAD_DIMENSION` enforced client-side only; a direct authenticated `fetch`/`curl` bypassing `ImageUploadField` can still store a small-bytes/extreme-pixel "pixel bomb" (pre-existing, surfaced during this ticket's CSO bootstrap pass, not introduced by it) (severity: medium) — follow-up **T-007**.
+- SEC-MED-2 — no CSP / `X-Frame-Options` / `X-Content-Type-Options` / `Referrer-Policy` / `Permissions-Policy` anywhere on the live site, most notably `/admin/login` (pre-existing, surfaced this pass) (severity: medium) — follow-up **T-008**.
+- SEC-HIGH-1 — installed Next.js `16.1.6` sits inside a vulnerable advisory range including a directly-reachable Server Actions null-origin CSRF bypass (`GHSA-mq59-m269-xvcx`); fix is a lockfile-only bump to `16.3.6`+ (pre-existing, surfaced this pass) (severity: high) — follow-up **T-006**; **blocks the next `deploy`**, does not block local merge.
+- ui-ux finding, relayed by the orchestrator, not written to a doc ("ui-ux T-002 pass, 2026-09-26") — WCAG AA contrast + keyboard-focus gaps on the `ImageUploadField`/`ObjectListEditor` shared components (severity: low/medium) — follow-up **T-011**.
+
+**Deferred QA findings (🟢):**
+- INFO-1 — "smaller than recommended" wording is imprecise at extreme wide aspect ratios (e.g. 2400×100 — width is 2× the recommendation, only height is short); the numbers shown are still accurate. Not worth blocking on — not ticketed.
+- INFO-2 — no regression test exists or was added (no test runner installed anywhere in this repo); the hand-verified boundary table (exact 1200×900, both shape bounds, portrait, extreme-wide, 0×0) is a ready-made test-case list for `checkImageSizeAdvisory` — followup: pick up whenever a test runner is chosen.
+
+**Deferred security findings:**
+- SEC-INFO-7 — admin-login rate-limit/lockout not confirmed in source — tracked in `docs/SECURITY.md` §5 for the next full `/cso audit`, not a standalone ticket.
+
+**Acceptance evidence:**
+- `docs/qa-evidence/T-002/auth-gate/{01-admin-business,02-admin-homepage,03-admin-root,04-admin-login}.log`, `05-admin-login-desktop.png`
+- `docs/qa-evidence/T-002/what-we-do-images/{page,image-resolution-check}.log`, `02-desktop-full-page.png`, `02b-desktop-product-grid-crop.png`
+- `docs/qa-evidence/T-002/homepage-facility-images/{page,image-resolution-check}.log`, `01-desktop-top-of-page.png`
+- Static QA verdict: ✅ (all 5 acceptance criteria verified directly against code; 4 🟡 WARN non-blocking, 0 🔴 CRIT)
+- Live QA verdict: ✅ (3/3 flows pass, 0 failed requests; one tooling limitation documented — a full-viewport `h-screen` hero plus an unconditional `Preloader.tsx` `scrollTo(0,0)` defeats headless below-the-fold screenshots — not a code defect)
+- CSO sign-off: ✅ 2026-09-26 in `docs/SECURITY.md` ("T-002 verdict: ✅ CLEARED")
+- **Manual admin checklist** (`docs/QA_REPORT.md`, "Manual Checklist — T-002") — written, **not yet run by the user** as of this compression (2026-09-27). Agents hold no admin credentials (`docs/WORKFLOW.md` §4/§7); running it is a pre-deploy item.
+
+**Commit(s):** `8030456`
+
+### 2026-09-27T00:00Z — T-001: `public.products` table + category slug groundwork
+
+**What shipped:**
+- `db/migrations/0001_products-within-category.sql` (new) — `public.products` table, RLS (`anon` SELECT / `authenticated` ALL, matching the `jobs` precedent), composite index `(category_slug, sort_order)`, explicit `GRANT`s. **`STATUS: APPLIED 2026-09-27`** — user hand-applied against the live Supabase project, per commit `96b6010`.
+- `supabase-schema.sql` — rolled-up snapshot updated to match (new §6 Products Table + seed block).
+- `docs/TECH_STACK.md` — decision record (a)/(b)/(c) + same-day GRANT follow-up (owned by `/architect`, not this pass).
+- `src/lib/site-content.ts` — `slug` field added to the 8 default categories, new `CategoryProduct` type, `slugify()` / `dedupeSlug()`, `normalizeProducts()` slug handling — types and read-time fallback only, no write path yet (that's T-003).
+
+**Source (if marketing-originated):**
+- N/A — direct engineering ticket, `docs/VISION.md` "Settled inputs" + MVP Feature 2 (data/backend half).
+
+**Key decisions** (full record: `docs/TECH_STACK.md`, "Products-within-category schema" — not duplicated in full here, only what a fresh session needs to not re-derive):
+- (a) New dedicated `public.products` table for individual products; categories stay in `site_settings.business` JSONB, unchanged (Why: per-product CRUD matches the existing `jobs`/`reports`/`leaders` per-row pattern; avoids whole-blob JSONB write amplification and a 2nd JSONB nesting level).
+- (b) Attachment via an application-enforced `slug`, not a DB foreign key — computed once from title, frozen forever after; a freshly-computed slug colliding with a sibling is rejected outright, never silently suffixed (Why: categories are JSONB array elements, not table rows — there is no FK target; slug doubles as the public URL segment so T-005 needs no separate ID scheme).
+- (c) Delete guard is an application-level count check, not a schema constraint (Why: no category row exists for a `REFERENCES`/`ON DELETE RESTRICT` constraint to attach to).
+- Explicit `GRANT`s added same-day, ahead of Supabase's 2026-10-30 platform-wide enforcement of its "auto-expose new tables" deprecation (Why: GRANT is checked before RLS; the other 5 pre-existing tables still rely on an inferred, soon-to-be-atypical default).
+- No new npm package for slug generation — `slugify()` is a ~10-line pure function (Why: doesn't "earn its keep" as a dependency).
+
+**Known traps / debt:**
+- **`docs/TECH_STACK.md`'s "Notes for implementers" section still says `Product.slug` is "not yet in code" — stale since this ticket shipped it** (and now further out of date given T-003's later `Product.id` addition, see below). Flagged for `/architect` to correct on its next pass; not edited by this compression (writable surface here is `docs/MEMORY_BANK.md` / `docs/ROADMAP.md` only) (severity: low, documentation-accuracy only).
+- `normalizeProducts()`'s stored-slug bypass (`storedSlug || dedupeSlug(...)`) skipped dedupe entirely whenever `storedSlug` was truthy — an order-dependent stored-vs-computed collision gap, reachable through ordinary `/admin/business` "move up/down" clicks, not only manual DB editing (QA WARN-1, sharper than CSO's original SEC-MED-3 framing) (severity: medium) — **CLOSED at T-003**, see that entry below.
+- The pre-existing, unmodified `/admin/business` Save button could silently freeze an unvalidated `normalizeProducts()`-computed slug the instant *any* admin clicked Save for *any* reason, from **this ticket's own merge** onward — QA's WARN-2 found the real risk window opens here, not at T-003's future write path as CSO's original SEC-MED-4 assumed (severity: medium) — **CLOSED at T-003**.
+- `CategoryProduct` type gaps: `id` marked required (unsafe as an insert payload — it's DB-generated), and no `created_at`/`updated_at` fields at all (QA WARN-3) (severity: low) — addressed by T-003 defining its own `Omit<...>`-shaped insert type per its own acceptance criteria.
+- `slugify()` drops accents rather than transliterating, mishandles the Turkish dotted `İ`, and an all-non-ASCII-letter title collapses to the same generic `"category"` fallback as an all-symbol title (QA INFO-1) — cosmetic; the client's 8 real category titles are plain ASCII (severity: low, not ticketed).
+- SEC-HIGH-2 — "`authenticated`" on this project's Supabase project means *any* Supabase-signed-up identity; safety depends entirely on the Dashboard's "Allow new users to sign up" toggle, which is unverifiable from source (surfaced because T-001 extended the existing `authenticated`-ALL pattern to a new table; pre-existing/systemic, not a T-001 regression) (severity: high) — **not a ticket** — user must confirm this toggle is OFF in the Supabase Dashboard; **blocks the next `deploy`**.
+
+**Deferred QA findings (🟢):**
+- INFO-1 — the two narrow Unicode `slugify()` edge cases above — not ticketed, informational.
+- INFO-2 — `supabase-schema.sql`'s `products` copy omits the migration's `COMMENT ON TABLE` — cosmetic; backport next time that file is touched, not its own ticket.
+- INFO-4 / INFO-5 — no regression test exists (no runner installed repo-wide); the 8-seed-pair + adversarial-Unicode + Order-A/B battery in `docs/QA_REPORT.md` is a ready-made test suite whenever a runner lands. `/qa live`'s read-only DB pass ran as a separate, later step the same day (see Acceptance evidence) — correctly sequenced, not skipped.
+
+**Deferred security findings:**
+- SEC-MED-3 / SEC-MED-4 — status update: substantially addressed by T-003's `resolveCategoriesForSave`; the residual gap is tracked separately as SEC-HIGH-3 (closed at T-003, see that entry), not a re-opening of these two.
+
+**Acceptance evidence:**
+- `docs/qa-evidence/T-001/db-products-readonly/verify.log`
+- `docs/qa-evidence/T-001/what-we-do-regression/{page.log, image-urls-baseline-T-002.txt, image-urls-new.txt, image-url-diff.log, slug-leak-check.log, 01-desktop-top.png, 02-desktop-grid.png}`
+- `docs/qa-evidence/T-001/admin-auth-gate-regression/{01-admin-business,02-admin-root,03-admin-login}.log`, `04-admin-login-desktop.png`
+- `docs/qa-evidence/T-001/live-slug-collision-check/result.log` — live-confirms 0 of the 8 real categories carried a stored slug as of this ticket; all 8 computed slugs unique and matched real `slugify()` output exactly
+- Static QA verdict: ✅ (0 🔴; 3 🟡 WARN, all correctly out of scope for a types/migration-only ticket's own enforcement, folded as named acceptance-criteria bullets into T-003 rather than blocking here)
+- Live QA verdict: ✅ (4/4 flows pass, 0 failed requests, fully read-only — no admin write flows in this ticket, so no manual checklist was needed)
+- CSO sign-off: ✅ 2026-09-27 in `docs/SECURITY.md` ("T-001 cleared for local merge")
+
+**Commit(s):** `0f42faf` (merge); `96b6010` ("mark migration 0001 applied")
+
+### 2026-09-27T01:00Z — T-003: Products-within-category data layer + category delete-guard (incl. Category identity amendment)
+
+**What shipped:**
+- `src/app/actions/products-actions.ts` (new) — `getCategoryProducts`, `createCategoryProduct`, `updateCategoryProduct`, `deleteCategoryProduct`, `reorderCategoryProducts`, every write gated by `requireUser()` / `supabase.auth.getUser()`; `checkCategoryAttachable()` (replaced an earlier `getValidCategorySlugs()`) gates every write on a genuinely-stored `id` + well-formed `slug`.
+- `src/app/actions/settings-actions.ts` — `updateSettings` extended: builds `existingById` via `readStoredCategoryIdentities()`, passes it into `resolveCategoriesForSave`; the delete-guard now diffs by `id` (`computeRemovedCategories`), never by slug string.
+- `src/lib/site-content.ts` — `Product.id` (new — server-issued, internal-only, never public, never displayed, never written to `public.products`), `isWellFormedSlug()`, `resolveCategoriesForSave` (rewritten), `computeRemovedCategories()`, `readStoredCategoryIdentities()`.
+
+**Source (if marketing-originated):**
+- N/A — direct engineering ticket, `docs/VISION.md` MVP Feature 2 (data/backend half).
+
+**Key decisions:**
+- **Category identity amendment** (decision (d), `docs/TECH_STACK.md`, 2026-09-27, mid-ticket fix cycle): every category gains a second, purely-internal field, `id` (`crypto.randomUUID()`), assigned the first time a category is saved without one, frozen forever after — mirroring `slug`'s own lifecycle. "Is this the same category" is decided by `id` alone — **never** by slug, **never** by title; an incoming item's own `.slug` field is not read by `resolveCategoriesForSave` at all anymore. (Why: closes both QA's 🔴 CRIT-1 and CSO's 🟠 SEC-HIGH-3 as one mechanism — both traced to the same root cause, bare slug-string membership with no record of which category row actually owns a slug.) No migration/DDL needed — `id` is one more JSONB key, added the same way `slug` was at T-001.
+- **Legacy bootstrap requirement** (same-day follow-up to (d)): products may only attach to a category that has survived at least one save under decision (d) — i.e. has a genuine stored `id` + well-formed `slug`. `getValidCategorySlugs()` (which validated against `normalizeProducts()`'s ephemeral read-time display fallback) was removed and replaced by `checkCategoryAttachable()`, which reads only frozen identities. A category that exists but hasn't been saved yet under the new logic returns a distinct `"not_yet_bootstrapped"` error naming the category — never lumped in with "does not exist."
+  - **Operationally:** products can only attach to a category once it has a stored `id` + well-formed `slug`, which happens only after that category survives one `/admin/business` Save under this ticket's logic. Because local dev and production share the same live Supabase project (`docs/MEMORY_BANK.md` Known Trap #3), this bootstrap Save can be run **now**, pre-deploy, via `localhost:3000` — this is exactly Step 1 of the T-003 manual checklist below — or, if skipped now, must happen once in production `/admin/business` after this ticket's code is deployed, before T-004's product-adding UI can be used against any of today's 8 legacy categories. **As of this compression (2026-09-27), it has not been run either way — the live `site_settings.business` row still carries 0 stored ids**, confirmed live via `docs/qa-evidence/T-003/live-bootstrap-state-check/result.log`.
+- Every write still checks the whole resolved category array for slug collisions in one unified pass, order-independent, rejecting the entire save by name on any hit (unchanged mechanism from T-001's decision (b), now correctly scoped by id first).
+
+**Known traps / debt:**
+- 🔴 **CRIT-1 (QA) — CLOSED.** Deleting a category with products, then adding a new, differently-created category with a colliding title in the *same* save (the literal `ObjectListEditor.blank()` shape — no devtools, no crafted call, just ordinary clicks) silently defeated the delete-guard: the guard diffed by slug string, and the new row's freshly-derived slug "refilled" the vacated slug before any removal was detected. Fixed by the Category identity amendment above; re-verified by direct execution (52/52 adversarial assertions), not accepted on the decision record's word alone.
+- 🟠 **SEC-HIGH-3 (CSO) — CLOSED**, same fix, same root cause (a crafted direct Server Action call forging a `slug` field to hijack a vacated slug — required bypassing the shipped UI entirely, unlike CRIT-1). Independently re-verified by CSO's own re-review (43/43 assertions) and by QA's re-review (52/52).
+- 🟡 **SEC-MED-6 (CSO) — CLOSED**: `resolveCategoriesForSave` now rejects a non-array/missing `products` payload outright with a named error, instead of silently coercing it to zero categories.
+- 🟡 **WARN-1 (QA, malformed stored slug carried forward unrevalidated) — CLOSED**: a claimed/renamed row's stored slug is now shape-validated (`isWellFormedSlug`) before reuse; a genuinely-dropped row's malformed slug remains safe as-is (parameterized delete-guard query).
+- 🟠 **SEC-HIGH-4 (CSO) — OPEN, PREREQUISITE FOR T-004, does not block T-003's own merge.** `updateSettings` throws plain `Error`s for every guard failure (auth, collision, delete-guard, non-array, duplicate-id-claim, malformed-slug); **zero** of the 7 settings-page clients catch it (`BusinessClient.tsx` included); no `error.tsx`/`global-error.tsx` exists anywhere in `src/app`. Next.js redacts thrown Server Action messages in production, so every one of these guards fails **silently in production**: the Save button just stops spinning, no error text, no toast, nothing. `npm run dev` (what `/qa live` tests against) shows the real message in the dev overlay, which masks how bad this is once deployed. **T-004's own written acceptance criteria ("shows T-003's message in the admin UI itself — not a silent failure") is unbuildable against `updateSettings`'s current throw-based contract, no matter how T-004 itself is built.** Not yet filed as its own ticket — recommend `/pm` fold into T-004 as a blocking prerequisite, or spin a small T-003.1 (severity: high).
+- 🟡 WARN-2 (QA) — `reorderCategoryProducts` fully trusts the caller's `orderedIds` (no completeness/uniqueness check against the category's live rows) and doesn't call `revalidateCategory()` on a mid-loop failure (severity: medium, non-blocking, self-heals on the next full-success reorder) — no ticket filed yet, recommend `/pm` fast-follow.
+- 🟡 SEC-MED-5 (CSO) — TOCTOU race between the delete-guard's product-count query and the `site_settings` upsert; mirrored by a symmetric window in `checkCategoryAttachable()`'s own read-then-write gap (both share the same accepted rationale: no category *row* exists to lock, and this is a small hand-created admin roster, not concurrent public traffic) (severity: medium, non-blocking) — no ticket filed yet.
+- 🟡 SEC-MED-7 (CSO) — `CategoryProductInput.image` (and the pre-existing category-level `Product.image`) accept any string with no scheme allow-list, rendered as a public `<img src>` (bounded impact — browsers don't execute `javascript:`/SVG-`data:` via `<img>`; an attacker-controlled `https://` URL could still render sitewide) (severity: medium, non-blocking) — no ticket filed yet.
+- 🟢 SEC-INFO-15 — `name` has no length cap matching `products.name VARCHAR(255)` (trivial fast-follow: `name.slice(0,255)`, same pattern already used for `slug`).
+- 🟢 SEC-INFO-16 — `reorderCategoryProducts` issues sequential, non-transactional per-row updates (cosmetic display-order inconsistency only on partial failure — no cross-category corruption).
+- **Note routed to `/cso`, not yet adjudicated by any pass:** QA's Live Pass read `origin/main`'s actually-**deployed** `updateSettings` directly (a local git read, no live write) and confirmed it has **no `getUser()`/session check at all today** — it goes straight to the `site_settings` upsert. Whether this is exploitable depends entirely on `site_settings`'s live `anon` RLS policy (documented as SELECT-only in `docs/MEMORY_BANK.md` §5, not independently re-verified from this environment). Not tested by attempting a write. Needs `/cso` to assess with Supabase Dashboard access this environment doesn't have.
+
+**Deferred QA findings (🟢):**
+- INFO-1 (first pass) — `sanitizeInput()`'s `sort_order` default (`0`) means a new product with no explicit order lands at the *front* of its category, not the end — a design note for T-004's "Add Product" flow (compute current max + 1 instead), not itself a bug.
+- INFO-2 (first pass) — the delete-guard's error message doesn't pluralize when blocking on 2+ categories at once ("its/has/it" stays singular) — cosmetic, internal admin-only string, not public copy.
+- INFO-1 (re-review pass) — `id` round-trip through T-004 depends on T-004 preserving unknown object keys when it (re)builds category objects; `ObjectListEditor.update()`/`move()` already do this correctly today (spread-based), but T-004 must not regress it, or every save starts looking like "all categories are new" (no data loss, but a rename's slug-freeze regresses to first-save behavior). Flagged as an explicit T-004 acceptance-criterion candidate for `/pm` to fold in.
+
+**Deferred security findings:**
+- SEC-HIGH-1 (Next.js CVE bump) and SEC-HIGH-2 (Supabase signup-toggle) — out of this ticket's own scope, both still open, both still blocking only the next production `deploy`, not local merge. See the T-001/T-002 entries above.
+
+**Acceptance evidence:**
+- `docs/qa-evidence/T-003/what-we-do-and-auth-gate-regression/{page,admin-business,admin-root,admin-login,image-url-diff,uuid-leak-check,slug-leak-check}.log`, `01-desktop-top.png`, `02-desktop-grid.png` — confirms the new internal-only `Product.id` never leaks into the DOM or any serialized payload (verified by a UUID-shape grep against the raw response, not just by reading source)
+- `docs/qa-evidence/T-003/products-read-path-t005-shape/query-result.log`
+- `docs/qa-evidence/T-003/live-bootstrap-state-check/result.log` — live-confirms 0 stored ids today (see bootstrap requirement above)
+- Static QA verdict: ❌ Failed first pass (🔴 CRIT-1) → ✅ **Static Pass on re-run** after the Category identity amendment fix (all 11/11 acceptance criteria satisfied; 0 🔴; 2 🟡 non-blocking carried forward — WARN-2, WARN-3/SEC-HIGH-4)
+- Live QA verdict: ✅ (3/3 agent-executable flows pass, 0 failed requests)
+- CSO sign-off: ✅ 2026-09-27 in `docs/SECURITY.md` — first review ("cleared to proceed to `/qa static`/`/qa live`," SEC-HIGH-3/SEC-HIGH-4 open) and re-review after fix ("SEC-HIGH-3 and SEC-MED-6 closed... 43/43 adversarial assertions")
+- **Manual admin checklist** (`docs/QA_REPORT.md`, "Manual Checklist — T-003," 4 steps incl. the one-time bootstrap save + a duplicate-title-save refusal check) — written, **not yet run by the user** as of this compression (2026-09-27). Its Step 1 is the legacy-category bootstrap Save described above.
+
+**Commit(s):** `5984b74` (feat); `ed76507` (merge)
+
+### 2026-09-27 — Standing state carried forward (cross-ticket; not itself a ticket — do not re-archive this heading)
+
+- **Deploy is currently blocked** by all of: SEC-HIGH-1 (ticketed as **T-006**, not yet started), SEC-HIGH-2 (needs the user's own confirmation of a Supabase Dashboard toggle — no code ticket), the T-002 manual admin checklist (`docs/QA_REPORT.md`, not yet run), and the T-003 manual admin checklist (`docs/QA_REPORT.md`, not yet run — see the T-003 entry above for what its Step 1 accomplishes). None of these block local merges, only the next `deploy`.
+- **T-004 additionally cannot be built to its own written spec** until SEC-HIGH-4 is resolved (see the T-003 entry above) — not yet filed as its own ticket; recommend folding into T-004 or spinning a small T-003.1.
+- **Repo hygiene note** (an observation from this compression pass, not a doc finding): `docs/qa-evidence/<ticket>/` is adding roughly 1.5 MB per ticket to the repo. Not a problem yet — worth a `/devops`/`/git` look if the pace continues across future sprints.
