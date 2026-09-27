@@ -1,0 +1,24 @@
+Homepage metadata (comparison baseline):
+{
+  "title": "Fashion Asia Limited | Green Powered Innovation",
+  "description": "A 100% export-oriented, LEED Gold certified Ready-Made Garments manufacturing company specializing in knitwear, based in Bangladesh.",
+  "canonical": "https://fashionasialtd.com",
+  "og:url": "https://fashionasialtd.com",
+  "og:title": "Fashion Asia Limited | Green Powered Innovation",
+  "og:description": "Modern, compliant, and sustainability-driven knit garments manufacturer in Bangladesh.",
+  "h1_list": [
+    "Green Powered Innovation"
+  ],
+  "has_coming_soon": false
+}
+
+t-shirts: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+polo-shirts: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+tank-tops: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+dresses: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+sleepwear: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+leggings: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+sportswear: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+heavy-jersey-products: PASS {'http_200': True, 'title_format_ok': True, 'h1_matches_title': True, 'canonical_absolute': True, 'canonical_self_referencing': True, 'has_meta_description': True, 'has_og_url': True, 'has_og_title': True, 'has_og_description': True, 'coming_soon_empty_state': True, 'distinct_from_homepage_title': True, 'distinct_from_homepage_description': True, 'distinct_from_homepage_canonical': True, 'distinct_from_homepage_og_url': True}
+
+OVERALL: ALL 8 CATEGORY PAGES PASS

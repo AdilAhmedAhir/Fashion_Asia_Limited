@@ -1,0 +1,11 @@
+=== WARN-2 live corroboration: lastModified is request-time, not build-time ===
+Fetch 1 (already saved as sitemap-body.xml) - unique lastmod value across all 17 entries:
+<lastmod>2026-09-27T13:21:20.895Z</lastmod>
+
+Fetch 2, issued ~2s later:
+<lastmod>2026-09-27T13:26:03.063Z</lastmod>
+
+Interpretation: every one of the 17 URLs (8 pre-existing static entries included, not just the new
+category entries) reports a freshly-different lastModified on every single HTTP request to
+/sitemap.xml, confirming this route has no cached/static output (matches this pass's earlier build-output
+finding: /sitemap.xml is "f Dynamic, server-rendered on demand", not statically generated once per deploy).
