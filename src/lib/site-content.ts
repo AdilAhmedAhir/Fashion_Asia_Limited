@@ -360,7 +360,18 @@ export type CategoryProduct = {
 // CategoryProduct type directly for writes would let a caller pass a
 // client-picked id or timestamp that the insert/update never actually uses
 // (docs/QA_REPORT.md T-001 Static Pass WARN-3; docs/ROADMAP.md T-003).
-export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at">;
+//
+// `sort_order` is optional here (unlike the required field on CategoryProduct
+// itself) so a caller adding a brand-new product can omit it entirely rather
+// than guess: createCategoryProduct (products-actions.ts) computes current
+// max + 1 server-side whenever it's missing/non-finite, landing the new
+// product at the end of its category's list, not the front
+// (docs/ROADMAP.md T-004, folded 2026-09-27; docs/QA_REPORT.md T-003 Static
+// Pass first-pass INFO-1). An update that means to keep a product's existing
+// position still passes its current sort_order through unchanged.
+export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at" | "sort_order"> & {
+    sort_order?: number;
+};
 
 // Category slug: lowercase, every run of non-alphanumeric characters
 // collapsed to a single "-", leading/trailing "-" trimmed. A title with no
