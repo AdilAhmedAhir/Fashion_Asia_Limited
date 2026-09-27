@@ -321,11 +321,20 @@ export const PRODUCT_IMAGES: Record<string, string> = {
 export const PRODUCT_IMAGE_FALLBACK = "/images/client/4-copy.webp";
 
 export type Product = {
+    id: string; // server-issued category identity. "" = not yet assigned. Internal only: never displayed, never a URL segment.
     title: string;
     slug: string; // stable identity + public URL segment; assigned once, frozen after
     description: string;
     image: string;
 };
+
+// A category's frozen identity as it already sits in storage, read fresh by
+// updateSettings immediately before every `business` save — never taken from
+// client memory (docs/TECH_STACK.md decision (d), 2026-09-27, and its
+// same-day "legacy (id-less) categories" follow-up). Shared by
+// resolveCategoriesForSave's carry-forward lookup, computeRemovedCategories'
+// id-diff, and products-actions.ts's attachability check.
+export type ExistingCategoryRef = { slug: string; title: string };
 
 // Individual catalog item inside a category (image/name/description) — the
 // shape of a row in the new public.products table (db/migrations/0001_
@@ -341,7 +350,17 @@ export type CategoryProduct = {
     description: string;
     image: string;
     sort_order: number;
+    created_at: string;
+    updated_at: string;
 };
+
+// Create/update payload shape for a CategoryProduct row — never sends id,
+// created_at, or updated_at, which are DB-generated (gen_random_uuid() /
+// now() defaults on public.products). Reusing the read-shaped
+// CategoryProduct type directly for writes would let a caller pass a
+// client-picked id or timestamp that the insert/update never actually uses
+// (docs/QA_REPORT.md T-001 Static Pass WARN-3; docs/ROADMAP.md T-003).
+export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at">;
 
 // Category slug: lowercase, every run of non-alphanumeric characters
 // collapsed to a single "-", leading/trailing "-" trimmed. A title with no
@@ -388,7 +407,7 @@ export function normalizeProducts(raw: unknown): Product[] {
             if (title) {
                 const slug = dedupeSlug(slugify(title), seen);
                 seen.add(slug);
-                acc.push({ title, slug, description: "", image: PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK });
+                acc.push({ id: "", title, slug, description: "", image: PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK });
             }
             return acc;
         }
@@ -403,15 +422,213 @@ export function normalizeProducts(raw: unknown): Product[] {
                 : PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK;
             const description = typeof row.description === "string" ? row.description.trim() : "";
 
+            // Carried forward exactly like slug below — read-time only,
+            // never invented here. resolveCategoriesForSave (save-time) is
+            // the only place a missing id is ever actually assigned one.
+            const id = typeof row.id === "string" ? row.id.trim() : "";
+
             const storedSlug = typeof row.slug === "string" ? row.slug.trim() : "";
             const slug = storedSlug || dedupeSlug(slugify(title), seen);
             seen.add(slug);
 
-            acc.push({ title, slug, description, image });
+            acc.push({ id, title, slug, description, image });
         }
 
         return acc;
     }, []);
+}
+
+export type CategorySaveResult =
+    | { ok: true; categories: Product[] }
+    | { ok: false; error: string };
+
+// Every stored slug's shape is provably confined to this exact pattern by
+// slugify() (SEC-INFO-12) — used both to gate a frozen slug's reuse at save
+// time below (a malformed stored value can never be silently carried
+// forward again) and, in products-actions.ts, to gate whether a category is
+// genuinely attachable yet.
+export function isWellFormedSlug(value: string): boolean {
+    return value.length > 0 && value.length <= 255 && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(value);
+}
+
+// A server-issued id for a brand-new category. Deliberately backed by the
+// runtime's Web Crypto global rather than Node's `crypto` module import:
+// this file has zero import statements today and is already imported by a
+// client component (BusinessClient.tsx, type-only, confirmed by reading it)
+// — globalThis.crypto.randomUUID() is available in both server and browser
+// runtimes, so this stays safe even if a client component ever starts
+// importing a VALUE (not just a type) from this shared module
+// (docs/TECH_STACK.md decision (d), 2026-09-27).
+function randomUUID(): string {
+    return globalThis.crypto.randomUUID();
+}
+
+// Save-time counterpart to normalizeProducts() above, for the `business`
+// settings write path (src/app/actions/settings-actions.ts::updateSettings).
+// normalizeProducts() is READ-time only and silently auto-suffixes a
+// colliding freshly-computed slug via dedupeSlug() so a page always has
+// something to render. Decision (b) (docs/TECH_STACK.md) requires the
+// opposite at save time: a collision is refused outright — the entire save
+// fails with a specific, named-category error, never silently suffixed or
+// overwritten. This function is that guard; it never calls dedupeSlug().
+//
+// Category identity — decision (d), docs/TECH_STACK.md, 2026-09-27. A
+// category is matched to an existing row by `id` alone — never by slug,
+// never by title. `existingById` must be every currently-persisted
+// category's own id mapped to its frozen {slug, title}, read fresh by the
+// caller (readStoredCategoryIdentities, below) immediately before calling
+// this — never taken from client memory. An incoming item's own `.slug`
+// field is NEVER read by this function, under any circumstance: every
+// resolved slug is either looked up by id or freshly derived via slugify(),
+// so a client can never propose a slug value. This closes CRIT-1 (a fresh
+// slug reissued for a just-deleted category made the deletion invisible to
+// the guard) and SEC-HIGH-3 (a carried-forward item claiming a different
+// row's slug) as one mechanism, not two patches — both were bare
+// slug-string-membership bugs with no record of which row actually owns a
+// given slug; id-based provenance means ownership can never be inferred
+// from the string itself.
+export function resolveCategoriesForSave(
+    raw: unknown,
+    existingById: ReadonlyMap<string, ExistingCategoryRef>,
+): CategorySaveResult {
+    if (!Array.isArray(raw)) {
+        return {
+            ok: false,
+            error: "Categories must be a list of category objects — refusing to save. Reload the page and try again.",
+        };
+    }
+
+    const seenSlugs = new Map<string, string>(); // slug -> first title that claimed it
+    const claimedIds = new Set<string>();
+    const categories: Product[] = [];
+
+    for (const item of raw) {
+        let title = "";
+        let description = "";
+        let image = "";
+        let incomingId = "";
+
+        if (typeof item === "string") {
+            title = item.trim();
+        } else if (item && typeof item === "object" && !Array.isArray(item)) {
+            const row = item as Record<string, unknown>;
+            title = typeof row.title === "string" ? row.title.trim() : "";
+            description = typeof row.description === "string" ? row.description.trim() : "";
+            image = typeof row.image === "string" ? row.image.trim() : "";
+            incomingId = typeof row.id === "string" ? row.id.trim() : "";
+        } else {
+            continue;
+        }
+
+        if (!title) continue;
+        if (!image) image = PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK;
+
+        const existing = incomingId ? existingById.get(incomingId) : undefined;
+
+        let id: string;
+        let slug: string;
+
+        if (existing) {
+            // Same category, regardless of title/description/image/array-
+            // position changes. Two incoming items claiming the same
+            // existing id reject the whole save by name before either is
+            // resolved further.
+            if (claimedIds.has(incomingId)) {
+                return {
+                    ok: false,
+                    error: `Two categories in this save both claim to be "${existing.title}". Reload the page and try again.`,
+                };
+            }
+            claimedIds.add(incomingId);
+
+            // "Frozen forever" was always meant to apply to a validly-
+            // assigned slug. A stored slug can only be malformed today via
+            // manual DB editing — re-validated here rather than silently
+            // persisting an invalid value forward again.
+            if (!isWellFormedSlug(existing.slug)) {
+                return {
+                    ok: false,
+                    error: `"${existing.title}"'s stored URL slug is invalid and can't be safely reused. This category needs a developer to fix its stored data before it can be saved again.`,
+                };
+            }
+
+            // Its slug is looked up by id and reattached verbatim — the
+            // incoming item's own `.slug` field is never read for this
+            // decision, so a client can never donate or hijack a slug.
+            id = incomingId;
+            slug = existing.slug;
+        } else {
+            // No id, or an id absent from existingById: a new category.
+            // Fresh id, fresh slug derived only from the title — again, the
+            // incoming item's own `.slug` field is never read here either.
+            id = randomUUID();
+            slug = slugify(title).slice(0, 255);
+        }
+
+        // Collision check — across ALL resolved slugs so far, whether frozen
+        // or freshly derived, regardless of the order categories arrived in.
+        // Never silently resolved: the whole save is refused with a specific,
+        // named-category error (docs/TECH_STACK.md decision (b);
+        // docs/SECURITY.md SEC-MED-4(b); docs/QA_REPORT.md T-001 WARN-1).
+        const claimant = seenSlugs.get(slug);
+        if (claimant !== undefined) {
+            return {
+                ok: false,
+                error: claimant === title
+                    ? `Two categories are both named "${title}", which would both use the page /what-we-do/${slug}. Rename one of them and save again.`
+                    : `"${claimant}" and "${title}" would both use the page /what-we-do/${slug}. Rename one of them and save again.`,
+            };
+        }
+        seenSlugs.set(slug, title);
+
+        categories.push({ id, title, slug, description, image });
+    }
+
+    return { ok: true, categories };
+}
+
+// Every existing category whose id is absent from a save's resolved output —
+// an id-diff, never a slug-diff, so a brand-new row that happens to compute
+// the identical slug a deleted row just vacated can never make the deletion
+// invisible (closes CRIT-1 / SEC-HIGH-3 on the delete-guard's own side of the
+// same root cause). Called by updateSettings immediately after a successful
+// resolveCategoriesForSave().
+export function computeRemovedCategories(
+    existingById: ReadonlyMap<string, ExistingCategoryRef>,
+    resolvedCategories: readonly Product[],
+): ExistingCategoryRef[] {
+    const resolvedIds = new Set(resolvedCategories.map(c => c.id));
+    const removed: ExistingCategoryRef[] = [];
+    for (const [id, ref] of existingById) {
+        if (!resolvedIds.has(id)) removed.push(ref);
+    }
+    return removed;
+}
+
+// Factored out of updateSettings's own pre-fetch parsing so
+// products-actions.ts can share the identical "which categories are
+// genuinely frozen" read without re-deriving it (docs/TECH_STACK.md decision
+// (d)'s same-day "legacy (id-less) categories" follow-up). A category with
+// no stored id has never survived a save under decision (d) — true of every
+// one of today's 8 live categories — and is absent from the returned map
+// regardless of what normalizeProducts()'s read-time display fallback would
+// compute for it.
+export function readStoredCategoryIdentities(raw: unknown): Map<string, ExistingCategoryRef> {
+    const result = new Map<string, ExistingCategoryRef>();
+    if (!Array.isArray(raw)) return result;
+
+    for (const item of raw) {
+        if (!item || typeof item !== "object" || Array.isArray(item)) continue;
+        const row = item as Record<string, unknown>;
+        const id = typeof row.id === "string" ? row.id.trim() : "";
+        if (!id) continue;
+
+        const slug = typeof row.slug === "string" ? row.slug.trim() : "";
+        const title = typeof row.title === "string" ? row.title.trim() : "";
+        result.set(id, { slug, title: title || "(untitled category)" });
+    }
+
+    return result;
 }
 
 export interface Certification {
