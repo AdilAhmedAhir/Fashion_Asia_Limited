@@ -7,7 +7,7 @@ Status: first `/pm` pass on this repo. No prior `ROADMAP.md` entries exist to am
 ## 📊 PM Sprint Plan — 2026-09-26
 ### Sprint 1: Ship the three MVP features from VISION.md — category detail pages, products-within-category admin management, and the image-size warning
 
-- [ ] **T-001** — Design the products-within-category schema and author the migration
+- [x] **T-001** — Design the products-within-category schema and author the migration
   - **Source:** direct — `docs/VISION.md` "Settled inputs carried into this VISION" + MVP Feature 2 (category attachment is a prerequisite for Features 1 and 2)
   - **Files:** `db/migrations/0001_products-within-category.sql` (new — first use of the `WORKFLOW.md` §1 migration convention), `supabase-schema.sql` (update the rolled-up reference snapshot to match), `docs/TECH_STACK.md` (append the new table, if any, to the "Tables:" line), `src/lib/site-content.ts` (update `Product`/category TypeScript types — including a stable identifier field — to match the chosen shape; no data-access logic yet)
   - **Flags:** schema-touching: **yes** · sensitive: **yes** (new RLS policies) · UI: **no**
