@@ -1,0 +1,32 @@
+PASS  reports: update -> {ok:false} not found
+PASS  reports: update -> throw
+PASS  reports: create -> {ok:false} session expired
+PASS  reports: update -> ok (reload, as before)
+PASS  reports: upload -> {ok:false} real reason shown
+PASS  reports: upload -> throw (e.g. >1 MB body) shows UPLOAD_ERROR
+PASS  reports: failed Replace keeps the attached file
+PASS  reports: upload ok keeps text typed during the upload
+PASS  reports: delete -> {ok:false} not found
+PASS  reports: delete -> throw
+PASS  reports: delete -> ok (reload, as before)
+PASS  reports: modal can't be dismissed mid-save; failure then shows in it
+PASS  INFO-3 demo: a second pick during an upload, Save in the gap sends the FIRST file
+PASS  careers: update -> {ok:false} not found
+PASS  careers: create -> throw
+PASS  careers: update -> ok (reload, as before)
+PASS  careers: delete -> {ok:false} session expired
+PASS  careers: delete -> throw
+PASS  careers: delete -> ok (reload, as before)
+PASS  leaders: blur-save -> {ok:false} not found (saveLeader now signals)
+PASS  leaders: blur-save -> throw
+PASS  leaders: blur-save -> ok stays silent, no reload (as before)
+PASS  leaders: a failed save's alert clears when a retry succeeds
+PASS  leaders: add -> {ok:false} session expired
+PASS  leaders: add -> throw
+PASS  leaders: add -> ok (reload, as before)
+PASS  leaders: remove -> {ok:false} not found
+PASS  leaders: remove -> throw
+PASS  leaders: remove -> ok (reload, as before)
+PASS  INFO-4 demo: A throws, B succeeds, A's error stays
+
+30/30 pass; http(s) attempts: 0

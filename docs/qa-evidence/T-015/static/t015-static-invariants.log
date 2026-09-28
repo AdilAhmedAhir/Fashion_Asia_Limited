@@ -1,0 +1,189 @@
+== SERVER: the ten actions ==
+-- src/app/actions/settings-actions.ts
+  PASS  every value export is an async function declaration (12 value exports)
+  PASS  requireUser() exists and is NOT exported
+  PASS  SESSION_EXPIRED === "Your session expired. Sign in again and retry."
+   createReport()
+  PASS     exported async function
+  PASS     declared return type Promise<ActionResult> (got Promise<ActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 276)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 276 < first .from/.storage line 285
+  PASS     getUser() precedes first formData.get (line 279)
+  PASS     all 3 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+   updateReport()
+  PASS     exported async function
+  PASS     declared return type Promise<ActionResult> (got Promise<ActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 303)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 303 < first .from/.storage line 314
+  PASS     getUser() precedes first formData.get (line 308)
+  PASS     all 5 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+  PASS     zero-row guard: .eq("id", id).select("id").maybeSingle()
+  PASS     if (!data) return { ok: false, error: *_NOT_FOUND }
+   deleteReport()
+  PASS     exported async function
+  PASS     declared return type Promise<ActionResult> (got Promise<ActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 328)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 328 < first .from/.storage line 333
+  PASS     getUser() precedes first formData.get (line n/a)
+  PASS     all 5 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+  PASS     zero-row guard: .eq("id", id).select("id").maybeSingle()
+  PASS     if (!data) return { ok: false, error: *_NOT_FOUND }
+   createLeader()
+  PASS     exported async function
+  PASS     declared return type Promise<ActionResult> (got Promise<ActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 355)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 355 < first .from/.storage line 358
+  PASS     getUser() precedes first formData.get (line 359)
+  PASS     all 3 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+   updateLeader()
+  PASS     exported async function
+  PASS     declared return type Promise<ActionResult> (got Promise<ActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 373)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 373 < first .from/.storage line 378
+  PASS     getUser() precedes first formData.get (line 379)
+  PASS     all 5 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+  PASS     zero-row guard: .eq("id", id).select("id").maybeSingle()
+  PASS     if (!data) return { ok: false, error: *_NOT_FOUND }
+   deleteLeader()
+  PASS     exported async function
+  PASS     declared return type Promise<ActionResult> (got Promise<ActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 394)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 394 < first .from/.storage line 399
+  PASS     getUser() precedes first formData.get (line n/a)
+  PASS     all 5 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+  PASS     zero-row guard: .eq("id", id).select("id").maybeSingle()
+  PASS     if (!data) return { ok: false, error: *_NOT_FOUND }
+   uploadFile()
+  PASS     exported async function
+  PASS     declared return type Promise<UploadFileResult> (got Promise<UploadFileResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 414)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 414 < first .from/.storage line 423
+  PASS     getUser() precedes first formData.get (line 417)
+  PASS     all 4 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+  PASS     uploadFile returns its public URL inside the ok branch
+-- src/app/actions/jobs-actions.ts
+  PASS  every value export is an async function declaration (4 value exports)
+  PASS  requireUser() exists and is NOT exported
+  PASS  SESSION_EXPIRED === "Your session expired. Sign in again and retry."
+   createJob()
+  PASS     exported async function
+  PASS     declared return type Promise<JobActionResult> (got Promise<JobActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 90)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 90 < first .from/.storage line 93
+  PASS     getUser() precedes first formData.get (line n/a)
+  PASS     all 3 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+   updateJob()
+  PASS     exported async function
+  PASS     declared return type Promise<JobActionResult> (got Promise<JobActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 108)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 108 < first .from/.storage line 113
+  PASS     getUser() precedes first formData.get (line n/a)
+  PASS     all 5 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+  PASS     zero-row guard: .eq("id", id).select("id").maybeSingle()
+  PASS     if (!data) return { ok: false, error: *_NOT_FOUND }
+   deleteJob()
+  PASS     exported async function
+  PASS     declared return type Promise<JobActionResult> (got Promise<JobActionResult>)
+  PASS     zero throw statements in body
+  PASS     stmt 1: const supabase = await createClient();
+  PASS     stmt 2: const user = await requireUser(supabase);  (line 128)
+  PASS     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  PASS     getUser() line 128 < first .from/.storage line 133
+  PASS     getUser() precedes first formData.get (line n/a)
+  PASS     all 5 return statements are {ok:true|false[, error]} literals
+  PASS     exactly one ok:true, and it is the last statement
+  PASS     zero-row guard: .eq("id", id).select("id").maybeSingle()
+  PASS     if (!data) return { ok: false, error: *_NOT_FOUND }
+
+== CLIENTS: /cso's four post-/ui-ux rules ==
+-- src/app/admin/(dashboard)/reports/ReportsClient.tsx
+  PASS  rule 3: action imports identical to HEAD: import { createReport, updateReport, deleteReport, uploadFile } from "@/app/actions/settings-actions";
+  PASS  rule 1: uploadFile() at line 85: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  PASS  rule 1: createReport() at line 120: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  PASS  rule 1: updateReport() at line 120: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  PASS  rule 1: deleteReport() at line 140: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  call sites in this file: 85:uploadFile, 120:createReport/updateReport, 140:deleteReport
+  PASS  rule 1: reload() at line 128: in try=true, in catch=false, preceded by 'if (!result.ok) {... return; }'=true
+  PASS  rule 1: reload() at line 145: in try=true, in catch=false, preceded by 'if (!result.ok) {... return; }'=true
+  PASS  catch at line 95 never reloads, closes the modal or rethrows: { failure = UPLOAD_ERROR; }
+  PASS  catch at line 129 never reloads, closes the modal or rethrows: { setSaveError(GENERIC_ERROR); }
+  PASS  catch at line 146 never reloads, closes the modal or rethrows: { setDeleteError({ id, message: DELETE_ERROR }); }
+  PASS  rule 2: {deleteError.message} at line 228 is a text child of <p role="alert">
+  PASS  rule 2: {uploadError} at line 331 is a text child of <p role="alert">
+  PASS  rule 2: {saveError} at line 348 is a text child of <p role="alert">
+  error render sites: 3
+  PASS  rule 4: no render sink (none found)
+  PASS  no console.* / debugger (none)
+-- src/app/admin/(dashboard)/careers/CareersClient.tsx
+  PASS  rule 3: action imports identical to HEAD: import { createJob, updateJob, deleteJob, type Job } from "@/app/actions/jobs-actions";
+  PASS  rule 1: createJob() at line 66: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  PASS  rule 1: updateJob() at line 66: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  PASS  rule 1: deleteJob() at line 86: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  call sites in this file: 66:createJob/updateJob, 86:deleteJob
+  PASS  rule 1: reload() at line 74: in try=true, in catch=false, preceded by 'if (!result.ok) {... return; }'=true
+  PASS  rule 1: reload() at line 91: in try=true, in catch=false, preceded by 'if (!result.ok) {... return; }'=true
+  PASS  catch at line 75 never reloads, closes the modal or rethrows: { setSaveError(GENERIC_ERROR); }
+  PASS  catch at line 92 never reloads, closes the modal or rethrows: { setDeleteError({ id, message: DELETE_ERROR }); }
+  PASS  rule 2: {deleteError.message} at line 170 is a text child of <p role="alert">
+  PASS  rule 2: {saveError} at line 271 is a text child of <p role="alert">
+  error render sites: 2
+  PASS  rule 4: no render sink (none found)
+  PASS  no console.* / debugger (none)
+-- src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx
+  PASS  rule 3: action imports identical to HEAD: import { createLeader, updateLeader, deleteLeader } from "@/app/actions/settings-actions"; | import { updateSettings } from "@/app/actions/settings-actions";
+  PASS  rule 1: createLeader() at line 70: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  PASS  rule 1: deleteLeader() at line 86: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  PASS  rule 1: updateLeader() at line 106: inside try=true, awaited=true, bound to result=true, branches on .ok=true
+  call sites in this file: 70:createLeader, 86:deleteLeader, 106:updateLeader
+  PASS  rule 1: reload() at line 75: in try=true, in catch=false, preceded by 'if (!result.ok) {... return; }'=true
+  PASS  rule 1: reload() at line 91: in try=true, in catch=false, preceded by 'if (!result.ok) {... return; }'=true
+  PASS  catch at line 45 never reloads, closes the modal or rethrows: { setError("Something went wrong saving these changes. Check your connection and try again."); }
+  PASS  catch at line 76 never reloads, closes the modal or rethrows: { setAddLeaderError(ADD_LEADER_ERROR); }
+  PASS  catch at line 92 never reloads, closes the modal or rethrows: { setLeaderError(id, REMOVE_LEADER_ERROR); }
+  PASS  catch at line 108 never reloads, closes the modal or rethrows: { setLeaderError(leader.id, GENERIC_ERROR); }
+  PASS  rule 2: {error} used as attribute error at line 121
+  PASS  rule 2: {leaderErrors[leader.id]} at line 238 is a text child of <p role="alert">
+  PASS  rule 2: {addLeaderError} at line 257 is a text child of <p role="alert">
+  error render sites: 2
+  PASS  rule 4: no render sink (none found)
+  PASS  no console.* / debugger (none)
+
+  PASS  call-site census: 8 sites, 10 calls (expected 8 sites, 10 calls)
+
+RESULT: ALL INVARIANTS HOLD

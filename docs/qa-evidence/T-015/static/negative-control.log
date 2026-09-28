@@ -1,0 +1,24 @@
+== 1. unmutated copy (expect ALL INVARIANTS HOLD)
+RESULT: ALL INVARIANTS HOLD
+== 2. seeding 7 violations
+   seeded: V1 deleteJob throws on not-found
+   seeded: V2 createLeader reads before the session check
+   seeded: V3 CareersClient reloads before checking .ok
+   seeded: V4 save error loses role=alert
+   seeded: V5 new render sink
+   seeded: V6 new Server Action import
+   seeded: V7 uploadFile called outside its try
+== 3. mutated copy (expect exit 1 and a FAIL for each violation)
+  FAIL     stmt 2: const user = await requireUser(supabase);  (line 355)
+  FAIL     stmt 3: if (!user) return { ok: false, error: SESSION_EXPIRED };
+  FAIL     getUser() line 355 < first .from/.storage line 355
+  FAIL     zero throw statements in body
+  FAIL     if (!data) return { ok: false, error: *_NOT_FOUND }
+  FAIL  rule 1: uploadFile() at line 84: inside try=false, awaited=true, bound to result=true, branches on .ok=false
+  FAIL  rule 2: {saveError} at line 348 is a text child of <p role=undefined>
+  FAIL  rule 4: no render sink (dangerouslySetInnerHTML @199)
+  FAIL  rule 1: reload() at line 87: in try=true, in catch=false, preceded by 'if (!result.ok) {... return; }'=false
+  FAIL  rule 3: action imports identical to HEAD: import { createLeader, updateLeader, deleteLeader } from "@/app/actions/settings-actions"; | import { seedSettingsFromDefaults } from "@/app/actions/settings-actions"; | import { updateSettings } from "@/app/actions/settings-actions";
+RESULT: 10 FAILURE(S)
+checker exit on mutated copy: 1
+NEGATIVE CONTROL: PASS (checker rejected the seeded violations)

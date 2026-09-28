@@ -1,0 +1,2852 @@
+{
+  "variant": "after",
+  "when": "2026-09-28T16:58:26.595Z",
+  "scenarios": {
+    "reportsTable": {
+      "phone": {
+        "viewport": [
+          360,
+          740
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 294,
+          "wrapScroll": 682,
+          "tableW": 682,
+          "trashVisible": [
+            false,
+            false,
+            false
+          ],
+          "names": [
+            [
+              "Edit Sustainability Report 2024",
+              "Delete Sustainability Report 2024"
+            ],
+            [
+              "Edit Annual Financial Statement and Independent Auditor’s Report 2023–24",
+              "Delete Annual Financial Statement and Independent Auditor’s Report 2023–24"
+            ],
+            [
+              "Edit Social Compliance Audit Summary",
+              "Delete Social Compliance Audit Summary"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 360,
+            "innerHeight": 740,
+            "docScrollWidth": 360,
+            "docClientWidth": 360,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [
+            {
+              "el": "table.w-full.text-sm \"TitleCategoryYearStatusActions Sustainab\"",
+              "right": 715,
+              "reachableByScroll": true
+            }
+          ],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleCategoryYearStatusActions Sustainab\"",
+              "overflowX": "auto",
+              "scrollWidth": 682,
+              "clientWidth": 294,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 33,
+            "top": 169,
+            "right": 327,
+            "bottom": 705
+          },
+          "lines": [
+            {
+              "left": 57,
+              "right": 72,
+              "top": 486,
+              "bottom": 501
+            },
+            {
+              "left": 80,
+              "right": 310,
+              "top": 486,
+              "bottom": 503
+            },
+            {
+              "left": 80,
+              "right": 278,
+              "top": 509,
+              "bottom": 526
+            },
+            {
+              "left": 80,
+              "right": 312,
+              "top": 532,
+              "bottom": 549
+            },
+            {
+              "left": 80,
+              "right": 269,
+              "top": 554,
+              "bottom": 571
+            }
+          ]
+        },
+        "shotAtStart": "reports-table-phone-360-unscrolled.png",
+        "scrolledTo": 388,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 33,
+            "top": 169,
+            "right": 327,
+            "bottom": 705
+          },
+          "lines": [
+            {
+              "left": 57,
+              "right": 72,
+              "top": 486,
+              "bottom": 501
+            },
+            {
+              "left": 80,
+              "right": 310,
+              "top": 486,
+              "bottom": 503
+            },
+            {
+              "left": 80,
+              "right": 278,
+              "top": 509,
+              "bottom": 526
+            },
+            {
+              "left": 80,
+              "right": 312,
+              "top": 532,
+              "bottom": 549
+            },
+            {
+              "left": 80,
+              "right": 269,
+              "top": 554,
+              "bottom": 571
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "reports-table-phone-360.png"
+      },
+      "tablet": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 414,
+          "wrapScroll": 682,
+          "tableW": 682,
+          "trashVisible": [
+            false,
+            false,
+            false
+          ],
+          "names": [
+            [
+              "Edit Sustainability Report 2024",
+              "Delete Sustainability Report 2024"
+            ],
+            [
+              "Edit Annual Financial Statement and Independent Auditor’s Report 2023–24",
+              "Delete Annual Financial Statement and Independent Auditor’s Report 2023–24"
+            ],
+            [
+              "Edit Social Compliance Audit Summary",
+              "Delete Social Compliance Audit Summary"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 768,
+            "innerHeight": 1024,
+            "docScrollWidth": 768,
+            "docClientWidth": 768,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [
+            {
+              "el": "table.w-full.text-sm \"TitleCategoryYearStatusActions Sustainab\"",
+              "right": 987,
+              "reachableByScroll": true
+            }
+          ],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleCategoryYearStatusActions Sustainab\"",
+              "overflowX": "auto",
+              "scrollWidth": 682,
+              "clientWidth": 414,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 193,
+            "right": 719,
+            "bottom": 706
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 510,
+              "bottom": 525
+            },
+            {
+              "left": 352,
+              "right": 687,
+              "top": 510,
+              "bottom": 527
+            },
+            {
+              "left": 352,
+              "right": 681,
+              "top": 533,
+              "bottom": 550
+            },
+            {
+              "left": 352,
+              "right": 541,
+              "top": 556,
+              "bottom": 573
+            }
+          ]
+        },
+        "shotAtStart": "reports-table-tablet-768-unscrolled.png",
+        "scrolledTo": 268,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 193,
+            "right": 719,
+            "bottom": 706
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 510,
+              "bottom": 525
+            },
+            {
+              "left": 352,
+              "right": 687,
+              "top": 510,
+              "bottom": 527
+            },
+            {
+              "left": 352,
+              "right": 681,
+              "top": 533,
+              "bottom": 550
+            },
+            {
+              "left": 352,
+              "right": 541,
+              "top": 556,
+              "bottom": 573
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "reports-table-tablet-768.png"
+      },
+      "small": {
+        "viewport": [
+          1024,
+          768
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 670,
+          "wrapScroll": 682,
+          "tableW": 682,
+          "trashVisible": [
+            true,
+            true,
+            true
+          ],
+          "names": [
+            [
+              "Edit Sustainability Report 2024",
+              "Delete Sustainability Report 2024"
+            ],
+            [
+              "Edit Annual Financial Statement and Independent Auditor’s Report 2023–24",
+              "Delete Annual Financial Statement and Independent Auditor’s Report 2023–24"
+            ],
+            [
+              "Edit Social Compliance Audit Summary",
+              "Delete Social Compliance Audit Summary"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 1024,
+            "innerHeight": 768,
+            "docScrollWidth": 1024,
+            "docClientWidth": 1024,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleCategoryYearStatusActions Sustainab\"",
+              "overflowX": "auto",
+              "scrollWidth": 682,
+              "clientWidth": 670,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 975,
+            "bottom": 644
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 470,
+              "bottom": 485
+            },
+            {
+              "left": 352,
+              "right": 784,
+              "top": 470,
+              "bottom": 487
+            },
+            {
+              "left": 352,
+              "right": 777,
+              "top": 493,
+              "bottom": 510
+            }
+          ]
+        },
+        "shotAtStart": "reports-table-small-1024-unscrolled.png",
+        "scrolledTo": 12,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 975,
+            "bottom": 644
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 470,
+              "bottom": 485
+            },
+            {
+              "left": 352,
+              "right": 784,
+              "top": 470,
+              "bottom": 487
+            },
+            {
+              "left": 352,
+              "right": 777,
+              "top": 493,
+              "bottom": 510
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "reports-table-small-1024.png"
+      },
+      "laptop": {
+        "viewport": [
+          1366,
+          657
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 1012,
+          "wrapScroll": 1012,
+          "tableW": 1012,
+          "trashVisible": [
+            true,
+            true,
+            true
+          ],
+          "names": [
+            [
+              "Edit Sustainability Report 2024",
+              "Delete Sustainability Report 2024"
+            ],
+            [
+              "Edit Annual Financial Statement and Independent Auditor’s Report 2023–24",
+              "Delete Annual Financial Statement and Independent Auditor’s Report 2023–24"
+            ],
+            [
+              "Edit Social Compliance Audit Summary",
+              "Delete Social Compliance Audit Summary"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 1366,
+            "innerHeight": 657,
+            "docScrollWidth": 1366,
+            "docClientWidth": 1366,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [],
+          "hOverflow": []
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 1317,
+            "bottom": 441
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 340,
+              "bottom": 355
+            },
+            {
+              "left": 352,
+              "right": 1214,
+              "top": 340,
+              "bottom": 357
+            }
+          ]
+        },
+        "shotAtStart": "reports-table-laptop-1366-unscrolled.png",
+        "scrolledTo": 0,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 1317,
+            "bottom": 441
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 340,
+              "bottom": 355
+            },
+            {
+              "left": 352,
+              "right": 1214,
+              "top": 340,
+              "bottom": 357
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "reports-table-laptop-1366.png"
+      },
+      "pageErrors": []
+    },
+    "careersTable": {
+      "phone": {
+        "viewport": [
+          360,
+          740
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 294,
+          "wrapScroll": 687,
+          "tableW": 687,
+          "trashVisible": [
+            false,
+            false,
+            false
+          ],
+          "names": [
+            [
+              "Edit Officer, Procurement & Development",
+              "Delete Officer, Procurement & Development"
+            ],
+            [
+              "Edit Senior Executive, Merchandising (Knit Division)",
+              "Delete Senior Executive, Merchandising (Knit Division)"
+            ],
+            [
+              "Edit Compliance Officer",
+              "Delete Compliance Officer"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 360,
+            "innerHeight": 740,
+            "docScrollWidth": 360,
+            "docClientWidth": 360,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [
+            {
+              "el": "table.w-full.text-sm \"TitleDepartmentDeadlineStatusActions Off\"",
+              "right": 720,
+              "reachableByScroll": true
+            }
+          ],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleDepartmentDeadlineStatusActions Off\"",
+              "overflowX": "auto",
+              "scrollWidth": 687,
+              "clientWidth": 294,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 33,
+            "top": 169,
+            "right": 327,
+            "bottom": 605
+          },
+          "lines": [
+            {
+              "left": 57,
+              "right": 72,
+              "top": 426,
+              "bottom": 441
+            },
+            {
+              "left": 80,
+              "right": 310,
+              "top": 426,
+              "bottom": 443
+            },
+            {
+              "left": 80,
+              "right": 278,
+              "top": 449,
+              "bottom": 466
+            },
+            {
+              "left": 80,
+              "right": 312,
+              "top": 472,
+              "bottom": 489
+            },
+            {
+              "left": 80,
+              "right": 269,
+              "top": 494,
+              "bottom": 511
+            }
+          ]
+        },
+        "shotAtStart": "careers-table-phone-360-unscrolled.png",
+        "scrolledTo": 393,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 33,
+            "top": 169,
+            "right": 327,
+            "bottom": 605
+          },
+          "lines": [
+            {
+              "left": 57,
+              "right": 72,
+              "top": 426,
+              "bottom": 441
+            },
+            {
+              "left": 80,
+              "right": 310,
+              "top": 426,
+              "bottom": 443
+            },
+            {
+              "left": 80,
+              "right": 278,
+              "top": 449,
+              "bottom": 466
+            },
+            {
+              "left": 80,
+              "right": 312,
+              "top": 472,
+              "bottom": 489
+            },
+            {
+              "left": 80,
+              "right": 269,
+              "top": 494,
+              "bottom": 511
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "careers-table-phone-360.png"
+      },
+      "tablet": {
+        "viewport": [
+          768,
+          1024
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 414,
+          "wrapScroll": 687,
+          "tableW": 687,
+          "trashVisible": [
+            false,
+            false,
+            false
+          ],
+          "names": [
+            [
+              "Edit Officer, Procurement & Development",
+              "Delete Officer, Procurement & Development"
+            ],
+            [
+              "Edit Senior Executive, Merchandising (Knit Division)",
+              "Delete Senior Executive, Merchandising (Knit Division)"
+            ],
+            [
+              "Edit Compliance Officer",
+              "Delete Compliance Officer"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 768,
+            "innerHeight": 1024,
+            "docScrollWidth": 768,
+            "docClientWidth": 768,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [
+            {
+              "el": "table.w-full.text-sm \"TitleDepartmentDeadlineStatusActions Off\"",
+              "right": 992,
+              "reachableByScroll": true
+            }
+          ],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleDepartmentDeadlineStatusActions Off\"",
+              "overflowX": "auto",
+              "scrollWidth": 687,
+              "clientWidth": 414,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 193,
+            "right": 719,
+            "bottom": 606
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 450,
+              "bottom": 465
+            },
+            {
+              "left": 352,
+              "right": 687,
+              "top": 450,
+              "bottom": 467
+            },
+            {
+              "left": 352,
+              "right": 681,
+              "top": 473,
+              "bottom": 490
+            },
+            {
+              "left": 352,
+              "right": 541,
+              "top": 496,
+              "bottom": 513
+            }
+          ]
+        },
+        "shotAtStart": "careers-table-tablet-768-unscrolled.png",
+        "scrolledTo": 273,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 193,
+            "right": 719,
+            "bottom": 606
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 450,
+              "bottom": 465
+            },
+            {
+              "left": 352,
+              "right": 687,
+              "top": 450,
+              "bottom": 467
+            },
+            {
+              "left": 352,
+              "right": 681,
+              "top": 473,
+              "bottom": 490
+            },
+            {
+              "left": 352,
+              "right": 541,
+              "top": 496,
+              "bottom": 513
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "careers-table-tablet-768.png"
+      },
+      "small": {
+        "viewport": [
+          1024,
+          768
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 670,
+          "wrapScroll": 687,
+          "tableW": 687,
+          "trashVisible": [
+            true,
+            true,
+            true
+          ],
+          "names": [
+            [
+              "Edit Officer, Procurement & Development",
+              "Delete Officer, Procurement & Development"
+            ],
+            [
+              "Edit Senior Executive, Merchandising (Knit Division)",
+              "Delete Senior Executive, Merchandising (Knit Division)"
+            ],
+            [
+              "Edit Compliance Officer",
+              "Delete Compliance Officer"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 1024,
+            "innerHeight": 768,
+            "docScrollWidth": 1024,
+            "docClientWidth": 1024,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleDepartmentDeadlineStatusActions Off\"",
+              "overflowX": "auto",
+              "scrollWidth": 687,
+              "clientWidth": 670,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 975,
+            "bottom": 544
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 410,
+              "bottom": 425
+            },
+            {
+              "left": 352,
+              "right": 784,
+              "top": 410,
+              "bottom": 427
+            },
+            {
+              "left": 352,
+              "right": 777,
+              "top": 433,
+              "bottom": 450
+            }
+          ]
+        },
+        "shotAtStart": "careers-table-small-1024-unscrolled.png",
+        "scrolledTo": 17,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 975,
+            "bottom": 544
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 410,
+              "bottom": 425
+            },
+            {
+              "left": 352,
+              "right": 784,
+              "top": 410,
+              "bottom": 427
+            },
+            {
+              "left": 352,
+              "right": 777,
+              "top": 433,
+              "bottom": 450
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "careers-table-small-1024.png"
+      },
+      "laptop": {
+        "viewport": [
+          1366,
+          657
+        ],
+        "table": {
+          "wrapOverflowX": "auto",
+          "wrapClient": 1012,
+          "wrapScroll": 1012,
+          "tableW": 1012,
+          "trashVisible": [
+            true,
+            true,
+            true
+          ],
+          "names": [
+            [
+              "Edit Officer, Procurement & Development",
+              "Delete Officer, Procurement & Development"
+            ],
+            [
+              "Edit Senior Executive, Merchandising (Knit Division)",
+              "Delete Senior Executive, Merchandising (Knit Division)"
+            ],
+            [
+              "Edit Compliance Officer",
+              "Delete Compliance Officer"
+            ]
+          ],
+          "doc": {
+            "innerWidth": 1366,
+            "innerHeight": 657,
+            "docScrollWidth": 1366,
+            "docClientWidth": 1366,
+            "htmlOverflowX": "clip"
+          },
+          "offscreen": [],
+          "hOverflow": []
+        },
+        "alertAtStart": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 1317,
+            "bottom": 431
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 330,
+              "bottom": 345
+            },
+            {
+              "left": 352,
+              "right": 1214,
+              "top": 330,
+              "bottom": 347
+            }
+          ]
+        },
+        "shotAtStart": "careers-table-laptop-1366-unscrolled.png",
+        "scrolledTo": 0,
+        "alertWhenScrolledToTrash": {
+          "ok": true,
+          "box": {
+            "left": 305,
+            "top": 153,
+            "right": 1317,
+            "bottom": 431
+          },
+          "lines": [
+            {
+              "left": 329,
+              "right": 344,
+              "top": 330,
+              "bottom": 345
+            },
+            {
+              "left": 352,
+              "right": 1214,
+              "top": 330,
+              "bottom": 347
+            }
+          ]
+        },
+        "trashVisibleAfterScrollingRight": [
+          true,
+          true,
+          true
+        ],
+        "alerts": [
+          {
+            "text": "update or delete on table \"reports\" violates foreign key constraint \"report_downloads_report_id_fkey\" on table \"report_downloads\"",
+            "empty": false
+          }
+        ],
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#0f0f0f",
+          "ratio": 6.93
+        },
+        "shot": "careers-table-laptop-1366.png"
+      },
+      "pageErrors": []
+    },
+    "reportsModal": {
+      "phone": {
+        "panel": {
+          "x": 0,
+          "y": 43,
+          "w": 360,
+          "h": 654,
+          "right": 360,
+          "bottom": 697
+        },
+        "panelScrolls": false,
+        "backdropScrolls": false,
+        "panelOverflowY": "visible",
+        "backdropOverflowY": "auto",
+        "saveButton": {
+          "x": 33,
+          "y": 616,
+          "w": 294,
+          "h": 48,
+          "right": 327,
+          "bottom": 664
+        },
+        "saveInViewport": true,
+        "uploadAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 360,
+            "bottom": 740
+          },
+          "lines": [
+            {
+              "left": 33,
+              "right": 48,
+              "top": 420,
+              "bottom": 435
+            },
+            {
+              "left": 56,
+              "right": 315,
+              "top": 420,
+              "bottom": 437
+            },
+            {
+              "left": 56,
+              "right": 299,
+              "top": 443,
+              "bottom": 460
+            },
+            {
+              "left": 56,
+              "right": 224,
+              "top": 466,
+              "bottom": 483
+            }
+          ]
+        },
+        "saveAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 360,
+            "bottom": 740
+          },
+          "lines": [
+            {
+              "left": 33,
+              "right": 48,
+              "top": 560,
+              "bottom": 575
+            },
+            {
+              "left": 56,
+              "right": 315,
+              "top": 560,
+              "bottom": 577
+            },
+            {
+              "left": 56,
+              "right": 91,
+              "top": 583,
+              "bottom": 600
+            }
+          ]
+        },
+        "topCutOff": false,
+        "bottomCutOff": false,
+        "texts": [
+          {
+            "text": "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          }
+        ],
+        "doc": {
+          "innerWidth": 360,
+          "innerHeight": 740,
+          "docScrollWidth": 360,
+          "docClientWidth": 360,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [
+          {
+            "el": "table.w-full.text-sm \"TitleCategoryYearStatusActions Sustainab\"",
+            "right": 715,
+            "reachableByScroll": true
+          }
+        ],
+        "hOverflow": [
+          {
+            "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleCategoryYearStatusActions Sustainab\"",
+            "overflowX": "auto",
+            "scrollWidth": 682,
+            "clientWidth": 294,
+            "kind": "scrolls"
+          }
+        ],
+        "saveReachable": true,
+        "shot": "reports-modal-errors-phone-360x740.png"
+      },
+      "tablet": {
+        "panel": {
+          "x": 128,
+          "y": 208,
+          "w": 512,
+          "h": 608,
+          "right": 640,
+          "bottom": 816
+        },
+        "panelScrolls": false,
+        "backdropScrolls": false,
+        "panelOverflowY": "visible",
+        "backdropOverflowY": "auto",
+        "saveButton": {
+          "x": 161,
+          "y": 735,
+          "w": 446,
+          "h": 48,
+          "right": 607,
+          "bottom": 783
+        },
+        "saveInViewport": true,
+        "uploadAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 768,
+            "bottom": 1024
+          },
+          "lines": [
+            {
+              "left": 161,
+              "right": 176,
+              "top": 585,
+              "bottom": 600
+            },
+            {
+              "left": 184,
+              "right": 594,
+              "top": 585,
+              "bottom": 602
+            },
+            {
+              "left": 184,
+              "right": 448,
+              "top": 608,
+              "bottom": 625
+            }
+          ]
+        },
+        "saveAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 768,
+            "bottom": 1024
+          },
+          "lines": [
+            {
+              "left": 161,
+              "right": 176,
+              "top": 702,
+              "bottom": 717
+            },
+            {
+              "left": 184,
+              "right": 482,
+              "top": 702,
+              "bottom": 719
+            }
+          ]
+        },
+        "topCutOff": false,
+        "bottomCutOff": false,
+        "texts": [
+          {
+            "text": "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          }
+        ],
+        "doc": {
+          "innerWidth": 768,
+          "innerHeight": 1024,
+          "docScrollWidth": 768,
+          "docClientWidth": 768,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [
+          {
+            "el": "table.w-full.text-sm \"TitleCategoryYearStatusActions Sustainab\"",
+            "right": 987,
+            "reachableByScroll": true
+          }
+        ],
+        "hOverflow": [
+          {
+            "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleCategoryYearStatusActions Sustainab\"",
+            "overflowX": "auto",
+            "scrollWidth": 682,
+            "clientWidth": 414,
+            "kind": "scrolls"
+          }
+        ],
+        "saveReachable": true,
+        "shot": "reports-modal-errors-tablet-768x1024.png"
+      },
+      "small": {
+        "panel": {
+          "x": 256,
+          "y": 80,
+          "w": 512,
+          "h": 608,
+          "right": 768,
+          "bottom": 688
+        },
+        "panelScrolls": false,
+        "backdropScrolls": false,
+        "panelOverflowY": "visible",
+        "backdropOverflowY": "auto",
+        "saveButton": {
+          "x": 289,
+          "y": 607,
+          "w": 446,
+          "h": 48,
+          "right": 735,
+          "bottom": 655
+        },
+        "saveInViewport": true,
+        "uploadAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1024,
+            "bottom": 768
+          },
+          "lines": [
+            {
+              "left": 289,
+              "right": 304,
+              "top": 457,
+              "bottom": 472
+            },
+            {
+              "left": 312,
+              "right": 722,
+              "top": 457,
+              "bottom": 474
+            },
+            {
+              "left": 312,
+              "right": 576,
+              "top": 480,
+              "bottom": 497
+            }
+          ]
+        },
+        "saveAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1024,
+            "bottom": 768
+          },
+          "lines": [
+            {
+              "left": 289,
+              "right": 304,
+              "top": 574,
+              "bottom": 589
+            },
+            {
+              "left": 312,
+              "right": 610,
+              "top": 574,
+              "bottom": 591
+            }
+          ]
+        },
+        "topCutOff": false,
+        "bottomCutOff": false,
+        "texts": [
+          {
+            "text": "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          }
+        ],
+        "doc": {
+          "innerWidth": 1024,
+          "innerHeight": 768,
+          "docScrollWidth": 1024,
+          "docClientWidth": 1024,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [],
+        "hOverflow": [
+          {
+            "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleCategoryYearStatusActions Sustainab\"",
+            "overflowX": "auto",
+            "scrollWidth": 682,
+            "clientWidth": 670,
+            "kind": "scrolls"
+          }
+        ],
+        "saveReachable": true,
+        "shot": "reports-modal-errors-small-1024x768.png"
+      },
+      "laptop": {
+        "panel": {
+          "x": 427,
+          "y": 24,
+          "w": 512,
+          "h": 608,
+          "right": 939,
+          "bottom": 633
+        },
+        "panelScrolls": false,
+        "backdropScrolls": false,
+        "panelOverflowY": "visible",
+        "backdropOverflowY": "auto",
+        "saveButton": {
+          "x": 460,
+          "y": 552,
+          "w": 446,
+          "h": 48,
+          "right": 906,
+          "bottom": 600
+        },
+        "saveInViewport": true,
+        "uploadAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 657
+          },
+          "lines": [
+            {
+              "left": 460,
+              "right": 475,
+              "top": 401,
+              "bottom": 416
+            },
+            {
+              "left": 483,
+              "right": 893,
+              "top": 401,
+              "bottom": 418
+            },
+            {
+              "left": 483,
+              "right": 747,
+              "top": 424,
+              "bottom": 441
+            }
+          ]
+        },
+        "saveAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1366,
+            "bottom": 657
+          },
+          "lines": [
+            {
+              "left": 460,
+              "right": 475,
+              "top": 519,
+              "bottom": 534
+            },
+            {
+              "left": 483,
+              "right": 781,
+              "top": 519,
+              "bottom": 536
+            }
+          ]
+        },
+        "topCutOff": false,
+        "bottomCutOff": false,
+        "texts": [
+          {
+            "text": "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          }
+        ],
+        "doc": {
+          "innerWidth": 1366,
+          "innerHeight": 657,
+          "docScrollWidth": 1366,
+          "docClientWidth": 1366,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [],
+        "hOverflow": [],
+        "saveReachable": true,
+        "shot": "reports-modal-errors-laptop-1366x657.png"
+      },
+      "laptop720": {
+        "panel": {
+          "x": 384,
+          "y": 12,
+          "w": 512,
+          "h": 608,
+          "right": 896,
+          "bottom": 620
+        },
+        "panelScrolls": false,
+        "backdropScrolls": false,
+        "panelOverflowY": "visible",
+        "backdropOverflowY": "auto",
+        "saveButton": {
+          "x": 417,
+          "y": 539,
+          "w": 446,
+          "h": 48,
+          "right": 863,
+          "bottom": 587
+        },
+        "saveInViewport": true,
+        "uploadAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1280,
+            "bottom": 632
+          },
+          "lines": [
+            {
+              "left": 417,
+              "right": 432,
+              "top": 389,
+              "bottom": 404
+            },
+            {
+              "left": 440,
+              "right": 850,
+              "top": 389,
+              "bottom": 406
+            },
+            {
+              "left": 440,
+              "right": 704,
+              "top": 412,
+              "bottom": 429
+            }
+          ]
+        },
+        "saveAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1280,
+            "bottom": 632
+          },
+          "lines": [
+            {
+              "left": 417,
+              "right": 432,
+              "top": 506,
+              "bottom": 521
+            },
+            {
+              "left": 440,
+              "right": 738,
+              "top": 506,
+              "bottom": 523
+            }
+          ]
+        },
+        "topCutOff": false,
+        "bottomCutOff": false,
+        "texts": [
+          {
+            "text": "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          }
+        ],
+        "doc": {
+          "innerWidth": 1280,
+          "innerHeight": 632,
+          "docScrollWidth": 1280,
+          "docClientWidth": 1280,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [],
+        "hOverflow": [],
+        "saveReachable": true,
+        "shot": "reports-modal-errors-laptop720-1280x632.png"
+      },
+      "short": {
+        "panel": {
+          "x": 380,
+          "y": 0,
+          "w": 512,
+          "h": 608,
+          "right": 892,
+          "bottom": 608
+        },
+        "panelScrolls": false,
+        "backdropScrolls": true,
+        "panelOverflowY": "visible",
+        "backdropOverflowY": "auto",
+        "saveButton": {
+          "x": 413,
+          "y": 527,
+          "w": 446,
+          "h": 48,
+          "right": 859,
+          "bottom": 575
+        },
+        "saveInViewport": false,
+        "uploadAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1272,
+            "bottom": 560
+          },
+          "lines": [
+            {
+              "left": 413,
+              "right": 428,
+              "top": 377,
+              "bottom": 392
+            },
+            {
+              "left": 436,
+              "right": 846,
+              "top": 377,
+              "bottom": 394
+            },
+            {
+              "left": 436,
+              "right": 700,
+              "top": 400,
+              "bottom": 417
+            }
+          ]
+        },
+        "saveAlert": {
+          "ok": true,
+          "box": {
+            "left": 0,
+            "top": 0,
+            "right": 1272,
+            "bottom": 560
+          },
+          "lines": [
+            {
+              "left": 413,
+              "right": 428,
+              "top": 495,
+              "bottom": 510
+            },
+            {
+              "left": 436,
+              "right": 734,
+              "top": 495,
+              "bottom": 512
+            }
+          ]
+        },
+        "topCutOff": false,
+        "bottomCutOff": true,
+        "texts": [
+          {
+            "text": "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#111111",
+            "ratio": 6.83
+          }
+        ],
+        "doc": {
+          "innerWidth": 1280,
+          "innerHeight": 560,
+          "docScrollWidth": 1280,
+          "docClientWidth": 1280,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [],
+        "hOverflow": [],
+        "saveReachable": true,
+        "shot": "reports-modal-errors-short-1280x560.png"
+      },
+      "pageErrors": []
+    },
+    "reportsReplace": {
+      "idle": {
+        "text": "File attachedReplace",
+        "replace": {
+          "fg": "#0ec97a",
+          "bg": "#101513",
+          "ratio": 8.48
+        },
+        "check": {
+          "fg": "#0ec97a",
+          "bg": "#101513",
+          "ratio": 8.48
+        },
+        "replaceHover": {
+          "fg": "#0ea565",
+          "bg": "#101513",
+          "ratio": 5.79
+        }
+      },
+      "idleShot": "reports-replace-idle.png",
+      "busy": {
+        "pillText": "File attachedUploading...",
+        "replaceDisabled": false,
+        "replaceBusyLabel": "Uploading...",
+        "replaceContrast": {
+          "fg": "#0ec97a",
+          "bg": "#101513",
+          "ratio": 8.48
+        },
+        "xDisabled": true,
+        "xAriaLabel": "Close",
+        "xColorRest": "rgba(255, 255, 255, 0.4)",
+        "xOpacity": "0.4",
+        "saveDisabled": true,
+        "saveLabel": "Save Changes",
+        "xColorHoverWhileDisabled": "rgba(255, 255, 255, 0.4)",
+        "modalOpenAfterEscape": true,
+        "modalOpenAfterBackdropClick": true
+      },
+      "busyShot": "reports-replace-uploading.png",
+      "afterUpload": {
+        "pillText": "test-report.pdfReplace",
+        "alerts": []
+      },
+      "errors": [],
+      "pageErrors": []
+    },
+    "reportsKeyboard": {
+      "tabOrderInModal": [
+        "select.rounded-lg.border.border-white/10.bg-black.px-4.py-3 \"FinancialAuditComplianceEnvironmentalCsr\"",
+        "input.rounded-lg.border.border-white/10.bg-black.px-4.py-3",
+        "button.flex.items-center.justify-center.gap-3.rounded-lg.border \"Click to upload PDF file\"",
+        "input.h-4.w-4.rounded.border-white/20.bg-black.accent-primary",
+        "button.flex.w-full.items-center.justify-center.gap-2.rounded-lg \"Publish Report\"",
+        "BODY"
+      ],
+      "focusBeforeEnter": "button.flex.w-full.items-center.justify-center.gap-2.rounded-lg \"Publish Report\"",
+      "inFlight": {
+        "saveDisabled": true,
+        "saveLabel": "Saving...",
+        "active": "BODY",
+        "calls": [
+          "createReport"
+        ],
+        "modalOpenAfterEscape": true
+      },
+      "afterFailure": {
+        "active": "BODY",
+        "alerts": [
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ],
+        "mutations": [
+          "alert added",
+          "alert text changed"
+        ],
+        "tabGoesTo": "BODY",
+        "shiftTabFromSaveGoesTo": "input.h-4.w-4.rounded.border-white/20.bg-black.accent-primary"
+      },
+      "retryInFlight": {
+        "alertsDuringRetry": [
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ]
+      },
+      "retry": {
+        "sameAlertNode": true,
+        "mutations": [
+          "alert text changed",
+          "alert text changed"
+        ],
+        "alerts": [
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          }
+        ]
+      },
+      "errors": [],
+      "pageErrors": []
+    },
+    "careersModal": {
+      "phone": {
+        "panel": {
+          "x": 0,
+          "y": 37,
+          "w": 360,
+          "h": 666,
+          "right": 360,
+          "bottom": 703
+        },
+        "scrollTop": 853,
+        "alert": {
+          "ok": true,
+          "box": {
+            "left": 1,
+            "top": 38,
+            "right": 351,
+            "bottom": 702
+          },
+          "lines": [
+            {
+              "left": 33,
+              "right": 48,
+              "top": 624,
+              "bottom": 639
+            },
+            {
+              "left": 56,
+              "right": 315,
+              "top": 624,
+              "bottom": 641
+            },
+            {
+              "left": 56,
+              "right": 91,
+              "top": 647,
+              "bottom": 664
+            }
+          ]
+        },
+        "saveVisiblePx": 22.5,
+        "saveHeight": 48,
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#111111",
+          "ratio": 6.83
+        },
+        "idleOverflow": {
+          "offscreen": [
+            {
+              "el": "table.w-full.text-sm \"TitleDepartmentDeadlineStatusActions Off\"",
+              "right": 720,
+              "reachableByScroll": true
+            }
+          ],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleDepartmentDeadlineStatusActions Off\"",
+              "overflowX": "auto",
+              "scrollWidth": 687,
+              "clientWidth": 294,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "shot": "careers-modal-error-phone-360x740.png"
+      },
+      "tablet": {
+        "panel": {
+          "x": 48,
+          "y": 51,
+          "w": 672,
+          "h": 922,
+          "right": 720,
+          "bottom": 973
+        },
+        "scrollTop": 518,
+        "alert": {
+          "ok": true,
+          "box": {
+            "left": 49,
+            "top": 52,
+            "right": 711,
+            "bottom": 972
+          },
+          "lines": [
+            {
+              "left": 81,
+              "right": 96,
+              "top": 894,
+              "bottom": 909
+            },
+            {
+              "left": 104,
+              "right": 402,
+              "top": 894,
+              "bottom": 911
+            }
+          ]
+        },
+        "saveVisiblePx": 45.046875,
+        "saveHeight": 48,
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#111111",
+          "ratio": 6.83
+        },
+        "idleOverflow": {
+          "offscreen": [
+            {
+              "el": "table.w-full.text-sm \"TitleDepartmentDeadlineStatusActions Off\"",
+              "right": 992,
+              "reachableByScroll": true
+            }
+          ],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleDepartmentDeadlineStatusActions Off\"",
+              "overflowX": "auto",
+              "scrollWidth": 687,
+              "clientWidth": 414,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "shot": "careers-modal-error-tablet-768x1024.png"
+      },
+      "small": {
+        "panel": {
+          "x": 176,
+          "y": 38,
+          "w": 672,
+          "h": 691,
+          "right": 848,
+          "bottom": 730
+        },
+        "scrollTop": 749,
+        "alert": {
+          "ok": true,
+          "box": {
+            "left": 177,
+            "top": 39,
+            "right": 839,
+            "bottom": 728
+          },
+          "lines": [
+            {
+              "left": 209,
+              "right": 224,
+              "top": 650,
+              "bottom": 665
+            },
+            {
+              "left": 232,
+              "right": 530,
+              "top": 650,
+              "bottom": 667
+            }
+          ]
+        },
+        "saveVisiblePx": 44.84375,
+        "saveHeight": 48,
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#111111",
+          "ratio": 6.83
+        },
+        "idleOverflow": {
+          "offscreen": [],
+          "hOverflow": [
+            {
+              "el": "div.rounded-2xl.border.border-white/5.bg-white/[0.02].overflow-x-auto.[container-type:inline-size] \"TitleDepartmentDeadlineStatusActions Off\"",
+              "overflowX": "auto",
+              "scrollWidth": 687,
+              "clientWidth": 670,
+              "kind": "scrolls"
+            }
+          ]
+        },
+        "shot": "careers-modal-error-small-1024x768.png"
+      },
+      "laptop": {
+        "panel": {
+          "x": 347,
+          "y": 33,
+          "w": 672,
+          "h": 591,
+          "right": 1019,
+          "bottom": 624
+        },
+        "scrollTop": 849,
+        "alert": {
+          "ok": true,
+          "box": {
+            "left": 348,
+            "top": 34,
+            "right": 1010,
+            "bottom": 623
+          },
+          "lines": [
+            {
+              "left": 380,
+              "right": 395,
+              "top": 545,
+              "bottom": 560
+            },
+            {
+              "left": 403,
+              "right": 701,
+              "top": 545,
+              "bottom": 562
+            }
+          ]
+        },
+        "saveVisiblePx": 45.40625,
+        "saveHeight": 48,
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#111111",
+          "ratio": 6.83
+        },
+        "idleOverflow": {
+          "offscreen": [],
+          "hOverflow": []
+        },
+        "shot": "careers-modal-error-laptop-1366x657.png"
+      },
+      "laptop720": {
+        "panel": {
+          "x": 300,
+          "y": 32,
+          "w": 672,
+          "h": 569,
+          "right": 972,
+          "bottom": 601
+        },
+        "scrollTop": 871,
+        "alert": {
+          "ok": true,
+          "box": {
+            "left": 301,
+            "top": 33,
+            "right": 963,
+            "bottom": 600
+          },
+          "lines": [
+            {
+              "left": 333,
+              "right": 348,
+              "top": 522,
+              "bottom": 537
+            },
+            {
+              "left": 356,
+              "right": 654,
+              "top": 522,
+              "bottom": 539
+            }
+          ]
+        },
+        "saveVisiblePx": 45.25,
+        "saveHeight": 48,
+        "contrast": {
+          "fg": "#f87171",
+          "bg": "#111111",
+          "ratio": 6.83
+        },
+        "idleOverflow": {
+          "offscreen": [],
+          "hOverflow": []
+        },
+        "shot": "careers-modal-error-laptop720-1280x632.png"
+      },
+      "pageErrors": []
+    },
+    "leaders": {
+      "phone_cleanLoad": {
+        "rows": [
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "offscreen": [
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          },
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          },
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          },
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          }
+        ]
+      },
+      "phone": {
+        "alerts": [
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't remove this leader. Check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't add a leader. Check your connection and try again.",
+            "empty": false
+          }
+        ],
+        "rows": [
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "65..295",
+            "input": "90..222",
+            "removeBtn": "238..270",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "visible": [
+          true,
+          true,
+          true
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#0f0f0f",
+            "ratio": 6.93
+          }
+        ],
+        "trashNames": [
+          "Remove Sharifur Rahman Jr.",
+          "Remove Alif Nadvi Rahman",
+          "Remove Aqib Jafri Sharif",
+          "Remove New Leader"
+        ],
+        "doc": {
+          "innerWidth": 360,
+          "innerHeight": 740,
+          "docScrollWidth": 360,
+          "docClientWidth": 360,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          },
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          },
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          },
+          {
+            "el": "input.rounded-lg.border.border-white/10.bg-black.px-4.py-2.5",
+            "right": 480,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 522,
+            "reachableByScroll": false
+          }
+        ],
+        "hOverflow": [],
+        "pending": {
+          "disabled": true,
+          "opacity": "0.5",
+          "bg": "rgba(0, 0, 0, 0)",
+          "headerSave": "Saving...",
+          "headerSaveDisabled": true,
+          "bgOnHoverWhileDisabled": "rgba(0, 0, 0, 0)"
+        },
+        "pendingShot": "leaders-add-pending-phone-360.png",
+        "shot": "leaders-errors-phone-360.png",
+        "cardShot": "leaders-card-phone-360.png"
+      },
+      "tablet_cleanLoad": {
+        "rows": [
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "offscreen": [
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          }
+        ]
+      },
+      "tablet": {
+        "alerts": [
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't remove this leader. Check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't add a leader. Check your connection and try again.",
+            "empty": false
+          }
+        ],
+        "rows": [
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..679",
+            "input": "362..606",
+            "removeBtn": "622..654",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "visible": [
+          true,
+          true,
+          true
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#0f0f0f",
+            "ratio": 6.93
+          }
+        ],
+        "trashNames": [
+          "Remove Sharifur Rahman Jr.",
+          "Remove Alif Nadvi Rahman",
+          "Remove Aqib Jafri Sharif",
+          "Remove New Leader"
+        ],
+        "doc": {
+          "innerWidth": 768,
+          "innerHeight": 1024,
+          "docScrollWidth": 760,
+          "docClientWidth": 760,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          },
+          {
+            "el": "button.text-red-400.hover:text-red-300.p-2",
+            "right": 794,
+            "reachableByScroll": false
+          }
+        ],
+        "hOverflow": [],
+        "pending": {
+          "disabled": true,
+          "opacity": "0.5",
+          "bg": "rgba(0, 0, 0, 0)",
+          "headerSave": "Saving...",
+          "headerSaveDisabled": true,
+          "bgOnHoverWhileDisabled": "rgba(0, 0, 0, 0)"
+        },
+        "pendingShot": "leaders-add-pending-tablet-768.png",
+        "shot": "leaders-errors-tablet-768.png",
+        "cardShot": "leaders-card-tablet-768.png"
+      },
+      "small_cleanLoad": {
+        "rows": [
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "offscreen": []
+      },
+      "small": {
+        "alerts": [
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't remove this leader. Check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't add a leader. Check your connection and try again.",
+            "empty": false
+          }
+        ],
+        "rows": [
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..935",
+            "input": "362..862",
+            "removeBtn": "878..910",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "visible": [
+          true,
+          true,
+          true
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#0f0f0f",
+            "ratio": 6.93
+          }
+        ],
+        "trashNames": [
+          "Remove Sharifur Rahman Jr.",
+          "Remove Alif Nadvi Rahman",
+          "Remove Aqib Jafri Sharif",
+          "Remove New Leader"
+        ],
+        "doc": {
+          "innerWidth": 1024,
+          "innerHeight": 768,
+          "docScrollWidth": 1016,
+          "docClientWidth": 1016,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [],
+        "hOverflow": [],
+        "pending": {
+          "disabled": true,
+          "opacity": "0.5",
+          "bg": "rgba(0, 0, 0, 0)",
+          "headerSave": "Saving...",
+          "headerSaveDisabled": true,
+          "bgOnHoverWhileDisabled": "rgba(0, 0, 0, 0)"
+        },
+        "pendingShot": "leaders-add-pending-small-1024.png",
+        "shot": "leaders-errors-small-1024.png",
+        "cardShot": "leaders-card-small-1024.png"
+      },
+      "laptop_cleanLoad": {
+        "rows": [
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "offscreen": []
+      },
+      "laptop": {
+        "alerts": [
+          {
+            "text": "Your session expired. Sign in again and retry.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't remove this leader. Check your connection and try again.",
+            "empty": false
+          },
+          {
+            "text": "Couldn't add a leader. Check your connection and try again.",
+            "empty": false
+          }
+        ],
+        "rows": [
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          },
+          {
+            "card": "337..1167",
+            "input": "362..1094",
+            "removeBtn": "1110..1142",
+            "btnInsideCard": true,
+            "btnInViewport": true
+          }
+        ],
+        "visible": [
+          true,
+          true,
+          true
+        ],
+        "contrast": [
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#070707",
+            "ratio": 7.26
+          },
+          {
+            "fg": "#f87171",
+            "bg": "#0f0f0f",
+            "ratio": 6.93
+          }
+        ],
+        "trashNames": [
+          "Remove Sharifur Rahman Jr.",
+          "Remove Alif Nadvi Rahman",
+          "Remove Aqib Jafri Sharif",
+          "Remove New Leader"
+        ],
+        "doc": {
+          "innerWidth": 1366,
+          "innerHeight": 657,
+          "docScrollWidth": 1358,
+          "docClientWidth": 1358,
+          "htmlOverflowX": "clip"
+        },
+        "offscreen": [],
+        "hOverflow": [],
+        "pending": {
+          "disabled": true,
+          "opacity": "0.5",
+          "bg": "rgba(0, 0, 0, 0)",
+          "headerSave": "Saving...",
+          "headerSaveDisabled": true,
+          "bgOnHoverWhileDisabled": "rgba(0, 0, 0, 0)"
+        },
+        "pendingShot": "leaders-add-pending-laptop-1366.png",
+        "shot": "leaders-errors-laptop-1366.png",
+        "cardShot": "leaders-card-laptop-1366.png"
+      },
+      "pageErrors": []
+    },
+    "focusRings": {
+      "reports-Delete": {
+        "matchesFocusVisible": true,
+        "outline": "auto 1px rgb(0, 95, 204)",
+        "boxShadow": "none",
+        "name": "Delete Sustainability Report 2024",
+        "tabsToReach": 15,
+        "shot": "focus-reports-delete.png"
+      },
+      "reports-Edit": {
+        "matchesFocusVisible": true,
+        "outline": "auto 1px rgb(0, 95, 204)",
+        "boxShadow": "none",
+        "name": "Edit Sustainability Report 2024",
+        "tabsToReach": 14,
+        "shot": "focus-reports-edit.png"
+      },
+      "careers-Delete": {
+        "matchesFocusVisible": true,
+        "outline": "auto 1px rgb(0, 95, 204)",
+        "boxShadow": "none",
+        "name": "Delete Officer, Procurement & Development",
+        "tabsToReach": 15,
+        "shot": "focus-careers-delete.png"
+      },
+      "pageErrors": []
+    },
+    "pixels": {
+      "tableRowBg": {
+        "r": 15,
+        "g": 15,
+        "b": 15,
+        "colorType": 2,
+        "redOnThis": 6.93
+      },
+      "modalPanelBg": {
+        "r": 17,
+        "g": 17,
+        "b": 17,
+        "colorType": 2,
+        "redOnThis": 6.83
+      },
+      "leaderCardBg": {
+        "r": 7,
+        "g": 7,
+        "b": 7,
+        "colorType": 2,
+        "redOnThis": 7.28
+      },
+      "settingsCardBg": {
+        "r": 15,
+        "g": 15,
+        "b": 15,
+        "colorType": 2,
+        "redOnThis": 6.93
+      },
+      "pageErrors": []
+    }
+  }
+}

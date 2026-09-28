@@ -1,0 +1,193 @@
+{
+  "base": "http://localhost:3001",
+  "when": "2026-09-28T17:27:59.397Z",
+  "chrome": "Chrome/153.0.8010.53",
+  "runs": [
+    {
+      "page": "/sustainability",
+      "viewport": "desktop-1440",
+      "console": [],
+      "exceptions": [],
+      "nonGet": [],
+      "failed": [],
+      "httpErrors": [],
+      "navigateError": null,
+      "title": "Sustainability | Fashion Asia Limited",
+      "errorScreen": false,
+      "shots": [
+        "sustainability.desktop-1440.01-top.png",
+        "sustainability.desktop-1440.02-section.png"
+      ],
+      "sectionFound": true,
+      "sectionText": [
+        "FASHION ASIALimited",
+        "Home",
+        "Who We Are",
+        "What We Do",
+        "Global Partner",
+        "Sustainability",
+        "Life at Fashion Asia",
+        "Connect",
+        "Reports & Publications",
+        "Our annual reports, audit certifications, and compliance documentation — published so buyers and stakeholders can verify what we claim.",
+        "Reports coming soon",
+        "FASHION ASIALimited"
+      ],
+      "requestCount": 211,
+      "httpErrorsKnownT017": 160,
+      "verdict": "PASS"
+    },
+    {
+      "page": "/who-we-are",
+      "viewport": "desktop-1440",
+      "console": [],
+      "exceptions": [],
+      "nonGet": [],
+      "failed": [],
+      "httpErrors": [],
+      "navigateError": null,
+      "title": "Who We Are | Fashion Asia Limited",
+      "errorScreen": false,
+      "shots": [
+        "who-we-are.desktop-1440.01-top.png",
+        "who-we-are.desktop-1440.02-section.png"
+      ],
+      "sectionFound": true,
+      "sectionText": [
+        "FASHION ASIALimited",
+        "Home",
+        "Who We Are",
+        "What We Do",
+        "Global Partner",
+        "Sustainability",
+        "Life at Fashion Asia",
+        "Connect",
+        "Leadership",
+        "Fashion Asia Ltd. is guided by experienced industry leaders who bring decades of knowledge in garment manufacturing, strategic management, and global sourcing.",
+        "Leadership profiles coming soon",
+        "FASHION ASIALimited"
+      ],
+      "requestCount": 200,
+      "httpErrorsKnownT017": 160,
+      "verdict": "PASS"
+    },
+    {
+      "page": "/career",
+      "viewport": "desktop-1440",
+      "console": [],
+      "exceptions": [],
+      "nonGet": [],
+      "failed": [],
+      "httpErrors": [],
+      "navigateError": null,
+      "title": "Career | Fashion Asia Limited",
+      "errorScreen": false,
+      "shots": [
+        "career.desktop-1440.01-top.png",
+        "career.desktop-1440.02-section.png"
+      ],
+      "sectionFound": true,
+      "sectionText": [
+        "FASHION ASIALimited",
+        "Home",
+        "Who We Are",
+        "What We Do",
+        "Global Partner",
+        "Sustainability",
+        "Life at Fashion Asia",
+        "Connect",
+        "Open Positions",
+        "Click on a position to view details and apply",
+        "Senior ExecutivePublished: Sep 23, 2026Deadline: Sep 30, 2026",
+        "Senior Executive"
+      ],
+      "requestCount": 196,
+      "httpErrorsKnownT017": 160,
+      "verdict": "PASS"
+    },
+    {
+      "page": "/sustainability",
+      "viewport": "mobile-390",
+      "console": [],
+      "exceptions": [],
+      "nonGet": [],
+      "failed": [],
+      "httpErrors": [],
+      "navigateError": null,
+      "title": "Sustainability | Fashion Asia Limited",
+      "errorScreen": false,
+      "shots": [
+        "sustainability.mobile-390.01-top.png",
+        "sustainability.mobile-390.02-section.png"
+      ],
+      "sectionFound": true,
+      "sectionText": [
+        "FASHION ASIALimited",
+        "Reports & Publications",
+        "Our annual reports, audit certifications, and compliance documentation — published so buyers and stakeholders can verify what we claim.",
+        "Reports coming soon"
+      ],
+      "requestCount": 32,
+      "httpErrorsKnownT017": 0,
+      "verdict": "PASS"
+    },
+    {
+      "page": "/who-we-are",
+      "viewport": "mobile-390",
+      "console": [],
+      "exceptions": [],
+      "nonGet": [],
+      "failed": [],
+      "httpErrors": [],
+      "navigateError": null,
+      "title": "Who We Are | Fashion Asia Limited",
+      "errorScreen": false,
+      "shots": [
+        "who-we-are.mobile-390.01-top.png",
+        "who-we-are.mobile-390.02-section.png"
+      ],
+      "sectionFound": true,
+      "sectionText": [
+        "FASHION ASIALimited",
+        "Leadership",
+        "Fashion Asia Ltd. is guided by experienced industry leaders who bring decades of knowledge in garment manufacturing, strategic management, and global sourcing.",
+        "Leadership profiles coming soon",
+        "FASHION ASIALimited",
+        "A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh."
+      ],
+      "requestCount": 31,
+      "httpErrorsKnownT017": 0,
+      "verdict": "PASS"
+    },
+    {
+      "page": "/career",
+      "viewport": "mobile-390",
+      "console": [],
+      "exceptions": [],
+      "nonGet": [],
+      "failed": [],
+      "httpErrors": [],
+      "navigateError": null,
+      "title": "Career | Fashion Asia Limited",
+      "errorScreen": false,
+      "shots": [
+        "career.mobile-390.01-top.png",
+        "career.mobile-390.02-section.png"
+      ],
+      "sectionFound": true,
+      "sectionText": [
+        "FASHION ASIALimited",
+        "Open Positions",
+        "Click on a position to view details and apply",
+        "Senior ExecutivePublished: Sep 23, 2026Deadline: Sep 30, 2026",
+        "Senior Executive",
+        "Fashion Asia Limited",
+        "Submit Your Application",
+        "Don't see a position that fits? Send us your CV and we'll keep it on file."
+      ],
+      "requestCount": 22,
+      "httpErrorsKnownT017": 0,
+      "verdict": "PASS"
+    }
+  ]
+}

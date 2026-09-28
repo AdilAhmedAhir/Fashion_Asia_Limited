@@ -1384,3 +1384,400 @@ Merging doesn't reach production. SEC-HIGH-1 only closes on the live site when t
 - check WARN-1's icon hash;
 - `/devops` watches for the router-state-header error `/architect` flagged;
 - run the Manual Checklist above if it wasn't run before the deploy.
+
+---
+
+## Static Pass — T-015 — 2026-09-28
+
+**Dispatch:** `/qa static T-015`, then `/qa live` for T-015 in the same dispatch (Part 2 below), gated on zero 🔴 here. Dispatched by `/system-architect`. Branch `fix/T-015-admin-crud-errors`, base `b637a86` (`main` after T-006), entirely uncommitted. Chain so far: `/lead-dev` → `/cso` ✅ CLEARED (`docs/SECURITY.md`, `ticket-review:T-015`) → `/ui-ux` done. Everything below is re-derived from the code, the installed library source and this pass's own build, not taken from the earlier roles' notes.
+
+### Files reviewed
+- `src/app/actions/settings-actions.ts`: the T-015 region (`:227-428`) in full, plus imports.
+- `src/app/actions/jobs-actions.ts`: the full file.
+- `src/app/admin/(dashboard)/reports/ReportsClient.tsx`, `careers/CareersClient.tsx`, `who-we-are/WhoWeAreClient.tsx`: full files, plus each file's `HEAD` version for comparison.
+- `src/middleware.ts` and `src/lib/supabase/middleware.ts` (the session-expired path). T-015 doesn't change either.
+- `supabase-schema.sql`: the `reports`, `leaders` and `jobs` definitions.
+- **Installed library source:**
+  - Next 16.3.6: `server/app-render/action-handler.js` (body limit, forwarding), `manifests-singleton` (`selectWorkerForForwarding`), `build/templates/app-page-runtime.js`, `client/components/router-reducer/reducers/server-action-reducer.js`, `client/components/segment-cache/fetch.js`;
+  - `@supabase/postgrest-js` 2.112.2 (`maybeSingle`), `@supabase/auth-js` 2.112.2 (`getUser`), `@supabase/storage-js` 2.112.2 (`handleOperation`).
+- **Docs:** T-015 in `docs/ROADMAP.md` (7 acceptance bullets), the full `ticket-review:T-015` entry in `docs/SECURITY.md`, `docs/qa-evidence/T-015/ui-ux/contrast-and-methodology.log`, and both `/ui-ux` harness scripts.
+
+### Scope and hashes
+- **`git status`:** the 5 source files and `docs/SECURITY.md` (`/cso`'s entry) are modified. The only untracked path is `docs/qa-evidence/T-015/`. Nothing is staged.
+- **`git diff HEAD` is empty for:**
+  - `package.json`, `package-lock.json`, `next.config.ts`, `.env.example`;
+  - `src/middleware.ts`, `src/lib/`, `src/components/`, all of `src/app/(website)/`;
+  - `db/`, `supabase-schema.sql`;
+  - the other four action files and the three admin `page.tsx` loaders;
+  - `docs/ROADMAP.md`, `TECH_STACK.md` and `WORKFLOW.md`.
+- **Both server files match `/cso`'s pins byte for byte, so its clearance still holds:**
+  - `settings-actions.ts`: `8df471e36cde848dc33e1fb1d3089ad475cf67be3a4e0832664bdc5bf143526d`
+  - `jobs-actions.ts`: `628e5e74c4dca9259ef1e5a0d3ef0d0715a70e9c2b207656792a0603ac7f684f`
+- **The clients match `/ui-ux`'s post-pass hashes:** ReportsClient `a057e36e…`, CareersClient `a54ef388…`, WhoWeAreClient `168ff830…`.
+- Evidence: `docs/qa-evidence/T-015/static/sha256.log`.
+
+### Callers of the ten actions, enumerated independently
+A repo-wide grep (`src/`, `scripts/` and `db/`) found no barrel re-exports and no dynamic or namespace imports. It finds **8 call sites making 10 calls, all in the three reviewed clients.** That's the same census `/cso` reported; the line numbers moved with `/ui-ux`'s edits.
+
+| Call site | Action(s) | Handler |
+|---|---|---|
+| `ReportsClient.tsx:85` | `uploadFile` | `handleFileUpload` |
+| `ReportsClient.tsx:120` | `createReport` / `updateReport` | `handleSave` |
+| `ReportsClient.tsx:140` | `deleteReport` | `handleDelete` |
+| `CareersClient.tsx:66` | `createJob` / `updateJob` | `handleSave` |
+| `CareersClient.tsx:86` | `deleteJob` | `handleDelete` |
+| `WhoWeAreClient.tsx:70` | `createLeader` | `addLeader` |
+| `WhoWeAreClient.tsx:86` | `deleteLeader` | `removeLeader` |
+| `WhoWeAreClient.tsx:106` | `updateLeader` | `saveLeader` |
+
+Evidence: `static/callers.log`.
+
+### Mechanical check: the server contract and `/cso`'s four client rules
+`static/t015-static-invariants.mjs` runs on the project's own TypeScript compiler API. It adds no dependency and writes nothing. Against the real files: **162 assertions, 0 failures** (`static/t015-static-invariants.log`).
+
+**Negative control.** `static/negative-control.sh` copies the files to a temp dir and seeds 7 violations:
+- a `throw` in `deleteJob`;
+- a read before `createLeader`'s session check;
+- a reload before `.ok`;
+- a dropped `role="alert"`;
+- a `dangerouslySetInnerHTML`;
+- a new action import;
+- `uploadFile` called outside its `try`.
+
+The checker fails on all 7 (10 failing assertions, exit 1; `static/negative-control.log`). The clean result above is therefore not vacuous.
+
+**Server side (119 assertions).** For each of the ten functions:
+- It's an exported async function declared `Promise<ActionResult | UploadFileResult | JobActionResult>`, with **zero `throw` statements**.
+- Statements 1–3 are exactly `createClient()`, `requireUser(supabase)` and `if (!user) return { ok: false, error: SESSION_EXPIRED }`. The `getUser()` line comes before the first `.from`/`.storage` call and the first `formData.get`.
+- Every `return` is an `{ ok: true | false }` literal, and each `ok: false` carries `error`. Exactly one `ok: true` exists, and it's the last statement.
+- `uploadFile` returns `{ ok: true, url }`.
+- The six updates and deletes chain `.eq("id", id).select("id").maybeSingle()` and then `if (!data) return { ok: false, error: *_NOT_FOUND }`.
+
+Per module:
+- every value export is an async function (the `"use server"` rule);
+- `requireUser` isn't exported;
+- `SESSION_EXPIRED` is byte-identical to the precedent string. All 8 copies of that string in `src/` match.
+
+**Client side (42 assertions, plus the census).**
+- **Rule 1:** each of the 10 calls is awaited inside a `try`, bound to `result`, and that `try` branches on `.ok`. Each of the 6 `window.location.reload()` calls sits inside a `try`, after `if (!result.ok) { …; return; }`. No `catch` reloads, closes a modal or rethrows.
+- **Rule 2:** every error string renders as a JSX text child of `<p role="alert">`. The only attribute use is T-012's unchanged `SettingsHeader error={error}`.
+- **Rule 3:** the `@/app/actions/*` imports equal `HEAD`'s in all three files.
+- **Rule 4:** none of these appear:
+  - `dangerouslySetInnerHTML` or `srcDoc`;
+  - `innerHTML`, `outerHTML` or `insertAdjacentHTML`;
+  - `document.write` or `window.open`;
+  - `eval` or `new Function`;
+  - a `location` assignment;
+  - a data-fed `href`, `src`, `action` or `formAction`.
+- No `console.*` or `debugger`.
+
+**Result: `/cso`'s four client rules hold after `/ui-ux`'s edits.** `/ui-ux` reports only two changes that touch handler code: which fallback constant three `catch` branches pass, and a Replace label rendered conditionally off the existing `uploading` state. Both are copy or layout, which matches `/cso`'s className/layout/copy condition.
+
+### Acceptance bullets (`docs/ROADMAP.md`, T-015)
+
+| # | Bullet (abridged) | Verdict | Basis |
+|---|---|---|---|
+| 1 | All ten return `{ok:true,…} \| {ok:false,error}` for every expected failure and never throw for one. `uploadFile` returns its URL inside `ok` | ✅ | The checker finds zero `throw` and a typed literal on every return, and `tsc` enforces the declared unions. The library calls return their errors rather than throwing: postgrest-js returns `{ error }`; storage-js's `handleOperation` returns `StorageError`s; auth-js `getUser()` returns `AuthError`s, including a failed fetch, as `user: null`. Only a code bug could still throw, which the convention allows. |
+| 2 | `getUser()` runs before any read or write. No user returns the session-expired string | ✅ | Statement 2 in all ten, and before the first data call (e.g. `createReport` 276 < 285, `uploadFile` 414 < 423, `createJob` 90 < 93). |
+| 3 | An update or delete matching zero rows returns `{ok:false}` with a not-found message | ✅ | All six updates and deletes use `.select("id").maybeSingle()` plus `if (!data)`. In postgrest-js 2.112.2, `maybeSingle()` only sets a client-side flag: 0 rows gives `data: null`, so not found. This matches `products-actions.ts:267`. |
+| 4 | Every call site handles the result: `role="alert"` text, modal stays open with input intact, no reload. Success is unchanged. Reports and Careers gain error slots | ✅ (INFO-1 on wording) | Rules 1–2 above, plus a read of every handler (next section). |
+| 5 | `saveLeader` shows a visible message on failure | ✅ | `WhoWeAreClient.tsx:101-111`: the FormData is now built inside the `try`. `!ok` puts `result.error` in the card's alert, and a throw puts `GENERIC_ERROR` there. Success stays silent, as before. |
+| 6 | A failed report upload shows the real returned reason | 🟡 partly (WARN-1) | Every failure that reaches `uploadFile` shows `result.error` verbatim (`:92-93`). A PDF over the 1 MiB body limit never reaches it. |
+| 7 | `/qa live` on a production build; `tsc` and `build` clean | ✅ (static half) | Gate below. The production boot is Part 2. |
+
+### Failure paths never reload, and modals keep their input (read of every handler)
+- **Report and job saves** (`ReportsClient.tsx:108-133`, `CareersClient.tsx:59-79`):
+  - `!result.ok` sets the error and `return`s before `setModal(null)` and `reload()`. The `catch` only sets `GENERIC_ERROR`.
+  - No failure path writes the `modal` state, so every typed field survives.
+  - `closeModal` refuses while `isPending` (Reports also while `uploading`). The backdrop uses the same guard, and the X is `disabled` to match.
+- **Report upload** (`:75-106`): nothing in the function reloads.
+  - On success, `file_url` is set with a functional update, so text typed during the upload is kept. Before T-015, a stale closure reverted it.
+  - On failure, `modal` isn't touched (an attached file stays attached). Only the hidden file input is cleared, so the same file can be picked again.
+- **Deletes** (reports `:135-150`, jobs `:81-96`, leaders `:81-96`) and **`addLeader`** (`:65-79`) reload only after `ok`.
+- **`saveLeader`** never reloads, on any path (as before).
+- **React 19 check.**
+  - `setSaveError(null)` runs inside the async transition, so React defers it to the transition's end. `setSaveError(result.error)` comes after the `await` and commits at once.
+  - The update queue rebases in insertion order, so the final state is the error, not `null`.
+  - `/ui-ux`'s harness renders these alerts on React 19.2.4's production build, and Part 2 re-confirms it.
+  - The only side effect is `/ui-ux`'s F2: an identical repeated failure isn't re-announced.
+
+### Findings
+- 🟡 **WARN-1 — SEC-INFO-35: a report PDF over about 1 MB gets app text instead of a "real returned reason". Ruling: 🟡 for `/pm`, not blocking.** `ReportsClient.tsx:29, 95-96`.
+  - **Mechanism, traced in Next 16.3.6's source.**
+    - `action-handler.js:517-519` sets the default limit to exactly 1,048,576 bytes, counted over the whole multipart body: the file, React's encoding and the `"reports"` argument.
+    - `:666-677` raises `ApiError(413)` inside the body parser, before `uploadFile` is called, so nothing is written.
+    - `:943-963` returns the error to a fetch action as HTTP 500 with a rejected action result.
+    - `server-action-reducer.js` passes that rejection to the awaiting call, with no redirect and no navigation.
+  - **What the admin sees:** the `catch` shows `UPLOAD_ERROR`: **"Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again."** The file input is cleared, and an already-attached file stays attached.
+  - **Why it isn't blocking:**
+    - The admin never sees Next's redacted text or a false success, and the copy names the likeliest cause.
+    - The limit is pre-existing: a PDF over 1 MB has never been uploadable.
+    - Either fix is outside T-015's `/cso`-bound scope. A client-side `file.size` pre-check is new handler logic under `src/app/admin/**` (`/ui-ux` F4, needs `/cso`). Larger PDFs are a SEC-INFO-35 design question (signed upload URLs, `/architect` + `/cso`), and raising `bodySizeLimit` needs server-side validation in the same change.
+  - **Why it isn't 🟢:**
+    - The bullet is literally only partly met.
+    - Real annual-report PDFs are often over 1 MB, so this is plausibly the most common real failure on this control.
+    - The copy's "under 1 MB" is approximate: the cap is 1 MiB for the whole request.
+  - **For `/pm`:** one ticket for the pre-check, which shows the exact reason instantly without sending a request, and for the product question of whether reports over 1 MB must be supported. It fits alongside SEC-INFO-33's recommended `uploadFile` hardening ticket.
+- 🟢 **INFO-1 — acceptance bullet 4's literal wording.**
+  - The bullet says "the returned message, or T-012's generic fallback for a throw".
+  - Saves use T-012's string exactly. Delete, upload, add and remove use action-specific fallbacks: `/ui-ux`'s documented copy decision, because "saving these changes" misdescribes a delete.
+  - The same bullet asks for "visible, specific text next to the action that failed", which the specific copy serves better. It's satisfied in substance. `/pm` may reword the bullet when archiving.
+- 🟢 **INFO-2 — the realistic session-expired trigger reaches the action's own check through a forwarding hop, not directly.**
+  - **The chain:**
+    1. Signing out in a second tab clears the shared cookie.
+    2. The middleware has no method check (`src/lib/supabase/middleware.ts:24-28`), so it answers the action POST to `/admin/reports` with a 307 to `/admin/login`.
+    3. The client's plain `fetch` (`segment-cache/fetch.js`) follows the redirect with the method and body intact.
+    4. Action requests never use the static cache (`app-page-runtime.js:373`), so `/admin/login` handles the POST.
+    5. `/admin/login`'s worker doesn't hold the action, so Next forwards it to `Object.keys(workers)[0]`. In this build that's the public `/global-partner` page for the seven `settings-actions` writers and `/career` for the three job writers (`static/server-reference-manifest-workers.log`).
+    6. The middleware doesn't gate those routes, so the action runs, and its own `requireUser()` returns the session-expired text.
+  - **Consequences:**
+    - `/cso`'s step-7 expectation is right, but the route to it is fragile: it depends on manifest ordering and Next's forwarding. The manual checklist therefore records which text appears.
+    - Before T-015, this same path ran the write as `anon`, and RLS matched 0 rows. So `updateReport` returned success and the page reloaded to the login screen, silently dropping the edit. T-015's check turns that into the right message with the input kept.
+    - It's a concrete instance of SEC-MED-10's premise that admin actions can be called through public routes. There's no new exposure: every T-015 function checks the session first, and T-019's two media writers are the gap `/cso` already tracks.
+    - The same text would also appear if Supabase Auth were unreachable, because auth-js returns a failed fetch as `user: null`. That's T-012 precedent, and it fails closed.
+  - Code-traced only. Confirming it live needs a Server Action POST, which this Standard Plan forbids. Manual checklist step 7 covers it.
+- 🟢 **INFO-3 — Replace race, pre-existing (not a regression).**
+  - `/ui-ux` deliberately left Replace enabled during an upload, for focus reasons. The `HEAD` version never disabled it either.
+  - If a second PDF is picked while the first is still uploading, the first completion clears the shared `uploading` flag and re-enables Save.
+  - A Save clicked in that gap sends the first file's URL and reloads. The second file is then orphaned in Storage.
+  - It's narrow and recoverable (edit again). The fix is an in-flight counter or a per-upload sequence token: handler logic, so `/pm` + `/cso`.
+- 🟢 **INFO-4 — a stale leader-card error can outlive a later successful save.**
+  - Take two quick blur-saves of one leader, A then B. If A throws (a transient network error) and B succeeds, A's error stays in the card.
+  - B's success clears nothing, and its deferred clear is queued before A's error.
+  - This is conservative: it never shows a false success, and the next blur clears it. No action.
+- 🟢 **INFO-5 — only hand-edited rows make a handler misbehave.** `reports.published`, `leaders.sort_order` and `jobs.is_active` are nullable, although every app write stores a value.
+  - A `null` `published` throws in `ReportsClient.handleSave` before its `try` (`:114`, a pre-existing line), so that click fails silently. This is `/cso`'s note.
+  - A `null` `sort_order` now throws inside `saveLeader`'s `try`, so that card shows "…check your connection…" on every blur. Before T-015 it crashed the page.
+  - `jobs.is_active` is safe, because it goes through `String(v ?? "")`.
+  - Only SQL-editor edits reach these. No action.
+- 🟢 **INFO-6 — raw database text now reaches admins in production.** This is the SEC-MED-8 class, already ticketed as T-018. Code-traced example from ordinary use:
+  - Clear the Reports modal's Year field and save.
+  - The client sends `"NaN"`; `parseInt` gives `NaN`, which JSON-encodes as `null`.
+  - The admin then sees Postgres's not-null-violation text for `year`.
+
+  That's accurate but technical, and it's a ready T-018 repro. Before T-015, production redacted it to nothing.
+- 🟢 **INFO-7 — no test runner exists** (`docs/TECH_STACK.md`). This ticket's saved, re-runnable regression checks are the static checker with its negative control, and Part 2's stubbed-actions behavior driver.
+
+Carried forward, status only: `/cso`'s "failed reads show as empty lists" (`getReports`, `getJobs` and `getLeaders` fail open) and `/ui-ux`'s F1–F6 and P1–P5 remain `/pm` items.
+
+### Gate (re-run this pass, in place)
+- **`npx tsc --noEmit`:** exit 0. Re-run with `--incremental false`: exit 0. `--listFiles` shows all 5 changed files among the 83 `src/` files checked (29,078 types). Logs: `static/tsc.log`, `static/tsc-nocache.log`.
+- **`npm run build`:** exit 0.
+  - `Next.js 16.3.6 (Turbopack)`, "Compiled successfully", TypeScript finished, 25/25 static pages.
+  - The same 28-line route table as T-006. The only notice is the pre-existing `middleware` → `proxy` deprecation. Log: `static/build.log`.
+  - The compile took 1.1 s from Turbopack's cache, so I checked the output is this tree's code: the client chunks contain `/ui-ux`'s new strings (e.g. "Files must be under 1 MB", "Couldn't delete this job posting"), and the server chunks contain the three new not-found strings.
+- **`npm run lint`:** not run. It's excluded under WORKFLOW §4 (Known Trap #10).
+
+### WORKFLOW §5 hygiene (re-run myself)
+- **Secrets:** no `.env*` file is staged or changed. A secret-shape grep over the added lines of the `src/` diff found 0 hits. It covered `sk_live_`, `ghp_`/`gho_`/`github_pat_`, the AWS key shape, `service_role`, `eyJhbGci`, PEM headers, hard-coded password and API-key assignments, and `supabase.co` hosts.
+- **Lockfile:** no churn; the `package.json` and `package-lock.json` diffs are empty.
+- **Debug statements:** none in the diff (grep plus the checker).
+- **Commented-out code:** none. A grep for code-shaped `//` and JSX comments in the added lines found 0, and full reads show every comment is prose.
+- **Auth, RLS and middleware matcher:** none weakened. `src/middleware.ts`, `src/lib/supabase/`, `supabase-schema.sql` and `db/` are untouched, and the diff adds ten session checks.
+- **`/cso` sign-off:** present (`ticket-review:T-015`), and its hash binding still holds.
+- No schema change. Not a docs-only ticket.
+
+### Verdict
+✅ **Static Pass.** Zero 🔴, one 🟡, seven 🟢.
+- **Server:** all ten functions return typed results with no `throw`, check the session first and report zero-row writes as not-found. 119 mechanical assertions pass, both files match `/cso`'s pins, and a negative control proves the checks can fail.
+- **Clients:**
+  - `/cso`'s four rules hold after `/ui-ux`'s edits.
+  - Failure paths never reload, and modals keep their input.
+  - `saveLeader` and the upload surface the real returned reason.
+  - The one gap is SEC-INFO-35's PDFs over 1 MB, which get honest app copy instead (WARN-1, `/pm`, non-blocking).
+- **Gate:** `tsc` and `build` are clean.
+
+**Zero 🔴, so proceeding to Part 2 (Live).**
+
+## Live Pass — T-015 — 2026-09-28
+
+**Dispatch:** `/qa live` for T-015, in the same dispatch as the Static Pass above and gated on its zero 🔴. A pre-approved Standard Plan, read-only:
+- GET and HEAD via `curl`;
+- header inspection;
+- headless-Chrome screenshots of public pages;
+- re-running `/ui-ux`'s stubbed-actions harness, with no network and no Supabase.
+
+**What I didn't do.** No login, form submission, admin save, upload or Server Action POST of any kind, and no write to the live Supabase project.
+- Every request to :3001 and to production was an anonymous GET or HEAD: a `curl` call or a headless-Chrome page load. The capture recorded 0 non-GET requests.
+- Production (`https://www.fal.com.bd`, `e8eace1`) received one anonymous GET each of `/sustainability`, `/who-we-are` and `/career`, for the baseline diff.
+- The :3001 server's own renders made the same anonymous Supabase reads that every public visitor triggers.
+- The harness and behavior runs loaded `file://` pages with stubbed actions, and all http(s) was blocked. There were 0 attempts.
+
+**Servers.** No server was running for this checkout when the pass started.
+- I ran exactly `npm run build && npm start -- -p 3001`, issued at 17:24:42Z. It served as `next-server (v16.3.6)`, PID 40768.
+- I stopped it at 17:37:44Z. `lsof` shows no listener on :3001, `curl` returns `000`, and no launcher or `next` process is left.
+- The unrelated `Start_Daily_HQ` server on :3311 ran throughout, and I didn't touch it.
+- One throwaway Chrome profile from my first capture run remains in the OS temp dir (`/var/folders/…/T/t015-qa-chrome-XhfKMd`). Deleting it outside the session scratchpad was denied, so it's left for the OS to clean up. Nothing is left in the repo.
+
+### Browser / runner
+No E2E runner is installed (`docs/TECH_STACK.md`). I used `curl` for HTTP, and headless Google Chrome 153.0.8010.53 driven over the raw DevTools Protocol, through Node's built-in WebSocket. The driver scripts are saved with the evidence, and nothing was added to `package.json`.
+
+### Flows
+
+| # | Flow | Verdict | Evidence (`docs/qa-evidence/T-015/…`) | Console errors | Failed requests |
+|---|---|---|---|---|---|
+| 1 | Production build and boot on :3001 | ✅ | `production-server/next-build-and-start-3001.log` | n/a | 0 server errors or warnings |
+| 2 | Anonymous admin gate: `/admin/reports`, `/admin/careers`, `/admin/who-we-are` × 5 transports, plus `/admin/login` | ✅ 16/16 | `admin-auth-gate/summary.tsv`, one `.log` per probe, `probe.sh` | n/a (HTTP) | 0 |
+| 3 | Public pages vs production: `/sustainability`, `/who-we-are`, `/career` | ✅ 3/3 | `public-vs-production/summary.tsv`, `*.content.diff`, `*.content.txt`, `*.data-rows.txt`, `*.headers.log`, `compare.py` | n/a (HTTP) | 0 |
+| 4 | Public render checks: 3 pages × 1440 px and 390 px | ✅ 6/6 | `public-screenshots/*.png`, `report.json`, `cdp-public.mjs` | 0 | 0 unexpected (the 160 known T-017 frame 404s on each desktop load) |
+| 5 | `/ui-ux` harness re-run (stubbed actions) | ✅ 10/10 scenarios, 0 differing values | `ui-ux-harness-rerun/results.json`, `comparison.log` | 0 page errors | 0 (`file://`, no network) |
+| 6 | Behavior driver: all 8 call sites on failure, throw and success | ✅ 30/30. Negative control on the pre-T-015 clients: 8/30 | `behavior/01…18-*.png`, `results.json`, `run-after.log`, `negative-control-pre-T015.{log,results.json}`, `t015-behavior.mjs` | 0 | 0 http(s) attempts (all blocked) |
+
+### Flow detail
+
+**1. Production build.** The build banner reads `Next.js 16.3.6 (Turbopack)`, with the same 28-line route table as the Static Pass. `next start` reports `▲ Next.js 16.3.6`, ready in 70 ms. The server log has no error, warning or exception line for the whole pass, apart from the known `middleware` → `proxy` notice.
+
+**2. Admin gate.** All requests were anonymous `curl` calls, with no cookie jar and no redirect following.
+- **15/15 probes pass:** each of the three T-015 routes was probed five ways: plain GET, HEAD, `RSC: 1`, `RSC: 1` plus `Next-Router-Prefetch: 1`, and `?_rsc=`. Every one returned **`307` with `location: /admin/login`, 0 `Set-Cookie`**, a 12-byte body (`/admin/login`), and none of the admin-only strings (e.g. "Publish New Report", "Post New Job", "Leadership Team").
+- **`/admin/login`** returns `200`, with 0 `Set-Cookie` and no error-screen text.
+- T-015 changes no gate file, and none of these routes shows a regression.
+
+**3. Public pages vs production.** Each page was fetched from :3001 and from production back to back. Each response was normalized to what a visitor gets, then diffed: title, meta/OG/canonical tags, headings, link targets, image and video sources and alts, and every visible text line. Scripts and the flight payload were excluded.
+- **Status:** all three return `200` on both sides, with 0 `Set-Cookie` and none of the error-screen strings.
+- **The only diff on each page** is the icon links' cache-buster query (`?icon.0cdd14b0.png` → `?icon.2v7xyt03774y8.png`, and the same for `apple-icon`). That's T-006 INFO-6 (the Next bump), and it goes away on the next deploy.
+- **The data rows T-015's admin pages feed are identical:**
+  - `/sustainability` shows "Reports coming soon" on both sides, so no report is published live;
+  - `/who-we-are` shows "Leadership profiles coming soon" on both sides;
+  - `/career` lists the same single posting ("Senior Executive").
+- **Caveat.** The three public reads fail open to `[]` (`/cso`'s note), so "coming soon" on both sides can't tell "no rows" from "read failed". The match is exact, though, and T-015 doesn't touch the read functions.
+
+**4. Public render checks.** 6/6 page loads pass (3 pages × 1440 px and 390 px):
+- the correct titles and no error-screen text;
+- 0 console errors, 0 exceptions, 0 non-GET requests and 0 failed requests;
+- the only 4xx responses are the 160 known T-017 hero-frame 404s on each desktop load.
+
+The section screenshots show the reports, leadership and open-positions sections rendering: `sustainability.desktop-1440.02-section.png`, `who-we-are.desktop-1440.02-section.png`, `career.desktop-1440.02-section.png`.
+
+**5. `/ui-ux` harness re-run.** I ran byte-identical copies of `build.mjs` and `run.mjs` from the session scratchpad. `build.mjs` writes next to itself, so running it in place would have written into `docs/`.
+- 10/10 scenarios ran, with 0 page errors.
+- Compared field by field with `/ui-ux`'s saved `measurements-after*.json`, **0 values differ**: every rect, contrast ratio, alert text, focus result and scroll measurement matches.
+- This reproduces `/ui-ux`'s results on the final client files.
+
+**6. Behavior driver (`behavior/t015-behavior.mjs`).** This covers what the `/ui-ux` harness doesn't measure: reloads, kept input, and the exact text at each of the 8 call sites.
+- **Setup:** the real clients run on React 19.2.4's production build with `/ui-ux`'s stubbed actions. The stub exports are wrapped in the page, so every assertion includes what the action was actually sent. A reload is detected by counting main-frame navigations and by a window marker.
+- **Result: 30/30 on the working tree.**
+- **Every failure** (`{ok:false}` or a throw, at every call site) shows:
+  - the exact expected alert text: the action's own text for `ok:false`, or that call site's fallback for a throw;
+  - **no reload**;
+  - the modal still open with the typed input intact (the leaders' typed fields intact);
+  - exactly one action call, carrying the typed value.
+
+  Screenshots `01`–`18` show each alert where it renders.
+- **Upload:**
+  - A returned reason shows verbatim (`04`).
+  - A throw, which is the path an over-1 MB PDF takes, shows `UPLOAD_ERROR` (`05`).
+  - A failed Replace keeps the file already attached (`06`).
+  - The input is cleared for a retry, and Save stays enabled.
+  - A successful upload keeps text typed while it ran, and the next Save sends that text.
+- **Modal and success paths:**
+  - The modal can't be dismissed by the backdrop or the X while a save is in flight, and the failure then shows inside it.
+  - Success paths reload exactly as before.
+  - A successful leader blur-save stays silent, and a retry that succeeds clears that leader's alert.
+- **No native `alert()`** dialog appears on any path. The driver would record one as a failure.
+- **INFO-3 and INFO-4 both reproduce as described:**
+  - Replace race: Save stayed enabled while the second upload was in flight, and the save sent `upload-1.pdf`.
+  - Stale leader error: "Something went wrong…" stayed after the later successful save.
+- **Negative control.** The same 30 scenarios against the pre-T-015 `HEAD` clients (built into the harness's "before" slot) give **8/30**. The only passes are the success-path reloads, the silent leader save and the two always-run demos. The failures show the original bugs directly:
+  - an `{ok:false}` save reloaded the page;
+  - a thrown save tore down the page, with an uncaught "An error occurred in the Server Components render…";
+  - a thrown upload raised a native `alert()` containing that redacted text;
+  - text typed during an upload was reverted.
+
+  It also shows the halves must ship together: T-015's new server contract makes the old client display an `{ok:false}` upload as an attached file. The single T-015 merge guarantees they ship together.
+
+### Evidence secret-scan
+All of `docs/qa-evidence/T-015/` was scanned: 118 files, including `/ui-ux`'s.
+- **0 hits** for `sk_live_`/`sk_test_`, `ghp_`/`gho_`/`github_pat_`, the AWS key shape, `service_role`, JWT shapes (`eyJhbGci`, `eyJ…`), PEM headers, access/refresh tokens, `sb-*-auth-token`, bearer headers, anon-key assignments, and hard-coded password/API-key assignments.
+- **0 `Set-Cookie` headers** in any transcript.
+- The PNGs are screenshots of public pages and of the stubbed harness.
+
+### Saved specs
+There's no test runner, so these are the re-runnable checks:
+- `static/t015-static-invariants.mjs`, with `static/negative-control.sh`;
+- `admin-auth-gate/probe.sh` and `public-vs-production/compare.py` (need a running server);
+- `public-screenshots/cdp-public.mjs`;
+- `behavior/t015-behavior.mjs`. To run it:
+  1. Copy `ui-ux/harness/*.mjs` to a scratch directory.
+  2. Run `node build.mjs after` there.
+  3. Run `node t015-behavior.mjs <that dir> <out-dir> [after|before]`.
+
+### Self-check (live)
+- Every flow has at least one evidence file at an assertion point. ✅
+- The working tree had no failures to capture; the negative control's failures are captured. ✅
+- The specs are saved. ✅
+- No test data was written. ✅
+- Every dynamic check ran against :3001 or `file://`. Production received only the three read-only GETs the dispatch specified for the baseline. ✅
+
+### Verdict
+✅ **Live Pass.** All 6 flows pass, with zero 🔴 and zero failed flows.
+- **Gate and public pages:** a genuine `next start` production boot serves the three admin routes behind an anonymous 307 to `/admin/login` with no cookie. The three public pages T-015's tables feed match live production apart from the known icon query, and render with no error screen, no console error and no non-GET request.
+- **Harness:** `/ui-ux`'s harness reproduces exactly.
+- **Behavior:** a 30-scenario driver on the real clients shows failure paths never reload, modals and fields keep their input, and every call site shows the right text. Its negative control proves the checks fail on the pre-T-015 code.
+
+Admin writes against the live database remain for the user's manual checklist below (`docs/WORKFLOW.md` §4/§7).
+
+## Manual Checklist — T-015
+
+**For the user.** T-015 changes what `/admin/reports`, `/admin/careers` and `/admin/who-we-are` do when a save, delete, add or upload fails. No agent may sign in or write (`docs/WORKFLOW.md` §4/§7), so these steps are yours.
+
+**Where to run it.** Use either of these:
+- A production build of `main` after T-015 merges (`npm run build && npm start`).
+- The live site, straight after you type "deploy".
+
+Don't use `npm run dev`: it shows real error messages even where production hides them, and this ticket's bug only showed in production. Until you deploy, the live site still runs the old code, which fails silently. It takes about 20–25 minutes.
+
+### Before you start
+- **Every step writes to your live database, even from localhost** (`docs/MEMORY_BANK.md` Known Trap #3).
+  - Create only test rows named **`TEST — T-015 — delete me`**.
+  - Finish the Cleanup section in the same sitting.
+- **What's public right now** (a read-only check today, Live Pass flow 3):
+  - The live `/sustainability` shows "Reports coming soon", because no report is published.
+  - `/who-we-are` shows "Leadership profiles coming soon".
+  - `/career` lists one posting, "Senior Executive".
+  
+  So a test report you tick **Published** is the *only* report on the live `/sustainability` until you untick it. A test job you tick **Active** appears on the live `/career`. Keep those windows short (step 3), and never leave a test row Published or Active.
+- **Leaders.** A leader stays off the public site only while its Name is exactly `New Leader` **and** its Title is exactly `Title` (`src/lib/site-content.ts:748-752`). Changing either one publishes the card on the live `/who-we-are`. In every leader step, **edit only the Bio**.
+- **Two PDFs:** one **under 1 MB** and one **over 1.1 MB**. Finder → Get Info shows the size.
+- **Tabs:** in step 6 you'll use four tabs of the same browser window, all signed in to the admin.
+- **What should never appear, in any step:** a blank page, a generic error screen, a browser pop-up, or the text "An error occurred in the Server Components render…". Any of those is a ❌.
+- **If any step shows "row-level security"** (e.g. "new row violates row-level security policy"), stop that step. Note the page and step number and report it to `/cso` (row 8). Don't change any Supabase policy by hand.
+
+| # | Step | Action | Expected result | Pass/Fail |
+|---|---|---|---|---|
+| 1 | Draft and Closed rows are listed | On `/admin/reports`, click **Publish New Report**. Enter the title `TEST — T-015 — delete me`, leave **Published** unticked, and click **Publish Report** (it says "Publish" even for a draft). On `/admin/careers`, click **Post New Job**. Enter the title `TEST — T-015 — delete me`, untick **Active**, and click **Post Job**. | Each save reloads the page, and the new row appears in its list marked **Draft** or **Closed**. If a row you just created is missing from its list, report it to `/cso`: a narrower database policy may be hiding drafts. | |
+| 2 | Edit a Draft and a Closed row | Edit the Draft test report, change its title to `TEST — T-015 — edited`, and click **Save Changes**. Do the same for the Closed test job. | Each save reloads the page and shows the new title. No "not found" text appears. | |
+| 3 | Toggle Draft ↔ Published and Closed ↔ Active | Test report: tick **Published** and save, then straight away untick it and save. Test job: tick **Active** and save, then straight away untick it and save. | All four saves succeed with no red text. Each row is briefly public between the two saves of its pair. Afterwards they're **Draft** and **Closed** again. | |
+| 4 | Leaders: add, then edit on blur | On `/admin/who-we-are` → **Leadership Team**, click **Add Leader**. In the new `New Leader` card (the last one), type `TEST — T-015 — delete me` into **Bio** only, then click outside the box. Reload the page. | **Add Leader** reloads the page and adds a card with the banner "Not shown on the site yet". The Bio edit shows no red text, and your Bio text is still there after the reload. The live `/who-we-are` still says "Leadership profiles coming soon". | |
+| 5 | Upload: a small PDF, then one over 1 MB | Open the Draft test report's Edit modal. Click **Click to upload PDF file** and choose the **under-1 MB** PDF. Then click **Replace** and choose the **over-1.1 MB** PDF. Then click **Save Changes**. | **Small PDF:** its file name appears next to **Replace**, with no red text. **Large PDF:** red text under the upload control reads exactly *"Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again."* The small PDF stays attached, the modal stays open, and no pop-up appears. Nothing is uploaded for the large file. That's the known 1 MB limit (QA WARN-1), not a T-015 failure. **Save:** succeeds with the small PDF and reloads. | |
+| 6a | Session expired: Reports | Open four tabs: `/admin/reports`, `/admin/careers`, `/admin/who-we-are`, and any admin page ("tab B"). In the Reports tab, open the test report's Edit modal and change the title to `TEST — T-015 — session`, but don't save. In tab B, click **Sign out**. Back in the Reports tab: click **Save Changes**. Then choose the small PDF in the upload control. Then close the modal and click the test report's delete icon. | Each of the three attempts shows red text next to that control: **"Your session expired. Sign in again and retry."** The modal keeps your typed title until you close it. Nothing reloads, and nothing is saved, uploaded or deleted. If you see "…Check your connection and try again." instead, the failure is still handled, but note which text you saw (QA INFO-2). | |
+| 6b | Session expired: Careers | In the Careers tab, click the test job's delete icon. Then open its Edit modal, change the title to `TEST — T-015 — retry`, and click **Save Changes**. **Leave this modal open.** | Both attempts show the same session-expired text: under the job's row for the delete, and above **Save Changes** for the save. The typed title stays, and nothing reloads. | |
+| 6c | Session expired: Leaders | In the Who We Are tab, change the test leader's **Bio** and click outside it. Click **Add Leader**. Then click the test leader's delete icon. | Each attempt shows the session-expired text: in that leader's card for the Bio edit and the delete, and under **Add Leader** for the add. Your Bio text stays, and no card is added or removed. | |
+| 6d | Retry after signing in again | Sign in again in tab B. Go back to the Careers tab, where the modal is still open, and click **Save Changes**. | It saves and reloads, and the list shows `TEST — T-015 — retry`. Kept input can be retried after signing in, without retyping. | |
+| 7 | Delete in one tab, then save in another ("not found") | Open `/admin/reports` in two tabs, X and Y. In X, delete the test report (it reloads and the row is gone). In Y, where the row still shows, open its Edit modal, change the title, and click **Save Changes**. Repeat with two tabs of `/admin/careers` and the test job. Then with two tabs of `/admin/who-we-are`: remove the test leader in X, and in Y edit that card's **Bio** and click outside. | The deletes in X succeed. In Y you see, at the control you used: *"Report not found. Reload the page to see the current list."*, *"Job posting not found. Reload the page to see the current list."*, and *"Leader not found. Reload the page to see the current list."* The modal stays open with your typed text, and nothing reloads. | |
+| 8 | No row-level-security text | Think back over steps 1–7. | "row-level security" never appeared. If it did, send `/cso` the page, the step and the exact text. | |
+
+### Cleanup (same sitting)
+- None of the three admin lists has a row whose name starts with `TEST — T-015`. Step 7 deletes them. If it didn't, delete them now with the delete icon: each delete reloads the page and the row is gone.
+- The live `/sustainability` still says "Reports coming soon", `/career` still lists only "Senior Executive", and `/who-we-are` still says "Leadership profiles coming soon".
+- **Optional:** the small test PDF stays in your public `reports` storage bucket, because deleting a report doesn't delete its file. To remove it, go to Supabase → Storage → `reports`: it's the newest file, named `<number>_<random>.pdf`.
+
+**Report back per row.**
+- Any ❌ on rows 5–7 reopens T-015 for `/lead-dev`: no red text, a page reload, lost typed input, or a generic error screen.
+- A missing Draft/Closed row in row 1, or any "row-level security" text, goes to `/cso`.
+- Seeing "…check your connection…" instead of "Your session expired…" in rows 6a–6c is a ✅ for T-015; just tell QA which text appeared.
+
+This checklist isn't a merge blocker, following the §4/§7 precedent for every manual checklist this sprint. Run it on a production build of `main` before you deploy, or on the live site right after.
+
+### Handoff Contract
+
+✅ **QA Cleared.** Static Pass ✅ and Live Pass ✅, with zero 🔴 across both. Run: `/git Merge T-015 to main per WORKFLOW §6.`
+- §10 is inert, since no `docs/MARKETING.md` exists, so no marketing-review chain inserts here.
+- `/cso`'s clearance still holds: both server files match its sha256 pins. If either changes before the merge, the clearance lapses and `/cso` re-reviews.
+- Stage `docs/qa-evidence/T-015/` with the merge.
+- No commit was made and no source file was edited by this pass.
+
+**Carry-forwards:**
+- **`/pm`:** WARN-1 (SEC-INFO-35). It needs a client-side `file.size` pre-check, and the product question of whether report PDFs over 1 MB must be supported (signed upload URLs, `/architect` + `/cso`). It fits alongside SEC-INFO-33's `uploadFile` hardening ticket.
+- **`/pm` + `/cso`:** INFO-3, the pre-existing Replace race. It's handler logic.
+- **`/archivist`:** INFO-2's forwarding trace. The session-expired text reaches admins through a public route's worker, which is a concrete instance of SEC-MED-10's premise.
+- **Deploy:** SEC-HIGH-5 stays live in production until the user types "deploy" for a `main` that contains this merge.

@@ -1,0 +1,16 @@
+# 2026-09-28T17:25:11Z  anonymous head  http://localhost:3001/admin/reports
+# curl -I (no cookie jar, no -L)
+HTTP/1.1 307 Temporary Redirect
+location: /admin/login
+Date: Mon, 28 Sep 2026 17:25:11 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# body: 143 bytes; admin-only markers found: 0
+# body> HTTP/1.1 307 Temporary Redirect
+# body> location: /admin/login
+# body> Date: Mon, 28 Sep 2026 17:25:11 GMT
+# body> Connection: keep-alive
+# body> Keep-Alive: timeout=5
+# body> 
+

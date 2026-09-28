@@ -50,6 +50,33 @@ function formToPayload(fd: FormData) {
     };
 }
 
+// T-015 (docs/SECURITY.md SEC-HIGH-5 + SEC-MED-10). The three writes below
+// follow docs/TECH_STACK.md's "Server Action failure-reporting convention":
+// every expected failure (no session, not found, a reported Supabase error)
+// is RETURNED as {ok:false, error}, never thrown. Next.js redacts a thrown
+// Server Action message in production, so a throw reached the admin as
+// nothing useful. Same shape as products-actions.ts's ProductVoidResult.
+// Every caller must check `.ok`.
+export type JobActionResult = { ok: true } | { ok: false; error: string };
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+// Byte-for-byte the string updateSettings and products-actions.ts return.
+const SESSION_EXPIRED = "Your session expired. Sign in again and retry.";
+const JOB_NOT_FOUND = "Job posting not found. Reload the page to see the current list.";
+
+// Every write action checks for an authenticated session server-side, in
+// addition to RLS. An exported "use server" function can be called by its
+// action ID from anywhere, not only from /admin/careers, so the middleware's
+// /admin page gate doesn't protect it. Same helper as products-actions.ts's
+// requireUser(); it runs before any read or write.
+async function requireUser(supabase: SupabaseServerClient) {
+    const {
+        data: { user }
+    } = await supabase.auth.getUser();
+    return user;
+}
+
 export async function getJobs(activeOnly = false): Promise<Job[]> {
     const supabase = await createClient();
     let query = supabase.from("jobs").select("*").order("created_at", { ascending: false });
@@ -58,26 +85,55 @@ export async function getJobs(activeOnly = false): Promise<Job[]> {
     return (data as Job[]) || [];
 }
 
-export async function createJob(formData: FormData) {
+export async function createJob(formData: FormData): Promise<JobActionResult> {
     const supabase = await createClient();
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
     const { error } = await supabase.from("jobs").insert(formToPayload(formData));
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false, error: error.message };
     revalidatePath("/admin/careers");
     revalidatePath("/career");
+    return { ok: true };
 }
 
-export async function updateJob(id: string, formData: FormData) {
+// Updates and deletes ask for the affected row's id back (`.select("id")`) so
+// that matching zero rows (deleted in another tab, or a stale id) is reported
+// as not-found instead of succeeding silently. Same check as
+// products-actions.ts's deleteCategoryProduct. RLS-neutral: the `.eq("id")`
+// filter already makes Postgres apply the table's SELECT policies to these
+// rows, so returning the id asks for nothing new.
+export async function updateJob(id: string, formData: FormData): Promise<JobActionResult> {
     const supabase = await createClient();
-    const { error } = await supabase.from("jobs").update(formToPayload(formData)).eq("id", id);
-    if (error) throw new Error(error.message);
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
+    if (!id) return { ok: false, error: "Missing job posting id." };
+
+    const { data, error } = await supabase
+        .from("jobs")
+        .update(formToPayload(formData))
+        .eq("id", id)
+        .select("id")
+        .maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: JOB_NOT_FOUND };
     revalidatePath("/admin/careers");
     revalidatePath("/career");
+    return { ok: true };
 }
 
-export async function deleteJob(id: string) {
+export async function deleteJob(id: string): Promise<JobActionResult> {
     const supabase = await createClient();
-    const { error } = await supabase.from("jobs").delete().eq("id", id);
-    if (error) throw new Error(error.message);
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
+    if (!id) return { ok: false, error: "Missing job posting id." };
+
+    const { data, error } = await supabase.from("jobs").delete().eq("id", id).select("id").maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: JOB_NOT_FOUND };
     revalidatePath("/admin/careers");
     revalidatePath("/career");
+    return { ok: true };
 }

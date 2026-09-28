@@ -1,0 +1,13 @@
+{
+  "variant": "after",
+  "when": "2026-09-28T17:03:44.627Z",
+  "scenarios": {
+    "shiftTabAfterFailure": {
+      "during": "BODY",
+      "after": "BODY",
+      "shiftTab": "input.h-4.w-4.rounded.border-white/20.bg-black.accent-primary",
+      "shiftTab2": "button.flex.items-center.justify-center.gap-3.rounded-lg.border \"Click to upload PDF file\"",
+      "pageErrors": []
+    }
+  }
+}

@@ -1,0 +1,353 @@
+T-015 — /ui-ux pass, 2026-09-28 (dispatched by /system-architect)
+Branch fix/T-015-admin-crud-errors, base b637a86, uncommitted working tree.
+
+Files edited (the three the dispatch allowed; leader UI only in WhoWeAreClient):
+  src/app/admin/(dashboard)/reports/ReportsClient.tsx
+  src/app/admin/(dashboard)/careers/CareersClient.tsx
+  src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx
+Not touched: both server files (byte-identical to /cso's pins, section 9),
+SettingsForm.tsx, globals.css, every other file. WhoWeAreClient's page-level
+save()/updateSettings path (T-012) is unchanged.
+
+=========================================================================
+0. METHOD — the real components, not a hand-copied repro
+=========================================================================
+
+No /admin session is available to any agent, so nothing here is a live
+capture. Unlike the T-012/T-004 passes (markup hand-translated into static
+HTML), this pass ran the ACTUAL code in headless Chrome:
+
+  - ReportsClient, CareersClient, WhoWeAreClient, the dashboard layout,
+    SettingsForm, ImageUploadField, site-content and upload-limits were
+    transpiled from the working tree with the project's own TypeScript
+    (transpileModule, react-jsx) and run on React 19.2.4's production CJS
+    builds and lucide-react 0.575.0 from node_modules.
+  - Stubbed at the network edge only: the four "use server" modules (each
+    action returns a controllable {ok:true} / {ok:false, error} / throw,
+    and can be held in flight), next/link (plain <a>), BrandLogo (a
+    same-size box instead of next/image).
+  - CSS: the project's tailwind.config.ts + src/app/globals.css compiled with
+    the installed Tailwind 3.4.19 CLI (content globs from the project root,
+    as in `next build`). Fonts: the self-hosted Inter / Playfair Display
+    woff2 files from .next/static/media plus next/font's metric-matched
+    fallbacks, so text wraps as in the app.
+  - Driven over raw CDP (Node's built-in WebSocket; no Playwright or
+    Puppeteer), Chrome launched with --force-color-profile=srgb so sampled
+    pixels equal CSS colors. Clicks, Enter/Tab/Shift+Tab/Escape key events,
+    real file-input uploads (DOM.setFileInputFiles), typing (insertText),
+    hover (mouseMoved).
+  - Two builds, same scenarios: BEFORE = /lead-dev's three files (snapshot,
+    sha256 27fc7aed / a68b5f94 / 550a5126, i.e. /cso's reviewed baseline);
+    AFTER = this pass's files.
+  - No server started, no Supabase request, nothing written to the project
+    except this folder. Harness source: ./harness/build.mjs, ./harness/run.mjs.
+    Raw numbers: ./measurements-before.json, ./measurements-after.json.
+
+Overflow is measured per element, not from the document: html and body are
+`overflow-x: clip` (globals.css), so document scrollWidth equals clientWidth
+at every width in BOTH builds even while content is being cut off. "No
+horizontal scroll" was always trivially true; the real question is whether
+anything is clipped out of reach.
+
+=========================================================================
+1. PLACEMENT — item 1
+=========================================================================
+
+Every slot sits at the control that failed and is visible without scrolling
+on a laptop, once the admin has done what triggers it:
+
+  Reports modal, both errors showing (upload + save), panel 608px:
+    1366x657  panel y 24..633   both fully visible, Save on screen
+    1280x632  panel y 12..620   both fully visible, Save on screen
+    1024x768 / 768x1024 / 360x740 (654px): same
+  Careers modal (scrolls; admin scrolled to Save and clicked it): the error
+    above Save is fully visible at every size; Save stays partly in view and
+    clickable (45 of 48px on laptops, 23 of 48px at 360px) because the new
+    line pushes it down. Placing it below Save would put it off-screen.
+  Table delete rows: directly under the row. Leader cards: bottom of the
+    card, next to Remove, shared by that card's save and delete. Add Leader:
+    directly under the button.
+
+Screen readers: each slot is <p role="alert">, conditionally mounted, so it
+is announced on insertion and on any change of text. With no error, no
+role="alert" node exists (checked in every idle state; e.g. after a
+successful upload the alert list is []). No empty live region anywhere.
+
+Found and fixed:
+  a) TABLES CLIPPED THE DELETE BUTTON AND ITS ERROR (pre-existing clipping,
+     new consequence). The tables need 682px (Reports) / 687px (Careers).
+     The card was overflow-hidden:
+       360px  card shows 294px  -> Year, Status, Actions cut off
+       768px  card shows 414px  -> Status, Actions cut off
+       1024px card shows 670px  -> 12/17px of padding cut, Delete visible
+     overflow:hidden gives no scrollbar and ignores wheel/touch, so below
+     ~1030px a mouse or touch user could not reach Delete at all (only Tab
+     focus scrolled it into view), and the new delete error was laid out at
+     the table's full width and cut mid-sentence (lines to x=512 against a
+     visible edge at 327 on a phone; see 01, 02).
+     Fix: the card scrolls (overflow-x-auto) and is a size container; the
+     error is `sticky left-6` with max-width calc(100cqw - 3rem), i.e. pinned
+     to the card's visible left edge and wrapped to its VISIBLE width.
+     Measured AFTER, error lines vs visible box:
+       360px  unscrolled 57..312 in 33..327 | scrolled 388px to Delete: same
+       768px  unscrolled 329..687 in 305..719 | scrolled 268px: same
+     Every Delete button is reachable by scrolling at every width (10-14).
+     The card's scrollbar is 8px (matching globals.css's page scrollbar,
+     which only sets width) so the 12px scroll left at 1024px is not a 16px
+     default bar (13). Fallback if container queries are unsupported: the
+     max-width declaration is dropped and the error renders as before.
+  b) Row and error read as one unit: the failed row loses its bottom divider
+     while its error shows; the error row's top padding went with it.
+  c) REPORTS MODAL COULD NOT SCROLL. It never had a scroll path; T-015's two
+     slots make it up to ~90px taller. 1280x560 BEFORE: panel y -24..584, the
+     title and X above the viewport with no way to reach them (05). Fix:
+     backdrop overflow-y-auto + panel my-auto (auto margins, so the top is
+     never pushed out of reach). AFTER: panel 0..608, backdrop scrolls to
+     Save (23). At every size where it fits, positions are identical to
+     BEFORE (1366x657 24..633, 1280x632 12..620): nothing moves.
+  d) LEADER REMOVE BUTTON OUTSIDE ITS CARD at 360px: the Photo URL input's
+     default ~200px width (size=20) overflowed a 180px row; the input spilled
+     past the card's padding and Remove sat at x 306..338, outside the card
+     (65..295) (03). Fix: min-w-0 on the field's wrapper. AFTER: input
+     90..222, Remove 238..270, inside the card (40). 768/1024/1366 unchanged.
+
+=========================================================================
+2. WORDING — item 2
+=========================================================================
+
+Server-returned text is untouched and shown verbatim ("Your session expired.
+Sign in again and retry.", "Report not found. Reload the page to see the
+current list.", etc.). Only the client fallbacks for a THROW changed:
+
+  saves (Reports, Careers, leader blur-save)  T-012's text, unchanged:
+    "Something went wrong saving these changes. Check your connection and
+     try again."  (same wording as the six settings pages)
+  Reports delete   "Couldn't delete this report. Check your connection and
+                    try again."
+  Careers delete   "Couldn't delete this job posting. Check your connection
+                    and try again."
+  Add Leader       "Couldn't add a leader. Check your connection and try
+                    again."
+  Leader remove    "Couldn't remove this leader. Check your connection and
+                    try again."   ("remove" matches the button and confirm())
+  Report upload    "Couldn't upload this PDF. Files must be under 1 MB. If
+                    this one is, check your connection and try again."
+
+The upload fallback names the limit because a real report PDF over Next's
+default 1 MB Server Action body limit is rejected before uploadFile runs and
+arrives here as a throw (SEC-INFO-35). That is the likeliest failure for a
+real annual report, and "check your connection" alone would send the admin
+retrying a file that can never upload. A code comment ties the line to
+next.config.ts (no serverActions.bodySizeLimit set) so a future limit change
+updates it. Admin UI microcopy, not marketing copy: no /copywriter or /cmo
+review applies.
+
+=========================================================================
+3. IN-FLIGHT STATE AND KEYBOARD — item 3
+=========================================================================
+
+Busy state on the triggering control:
+  Modal Save            spinner + "Saving..."  (already there)
+  Upload, empty state   spinner + "Uploading...", disabled (already there)
+  Upload, Replace       NOTHING BEFORE: label stayed "Replace" while X and
+                        Save went disabled with no explanation (04, /cso's
+                        /ui-ux nit). FIXED: spinner + "Uploading..." (31).
+                        Deliberately NOT disabled: disabling a focused button
+                        drops focus to <body> with nothing to restore it, and
+                        /cso traced that a second pick queues in order.
+  Add Leader            WAS disabled but looked identical (opacity 1, hover
+                        tint still applied). FIXED: disabled:opacity-50, hover
+                        tint only when enabled (43). No spinner on purpose:
+                        isPending is shared with leader blur-saves and the
+                        page's Save Changes, so it cannot say what is running.
+  Modal X (disabled)    brightened to white on hover while disabled. FIXED:
+                        enabled:hover:text-white (stays white/40 when disabled).
+  New spinners use motion-safe:animate-spin; the existing ones in these
+  files were switched too (the compiled rule sits inside
+  @media (prefers-reduced-motion: no-preference)).
+
+Keyboard, measured on the real component (unchanged by this pass):
+  Tab order in the Reports modal: X first in DOM order; measured from Title:
+    Category, Year, Upload/Replace, Published, Save; Tab after Save leaves
+    the document.
+  Enter on Save: Save turns disabled, and Chrome's focus fix-up moves focus
+    to <body> for the rest of the request and after it.
+  Escape while a save or upload is in flight: modal stays open. Backdrop
+    click during an upload: stays open. (The modal has no Escape handler in
+    any state, so nothing bypasses T-015's no-dismiss rule.)
+  After the failure: focus is on <body>. Pressed from that state, Shift+Tab
+    lands on "Published" (then the upload button), back inside the modal;
+    Tab leaves the page. Focus is not trapped, but it is not returned
+    either (follow-up F1).
+  Identical retry (same failure twice): the SAME <p role="alert"> node
+    persists with identical text, so it is not re-announced (follow-up F2).
+
+Focus rings: no outline is removed on any touched button. Delete/Edit get
+Chrome's default :focus-visible ring (outline auto, #005fcc with a white
+edge, 3.2:1 on #0f0f0f), reached by real Tab presses (14-15 Tabs; 50).
+Accessible names: lucide 0.575 marks every icon aria-hidden, so the icon-only
+Edit, Delete, Close and Remove buttons were announced as just "button".
+FIXED with aria-labels: "Edit <title>", "Delete <title>", "Close",
+"Remove <name>" (fallback nouns for an empty title/name, as in
+CategoryProductsManager). Measured names, e.g. "Delete Sustainability Report
+2024", "Remove Sharifur Rahman Jr." (follows the typed name).
+
+=========================================================================
+4. CONTRAST — item 4 (WCAG 2.x relative luminance)
+=========================================================================
+
+Backgrounds composited from the computed styles of every ancestor, then
+cross-checked against a sampled screenshot pixel (sRGB profile forced):
+
+  text-red-400 #f87171 on the modal panel #111111         6.83:1  pixel #111111
+  text-red-400 on table rows #0f0f0f                      6.93:1  pixel #0f0f0f
+  text-red-400 on leader cards (black/50 over #0f0f0f)    7.26:1  pixel #070707 -> 7.28:1
+  text-red-400 on the Leadership card #0f0f0f (Add err.)  6.93:1  pixel #0f0f0f
+
+/lead-dev's 6.83 / 6.93 / 7.26 are confirmed exactly. The icons inherit
+currentColor, so they match. All at least 4.5:1 (text-sm is not large text).
+
+Changed by this pass:
+  Replace, text-primary -> text-accent on its pill #101513  2.43 -> 8.48:1
+    hover (accent/80, #0ea565)                                      5.79:1
+  CheckCircle beside it, same swap                            2.43 -> 8.48:1
+  Table Delete icon, red-400/50 -> red-400 on #0f0f0f         2.54 -> 6.93:1
+    (3:1 bar for a control; now matches the admin's other delete icons;
+     hover red-300 10.11:1)
+  Pencil white/40 3.81:1 and modal X white/40 3.82:1 pass the 3:1 bar and
+  were left alone. Disabled states are exempt and not counted.
+
+=========================================================================
+5. RESPONSIVE — item 5 (360 / 768 / 1024, plus 1366)
+=========================================================================
+
+Document: no horizontal scroll at any width, before or after (see 0).
+Clipped or off-screen content, AFTER:
+  /admin/reports    none. Table scrolls inside its card at 360/768 (and
+                    12px at 1024); nothing clipped. Modal: no overflow.
+  /admin/careers    none. Table as above (17px at 1024). Modal: no
+                    horizontal overflow at any width, 360 included
+                    (measured per element, form controls' own text
+                    scrolling excluded).
+  /admin/who-we-are leader UI: none. Page: SettingsForm's Assurance Stats
+                    rows still overflow at 360/768 (P1, outside this
+                    ticket's files).
+  Headers: gap-4 between title and button (they touched at 360).
+  Row icons: flex-none (they shrank to dots when a title wrapped).
+
+=========================================================================
+6. /cso CONDITIONS — what /qa static should find
+=========================================================================
+
+/cso's T-015 sign-off: "Any change beyond className, layout or copy comes
+back to /cso." Everything in this pass is one of:
+  className / layout   classes above; the Replace label is a conditional
+                       render off the EXISTING `uploading` state (no new
+                       state, hook, ref, effect or handler)
+  copy                 fallback strings, aria-label strings, comments
+Unchanged, verified by diff against the /cso-reviewed baseline:
+  - imports: identical in all three files; no new Server Action import;
+  - every call to the ten actions is still inside its try, branches on .ok,
+    and reloads only on success; the only handler edits are which fallback
+    constant three catch branches pass (upload, delete, add/remove leader);
+  - error text still renders only as a JSX text child of <p role="alert">;
+    no dangerouslySetInnerHTML or other sink; aria-label values are plain
+    strings in attributes, which React escapes.
+
+=========================================================================
+7. NOT CHANGED HERE — behavior-level follow-ups (for /pm; each changes
+   handler logic in src/app/admin/**, so each needs /cso)
+=========================================================================
+
+F1 Focus after a failed save or add: native `disabled` on the pressed button
+   drops focus to <body>. Return it to the button (or the alert) after a
+   failure. Best done inside F3.
+F2 An identical repeated failure is not re-announced: setError(null) runs
+   inside the async transition, so React defers it to the end of the
+   action; the alert node never unmounts. Same shape in T-012's six
+   settings clients. Fix pattern: clear the error BEFORE startTransition.
+   Apply to all nine surfaces at once.
+F3 Neither modal has dialog semantics (role="dialog", aria-modal,
+   aria-labelledby), initial focus, focus containment (Tab walks into the
+   page behind) or Escape-to-close. The native <dialog> + showModal() gives
+   containment, an inert background and Escape with no new library; block
+   its `cancel` event while a request is in flight to keep T-015's
+   no-dismiss rule; restore focus to the opener on close.
+F4 A client-side file.size check before uploadFile would show the 1 MB
+   message instantly. Fits SEC-INFO-33's recommended small ticket.
+F5 isPending is shared on Who We Are: a leader blur-save or Add Leader
+   shows "Saving..." on the page's Save Changes and disables it, and the
+   page Save disables Add Leader. Separate transitions per action. Pre-existing.
+F6 Row Delete buttons show no in-flight state (needs per-row pending state).
+
+=========================================================================
+8. PRE-EXISTING, OUTSIDE T-015's FILES (for /pm)
+=========================================================================
+
+P1 SettingsForm StatsList (Assurance Stats on /admin/who-we-are):
+   grid-cols-[1fr_2fr_auto] tracks can't shrink below the inputs' ~200px
+   intrinsic width, so each row's remove button lands past the viewport
+   (x=522 at 360px, 794 at 768px), clipped by html/body overflow-x:clip.
+   Fix: grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto] (SettingsForm.tsx:146).
+   Same file as T-011.
+P2 text-primary (#016138) as TEXT on the admin's dark surfaces fails AA
+   wherever it's used: kickers on #0a0a0a 2.61:1; card titles and every
+   outlined "Add ..." button, Add Leader included, 2.53:1; Careers section
+   kickers 2.49:1; Published/Active pills 2.25:1. T-020 excludes this and
+   asks /ui-ux to log it. Not fixed piecemeal (Add Leader would then differ
+   from Add Milestone/Value/Pillar on the same page). text-accent is the
+   in-repo precedent (7-8.5:1 on these surfaces).
+P3 Other sub-AA text on these screens: table headers white/30 2.65:1,
+   Draft/Closed pills 3.65:1, modal field labels white/40 3.82:1 (same
+   family as T-011's white/30 fix).
+P4 The admin has no navigation below 768px (sidebar is hidden md:flex, no
+   mobile menu). The 360px checks are about reachability, not an endorsed
+   phone workflow.
+P5 The modals' <select> and checkbox are native, unstyled controls.
+
+=========================================================================
+9. BUILD AND FILE VERIFICATION
+=========================================================================
+
+npx tsc --noEmit --incremental false   exit 0
+npm run build (in place)               "Compiled successfully", TypeScript
+                                       finished, 25/25 pages generated
+                                       including /admin/reports,
+                                       /admin/careers, /admin/who-we-are;
+                                       0 error lines; only the two
+                                       pre-existing notices (middleware ->
+                                       proxy, stale browserslist data).
+                                       The production CSS contains
+                                       container-type:inline-size,
+                                       calc(100cqw - 3rem) and the 8px
+                                       scrollbar rule.
+Server files, byte-identical to /cso's pins:
+  settings-actions.ts  8df471e36cde848dc33e1fb1d3089ad475cf67be3a4e0832664bdc5bf143526d
+  jobs-actions.ts      628e5e74c4dca9259ef1e5a0d3ef0d0715a70e9c2b207656792a0603ac7f684f
+Client files after this pass:
+  ReportsClient.tsx    a057e36e3f99cc645790d918f4cb949d52d06f9b6b3f96962ef573904bb4781e
+  CareersClient.tsx    a54ef388952d55425931745f79303c091c119fd4cef6a917b8d9c1516bc0f5b0
+  WhoWeAreClient.tsx   168ff8309fefc5d4c72723dae0885ad6a9ebbc73988b7888709755faf4a017d1
+Servers: none started. A next-server v16.3.3 listening on :3311 belongs to
+/Volumes/D_Architect/Codebase/Start_Daily_HQ (running since 2026-09-27
+18:06), not this repo; left untouched. .env.local never read or copied.
+
+=========================================================================
+10. EVIDENCE INDEX (01-05 before, 10-50 after)
+=========================================================================
+
+01 reports table 360, unscrolled: Status/Actions clipped, error cut
+02 reports table 768, unscrolled: same
+03 leader cards 360: Photo URL spills out, Remove outside its card
+04 Replace during an upload: no busy state, "Replace" at 2.43:1
+05 reports modal 1280x560: title and X above the viewport, no scroll
+10 reports table 360 unscrolled  |  11 360 scrolled to Delete
+12 reports table 768 scrolled to Delete  |  13 1024 with the 8px scrollbar
+14 careers table 360 scrolled to Delete  |  15 careers table 1366
+20-22 reports modal, both errors: 1366x657, 1280x632, 360x740
+23 reports modal 1280x560: top reachable, backdrop scrolls to Save
+24-25 careers modal save error: 1366x657, 360x740
+30 Replace idle (accent)  |  31 Replace during an upload ("Uploading...")
+40-42 Leadership card with all three errors: 360, 768, 1024
+43 Add Leader while a write is in flight (dimmed)
+50 Delete button, genuine :focus-visible ring via Tab

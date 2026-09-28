@@ -1,0 +1,558 @@
+{
+  "summary": {
+    "when": "2026-09-28T17:36:50.607Z",
+    "chrome": "Chrome/153.0.8010.53",
+    "react": "19.2.4 production (from node_modules)",
+    "httpAttemptsBlocked": [],
+    "total": 30,
+    "passed": 30,
+    "failed": []
+  },
+  "results": [
+    {
+      "name": "reports: update -> {ok:false} not found",
+      "expectedAlerts": [
+        "Report not found. Reload the page to see the current list."
+      ],
+      "alerts": [
+        "Report not found. Reload the page to see the current list."
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 typed title (edit)",
+      "sent": [
+        {
+          "fn": "updateReport",
+          "id": "r1",
+          "title": "QA-T015 typed title (edit)",
+          "file_url": "https://example.invalid/r1.pdf",
+          "name": null,
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "saveEnabled": true,
+      "shot": "01-reports-update-notfound.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: update -> throw",
+      "expectedAlerts": [
+        "Something went wrong saving these changes. Check your connection and try again."
+      ],
+      "alerts": [
+        "Something went wrong saving these changes. Check your connection and try again."
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 typed title (edit, throw)",
+      "sent": [
+        {
+          "fn": "updateReport",
+          "id": "r1",
+          "title": "QA-T015 typed title (edit, throw)",
+          "file_url": "https://example.invalid/r1.pdf",
+          "name": null,
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "saveEnabled": true,
+      "shot": "02-reports-update-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: create -> {ok:false} session expired",
+      "expectedAlerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "alerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 typed title (new)",
+      "sent": [
+        {
+          "fn": "createReport",
+          "title": "QA-T015 typed title (new)",
+          "file_url": "",
+          "name": null,
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "saveEnabled": true,
+      "shot": "03-reports-create-session.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: update -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "reports: upload -> {ok:false} real reason shown",
+      "expectedAlerts": [
+        "new row violates row-level security policy"
+      ],
+      "alerts": [
+        "new row violates row-level security policy"
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 upload title",
+      "fileInputCleared": true,
+      "pillBefore": "Click to upload PDF file",
+      "pillAfter": "Click to upload PDF file",
+      "saveEnabled": true,
+      "sent": [
+        {
+          "fn": "uploadFile",
+          "n": 1,
+          "bucket": "reports",
+          "file": "qa-report-1.pdf"
+        }
+      ],
+      "reloaded": false,
+      "shot": "04-reports-upload-fail.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: upload -> throw (e.g. >1 MB body) shows UPLOAD_ERROR",
+      "expectedAlerts": [
+        "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again."
+      ],
+      "alerts": [
+        "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again."
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 upload title",
+      "fileInputCleared": true,
+      "pillBefore": "Click to upload PDF file",
+      "pillAfter": "Click to upload PDF file",
+      "saveEnabled": true,
+      "sent": [
+        {
+          "fn": "uploadFile",
+          "n": 1,
+          "bucket": "reports",
+          "file": "qa-report-1.pdf"
+        }
+      ],
+      "reloaded": false,
+      "shot": "05-reports-upload-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: failed Replace keeps the attached file",
+      "expectedAlerts": [
+        "new row violates row-level security policy"
+      ],
+      "alerts": [
+        "new row violates row-level security policy"
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 upload title",
+      "fileInputCleared": true,
+      "pillBefore": "File attachedReplace",
+      "pillAfter": "File attachedReplace",
+      "saveEnabled": true,
+      "sent": [
+        {
+          "fn": "uploadFile",
+          "n": 1,
+          "bucket": "reports",
+          "file": "qa-report-1.pdf"
+        }
+      ],
+      "reloaded": false,
+      "shot": "06-reports-replace-fail-keeps-file.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: upload ok keeps text typed during the upload",
+      "titleValue": "typed while the PDF uploads",
+      "pill": "qa-report-1.pdfReplace",
+      "alerts": [],
+      "reloaded": false,
+      "sentOnSave": [
+        {
+          "fn": "createReport",
+          "title": "typed while the PDF uploads",
+          "file_url": "https://example.invalid/upload-1.pdf",
+          "name": null,
+          "is_active": null
+        }
+      ],
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: delete -> {ok:false} not found",
+      "expectedAlerts": [
+        "Report not found. Reload the page to see the current list."
+      ],
+      "alerts": [
+        "Report not found. Reload the page to see the current list."
+      ],
+      "confirms": 1,
+      "reloaded": false,
+      "alertUnderFailedRow": true,
+      "sent": [
+        {
+          "fn": "deleteReport",
+          "id": "r2"
+        }
+      ],
+      "shot": "07-reports-delete-notfound.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: delete -> throw",
+      "expectedAlerts": [
+        "Couldn't delete this report. Check your connection and try again."
+      ],
+      "alerts": [
+        "Couldn't delete this report. Check your connection and try again."
+      ],
+      "confirms": 1,
+      "reloaded": false,
+      "alertUnderFailedRow": true,
+      "sent": [
+        {
+          "fn": "deleteReport",
+          "id": "r2"
+        }
+      ],
+      "shot": "08-reports-delete-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: delete -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "reports: modal can't be dismissed mid-save; failure then shows in it",
+      "openWhileHeld": true,
+      "saveBusy": true,
+      "alerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 in flight",
+      "reloaded": false,
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "INFO-3 demo: a second pick during an upload, Save in the gap sends the FIRST file",
+      "inFlightUploads": 2,
+      "gap": {
+        "saveEnabledWhileSecondUploadInFlight": true,
+        "pill": "qa-report-1.pdfReplace"
+      },
+      "sentOnSave": [
+        {
+          "fn": "updateReport",
+          "id": "r1",
+          "title": "Sustainability Report 2024",
+          "file_url": "https://example.invalid/upload-1.pdf",
+          "name": null,
+          "is_active": null
+        }
+      ],
+      "demonstrated": true,
+      "pass": true,
+      "note": "documents INFO-3; pass=true means the demo ran",
+      "pageErrors": []
+    },
+    {
+      "name": "careers: update -> {ok:false} not found",
+      "expectedAlerts": [
+        "Job posting not found. Reload the page to see the current list."
+      ],
+      "alerts": [
+        "Job posting not found. Reload the page to see the current list."
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 job (edit)",
+      "textareaValue": "QA-T015 responsibilities line",
+      "sent": [
+        {
+          "fn": "updateJob",
+          "id": "j1",
+          "title": "QA-T015 job (edit)",
+          "file_url": null,
+          "name": null,
+          "is_active": "true"
+        }
+      ],
+      "reloaded": false,
+      "alertVisible": true,
+      "shot": "09-careers-update-notfound.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "careers: create -> throw",
+      "expectedAlerts": [
+        "Something went wrong saving these changes. Check your connection and try again."
+      ],
+      "alerts": [
+        "Something went wrong saving these changes. Check your connection and try again."
+      ],
+      "modalOpen": true,
+      "titleValue": "QA-T015 job (new)",
+      "textareaValue": "QA-T015 responsibilities line",
+      "sent": [
+        {
+          "fn": "createJob",
+          "title": "QA-T015 job (new)",
+          "file_url": null,
+          "name": null,
+          "is_active": "true"
+        }
+      ],
+      "reloaded": false,
+      "alertVisible": true,
+      "shot": "10-careers-create-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "careers: update -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "careers: delete -> {ok:false} session expired",
+      "expectedAlerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "alerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "confirms": 1,
+      "reloaded": false,
+      "alertUnderFailedRow": true,
+      "sent": [
+        {
+          "fn": "deleteJob",
+          "id": "j2"
+        }
+      ],
+      "shot": "11-careers-delete-session.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "careers: delete -> throw",
+      "expectedAlerts": [
+        "Couldn't delete this job posting. Check your connection and try again."
+      ],
+      "alerts": [
+        "Couldn't delete this job posting. Check your connection and try again."
+      ],
+      "confirms": 1,
+      "reloaded": false,
+      "alertUnderFailedRow": true,
+      "sent": [
+        {
+          "fn": "deleteJob",
+          "id": "j2"
+        }
+      ],
+      "shot": "12-careers-delete-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "careers: delete -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: blur-save -> {ok:false} not found (saveLeader now signals)",
+      "expectedAlerts": [
+        "Leader not found. Reload the page to see the current list."
+      ],
+      "alerts": [
+        "Leader not found. Reload the page to see the current list."
+      ],
+      "cardAlert": "Leader not found. Reload the page to see the current list.",
+      "inputValue": "QA-T015 Leader Name",
+      "sent": [
+        {
+          "fn": "updateLeader",
+          "id": "1",
+          "title": "Chairman",
+          "file_url": null,
+          "name": "QA-T015 Leader Name",
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "shot": "13-leaders-save-notfound.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: blur-save -> throw",
+      "expectedAlerts": [
+        "Something went wrong saving these changes. Check your connection and try again."
+      ],
+      "alerts": [
+        "Something went wrong saving these changes. Check your connection and try again."
+      ],
+      "cardAlert": "Something went wrong saving these changes. Check your connection and try again.",
+      "inputValue": "QA-T015 Leader Name",
+      "sent": [
+        {
+          "fn": "updateLeader",
+          "id": "1",
+          "title": "Chairman",
+          "file_url": null,
+          "name": "QA-T015 Leader Name",
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "shot": "14-leaders-save-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: blur-save -> ok stays silent, no reload (as before)",
+      "expectedAlerts": [],
+      "alerts": [],
+      "cardAlert": null,
+      "inputValue": "QA-T015 Leader Name",
+      "sent": [
+        {
+          "fn": "updateLeader",
+          "id": "1",
+          "title": "Chairman",
+          "file_url": null,
+          "name": "QA-T015 Leader Name",
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: a failed save's alert clears when a retry succeeds",
+      "first": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "second": [],
+      "reloaded": false,
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: add -> {ok:false} session expired",
+      "expectedAlerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "alerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "reloaded": false,
+      "alertBesideAdd": "Your session expired. Sign in again and retry.",
+      "shot": "15-leaders-add-session.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: add -> throw",
+      "expectedAlerts": [
+        "Couldn't add a leader. Check your connection and try again."
+      ],
+      "alerts": [
+        "Couldn't add a leader. Check your connection and try again."
+      ],
+      "reloaded": false,
+      "alertBesideAdd": "Couldn't add a leader. Check your connection and try again.",
+      "shot": "16-leaders-add-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: add -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: remove -> {ok:false} not found",
+      "expectedAlerts": [
+        "Leader not found. Reload the page to see the current list."
+      ],
+      "alerts": [
+        "Leader not found. Reload the page to see the current list."
+      ],
+      "confirms": 1,
+      "reloaded": false,
+      "cardAlert": "Leader not found. Reload the page to see the current list.",
+      "otherFieldKept": true,
+      "shot": "17-leaders-remove-notfound.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: remove -> throw",
+      "expectedAlerts": [
+        "Couldn't remove this leader. Check your connection and try again."
+      ],
+      "alerts": [
+        "Couldn't remove this leader. Check your connection and try again."
+      ],
+      "confirms": 1,
+      "reloaded": false,
+      "cardAlert": "Couldn't remove this leader. Check your connection and try again.",
+      "otherFieldKept": true,
+      "shot": "18-leaders-remove-throw.png",
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: remove -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "INFO-4 demo: A throws, B succeeds, A's error stays",
+      "sent": [
+        "QA-T015 A",
+        "QA-T015 B"
+      ],
+      "finalAlerts": [
+        "Something went wrong saving these changes. Check your connection and try again."
+      ],
+      "reloaded": false,
+      "demonstrated": true,
+      "pass": true,
+      "note": "documents INFO-4; pass=true means the demo ran",
+      "pageErrors": []
+    }
+  ]
+}

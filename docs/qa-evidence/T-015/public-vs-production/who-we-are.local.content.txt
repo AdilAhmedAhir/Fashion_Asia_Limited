@@ -1,0 +1,186 @@
+TITLE Who We Are | Fashion Asia Limited
+META viewport = width=device-width, initial-scale=1
+META theme-color = #0a0a0a
+META color-scheme = dark
+META description = Fashion Asia Limited — a knit garments manufacturer in Sreepur, Gazipur and sister concern of Northern Tosrifa Group. Our vision, values, milestones, and leadership.
+META author = Fashion Asia Limited
+META keywords = Knit Garments,Apparel Manufacturing,Bangladesh RMG,LEED Gold Factory,Sustainable Fashion,Northern Tosrifa Group
+META creator = Fashion Asia Limited
+META robots = index, follow
+META googlebot = index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1
+LINK canonical https://fashionasialtd.com/who-we-are
+META og:title = Who We Are
+META og:description = Fashion Asia Limited — a knit garments manufacturer in Sreepur, Gazipur and sister concern of Northern Tosrifa Group. Our vision, values, milestones, and leadership.
+META og:url = https://fashionasialtd.com/who-we-are
+META twitter:card = summary_large_image
+META twitter:title = Fashion Asia Limited | Green Powered Innovation
+META twitter:description = Modern, compliant, and sustainability-driven knit garments manufacturer.
+META twitter:image = https://fashionasialtd.com/images/client/og-image.jpg
+LINK icon /icon.png?icon.2v7xyt03774y8.png
+LINK apple-touch-icon /apple-icon.png?apple-icon.2v7xyt03774y8.png
+IMG src=/logo.png
+IMG alt=
+TEXT F
+TEXT A
+TEXT S
+TEXT H
+TEXT I
+TEXT O
+TEXT N
+TEXT A
+TEXT S
+TEXT I
+TEXT A
+TEXT LIMITED
+TEXT 0
+TEXT %
+A /
+IMG src=/_next/image?url=%2Flogo.png&w=96&q=75
+IMG srcset=/_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+IMG alt=Fashion Asia Limited Logo
+TEXT FASHION ASIA
+TEXT Limited
+A /
+TEXT Home
+A /who-we-are
+TEXT Who We Are
+A /what-we-do
+TEXT What We Do
+A /global-partner
+TEXT Global Partner
+A /sustainability
+TEXT Sustainability
+A /life-at-fashion-asia
+TEXT Life at Fashion Asia
+A /contact
+TEXT Connect
+TEXT Inheriting Excellence
+H1 >
+  Who We Are
+TEXT A 100% export-oriented Ready-Made Garments manufacturing company specializing in knitwear, backed by the legacy of Northern Tosrifa Group.
+H2 >
+  About Us
+TEXT Fashion Asia Ltd.
+TEXT is a modern and responsible knitwear manufacturer based in Sreepur, Gazipur, Bangladesh. As a sister concern of
+TEXT Northern Tosrifa Group (NTG)
+TEXT , with over 34 years of apparel industry experience, we focus on quality, innovation, and responsible manufacturing.
+TEXT With
+TEXT 26 production lines and a monthly capacity of 800,000 pieces
+TEXT , we serve global customers with a wide range of knit garments. Our
+TEXT Green Building
+TEXT factory, supported by solar power, rainwater harvesting, advanced technology, and 2,000 skilled employees, reflects our strong commitment to
+TEXT sustainability, quality, and compliance
+TEXT .
+IMG src=/images/client/who-we-are.jpg
+IMG alt=Fashion Asia Limited knitwear
+TEXT Knitwear Craftsmanship
+TEXT The Numbers
+H2 >
+  What Partners Can Count On
+TEXT 99.2%
+TEXT Right First Time
+TEXT 98.5%
+TEXT On-Time Delivery
+TEXT 800K
+TEXT Pieces / Month
+TEXT $30M
+TEXT Annual Turnover
+TEXT Our Vision
+H3 >
+  The Company We Intend to Be
+TEXT We are committed to becoming the most trusted and preferred organization for our customers, employees, suppliers, shareholders, and the communities we serve.
+TEXT Our Mission
+H3 >
+  How We Get There
+TEXT Excellence in quality, innovation, and on-time delivery.
+TEXT A safe workplace built on dignity, respect, and human rights.
+TEXT Sustainable and ethical business for a better future.
+TEXT Our Journey
+H2 >
+  Milestones & Achievements
+TEXT From the founding of the group in 1967 to a LEED-certified green facility serving buyers worldwide.
+TEXT 1967
+H3 >
+  Northern Steel Re-Rolling Mill Ltd. was founded by Shafiuddin Ahmed and Tosrifa Khatoon.
+TEXT 2000
+H3 >
+  Fashion Asia Ltd. was established.
+TEXT 2017
+H3 >
+  Construction of the new factory building started.
+TEXT 2019
+H3 >
+  Achieved LEED Certification and started operations in our Green Building.
+TEXT 2021
+H3 >
+  Achieved Grade ‘A’ in the amfori BSCI Audit.
+TEXT 2024
+H3 >
+  Awarded Responsible Supplier by Kappahl.
+TEXT What Drives Us
+H2 >
+  Our Values
+H3 >
+  Quality Excellence
+TEXT We are committed to delivering products that consistently meet the highest standards of quality and customer expectations.
+H3 >
+  Reliability & Accountability
+TEXT We honor our commitments through on-time delivery, transparency, and dependable service.
+H3 >
+  Respect for People
+TEXT We uphold human rights and foster a safe, inclusive, and empowering workplace for all.
+H3 >
+  Innovation & Continuous Improvement
+TEXT We embrace technology, creativity, and learning to enhance efficiency, quality, and value.
+H3 >
+  Sustainability & Integrity
+TEXT We conduct business ethically and responsibly, protecting the environment and contributing to a sustainable future.
+H2 >
+  Leadership
+TEXT Fashion Asia Ltd. is guided by experienced industry leaders who bring decades of knowledge in garment manufacturing, strategic management, and global sourcing.
+TEXT Leadership profiles coming soon
+A /
+IMG src=/_next/image?url=%2Flogo.png&w=96&q=75
+IMG srcset=/_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+IMG alt=Fashion Asia Limited Logo
+TEXT FASHION ASIA
+TEXT Limited
+TEXT A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh.
+TEXT LEED Gold
+TEXT WRAP
+TEXT BSCI
+TEXT GOTS
+H4 >
+  Company
+A /who-we-are
+TEXT Who We Are
+A /what-we-do
+TEXT What We Do
+A /global-partner
+TEXT Global Partner
+A /sustainability
+TEXT Sustainability
+A /sustainability#reports
+TEXT Reports & Publications
+A /life-at-fashion-asia
+TEXT Life at Fashion Asia
+H4 >
+  Careers
+A /career
+TEXT Career
+A /contact
+TEXT Contact Us
+A /grievance
+TEXT Grievance Cell
+H4 >
+  Connect
+A mailto:admin@fashionasialtd.com
+TEXT admin@fashionasialtd.com
+A tel:+8801711691366
+TEXT +880 1711 691 366
+TEXT ©
+TEXT 2026
+TEXT Fashion Asia Limited. All Rights Reserved.
+TEXT |
+TEXT A Concern of Northern Tosrifa Group
+TEXT fashionasialtd.com

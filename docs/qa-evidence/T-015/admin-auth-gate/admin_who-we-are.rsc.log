@@ -1,0 +1,11 @@
+# 2026-09-28T17:25:12Z  anonymous rsc  http://localhost:3001/admin/who-we-are
+# curl -H RSC: 1 (no cookie jar, no -L)
+HTTP/1.1 307 Temporary Redirect
+location: /admin/login
+Date: Mon, 28 Sep 2026 17:25:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body: 12 bytes; admin-only markers found: 0
+# body> /admin/login

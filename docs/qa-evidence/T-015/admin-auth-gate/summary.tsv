@@ -1,0 +1,17 @@
+route	variant	status	location	set_cookie_count	body_bytes	admin_markers	verdict
+/admin/reports	plain	307	/admin/login	0	12	0	PASS
+/admin/reports	head	307	/admin/login	0	143	0	PASS
+/admin/reports	rsc	307	/admin/login	0	12	0	PASS
+/admin/reports	rsc-prefetch	307	/admin/login	0	12	0	PASS
+/admin/reports	rsc-query	307	/admin/login	0	12	0	PASS
+/admin/careers	plain	307	/admin/login	0	12	0	PASS
+/admin/careers	head	307	/admin/login	0	143	0	PASS
+/admin/careers	rsc	307	/admin/login	0	12	0	PASS
+/admin/careers	rsc-prefetch	307	/admin/login	0	12	0	PASS
+/admin/careers	rsc-query	307	/admin/login	0	12	0	PASS
+/admin/who-we-are	plain	307	/admin/login	0	12	0	PASS
+/admin/who-we-are	head	307	/admin/login	0	143	0	PASS
+/admin/who-we-are	rsc	307	/admin/login	0	12	0	PASS
+/admin/who-we-are	rsc-prefetch	307	/admin/login	0	12	0	PASS
+/admin/who-we-are	rsc-query	307	/admin/login	0	12	0	PASS
+/admin/login	plain	200	-	0	-	-	PASS

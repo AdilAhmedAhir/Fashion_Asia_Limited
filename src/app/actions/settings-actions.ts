@@ -225,8 +225,43 @@ export async function seedSettingsFromDefaults(keys: string[]) {
 }
 
 // ============================================
+// SHARED BY THE REPORT, LEADER AND UPLOAD WRITES BELOW
+// ============================================
+//
+// T-015 (docs/SECURITY.md SEC-HIGH-5 + SEC-MED-10). These writes follow
+// docs/TECH_STACK.md's "Server Action failure-reporting convention": every
+// expected failure (no session, not found, a reported Supabase error) is
+// RETURNED as {ok:false, error}, never thrown. Next.js redacts a thrown
+// Server Action message in production, so a throw reached the admin as
+// nothing useful. Same shape as UpdateSettingsResult above and
+// products-actions.ts's ProductVoidResult. Every caller must check `.ok`.
+export type ActionResult = { ok: true } | { ok: false; error: string };
+
+// uploadFile's public URL travels inside the ok branch.
+export type UploadFileResult = { ok: true; url: string } | { ok: false; error: string };
+
+type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
+
+// Byte-for-byte the string updateSettings and products-actions.ts return.
+const SESSION_EXPIRED = "Your session expired. Sign in again and retry.";
+
+// Every write action checks for an authenticated session server-side, in
+// addition to RLS. An exported "use server" function can be called by its
+// action ID from anywhere, not only from the /admin page that imports it, so
+// the middleware's /admin page gate doesn't protect it. Same helper as
+// products-actions.ts's requireUser(); it runs before any read or write.
+async function requireUser(supabase: SupabaseServerClient) {
+    const {
+        data: { user }
+    } = await supabase.auth.getUser();
+    return user;
+}
+
+// ============================================
 // REPORTS CRUD
 // ============================================
+
+const REPORT_NOT_FOUND = "Report not found. Reload the page to see the current list.";
 
 export async function getReports(publishedOnly = false) {
     const supabase = await createClient();
@@ -236,8 +271,11 @@ export async function getReports(publishedOnly = false) {
     return data || [];
 }
 
-export async function createReport(formData: FormData) {
+export async function createReport(formData: FormData): Promise<ActionResult> {
     const supabase = await createClient();
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
     const title = formData.get("title") as string;
     const category = formData.get("category") as string;
     const year = parseInt(formData.get("year") as string);
@@ -248,40 +286,63 @@ export async function createReport(formData: FormData) {
         title, category, year, published, file_url: fileUrl,
     });
 
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false, error: error.message };
     revalidatePath("/admin/reports");
     revalidatePath("/sustainability");
+    return { ok: true };
 }
 
-export async function updateReport(id: string, formData: FormData) {
+// Updates and deletes ask for the affected row's id back (`.select("id")`) so
+// that matching zero rows (deleted in another tab, or a stale id) is reported
+// as not-found instead of succeeding silently. Same check as
+// products-actions.ts's deleteCategoryProduct. RLS-neutral: the `.eq("id")`
+// filter already makes Postgres apply the table's SELECT policies to these
+// rows, so returning the id asks for nothing new.
+export async function updateReport(id: string, formData: FormData): Promise<ActionResult> {
     const supabase = await createClient();
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
+    if (!id) return { ok: false, error: "Missing report id." };
+
     const title = formData.get("title") as string;
     const category = formData.get("category") as string;
     const year = parseInt(formData.get("year") as string);
     const published = formData.get("published") === "true";
     const fileUrl = formData.get("file_url") as string;
 
-    const { error } = await supabase.from("reports").update({
+    const { data, error } = await supabase.from("reports").update({
         title, category, year, published, file_url: fileUrl,
         updated_at: new Date().toISOString(),
-    }).eq("id", id);
+    }).eq("id", id).select("id").maybeSingle();
 
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: REPORT_NOT_FOUND };
     revalidatePath("/admin/reports");
     revalidatePath("/sustainability");
+    return { ok: true };
 }
 
-export async function deleteReport(id: string) {
+export async function deleteReport(id: string): Promise<ActionResult> {
     const supabase = await createClient();
-    const { error } = await supabase.from("reports").delete().eq("id", id);
-    if (error) throw new Error(error.message);
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
+    if (!id) return { ok: false, error: "Missing report id." };
+
+    const { data, error } = await supabase.from("reports").delete().eq("id", id).select("id").maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: REPORT_NOT_FOUND };
     revalidatePath("/admin/reports");
     revalidatePath("/sustainability");
+    return { ok: true };
 }
 
 // ============================================
 // LEADERS CRUD
 // ============================================
+
+const LEADER_NOT_FOUND = "Leader not found. Reload the page to see the current list.";
 
 export async function getLeaders() {
     const supabase = await createClient();
@@ -289,8 +350,11 @@ export async function getLeaders() {
     return data || [];
 }
 
-export async function createLeader(formData: FormData) {
+export async function createLeader(formData: FormData): Promise<ActionResult> {
     const supabase = await createClient();
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
     const { error } = await supabase.from("leaders").insert({
         name: formData.get("name") as string,
         title: formData.get("title") as string,
@@ -298,49 +362,67 @@ export async function createLeader(formData: FormData) {
         photo_url: formData.get("photo_url") as string,
         sort_order: parseInt(formData.get("sort_order") as string || "0"),
     });
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false, error: error.message };
     revalidatePath("/admin/who-we-are");
     revalidatePath("/who-we-are");
+    return { ok: true };
 }
 
-export async function updateLeader(id: string, formData: FormData) {
+export async function updateLeader(id: string, formData: FormData): Promise<ActionResult> {
     const supabase = await createClient();
-    const { error } = await supabase.from("leaders").update({
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
+    if (!id) return { ok: false, error: "Missing leader id." };
+
+    const { data, error } = await supabase.from("leaders").update({
         name: formData.get("name") as string,
         title: formData.get("title") as string,
         bio: formData.get("bio") as string,
         photo_url: formData.get("photo_url") as string,
         sort_order: parseInt(formData.get("sort_order") as string || "0"),
-    }).eq("id", id);
-    if (error) throw new Error(error.message);
+    }).eq("id", id).select("id").maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: LEADER_NOT_FOUND };
     revalidatePath("/admin/who-we-are");
     revalidatePath("/who-we-are");
+    return { ok: true };
 }
 
-export async function deleteLeader(id: string) {
+export async function deleteLeader(id: string): Promise<ActionResult> {
     const supabase = await createClient();
-    const { error } = await supabase.from("leaders").delete().eq("id", id);
-    if (error) throw new Error(error.message);
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
+    if (!id) return { ok: false, error: "Missing leader id." };
+
+    const { data, error } = await supabase.from("leaders").delete().eq("id", id).select("id").maybeSingle();
+    if (error) return { ok: false, error: error.message };
+    if (!data) return { ok: false, error: LEADER_NOT_FOUND };
     revalidatePath("/admin/who-we-are");
     revalidatePath("/who-we-are");
+    return { ok: true };
 }
 
 // ============================================
 // FILE UPLOAD (Supabase Storage)
 // ============================================
 
-export async function uploadFile(formData: FormData, bucket: string = "uploads") {
+// No size or type check on this path yet (docs/MEMORY_BANK.md Known Trap #9).
+export async function uploadFile(formData: FormData, bucket: string = "uploads"): Promise<UploadFileResult> {
     const supabase = await createClient();
-    const file = formData.get("file") as File;
-    if (!file) throw new Error("No file provided");
+    const user = await requireUser(supabase);
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
+
+    const file = formData.get("file");
+    if (!file || typeof file === "string") return { ok: false, error: "No file provided." };
 
     const ext = file.name.split(".").pop();
     const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
-    const path = `${bucket}/${filename}`;
 
     const { error } = await supabase.storage.from(bucket).upload(filename, file);
-    if (error) throw new Error(error.message);
+    if (error) return { ok: false, error: error.message };
 
     const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filename);
-    return urlData.publicUrl;
+    return { ok: true, url: urlData.publicUrl };
 }

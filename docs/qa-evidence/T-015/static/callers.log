@@ -1,0 +1,44 @@
+# Every reference to the ten actions, repo-wide (node_modules, .next, .git and qa-evidence excluded)
+== createReport
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:4:import { createReport, updateReport, deleteReport, uploadFile } from "@/app/actions/settings-actions";
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:120:                const result = isNew ? await createReport(fd) : await updateReport(modal.id, fd);
+src/app/actions/settings-actions.ts:274:export async function createReport(formData: FormData): Promise<ActionResult> {
+== updateReport
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:4:import { createReport, updateReport, deleteReport, uploadFile } from "@/app/actions/settings-actions";
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:120:                const result = isNew ? await createReport(fd) : await updateReport(modal.id, fd);
+src/app/actions/settings-actions.ts:301:export async function updateReport(id: string, formData: FormData): Promise<ActionResult> {
+== deleteReport
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:4:import { createReport, updateReport, deleteReport, uploadFile } from "@/app/actions/settings-actions";
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:140:                const result = await deleteReport(id);
+src/app/actions/settings-actions.ts:326:export async function deleteReport(id: string): Promise<ActionResult> {
+== createLeader
+src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx:6:import { createLeader, updateLeader, deleteLeader } from "@/app/actions/settings-actions";
+src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx:70:            const result = await createLeader(fd);
+src/app/actions/settings-actions.ts:353:export async function createLeader(formData: FormData): Promise<ActionResult> {
+== updateLeader
+src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx:6:import { createLeader, updateLeader, deleteLeader } from "@/app/actions/settings-actions";
+src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx:106:            const result = await updateLeader(leader.id, fd);
+src/app/actions/settings-actions.ts:371:export async function updateLeader(id: string, formData: FormData): Promise<ActionResult> {
+== deleteLeader
+src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx:6:import { createLeader, updateLeader, deleteLeader } from "@/app/actions/settings-actions";
+src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx:86:                const result = await deleteLeader(id);
+src/app/actions/settings-actions.ts:392:export async function deleteLeader(id: string): Promise<ActionResult> {
+== uploadFile
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:4:import { createReport, updateReport, deleteReport, uploadFile } from "@/app/actions/settings-actions";
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:25:// uploadFile runs, so it lands here rather than as {ok:false}. That is the
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:85:            const result = await uploadFile(fd, "reports");
+src/app/admin/(dashboard)/reports/ReportsClient.tsx:324:                                {/* The real reason from uploadFile, not Next's redacted
+src/app/actions/settings-actions.ts:240:// uploadFile's public URL travels inside the ok branch.
+src/app/actions/settings-actions.ts:412:export async function uploadFile(formData: FormData, bucket: string = "uploads"): Promise<UploadFileResult> {
+== createJob
+src/app/admin/(dashboard)/careers/CareersClient.tsx:4:import { createJob, updateJob, deleteJob, type Job } from "@/app/actions/jobs-actions";
+src/app/admin/(dashboard)/careers/CareersClient.tsx:66:                const result = isNew ? await createJob(fd) : await updateJob(modal.id, fd);
+src/app/actions/jobs-actions.ts:88:export async function createJob(formData: FormData): Promise<JobActionResult> {
+== updateJob
+src/app/admin/(dashboard)/careers/CareersClient.tsx:4:import { createJob, updateJob, deleteJob, type Job } from "@/app/actions/jobs-actions";
+src/app/admin/(dashboard)/careers/CareersClient.tsx:66:                const result = isNew ? await createJob(fd) : await updateJob(modal.id, fd);
+src/app/actions/jobs-actions.ts:106:export async function updateJob(id: string, formData: FormData): Promise<JobActionResult> {
+== deleteJob
+src/app/admin/(dashboard)/careers/CareersClient.tsx:4:import { createJob, updateJob, deleteJob, type Job } from "@/app/actions/jobs-actions";
+src/app/admin/(dashboard)/careers/CareersClient.tsx:86:                const result = await deleteJob(id);
+src/app/actions/jobs-actions.ts:126:export async function deleteJob(id: string): Promise<JobActionResult> {

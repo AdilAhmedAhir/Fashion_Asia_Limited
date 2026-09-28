@@ -1,0 +1,172 @@
+TITLE Career | Fashion Asia Limited
+META viewport = width=device-width, initial-scale=1
+META theme-color = #0a0a0a
+META color-scheme = dark
+META description = Careers at Fashion Asia Limited — current openings and how to apply to join a 2,000-strong team in Sreepur, Gazipur.
+META author = Fashion Asia Limited
+META keywords = Knit Garments,Apparel Manufacturing,Bangladesh RMG,LEED Gold Factory,Sustainable Fashion,Northern Tosrifa Group
+META creator = Fashion Asia Limited
+META robots = index, follow
+META googlebot = index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1
+LINK canonical https://fashionasialtd.com/career
+META og:title = Career
+META og:description = Careers at Fashion Asia Limited — current openings and how to apply to join a 2,000-strong team in Sreepur, Gazipur.
+META og:url = https://fashionasialtd.com/career
+META twitter:card = summary_large_image
+META twitter:title = Fashion Asia Limited | Green Powered Innovation
+META twitter:description = Modern, compliant, and sustainability-driven knit garments manufacturer.
+META twitter:image = https://fashionasialtd.com/images/client/og-image.jpg
+LINK icon /icon.png?icon.0cdd14b0.png
+LINK apple-touch-icon /apple-icon.png?apple-icon.0cdd14b0.png
+IMG src=/logo.png
+IMG alt=
+TEXT F
+TEXT A
+TEXT S
+TEXT H
+TEXT I
+TEXT O
+TEXT N
+TEXT A
+TEXT S
+TEXT I
+TEXT A
+TEXT LIMITED
+TEXT 0
+TEXT %
+A /
+IMG src=/_next/image?url=%2Flogo.png&w=96&q=75
+IMG srcset=/_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+IMG alt=Fashion Asia Limited Logo
+TEXT FASHION ASIA
+TEXT Limited
+A /
+TEXT Home
+A /who-we-are
+TEXT Who We Are
+A /what-we-do
+TEXT What We Do
+A /global-partner
+TEXT Global Partner
+A /sustainability
+TEXT Sustainability
+A /life-at-fashion-asia
+TEXT Life at Fashion Asia
+A /contact
+TEXT Connect
+TEXT Join Our Team
+H1 >
+  Career Opportunities
+TEXT Submit your CV to join our dedicated workforce of 2,000+ skilled employees.
+H2 >
+  Open Positions
+TEXT Click on a position to view details and apply
+TEXT Senior Executive
+TEXT Published:
+TEXT Sep 23, 2026
+TEXT Deadline:
+TEXT Sep 30, 2026
+H3 >
+  Senior Executive
+TEXT Fashion Asia Limited
+TEXT Planning & Coordination
+TEXT Full-time
+TEXT Fashion Asia Ltd. Gopalpur, Tongi Station Road
+TEXT Deadline: Sep 30, 2026
+H4 >
+  Job Responsibilities
+TEXT Company Description:
+TEXT Fashion Asia Ltd. is a leading knit garments manufacturing company Sister Concern of Northern Tosrifa Group, located in Sreepur, Gazipur, Bangladesh. The company specializes in manufacturing high-quality knit apparel for international buyers and brands.
+TEXT Fashion Asia Ltd. is committed to maintaining high standards of quality, compliance, efficiency, and on-time delivery throughout its manufacturing operations. The company has dedicated teams across Merchandising, Quality, Production, Industrial Engineering, Planning & Coordination, Commercial, Marketing, HR & Administration, and Supply Chain, working together to ensure smooth and efficient operations.
+TEXT Key Responsibilities :
+TEXT Production follow-up and capacity planning.
+TEXT Materials & supply chain coordination.
+TEXT KPI data generation and reporting.
+TEXT Sewing, Cutting, Finishing & Printing plan preparation.
+TEXT Fabric requirement planning.
+TEXT Subcontract follow-up and coordination.
+TEXT Project coordination and implementation.
+TEXT Application development and process solutions.
+TEXT Monthly sales projection preparation and updates for in-house operations.
+H4 >
+  Employment Status
+TEXT Full-time
+H4 >
+  Educational Requirements
+TEXT Qualifications
+TEXT BSc In IPE ( any repudiated Publice University
+TEXT Minimum 2 Year Experience in Planning in RMG factory
+TEXT Strong planning, coordination, and organizational skills with the ability to manage multiple tasks and deadlines.
+TEXT Proficiency in data analysis, reporting, and use of productivity tools (e.g., spreadsheets, presentation software, ERP or planning systems).
+TEXT Excellent communication and interpersonal skills for effective collaboration with cross-functional teams and external stakeholders.
+TEXT Problem-solving skills with attention to detail and a structured approach to process improvement.
+H4 >
+  Workplace
+TEXT Work at office
+H4 >
+  Job Location
+TEXT Fashion Asia Ltd. Gopalpur, Tongi Station Road
+H4 >
+  Salary
+TEXT Negotiable
+H4 >
+  Compensation & Other Benefits
+TEXT Weekly Two Days Holiday
+TEXT Apply for this Position
+H2 >
+  Submit Your Application
+TEXT Don't see a position that fits? Send us your CV and we'll keep it on file.
+TEXT Full Name
+TEXT *
+TEXT Phone Number
+TEXT *
+TEXT Position Applied For
+TEXT *
+TEXT Link to CV (Google Drive, LinkedIn, etc.)
+TEXT *
+TEXT Submit Application
+A /
+IMG src=/_next/image?url=%2Flogo.png&w=96&q=75
+IMG srcset=/_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+IMG alt=Fashion Asia Limited Logo
+TEXT FASHION ASIA
+TEXT Limited
+TEXT A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh.
+TEXT LEED Gold
+TEXT WRAP
+TEXT BSCI
+TEXT GOTS
+H4 >
+  Company
+A /who-we-are
+TEXT Who We Are
+A /what-we-do
+TEXT What We Do
+A /global-partner
+TEXT Global Partner
+A /sustainability
+TEXT Sustainability
+A /sustainability#reports
+TEXT Reports & Publications
+A /life-at-fashion-asia
+TEXT Life at Fashion Asia
+H4 >
+  Careers
+A /career
+TEXT Career
+A /contact
+TEXT Contact Us
+A /grievance
+TEXT Grievance Cell
+H4 >
+  Connect
+A mailto:admin@fashionasialtd.com
+TEXT admin@fashionasialtd.com
+A tel:+8801711691366
+TEXT +880 1711 691 366
+TEXT ©
+TEXT 2026
+TEXT Fashion Asia Limited. All Rights Reserved.
+TEXT |
+TEXT A Concern of Northern Tosrifa Group
+TEXT fashionasialtd.com
