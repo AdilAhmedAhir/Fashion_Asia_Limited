@@ -1,5 +1,5 @@
 {
-  "$comment": "Fashion Asia: the existing allow and deny list (owner's choice: Bash(*) allowed), merged on 2026-09-28 with A-Team V7's ask list, .env read denies and hooks. Pushes and deploys ASK; force-push and .env reads are DENIED. Commit names are enforced separately by .githooks/ (git config core.hooksPath .githooks).",
+  "$comment": "Fashion Asia: the existing allow and deny list (owner's choice: Bash(*) allowed), merged on 2026-09-28 with A-Team V7's ask list, .env read denies and hooks. Pushes and deploys ASK; force-push and .env reads are DENIED. Commit names are enforced separately by .githooks/ (git config core.hooksPath .githooks). GENESIS Phase 4 (2026-09-28): agents have no database access, so the Supabase CLI, psql, .mcp.json and the account's Supabase MCP connector (mcp__854b58fd-\u2026) are DENIED in this project.",
   "permissions": {
     "allow": [
       "Bash(*)",
@@ -21,10 +21,7 @@
     ],
     "ask": [
       "Bash(git push*)",
-      "Bash(vercel*)",
-      "Bash(supabase db push*)",
-      "Bash(supabase db reset*)",
-      "Bash(supabase migration up*)"
+      "Bash(vercel*)"
     ],
     "deny": [
       "Bash(git push --force*)",
@@ -39,7 +36,12 @@
       "Read(./.env)",
       "Read(./.env.*)",
       "Read(./**/.env)",
-      "Read(./**/.env.*)"
+      "Read(./**/.env.*)",
+      "Bash(supabase*)",
+      "Bash(psql*)",
+      "Write(./.mcp.json)",
+      "Edit(./.mcp.json)",
+      "mcp__854b58fd-0db4-4ce3-b3e1-a9debcae7667"
     ]
   },
   "hooks": {
@@ -47,7 +49,11 @@
       {
         "matcher": "Edit|Write|NotebookEdit",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/path-guard.mjs", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/path-guard.mjs",
+            "timeout": 10
+          }
         ]
       }
     ],
@@ -55,7 +61,11 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh", "timeout": 60 }
+          {
+            "type": "command",
+            "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh",
+            "timeout": 60
+          }
         ]
       }
     ]
