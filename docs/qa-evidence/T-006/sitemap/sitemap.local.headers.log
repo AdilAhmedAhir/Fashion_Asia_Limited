@@ -1,0 +1,10 @@
+# GET http://localhost:3001/sitemap.xml (2026-09-28T15:09:06Z)
+HTTP/1.1 200 OK
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+cache-control: public, max-age=0, must-revalidate
+content-type: application/xml
+Date: Mon, 28 Sep 2026 15:09:06 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+

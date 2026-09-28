@@ -1,0 +1,5 @@
+# npx tsc --noEmit (incremental, as the gate runs it) — started 2026-09-28T14:57:40Z
+tsc exit=0
+
+# npx tsc --noEmit --incremental false (forced full re-check, bypasses tsconfig.tsbuildinfo)
+tsc(full, non-incremental) exit=0

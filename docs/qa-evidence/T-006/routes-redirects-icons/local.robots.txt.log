@@ -1,0 +1,12 @@
+# GET http://localhost:3001/robots.txt (no redirect following) 2026-09-28T15:09:20Z
+HTTP/1.1 200 OK
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-nextjs-cache: HIT
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain
+Date: Mon, 28 Sep 2026 15:09:20 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body bytes: 89  sha256: 492cfed486955fcef7aa337f115af16a4f79cbd3e57bf8b9a83e71f2224ec3d5

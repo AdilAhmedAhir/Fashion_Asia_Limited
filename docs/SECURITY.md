@@ -36,6 +36,10 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 | Analytics events | `docs/ANALYTICS_SPEC.md` does not exist. | N/A — inert until `/analytics` produces a spec. |
 | Dependency CVEs | `npm audit --omit=dev` run this pass. | See SEC-HIGH-1 in §4 — action required before next deploy. |
 
+*Amended 2026-09-28 (T-006 CSO review; appended, rows above left as written):*
+- **CSRF / Dependency CVEs.** SEC-HIGH-1 is closed in code by T-006 (`next@16.3.6`). `Origin: null` Server Action requests are now rejected, and this app configures no `allowedOrigins`. Production (`e8eace1`) still runs `16.1.6` until the next user-typed deploy. Post-bump `npm audit --omit=dev`: 0 critical, and 9 build/lint-toolchain advisories, none reachable at runtime (SEC-INFO-31).
+- **Admin login / Database RLS (SEC-HIGH-2).** The precondition is now observed in the unsafe state: the live project's public `/auth/v1/settings` read `disable_signup: false`. The `/admin` middleware gate, `requireUser()` and `updateSettings` all check only that *some* user exists, so any self-registered identity is an admin. Exploitation is kept from being trivial only because this app has never shipped the anon key to a browser (SEC-INFO-32). That is obscurity, not a control.
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -266,11 +270,270 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 ### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
 ✅ **Cleared.** T-004 may proceed to `/ui-ux` → `/qa static` → `/qa live` → the manual admin checklist (per `docs/ROADMAP.md`'s sequence for this ticket) → `/git Merge` per `docs/WORKFLOW.md` §3's Security-sensitive row. No blocking finding against this ticket's own diff. SEC-MED-11, SEC-MED-12, and SEC-MED-13 are recorded in §5 below as non-blocking fast-follows (SEC-MED-11/12 not yet filed, recommend folding into T-014; SEC-MED-13 updates the already-filed T-014's priority — see the explicit ruling above). The standing deploy-blocker list (SEC-HIGH-1, SEC-HIGH-2, SEC-HIGH-5) is unaffected by this ticket and remains open independent of T-004's own merge.
 
+### 🔒 CSO Audit — 2026-09-28 — ticket-review:T-006
+
+**Scope:** Dispatched focused review of **T-006** ("Bump `next` to close SEC-HIGH-1"), this office's own SEC-HIGH-1 closure ticket. Branch `fix/T-006-next-security-bump`, base `d0e655a`, **entirely uncommitted working tree**.
+- **The diff under review:**
+  - `package-lock.json`: 43 entries.
+  - `next.config.ts`: +7 lines, adding `agentRules: false` and `logging: { serverFunctions: false }` with a comment on each.
+  - `docs/TECH_STACK.md`: `/architect`'s 2026-09-28 decision, parts (a)–(f).
+  - `docs/ROADMAP.md`: the checkbox only.
+- **Not reviewed:** `docs/QA_REPORT.md` and `docs/qa-evidence/T-006/`, which `/qa` was writing in parallel. They were neither read nor touched.
+- **Independently confirmed, not taken on the dispatch's word:**
+  - `package.json` is byte-identical to `HEAD` (sha256 `26068c14…`) and still says `"next": "^16.1.6"`.
+  - `git diff HEAD` is empty for `src/`, `tsconfig.json`, `.gitignore`, `vercel.json` and `.claude/launch.json`.
+  - `AGENTS.md` matches both `HEAD` and `/lead-dev`'s pre-bump hash (`96aacc61…`), and no root `CLAUDE.md` exists.
+- **Production context,** from local tracking refs only (no fetch, no remote touched): `origin/main` and `client/main` are both at `e8eace1`, whose lockfile pins `next@16.1.6`. Since then `main` has gained only `docs/ROADMAP.md` (`b948199`, `d0e655a`).
+
+**Method: static and audit only, per the dispatch.**
+- **Nothing started or rebuilt:** no server was started and no request went to `/qa`'s servers on :3000/:3001. No `npm run build`, which would rewrite the `.next/` that `/qa`'s `next start` is serving. No `npm install`, `update` or `ci`, so nothing under `node_modules` was written.
+- **Network use was read-only:**
+  - the npm registry (`npm audit`, `npm view`, `npm audit signatures` and the bulk advisory endpoint);
+  - GitHub's public advisory and release API;
+  - `curl` GETs of production: headers, plus 6 public pages and the 21 JS chunks they reference.
+- **Type-check:** `npx tsc --noEmit --incremental false` (no `.tsbuildinfo` written) exited 0.
+- **Secrets:** `.env*` was never read. Secret names came only from `.env.example` and `docs/TECH_STACK.md`.
+- **Scratch files:** scripts and captures live only in the session scratchpad.
+
+**1. `npm audit --omit=dev`, re-run by this office: ✅ `next` is gone.**
+- 🟢 **SEC-INFO-23 — the `next` advisory range is cleared.**
+  - **Totals:** 13 → 9. Critical 1 → 0, high 8 → 5, moderate 2 → 2, low 2 → 2, matching `/lead-dev`'s numbers exactly.
+  - **No trace of the cleared set:** no `next` entry remains. A grep of the JSON report for `"next"`, `mq59-m269-xvcx`, `2xp9-vwfh-vxw4`, `p293-qw3h-jr36` and `vcvr-r3jv-pc5j` returns 0 hits.
+  - **Before/after diff:** 39 advisory×package pairs cleared (all 30 of `next`'s, plus `sharp`, `postcss` and `nanoid`), and no advisory appears after the bump that wasn't there before.
+  - **Registry cross-check** (the bulk advisory endpoint): `16.1.6` has 30 advisories, including `GHSA-mq59-m269-xvcx` (`>=16.0.1 <16.1.7`). `16.3.2` has 2. `16.3.3`, `16.3.5` and `16.3.6` have none.
+  - **GitHub's advisory database agrees:** `GHSA-mq59-m269-xvcx` (CVE-2026-27978) is patched in `16.1.7`. Both critical RCEs named in SEC-HIGH-1 (`2xp9`, `p293`) are patched in `16.3.3`.
+
+**2. Version floor: ✅ exactly `16.3.6`. `/architect`'s `GHSA-vcvr-r3jv-pc5j` claim holds when checked against its source. `next/og` appears nowhere.**
+- 🟢 **SEC-INFO-24 — `16.3.6` is installed, and it is the lowest safe version.**
+  - **Installed version:**
+    - `npm ls next` shows `next@16.3.6`, one copy; `--all` shows no nested `next`.
+    - `node_modules/next/package.json` says `16.3.6`.
+    - `/lead-dev`'s post-bump build banner reads `Next.js 16.3.6 (Turbopack)`.
+    - The one production-mode server running from this checkout during the pass reports `next-server (v16.3.6)`.
+  - **No newer patch exists:** `npm view next dist-tags` gives `latest: 16.3.6` (published 2026-09-22). The only newer build is `16.4.0-canary.51`; there is no newer stable 16.x.
+  - **The `vcvr` advisory, checked at its source.** `GHSA-vcvr-r3jv-pc5j` exists as a **published repository advisory** on `vercel/next.js`:
+    - "Remote Code Execution in next/og ImageResponse", critical, CVE-2026-94545, published 2026-09-22.
+    - Vulnerable `>= 16.2.0 < 16.3.6`; patched `16.3.6`.
+    - The v16.3.6 release notes name it as that release's security fix.
+  - **Why `npm audit` misses it:** it is **not** in GitHub's global advisory database yet (`/advisories/GHSA-vcvr-r3jv-pc5j` returns 404), so npm's feed doesn't carry it either. The bulk endpoint returns 0 advisories for `16.3.3`–`16.3.5`. A clean `npm audit` on those versions would have been a false clean, exactly as `/architect`'s (a) says. `16.3.6` is the lowest version outside both ranges.
+  - **This app's exposure to `next/og`: none.**
+    - No hits for `next/og`, `@vercel/og` or `ImageResponse` in `src/`, `next.config.ts` or `package.json`.
+    - No code-based metadata image route exists; `src/app/icon.png` and `apple-icon.png` are static files.
+    - No route handler emits images, and no `.next/server` output references the OG runtime.
+  - **Production's position:** `16.1.6` sits below `vcvr`'s range, so that advisory never applied to the live site. It would have applied to any lockfile landing on `16.2.0`–`16.3.5`, which is why the floor matters (SEC-INFO-30).
+
+**3. Lockfile integrity: ✅ clean. Every change traces to `next`, and the install-script surface shrank.**
+- 🟢 **SEC-INFO-25 — the lockfile change is complete, registry-verified and scoped to `next`.**
+  - **Shape of the diff:** `HEAD`'s lockfile (sha256 `27313b56…`, the same as `/lead-dev`'s `package-lock.pre.json`) against the working tree gives **43 entries: 2 added, 1 removed, 40 changed.** That matches `/lead-dev`'s count. `lockfileVersion` is 3 on both sides, and the root entry is identical.
+  - **Registry and integrity:**
+    - **Tarball paths:** each of the 42 added or changed entries resolves to `https://registry.npmjs.org/<name>/-/<name>-<version>.tgz`, with the path checked against name and version, not just the host.
+    - **Hashes:** each carries a `sha512` integrity, and all 42 are **byte-identical to the registry's current `dist.integrity`**, fetched fresh with `npm view` (0 mismatches). All 42 carry npm provenance attestations on the registry.
+    - **Signatures:** `npm audit signatures` found **415/415 installed packages with verified registry signatures, 0 invalid and 0 missing.** 67 packages have verified attestations, including `next@16.3.6`, `sharp@0.35.5`, `postcss@8.5.23`, `nanoid@3.3.19`, `@emnapi/runtime@1.11.3`, `@swc/helpers@0.5.23`, `@next/env` and `@next/swc-darwin-arm64`.
+    - **Whole lockfile:** across the *entire* post-bump lockfile there are 0 non-registry `resolved` values and 0 entries without `integrity`.
+  - **Install scripts:** entries with `hasInstallScript` went **3 → 2**, because `sharp@0.35.5` no longer has one. The other two, `fsevents` and `unrs-resolver`, are pre-existing and unchanged. None of the 42 manifests has a `preinstall`, `install`, `postinstall` or `prepare` script, or a `gypfile`. Checked twice: against the registry and against the installed `package.json` files.
+  - **Every dependency edge traced:**
+    - `next@16.3.6` pins `@next/env` and the `@next/swc-*` binaries at `16.3.6`, `@swc/helpers@0.5.23` exactly, and `postcss@8.5.23` exactly. Its old pin, `8.4.31`, was removed and now dedupes with the root copy, still inside the root's `^8.5.6`. It asks for `sharp ^0.35.4`.
+    - `sharp@0.35.5` asks for `semver ^7.8.5`, so its nested copy moves `7.7.4 → 7.8.5`. It also asks for the `@img/*@0.35.5` and `@img/sharp-libvips-*@1.3.4` binaries and the two new wrapper packages.
+    - `@img/sharp-wasm32@0.35.5` asks for `@emnapi/runtime ^1.11.3` (`1.8.1 → 1.11.3`).
+    - `postcss@8.5.23` asks for `nanoid ^3.3.16` (`3.3.11 → 3.3.19`).
+    - Nothing outside `next`'s tree moved.
+  - **Two corrections to the dispatch's list, neither a concern:**
+    - Only 2 entries are genuinely new: `@img/sharp-freebsd-wasm32` (`os: freebsd`) and `@img/sharp-webcontainers-wasm32` (`cpu: wasm32`). Both are platform-gated, so neither is installed here or on Vercel's linux-x64.
+    - `@emnapi/runtime` and `sharp`'s nested `semver` are **version changes to entries that already existed**, not new packages.
+- 🟢 **SEC-INFO-26 — `@img/sharp-wasm32@0.35.5` dropped its `cpu: ["wasm32"]` restriction; version 0.34.5 had one.**
+  - **Why it's installed anyway:** it is now reached only through the two platform-gated wrappers, but npm installs it on platforms that don't match. `npm ls` flags both it and `@emnapi/runtime` as `extraneous`. Both were written to disk at 20:45 by `npm update` (8.9 MB), and `npm ls --all` still exits 0. Vercel's `npm install` should behave the same way.
+  - **It doesn't run:** `sharp` 0.35.5 loads the native per-platform binding first, and falls back to `@img/sharp-wasm32` only if that load fails (`node_modules/sharp/dist/sharp.cjs`, lines 38–107). The package comes from the same `@img` publisher scope, is registry-pinned and provenance-attested, and has no install script.
+  - **The only effect is size:** the current build's `.next/next-server.js.nft.json` output trace includes it and `@emnapi/runtime`, so functions get larger. That's a note for `/devops`, not a security finding. No action.
+
+**4. `next.config.ts`: ✅ both keys do exactly what they claim, neither changes production behavior, and the redirects are untouched.** Traced through the installed 16.3.6 source, not the docs alone.
+- 🟢 **SEC-INFO-27 (a) — `logging: { serverFunctions: false }` completely disables the framework's argument logging.**
+  - **Default:** `serverFunctions: true` (`config-shared.js:137`), so on 16.3.6 `next dev` would log every Server Function call if this key were absent.
+  - **Producer:** there is exactly one, `server/app-render/action-handler.js:822`. It builds `{functionName, args: boundActionArguments, location}` only when `process.env.NODE_ENV === 'development' && ctx.renderOpts.logServerFunctions`.
+  - **Consumer:** there is exactly one, `server/dev/log-requests.js:47-50`, which writes `ƒ name(args)` to stdout.
+  - **The switch:** `logServerFunctions` is `Boolean(nextConfig.logging.serverFunctions)` (`base-server.js:424`, `build/templates/app-page-runtime.js:561`), so the key turns it off. The serialized build config shows `logging: {"serverFunctions":false,"browserToTerminal":"warn"}`, so the other defaults survive.
+  - **How arguments would print** (measured with Next's own `formatArgs`; no server involved):
+    - A `FormData` argument renders as `{}`. `loginAction` and the three public form actions all take `(prevState, FormData)`. So even without the key, 16.3.6 would have printed `ƒ loginAction(null, {})`: no password and no form field.
+    - A **plain-object** argument prints its first three keys, sorted alphabetically, verbatim. A test object with `name`, `email`, `phone` and `message` printed `email`, `message` and `name`.
+  - **Verdict:** for the password and public-form PII, the key is defense in depth today. It becomes load-bearing if a future patch starts expanding `FormData`, and for any action that takes object arguments. It makes the outcome independent of the formatter, which is what `/architect`'s (c) intended. Keep it.
+  - **What no Next flag covers:** see SEC-INFO-29.
+- 🟢 **SEC-INFO-27 (b) — `agentRules: false` completely prevents the `AGENTS.md`/`CLAUDE.md` writes.**
+  - **One writer:** in the whole `next` package, compiled chunks included, the only code that writes either file is `server/lib/generate-agent-files.js`. No `@next/*` package writes `AGENTS.md`.
+  - **One caller, gated twice:** the only call path is `server/lib/start-server.js:418-429` → `app-info-log.ensureAgentRulesForDev()`. That call sits inside both `if (isDev)` and `if (initResult.agentRules !== false)`, and runs after `next.config.ts` has loaded, so it cannot fire before the key is read.
+  - **No override:** `initResult.agentRules` is `config.agentRules` passed straight through (`router-server.js:751`), and no environment variable feeds into it.
+  - **What it would have done in this repo:** `AGENTS.md` exists without the managed block and there's no root `CLAUDE.md`. The code path would therefore have **appended the block to `AGENTS.md` and skipped `CLAUDE.md`**. It creates `CLAUDE.md` only when neither file exists, so `/architect`'s "also generates a `CLAUDE.md`" doesn't apply here. `/qa`'s check (f)3 covers both files anyway.
+  - **Why blocking it matters:** the injected block addresses agents with instructions ("committing it with your work keeps the tree clean"). That's prompt-injection-shaped content entering this repo's governance file, so blocking it is correct.
+  - **State at time of check:**
+    - `AGENTS.md` matches `HEAD` (mtime 2026-08-10); there's no root `CLAUDE.md` and no `nextjs-agent-rules` marker.
+    - The only 16.3.6 process running from this checkout was a production `next-server` on :3001, which never reaches this branch.
+    - No agent-started 16.3.6 `next dev` was observed, so the dev-mode empirical confirmation remains `/qa`'s check (f)3.
+- 🟢 **SEC-INFO-27 (c) — no production behavior change; the types are clean; the redirects are untouched.**
+  - **Dev-only reads:** `agentRules` is read only inside `start-server.js`'s `isDev` branch, and argument logging is hard-gated on `NODE_ENV === 'development'`.
+  - **Serialized but inert:** both keys *are* serialized into `.next/required-server-files.json` (`config.agentRules: false`, `config.logging: {…}`). That's a byte-level difference in the manifest only; nothing in `next start` or Vercel's runtime acts on them.
+  - **Types:** both keys are declared in 16.3.6's own `NextConfig` type (`config-shared.d.ts:1574`, `:296`), so no cast is needed.
+  - **Redirects and routing:**
+    - The diff is purely additive, above `async redirects()`, and all four redirect rules are byte-identical.
+    - `/lead-dev`'s pre- and post-bump route tables are identical.
+    - The built `middleware-manifest.json` still registers the admin-gate middleware with a matcher identical to `src/middleware.ts:10`.
+- 🟢 **SEC-INFO-28 — the `GHSA-mq59-m269-xvcx` fix is present and holds for this app, verified statically.**
+  - **The check:** `action-handler.js:430` maps `Origin: null` to the literal host `'null'`, which never equals the request host. The request then reaches `isCsrfOriginAllowed('null', allowedOrigins = [])`, which returns `false`, giving "Invalid Server Actions request.": a 500 for fetch-based actions, thrown otherwise.
+  - **This app's config:** no `serverActions.allowedOrigins` anywhere, so nothing widens that check.
+  - **Live test declined:** `/architect`'s (f) offered an optional live `Origin: null` negative test. This dispatch is static-only, and the code path is unambiguous.
+- 🟢 **SEC-INFO-29 (new; pre-existing; not T-006) — an app-authored log line that no Next flag can silence.**
+  - **The line:** `src/app/actions/form-actions.ts:27` runs `` console.error(`${type} submission error:`, error) `` on the whole Supabase `PostgrestError`. That prints in `next dev` **and in production**, where it lands in Vercel's runtime logs.
+  - **Why it could leak PII:** a Postgres NOT NULL or CHECK violation includes the failing row in its `details` ("Failing row contains (…)"). Here that row includes the `payload` JSONB: the submitter's name, email, phone and message.
+  - **Theoretical today:** the reference schema has no CHECK constraint on `submissions`. `type` and `status` are hardcoded, and `payload` is always an object. The realistic failures, RLS denial and network errors, carry no row data. Caveat: the live database may differ from `supabase-schema.sql` (`docs/WORKFLOW.md` §8 row 2).
+  - **Mitigation:** log only `error.code` and `error.message`, never `details` or the whole object. Recommend folding into **T-018**, which already builds the "log raw server-side, show generic" helper. T-018 should apply that helper's logging half to this public-form path as well.
+  - **Everything else is clean:** no other `console.*` call in `src/` logs request data (the rest log read or upload errors that carry no user input). Client components log nothing, so the `browserToTerminal: 'warn'` default forwards no PII today.
+
+**5. The 9 remaining audit findings: ✅ agree with `/architect`'s (e).** They are not T-006 scope and belong in a separate, low-priority, lockfile-only ticket. They're graded by *this app's* exposure, not by the registry's label.
+- 🟢 **SEC-INFO-31 — the 9 toolchain advisories: none reachable at runtime. 4 run at build time on project-controlled input; 5 are lint-only.** Four independent checks:
+  - **Import graph:** nothing in `src/` imports any of them. `next`'s runtime `server/` and `client/` code never loads `compiled/browserslist`, which is `next`'s only route to `baseline-browser-mapping`.
+  - **Output traces:** none appears in any of the build's 31 `.nft.json` files. The pattern was validated first: it finds `next` in all 31 and `sharp` in 1.
+  - **Bundled chunks:** for six of the nine (the four build-time packages plus `js-yaml` and `flatted`), a distinctive source string is absent from all of `.next/server`, middleware and edge output included. Positive control: `supabase-js` was found in 14 files. Each probe string was first confirmed present in its own package.
+  - **Lint never runs in the build:** `next build` in 16.3.6 has no ESLint step (none in `build/index.js`, none in `/lead-dev`'s build log), and `npm run lint` is broken anyway (Known Trap #10).
+
+| Package (registry label) | Reached via | Runs where | Graded |
+|---|---|---|---|
+| `browserslist` 4.28.1 (high) | `autoprefixer`; Babel via ESLint | `next build` (CSS) + lint | 🟢 Low |
+| `picomatch` 2.3.1 / 4.0.3 (high) | Tailwind's glob/watch stack; `tinyglobby` via the ESLint resolver | `next build` (CSS) + lint | 🟢 Low |
+| `baseline-browser-mapping` 2.10.0 (moderate) | `next` itself (`^2.9.19`, via its compiled browserslist) and `browserslist` | `next build` only | 🟢 Low |
+| `postcss-selector-parser` 6.1.2 (low) | Tailwind → `postcss-nested` | `next build` (CSS) | 🟢 Low |
+| `brace-expansion` 1.1.12 / 5.0.4 (high) | `minimatch` (ESLint, `typescript-estree`) | lint only | 🟢 Info |
+| `flatted` 3.3.3 (high) | ESLint cache (`flat-cache`) | lint only | 🟢 Info |
+| `js-yaml` 4.1.1 (high) | `@eslint/eslintrc` | lint only | 🟢 Info |
+| `@humanfs/node` 0.16.7 (moderate) | `eslint` | lint only | 🟢 Info |
+| `@babel/core` 7.29.0 (low) | `eslint-plugin-react-hooks` | lint only | 🟢 Info |
+
+  - **Why nothing grades above Low:** every build-time input these parsers and globbers see is repo content: CSS, `tailwind.config.ts` globs and the browserslist config. Anyone who can feed them hostile input can already edit `next.config.ts` and run arbitrary code in the build, so these advisories add no reachable risk. The five lint-only packages never run on Vercel at all.
+  - **One precision on `/architect`'s table:** `baseline-browser-mapping` is also a direct dependency of `next`, so strictly it sits inside "`next`'s own tree". `npm update next` left it because `2.10.0` already satisfies `^2.9.19`. Deferring it is still right, because its only consumer inside `next` runs at build time.
+  - **Why the follow-up shouldn't wait forever:** nine toolchain "highs" in every `npm audit --omit=dev` run is alert fatigue for the pre-deploy audit gate, and a genuine runtime advisory could hide among them.
+    - **The lasting fix:** `/architect`'s optional (e) item, moving build-only and lint-only packages to `devDependencies` so that `--omit=dev` reflects the real runtime surface.
+    - **Recommendation:** `/pm` includes it in the follow-up, subject to `/architect`'s sign-off.
+- 🟢 **SEC-INFO-30 — only the lockfile holds the `16.3.6` floor.**
+  - **Why neither the audit nor the range catches a regression:** `vcvr` is not in the audit feed, so a clean `npm audit` does **not** prove the floor. `package.json` still accepts `^16.1.6`, so a lockfile restored below `16.3.6` would install without complaint.
+  - **The gap in the current reasoning:** `/architect` rejected raising the range because regenerating the lockfile resolves to the newest `^16`. That covers regeneration, but not the realistic failure: a **bad merge of `package-lock.json`**.
+  - **First ticket at risk:** the toolchain follow-up. It is itself lockfile-only, and it will conflict with T-006 if its branch was cut before T-006 merged.
+  - **Mitigation:**
+    - Every lockfile-touching ticket branches from `main` after T-006 merges.
+    - Its review re-runs `npm ls next` and confirms `16.3.6` or higher, alongside the audit, until `vcvr` reaches GitHub's global database.
+    - Recommend `/architect` reconsider raising the range to `^16.3.6` inside that same follow-up. Then `npm ci` fails loudly on any lockfile below the floor, turning a silent regression into a broken build. This is a technical call for `/architect`, not a Counter: T-006's decision was scoped to lockfile-only.
+  - **Runbook:** item 7 in §7 covers the response.
+
+**6. SEC-HIGH-1: ✅ closed in code. Production stays exposed until the next user-typed deploy.**
+- **Both closure conditions are met:**
+  - T-006's own acceptance: "`/cso review` re-runs `npm audit --omit=dev` and confirms the SEC-HIGH-1 advisory is gone".
+  - `/architect`'s extra condition: `npm ls next` shows exactly `16.3.6`.
+- **Production today:** `origin`/`client` sit at `e8eace1` on `next@16.1.6`. That version is inside the full 30-advisory range, including the null-origin Server Actions CSRF bypass that fronts every live Server Action, T-004's product create, update, delete and reorder included. The two critical RCEs are still contextualized as unreachable here, per the 2026-09-26 entry.
+- **When it ends:** the exposure lasts until the user types "deploy" and `/git` pushes a `main` that contains the T-006 merge to both remotes (`docs/WORKFLOW.md` §6).
+- **What the closure is bound to:** `package-lock.json` sha256 `6a026457868784a9…` and `next.config.ts` sha256 `6bf8389d6804cfc4…`. If `/qa`'s findings force either file to change before merge, the closure lapses until `npm ls next` and `npm audit --omit=dev` are re-run on the new tree.
+- **Recorded in §5.**
+
+**7. SEC-HIGH-2: still open. The user-reported fix is not yet effective. It stays 🟠 High, and its precondition is now observed in the unsafe state.**
+- **What's recorded:**
+  - The user reports turning off "Allow new users to sign up".
+  - The orchestrator's read-only check of the live project's public `/auth/v1/settings` (project ref starting `hgrfdzbv…`) still returned **`disable_signup: false` more than 20 minutes later.**
+  - This office did **not** re-query the endpoint: that needs the anon key, and `.env*` is never read. No auth action of any kind was attempted.
+- **Any user is an admin today.** This pass re-read the admin gate:
+  - `src/lib/supabase/middleware.ts:22-28` lets **any** authenticated user into `/admin/*`; there is no role, claim or allowlist check.
+  - `requireUser()` and `updateSettings` do the same, with a bare `getUser()`, and 12 other write functions have no check at all (SEC-MED-10).
+  - So a self-registered account passes every app-level check. That's also why T-015's `getUser()` additions don't touch this finding.
+- **The live grants are likely wider than the reference file:**
+  - **Evidence:** `/admin/submissions` (`src/app/admin/(dashboard)/submissions/page.tsx:17-18`) reads `submissions.select("*")` through the session-bound client. For the client's inbox to show any rows, the live database must grant `authenticated` a SELECT on `submissions`. The reference file shows only `anon` policies (`docs/WORKFLOW.md` §8 row 2).
+  - **What a self-registered account would get:** full admin UI access, CMS, jobs, reports, leaders and product writes, and very probably upload and delete rights in the public `media` bucket (storage policies aren't in the repo).
+  - **And, if the inbox works as shipped:** every contact, career and grievance submission, including grievances the site promises to review "confidentially".
+- **Why this is 🟠 and not 🔴:** the missing piece for an outsider is the anon key, and this app has never shipped it to a browser (SEC-INFO-32).
+  - **Who can still do it:** exploitation today needs the key from somewhere else, such as an insider, a former contractor, a leaked env file or an agent transcript. That's this rubric's "exploitable with effort", so 🟠 stands.
+  - **The ex-admin case:** the §2 "disgruntled ex-admin" already has the key. While signups are open, **deleting that person's account does not lock them out.** They can register a new one.
+  - **When it becomes 🔴:** the moment any change ships the anon key to a browser. SEC-INFO-32 records the guardrail.
+  - **How long it has been open:** Supabase projects start with signups on, so the window may cover the site's whole life. That's why checking Authentication → Users is not optional.
+- **What the user must do now.** It's a dashboard action; no code or deploy is needed.
+  1. Open the Supabase project whose dashboard URL contains the ref starting **`hgrfdzbv`**. Changing the setting in a different project is the most likely reason the endpoint didn't change.
+  2. Go to Authentication → Sign In / Providers (older dashboards: Authentication → Settings). Turn **off** "Allow new users to sign up", then click **Save**.
+  3. **Don't** disable the Email provider itself. The client's admin login is email plus password and would be locked out.
+  4. Go to Authentication → Users. Delete any account the client doesn't recognize, noting each one's created-at and last-sign-in times first.
+  5. If any unknown account exists, follow §7 runbook item 6 (audit every `authenticated`-writable table for changes since that account was created), and treat `submissions` as potentially read.
+  6. The orchestrator then re-reads `/auth/v1/settings`. SEC-HIGH-2 closes only when it returns `disable_signup: true` **and** the Users review is done.
+- **Also record on that same read:** `mailer_autoconfirm`, and the `external` block (`email`, `phone`, `anonymous_users`). If **anonymous sign-ins** are on, Supabase issues anonymous users the `authenticated` role, which opens every `USING (true)` policy to them without even an email address. That setting must be off too.
+- **Structural fix (recommend `/pm` file it; no such ticket exists in `docs/ROADMAP.md` today):** stop the dashboard toggle from being the single point of failure.
+  - **Approach:** scope admin authorization to an explicit admin identity. One option is an `app_metadata.role = 'admin'` claim, which only the dashboard or the service role can set. Another is an allowlist table.
+  - **Apply it in three places:**
+    - the `/admin` middleware gate;
+    - the shared auth helper that write actions use;
+    - every `authenticated` RLS policy, replacing `USING (true)` and `WITH CHECK (true)` with a predicate on that identity.
+  - **Sequence:** it's schema-touching and sensitive, so `/architect Review schema` → the user applies the SQL → `/lead-dev` → `/cso review` → `/qa`.
+  - **Rank:** above T-015 and T-018, because it closes the class of bug rather than one instance.
+- 🟢 **SEC-INFO-32 (new) — this app has never shipped the Supabase anon key to a browser. This corrects a premise in this document's earlier entries.**
+  - **Where it isn't:**
+    - Nothing in `src/` imports the browser client, `src/lib/supabase/client.ts`, which is dead code. No historical commit's client component references `createBrowserClient`, `NEXT_PUBLIC_SUPABASE_ANON_KEY` or that module.
+    - Key-shaped strings (HS256-JWT or `sb_publishable_`) appear **nowhere** in the local build's client output (`.next/static`, all chunks including admin), in prerendered HTML or RSC payloads, in `public/`, in tracked files, or anywhere in git history (`git log -S` found 0 commits).
+    - Live production matches: 6 public pages (HTML plus inline RSC) and all 21 JS chunks they reference (919 KB) show 0 key-shaped matches, no `apikey` string, and no `supabase.co` host in any JS. The host appears only in one page's HTML, as storage image URLs, so the project ref is public.
+    - The value appears only in 5 server-side build files, where `NEXT_PUBLIC_*` values get inlined into server code.
+  - **What this corrects:** earlier entries said "every visitor already holds" the key (the T-001 SEC-HIGH-2 text, the T-005 entry's item 2, and the T-004 entry's SEC-INFO-21). Their *conclusions* stand, because they treated the key as non-secret, which remains Supabase's model and the only safe assumption. Their *premise* was factually wrong for this deployment.
+  - **The guardrail:** until SEC-HIGH-2 and its structural fix are both closed, **no change may ship the anon key to a browser.** That covers importing `src/lib/supabase/client.ts` into any `"use client"` file, and passing the key as a prop to a client component. Either would make SEC-HIGH-2 exploitable by anyone on the internet at once, which is 🔴.
+  - **Where it should be recorded:** recommend `/archivist` add this as a Known Trap in `docs/MEMORY_BANK.md`.
+
+**Standing items (status only):**
+- **Untouched by T-006:** SEC-HIGH-5 (T-015) and every open 🟡. T-006's diff contains no application code.
+- **SEC-MED-2 (T-008) re-checked against production**, as the self-check requires. `curl -sI` of `/` and `/admin/login` on `www.fashionasialtd.com` still returns only `strict-transport-security: max-age=63072000`: no `includeSubDomains`, no CSP, XFO, XCTO, Referrer-Policy or Permissions-Policy. `/` still sends `x-powered-by: Next.js`. Unchanged since 2026-09-26, still open.
+
+**Secrets hygiene (this pass):**
+- **Git history:** no `.env*`, `*.pem`, `*.key`, `.ssh_key_*` or `cookies.txt` file has ever been committed (`git log --all --full-history` is empty).
+- **T-006's four changed files:** the secret-shape grep hit only `docs/TECH_STACK.md:158`. That's pre-existing T-001 prose explaining that *no* `service_role` grant was made, and it's outside T-006's hunks.
+- **Repo-wide:** the only hits are this file's own `password = "…"` placeholders.
+- 🟡 **SEC-MED-14 (new; pre-existing; not T-006; user action) — a plaintext GitHub token sits in local `.git/config`.**
+  - **What's there:** a count-only grep found two token-shaped strings. A redacted listing located them without printing any value:
+    - an inline `credential.helper` that echoes a hardcoded `ghp_` token for `happierbangladesh`;
+    - a remote URL for `github.com/happierbangladesh/Fashion_Asia_Limited.git` with credentials embedded in it.
+  - **History:** this is the token reported to the user out of band on 2026-09-26 and scoped out of that review. §6 records no rotation or risk acceptance for it. It isn't committed, so the Refuse-If on committed secrets doesn't apply.
+  - **Why it matters:**
+    - **Blast radius:** Vercel builds production from GitHub `main`, so anyone holding a push token for `origin` can ship arbitrary code to the live site.
+    - **Leak paths:** it can leak without any remote attack. `git config --list` prints the helper, `git remote -v` prints the URL with its credentials, and either command in any agent session copies the token into a stored transcript.
+  - **Grade:** 🟡, a defense-in-depth weakness with no direct remote exploit path.
+  - **Mitigation (user):**
+    - Revoke the token and issue a **fine-grained** PAT limited to this one repository, with Contents read/write only and an expiry.
+    - Store it in the macOS Keychain (`credential-osxkeychain`) or through `gh auth setup-git`.
+    - Remove the inline helper and strip the credentials from the remote URL.
+    - Record the rotation date in §6.
+  - **Blocking:** doesn't block T-006's merge or any deploy.
+
+**Doc-owner notes (not security findings):**
+- **Stale versions in `docs/TECH_STACK.md`,** for `/architect` or `/onboard`:
+  - Line 15 still says "PostCSS 8.5.6", but the lockfile now pins `8.5.23`.
+  - Line 139 says `@supabase/supabase-js 2.98.0`. The lockfile has pinned `2.112.2` since `7ac5070` (2026-08-10), and that's what is installed.
+- **Erratum, requested by `/pm` (ROADMAP fourth pass):** SEC-MED-10's headline "10 write functions" should read **12**, as its own per-file list (7 + 2 + 3) and its §5 row show. T-015 and T-019 together cover all 12.
+
+**Overall verdict this pass:** ✅ **T-006 cleared. SEC-HIGH-1 is closed in code**, backed by evidence beyond the audit count alone:
+- `next` is gone from the audit. This office re-ran it independently and cross-checked it against the registry's own advisory feed.
+- `npm ls next` shows exactly `16.3.6`.
+- `/architect`'s `vcvr` floor reasoning holds against the source advisory and the release notes, and the app has no `next/og` usage at all.
+- All 43 lockfile changes trace to `next`. All 42 non-removals match the registry's hashes, carry provenance and pass signature verification.
+- The install-script surface shrank from 3 packages to 2.
+- Both `next.config.ts` keys were traced to their only code paths in 16.3.6 and do what they claim, in dev only. Redirects, the route table and the middleware matcher are unchanged.
+
+**Findings tally:**
+- **Against T-006's own diff:** no new 🔴 or 🟠.
+- **SEC-HIGH-2:** stays 🟠 and open; the user-reported fix is not yet effective. It is independent of T-006 and needs the user's dashboard action now.
+- **New 🟡:** SEC-MED-14, pre-existing, user action.
+- **New 🟢:** SEC-INFO-23 through SEC-INFO-32.
+
+**Actions taken:** no commit, no source edit, no server started, no remote touched, no auth action, no access to the live database.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** T-006 may proceed to `/git Merge` once `/qa live` is green: T-006's production-build acceptance plus `/architect`'s (f) checks, above all (f)3 (`AGENTS.md`/`CLAUDE.md` after a dev run) and (f)4 (the unauthenticated admin probes). Two conditions:
+- The merged `package-lock.json` and `next.config.ts` must match the sha256 values in item 6.
+- The `docs/ROADMAP.md` diff must stay checkbox-only.
+
+**Pre-deploy position, stated now to save a round trip:**
+- **What the next deploy contains:** since `e8eace1`, `main` contains only `docs/ROADMAP.md`. After T-006 merges, deploying `main` = `d0e655a` + the T-006 merge (with the hashes above) adds no new sensitive surface and removes the SEC-HIGH-1 range.
+- **Cleared from this office without another pass.** The production headers, dependency audit and secrets checks this gate needs were all run in this pass.
+- **Not held for SEC-HIGH-2 or SEC-HIGH-5.** Both are 🟠, have been live since before `e8eace1`'s go-live and are not made worse by this release. Holding back a pure security patch would lengthen SEC-HIGH-1's exposure without shortening either of theirs.
+- **Recommended order:** the user does the SEC-HIGH-2 dashboard fix **now**; it needs no deploy and takes minutes. Then deploy T-006 at the next user-typed "deploy" (`docs/WORKFLOW.md` §6).
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
 |---|---|---|
-| SEC-HIGH-1 — bump `next` to `16.3.6`+ | Not yet filed — recommend `/pm` file immediately | Open — blocks next `deploy` |
+| SEC-HIGH-1 — bump `next` to `16.3.6`+ | Filed and fixed as **T-006** (branch `fix/T-006-next-security-bump`) | ✅ **Closed in code 2026-09-28.** Verified in the 2026-09-28 T-006 CSO entry: the re-run audit shows no `next` and 0 critical, and `npm ls next` shows exactly `16.3.6`. **Production is still exposed:** `origin`/`client` at `e8eace1` run `next@16.1.6` until the user types "deploy" and `/git` pushes a `main` that contains the T-006 merge. The closure is bound to the reviewed `package-lock.json` (sha256 `6a026457868784a9…`) and `next.config.ts` (`6bf8389d6804cfc4…`). If either changes before merge, the closure is void until `npm ls next` and `npm audit --omit=dev` are re-run. |
 | SEC-MED-1 — server-side dimension check on `uploadOptimizedImage` | Not yet filed — recommend `/pm` follow-up | Open — does not block deploy |
 | SEC-MED-2 — add security headers (`next.config.ts` `headers()`) | Not yet filed — recommend `/pm` follow-up | Open — does not block deploy |
 | SEC-INFO-7 — confirm admin login rate-limit/lockout | Track for next full `/cso audit` | Open — informational |
@@ -296,6 +559,15 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 | SEC-INFO-20 — `updateCategoryProduct` can structurally reassign a product to a different, already-attachable category (pre-existing T-003 behavior, gated soundly, crafted-call only, no shipped UI reaches it) | No ticket — informational | Closed as informational — no action required |
 | SEC-INFO-21 — `getAllCategoryProducts()` adds no exposure beyond what `getCategoryProducts()` and Supabase's own public REST endpoint already made available | No ticket — informational | Closed as informational — no action required |
 | SEC-INFO-22 — category `id`/`slug` round-trip through `BusinessClient`'s new post-Save re-read confirmed safe, closing the T-004 acceptance-criterion risk `docs/TECH_STACK.md`/`docs/MEMORY_BANK.md` flagged as open | No ticket — informational, acceptance criterion satisfied | Closed as informational — no action required |
+| SEC-HIGH-2 — status update, 2026-09-28 (T-006 CSO entry) | User action in the dashboard (steps in the T-006 entry, item 7). The structural fix is the next row | **Open, 🟠 High; user-reported fix not yet effective.** The orchestrator's read-only `GET /auth/v1/settings` (project ref `hgrfdzbv…`) still returned `disable_signup: false` more than 20 minutes after the user reported turning signups off. Closes only when that endpoint reads `true` **and** the user has reviewed Authentication → Users (§7 item 6). Becomes 🔴 if the anon key ever ships to a browser (SEC-INFO-32). |
+| SEC-HIGH-2 — structural fix: role-scoped admin authorization (the `/admin` middleware gate, the write-action auth helper, and every `authenticated` RLS policy predicate), so the signup toggle stops being the single point of failure | Not yet filed. Recommend `/pm` file it as schema-touching and sensitive: `/architect Review schema` → the user applies the SQL → `/lead-dev` → `/cso review` → `/qa`. Rank it above T-015/T-018 | Open. Recommended |
+| SEC-INFO-23 to SEC-INFO-28 — T-006 verification record: audit cleared; exact `16.3.6` floor with `vcvr` verified at its source; lockfile integrity, provenance and signatures; `sharp-wasm32` inert; both `next.config.ts` keys verified dev-only; null-origin fix present | No ticket; informational | Closed as informational |
+| SEC-INFO-29 — `form-actions.ts:27` logs the whole `PostgrestError`, whose `details` could echo `submissions` payload PII on a NOT NULL or CHECK violation. Theoretical under today's schema; logs in dev **and** production | Recommend folding into **T-018** (log only `error.code`/`error.message`) | Open. Informational; does not block deploy |
+| SEC-INFO-30 — only the lockfile guards the `16.3.6` floor. `vcvr` is absent from the audit feed and the range stays `^16.1.6`, so a bad lockfile merge would regress silently | Fold into the toolchain follow-up below: branch after T-006 merges, re-confirm `npm ls next`, `/architect` to reconsider a `^16.3.6` range. Runbook §7 item 7 | Open. Informational |
+| SEC-INFO-31 — 9 residual toolchain advisories (`browserslist`, `picomatch`, `baseline-browser-mapping`, `postcss-selector-parser`: build-time, 🟢 Low; `brace-expansion`, `flatted`, `js-yaml`, `@humanfs/node`, `@babel/core`: lint-only, 🟢 Info). None is reachable at runtime | Not yet filed. This is `/architect`'s (e) follow-up: recommend `/pm` file a low-priority, lockfile-only ticket cut from `main` after T-006 merges, including the `devDependencies` move pending `/architect` sign-off | Open. Doesn't block deploy or T-006 |
+| SEC-INFO-32 — the Supabase anon key is not shipped to browsers (verified against the build, production and git history). This corrects the "every visitor holds it" premise in the T-001, T-004 and T-005 entries | No ticket. Guardrail: nothing may ship the key to a browser while SEC-HIGH-2 or its structural fix is open. Recommend `/archivist` record it as a Known Trap | Open. Guardrail |
+| SEC-MED-14 — plaintext GitHub PAT for `happierbangladesh` in local `.git/config` (inline `credential.helper` plus credentials embedded in a remote URL). Not committed; can leak via `git config --list` or `git remote -v` into agent transcripts | User action: revoke it, reissue as a fine-grained single-repo PAT with an expiry, move it to Keychain or `gh auth setup-git`, strip the URL credentials, and log the rotation in §6 | Open. Doesn't block deploy |
+| SEC-MED-10 — erratum, 2026-09-28 | Headline count should read **12** write functions (7 + 2 + 3, as the finding's own list states). T-015 plus T-019 cover all 12 | Erratum only; status unchanged |
 
 ## 6. Secrets log
 
@@ -304,8 +576,11 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Not tracked before this bootstrap — unknown | Client (Supabase dashboard) |
 | `NEXT_PUBLIC_SUPABASE_URL` | N/A — not a rotatable secret, project identifier | Client |
 | `CRON_SECRET` | Not tracked before this bootstrap — unknown; may be unset (optional per `docs/TECH_STACK.md`) | Client (Vercel env) |
+| GitHub PAT for `happierbangladesh`: inline `credential.helper` plus credentials embedded in a remote URL, in local `.git/config`. Untracked, and its value is never copied into any doc | Unknown, not tracked. Still present on 2026-09-28 (count-only check) | User (`happierbangladesh` GitHub account). See SEC-MED-14 |
 
 No committed secret was found this pass (see Secrets hygiene above). Nothing here required rotation.
+
+2026-09-28 (T-006 review): added the row for the local `.git/config` PAT (SEC-MED-14). It isn't committed, so the Refuse-If on committed secrets doesn't apply. Recommend rotating it and moving it to a keychain-backed credential helper; record the date here when done.
 
 ## 7. Incident response runbook
 
@@ -315,3 +590,9 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
 4. **Forms spam/abuse flood** (`submissions` table). Anon `SELECT` is already denied by RLS (per `docs/MEMORY_BANK.md` §5) — a flood is a cost/noise problem, not a data-exposure one. No evidence of active abuse found this pass; if volume becomes a real problem, file a ticket for a Supabase-side rate-limit or a CAPTCHA (e.g. Turnstile) on the three form actions.
 5. **A secret is found committed in git history.** Rotate the credential at its provider (Supabase dashboard, GitHub token settings, etc.) **first**. Only scrub git history after rotation — a scrub before rotation just hides an already-compromised secret. Log the rotation date in §6 immediately after. Never write the secret's *value* into any file in this repo, including this one.
 6. **An unexpected `authenticated`-role identity is discovered (SEC-HIGH-2, 2026-09-27).** If the Supabase Dashboard signup toggle is found enabled: disable it immediately (zero code/deploy required) — this stops new self-registration; existing sessions/tokens already issued remain valid until they expire or are revoked, so also check Authentication → Users for any account the client doesn't recognize and delete it there. Then audit every `authenticated`-ALL table (`jobs`, `products`, and per Known Trap #12 almost certainly `submissions`/`media_assets`/`site_settings`/`reports`/`leaders`) for rows created/edited/deleted since that account's creation timestamp. Distinct from runbook item 1 (compromise of the client's *own* known admin credential) — here the concern is an *additional, unknown* identity that was never supposed to be able to authenticate at all.
+7. **`next` falls below the `16.3.6` floor (SEC-INFO-30, 2026-09-28).** If `npm ls next` on `main`, or on any branch about to merge, shows anything below `16.3.6`, treat SEC-HIGH-1 as reopened.
+   - **Likely cause:** a bad `package-lock.json` merge. `npm audit` alone won't catch it while `GHSA-vcvr-r3jv-pc5j` is missing from the advisory feed.
+   - **Response:**
+     1. Restore T-006's lockfile (`git checkout <T-006 merge commit> -- package-lock.json`), then re-apply the other ticket's intended lockfile changes on top.
+     2. Re-run `npm ls next` and `npm audit --omit=dev`.
+     3. Hold any deploy until both are clean.

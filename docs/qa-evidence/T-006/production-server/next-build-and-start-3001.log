@@ -1,0 +1,72 @@
+start 2026-09-28T15:05:11Z
+
+> fashion-asia-limited@0.1.0 build
+> next build
+
+▲ Next.js 16.3.6 (Turbopack)
+- Environments: .env.local
+✓ Running next.config.ts took 82ms
+
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+  Creating an optimized production build ...
+✓ Compiled successfully in 1028ms
+  Running TypeScript ...
+  Finished TypeScript in 1028ms ...
+  Collecting page data using 9 workers ...
+  Generating static pages using 9 workers (0/25) ...
+  Generating static pages using 9 workers (6/25) 
+  Generating static pages using 9 workers (12/25) 
+  Generating static pages using 9 workers (18/25) 
+✓ Generating static pages using 9 workers (25/25) in 271ms
+  Finalizing page optimization ...
+
+Route (app)
+┌ ƒ /
+├ ○ /_not-found
+├ ƒ /admin
+├ ƒ /admin/business
+├ ƒ /admin/careers
+├ ƒ /admin/homepage
+├ ○ /admin/login
+├ ƒ /admin/media
+├ ƒ /admin/reports
+├ ƒ /admin/settings
+├ ƒ /admin/submissions
+├ ƒ /admin/sustainability
+├ ƒ /admin/who-we-are
+├ ƒ /admin/who-we-work-with
+├ ƒ /api/keep-alive
+├ ○ /apple-icon.png
+├ ƒ /career
+├ ○ /contact
+├ ƒ /global-partner
+├ ○ /grievance
+├ ○ /icon.png
+├ ƒ /life-at-fashion-asia
+├ ○ /robots.txt
+├ ƒ /sitemap.xml
+├ ƒ /sustainability
+├ ƒ /what-we-do
+├ ƒ /what-we-do/[category]
+└ ƒ /who-we-are
+
+
+ƒ Proxy (Middleware)
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
+
+> fashion-asia-limited@0.1.0 start
+> next start -p 3001
+
+▲ Next.js 16.3.6
+- Local:         http://localhost:3001
+- Network:       http://192.168.68.100:3001
+✓ Ready in 70ms
+✓ Running next.config.ts took 15ms

@@ -1,0 +1,21 @@
+# GET http://localhost:3001/admin/business.segments/_tree.segment.rsc
+# extra request headers: -H RSC: 1 -H Next-Router-Prefetch: 1
+# 2026-09-28T15:05:54Z
+> GET /admin/business.segments/_tree.segment.rsc HTTP/1.1
+> Host: localhost:3001
+> User-Agent: curl/8.7.1
+> Accept: */*
+> RSC: 1
+> Next-Router-Prefetch: 1
+> 
+
+HTTP/1.1 307 Temporary Redirect
+location: /admin/login
+Date: Mon, 28 Sep 2026 15:05:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body: 12 bytes; first 300 bytes:
+/admin/login
+# admin-content markers in body: none

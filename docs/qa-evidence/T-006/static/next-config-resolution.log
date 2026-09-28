@@ -1,0 +1,38 @@
+# How Next 16.3.6 consumes the two new keys (read from node_modules/next/dist)
+## agentRules — sole writer call site (start-server.js), inside if (isDev):
+                    // Auto-generate AGENTS.md / CLAUDE.md when an AI coding agent
+                    // is detected but the managed agent-rules block is missing.
+                    // Gated on `agentRules` in next.config (default true).
+                    if (initResult.agentRules !== false) {
+                        const result = await (0, _appinfolog.ensureAgentRulesForDev)(dir);
+## callers of writeAgentFiles / ensureAgentRulesForDev (non-esm):
+node_modules/next/dist/server/lib/app-info-log.js:128:    return (0, _generateagentfiles.writeAgentFiles)(dir);
+node_modules/next/dist/server/lib/start-server.js:420:                        const result = await (0, _appinfolog.ensureAgentRulesForDev)(dir);
+## ensureAgentRulesForDev (app-info-log.js):
+async function ensureAgentRulesForDev(dir) {
+    if (await (0, _agentname.getAgentName)() === null) return null;
+    if ((0, _generateagentfiles.hasCurrentAgentRules)(dir)) return null;
+    return (0, _generateagentfiles.writeAgentFiles)(dir);
+}
+## Negative control — is the gate actually load-bearing in this shell? (read-only calls, no writes)
+getAgentName() -> "claude-code_2-1-281_agent"
+hasCurrentAgentRules(repo) -> false
+=> without agentRules:false, next dev here WOULD call writeAgentFiles(repo)
+## logging.serverFunctions — renderOpts (base-server.js:424):
+logServerFunctions: typeof this.nextConfig.logging === 'object' && Boolean(this.nextConfig.logging.serverFunctions)
+## action-handler.js gate (dev only; logs raw boundActionArguments):
+if (process.env.NODE_ENV === 'development' && ctx.renderOpts.logServerFunctions && // TODO: For now, skip logging for 'use cache' Server Functions as the
+logInfo = {
+functionName,
+args: boundActionArguments,
+location
+## production runtimes referencing logServerFunctions:
+app-page-experimental.runtime.prod.js: 0
+app-page-turbo-experimental.runtime.prod.js: 0
+app-page-turbo.runtime.prod.js: 0
+app-page.runtime.prod.js: 0
+## Resolved config via next/dist/server/config loadConfig() (same zod validation + defaults merge the server uses):
+✓ Running next.config.ts took 101ms
+{"phase":"dev","agentRules":false,"logging":{"serverFunctions":false,"browserToTerminal":"warn"},"derived_logServerFunctions":false,"redirectCount":4}
+✓ Running next.config.ts took 3ms
+{"phase":"prod-server","agentRules":false,"logging":{"serverFunctions":false,"browserToTerminal":"warn"},"derived_logServerFunctions":false,"redirectCount":4}

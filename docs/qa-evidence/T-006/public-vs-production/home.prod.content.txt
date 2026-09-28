@@ -1,0 +1,336 @@
+[title x1] Fashion Asia Limited | Green Powered Innovation
+[meta theme-color] #0a0a0a
+[meta color-scheme] dark
+[meta description] A 100% export-oriented, LEED Gold certified Ready-Made Garments manufacturing company specializing in knitwear, based in Bangladesh.
+[meta author] Fashion Asia Limited
+[meta keywords] Knit Garments,Apparel Manufacturing,Bangladesh RMG,LEED Gold Factory,Sustainable Fashion,Northern Tosrifa Group
+[meta creator] Fashion Asia Limited
+[meta robots] index, follow
+[meta googlebot] index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1
+[meta og:title] Fashion Asia Limited | Green Powered Innovation
+[meta og:description] Modern, compliant, and sustainability-driven knit garments manufacturer in Bangladesh.
+[meta og:url] https://fashionasialtd.com
+[meta og:site_name] Fashion Asia Limited
+[meta og:locale] en_US
+[meta og:image] https://fashionasialtd.com/images/client/og-image.jpg
+[meta og:image:width] 1200
+[meta og:image:height] 630
+[meta og:image:alt] Fashion Asia Production Facility
+[meta og:type] website
+[meta twitter:card] summary_large_image
+[meta twitter:title] Fashion Asia Limited | Green Powered Innovation
+[meta twitter:description] Modern, compliant, and sustainability-driven knit garments manufacturer.
+[meta twitter:image] https://fashionasialtd.com/images/client/og-image.jpg
+[link canonical] https://fashionasialtd.com
+[link icon] /icon.png?icon.0cdd14b0.png sizes=1080x1080
+[link apple-touch-icon] /apple-icon.png?apple-icon.0cdd14b0.png sizes=1080x1080
+[h1] Green Powered Innovation
+[h2] Innovation in Motion
+[h2] Where Bold Vision Meets Precise Execution
+[h2] Built for Global Scale
+[h2] Three Pillars of Excellence
+[h3] Quality
+[h3] Sustainability
+[h3] Delivery
+[h2] LEED Gold Certified
+[h2] More Than a Workplace
+[h3] Our People
+[h3] Rewards & Recognition
+[h3] Wellbeing & Safety
+[h3] Learning & Growth
+[h2] Trusted by Leading Global Brands
+[h2] Ready to Build Together?
+[a href] /
+[a href] /
+[a href] /who-we-are
+[a href] /what-we-do
+[a href] /global-partner
+[a href] /sustainability
+[a href] /life-at-fashion-asia
+[a href] /contact
+[a href] /who-we-are
+[a href] /what-we-do
+[a href] /sustainability
+[a href] /life-at-fashion-asia
+[a href] /career
+[a href] /global-partner
+[a href] mailto:admin@fashionasialtd.com
+[a href] /
+[a href] /who-we-are
+[a href] /what-we-do
+[a href] /global-partner
+[a href] /sustainability
+[a href] /sustainability#reports
+[a href] /life-at-fashion-asia
+[a href] /career
+[a href] /contact
+[a href] /grievance
+[a href] mailto:admin@fashionasialtd.com
+[a href] tel:+8801711691366
+[img src] /logo.png
+[img alt] ""
+[img src] /_next/image?url=%2Flogo.png&w=96&q=75
+[img srcset] /_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+[img alt] "Fashion Asia Limited Logo"
+[video src] /videos/hero.mp4
+[video poster] /sequence/hero/poster.webp
+[video src] /videos/about.mp4
+[video poster] /images/client/about-poster.webp
+[img src] /images/client/box10-copy.webp
+[img alt] "Quality"
+[img src] /images/client/green-building-aerial.webp
+[img alt] "Sustainability"
+[img src] /images/client/box12-copy.webp
+[img alt] "Delivery"
+[img src] /images/client/scale-bg.jpg
+[img alt] ""
+[img src] /images/client/csr-main-copy.webp
+[img alt] "Sustainability"
+[img src] /images/client/box6-copy.webp
+[img alt] "Medical Center"
+[img src] /images/client/box4-copy.webp
+[img alt] "Day Care"
+[img src] /images/client/box3-copy.webp
+[img alt] "Shera Shop"
+[img src] /images/client/box2-copy.webp
+[img alt] "Bicycle Parking"
+[img src] /images/client/logos/el-corte-ingles.png
+[img alt] "El Corte Inglés"
+[img src] /images/client/logos/kappahl.png
+[img alt] "Kappahl"
+[img src] /images/client/logos/sports-direct.png
+[img alt] "Sports Direct"
+[img src] /images/client/logos/renner.png
+[img alt] "Renner"
+[img src] /images/client/logos/kenneth-cole.png
+[img alt] "Kenneth Cole New York"
+[img src] /images/client/logos/beverly-hills-polo-club.png
+[img alt] "Beverly Hills Polo Club"
+[img src] /images/client/logos/ochnik.png
+[img alt] "Ochnik"
+[img src] /images/client/logos/piazza-italia.png
+[img alt] "Piazza Italia"
+[img src] /images/client/logos/american-holic.png
+[img alt] "American Holic"
+[img src] /images/client/logos/lakole.png
+[img alt] "Lakole"
+[img src] /images/client/logos/paper-denim-cloth.png
+[img alt] "Paper Denim & Cloth"
+[img src] /images/client/logos/gym-glamour.png
+[img alt] "Gym Glamour"
+[img src] /images/client/logos/free-planet.png
+[img alt] "Free Planet"
+[img src] /images/client/logos/jvz.png
+[img alt] "JVZ"
+[img src] /_next/image?url=%2Flogo.png&w=96&q=75
+[img srcset] /_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+[img alt] "Fashion Asia Limited Logo"
+[text]
+  F
+  A
+  S
+  H
+  I
+  O
+  N
+  A
+  S
+  I
+  A
+  LIMITED
+  0%
+  FASHION ASIA
+  Limited
+  Home
+  Who We Are
+  What We Do
+  Global Partner
+  Sustainability
+  Life at Fashion Asia
+  Connect
+  Northern Tosrifa Group
+  Green Powered
+  Innovation
+  LEED Gold Certified
+  800K Monthly
+  Sreepur, Bangladesh
+  34+ Yrs
+  Legacy
+  850+
+  Machines
+  $30M
+  Annual Revenue
+  Scroll to explore
+  Cinematic Experience
+  Innovation in Motion
+  From automated cutting to precision sewing, every step of our manufacturing process is designed for absolute quality and a zero defect philosophy.
+  About Fashion Asia Limited
+  Where Bold Vision Meets Precise Execution
+  As a proud sister concern of Northern Tosrifa Group (NTG), which has over 34 years of excellence in the apparel industry, we continue the legacy of quality, innovation, and responsible manufacturing from our modern, compliant facility in Sreepur, Gazipur.
+  99.2%
+  Right First Time
+  98.5%
+  On-Time Delivery
+  800K
+  Pieces/Month
+  Discover Our Story
+  01 — Manufacturing Excellence
+  What We Do
+  Built for Global Scale
+  26 production lines. 800K pieces monthly. From cutting-edge knit garments to precision sportswear — we deliver with a zero-defect philosophy for the world's leading brands.
+  Explore Our Business
+  T-Shirts
+  Polo Shirts
+  Dresses
+  Sleepwear
+  Sportswear
+  Heavy Jersey
+  26
+  Lines
+  800K
+  Monthly
+  2,000+
+  Team
+  Our Framework
+  Three Pillars of Excellence
+  01
+  Quality
+  Zero-defect philosophy with Optitex precision and rigorous 4-point inspection.
+  Optitex CAD
+  AQL 2.5
+  Gemini
+  02
+  LEED GOLD
+  Sustainability
+  Rainwater harvesting systems, solar-powered. Zero salt dyeing. 100% compliance.
+  Solar Power
+  Zero Discharge
+  Certified
+  03
+  Delivery
+  Bullmar auto-cutting. Real-time tracking. Agile production systems.
+  Bullmar
+  45K/Day
+  Agile
+  800 K
+  Pieces Monthly
+  30,000
+  Daily Output
+  750
+  Sewing Machines
+  45K
+  Daily Cuts
+  $30M
+  Group Revenue
+  Green Manufacturing
+  LEED Gold Certified
+  Solar powered. Zero salt dyeing. Rainwater harvesting. Our factory operates as a fully compliant green facility, setting the benchmark for responsible garment manufacturing.
+  LEED Gold
+  WRAP
+  Amfori (BSCI)
+  SMETA
+  SLCP
+  Higg Index
+  GOTS
+  OCS
+  GRS
+  OEKO-TEX
+  BCI
+  RSC
+  ☀️
+  Solar Powered
+  💧
+  Zero Discharge
+  ♻️
+  Water Recycling
+  🌿
+  100% Compliant
+  Our Sustainability Story
+  Life at Fashion Asia
+  More Than a Workplace
+  Our responsibility does not stop at the factory gate.
+  The same standards that make our facility green make it a good place to work. Behind every garment are 2,000 people — and the care we design around them is deliberate, funded, and measured.
+  2,000
+  People on site every day
+  Medical Center
+  On-site medical services, healthcare assistance, and maternity support.
+  Day Care
+  Childcare on the premises so working parents stay close to their children.
+  Shera Shop
+  A fair-price shop giving every employee daily essentials below market cost.
+  Bicycle Parking
+  Secure parking and safe commuting for the workforce that travels daily.
+  Our People
+  Teamwork, respect, and inclusion — every employee valued and heard.
+  Rewards & Recognition
+  Competitive pay, advancement, and recognition for dedication.
+  Wellbeing & Safety
+  Human rights protected in a safe, healthy, respectful workplace.
+  Learning & Growth
+  Structured training and leadership development for every career.
+  Life at Fashion Asia
+  Join the Team
+  Fashion Asia Limited
+  Sustainable Manufacturing
+  LEED Gold Certified
+  Right First Time
+  Global Compliance
+  Vertical Integration
+  Fashion Asia Limited
+  Sustainable Manufacturing
+  LEED Gold Certified
+  Right First Time
+  Global Compliance
+  Vertical Integration
+  Fashion Asia Limited
+  Sustainable Manufacturing
+  LEED Gold Certified
+  Right First Time
+  Global Compliance
+  Vertical Integration
+  Fashion Asia Limited
+  Sustainable Manufacturing
+  LEED Gold Certified
+  Right First Time
+  Global Compliance
+  Vertical Integration
+  Who We Work With
+  Trusted by Leading Global Brands
+  Retailers and labels across Europe, the Americas, and Asia rely on us for quality, compliance, and delivery they can plan around.
+  See All Partners
+  Let's Talk
+  Ready to Build
+  Together?
+  Partner with a manufacturer that prioritizes sustainability, efficiency, and zero-defect execution. Let us bring your apparel vision to life.
+  Start a Conversation
+  Phone
+  +880 1711 691 366
+  Factory
+  Teprirbari, Sreepur, Gazipur
+  Corporate
+  Gopalpur, Munnu Nagar, Tongi
+  FASHION ASIA
+  Limited
+  A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh.
+  LEED Gold
+  WRAP
+  BSCI
+  GOTS
+  Company
+  Who We Are
+  What We Do
+  Global Partner
+  Sustainability
+  Reports & Publications
+  Life at Fashion Asia
+  Careers
+  Career
+  Contact Us
+  Grievance Cell
+  Connect
+  admin@fashionasialtd.com
+  +880 1711 691 366
+  © 2026 Fashion Asia Limited. All Rights Reserved.
+  |
+  A Concern of Northern Tosrifa Group
+  fashionasialtd.com

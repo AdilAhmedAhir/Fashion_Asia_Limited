@@ -1,0 +1,12 @@
+# GET https://www.fal.com.bd/media (no redirect following) 2026-09-28T15:09:21Z
+HTTP/2 308 
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain
+date: Mon, 28 Sep 2026 15:09:21 GMT
+location: /life-at-fashion-asia
+refresh: 0;url=/life-at-fashion-asia
+server: Vercel
+strict-transport-security: max-age=63072000
+x-vercel-id: bom1::fjtcl-1790608161397-0baa6083823a
+
+# body bytes: 15  sha256: 7c040f8633b8823d72ed63da9b3b2dfe9846e912c66a64c9433ec9c4815d76c2

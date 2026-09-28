@@ -1,0 +1,10 @@
+# GET http://localhost:3001/business (no redirect following) 2026-09-28T15:09:20Z
+HTTP/1.1 308 Permanent Redirect
+location: /what-we-do
+Refresh: 0;url=/what-we-do
+Date: Mon, 28 Sep 2026 15:09:20 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body bytes: 11  sha256: 04e2986d4d528e62a362673f9a6d19791a66ee812ee7f9d50b3cd8283afae649

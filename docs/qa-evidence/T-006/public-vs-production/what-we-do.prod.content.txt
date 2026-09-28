@@ -1,0 +1,154 @@
+[title x1] What We Do | Fashion Asia Limited
+[meta theme-color] #0a0a0a
+[meta color-scheme] dark
+[meta description] Knit garment manufacturing at scale — 26 production lines, 800,000 pieces monthly, from t-shirts and polos to sportswear and heavy jersey.
+[meta author] Fashion Asia Limited
+[meta keywords] Knit Garments,Apparel Manufacturing,Bangladesh RMG,LEED Gold Factory,Sustainable Fashion,Northern Tosrifa Group
+[meta creator] Fashion Asia Limited
+[meta robots] index, follow
+[meta googlebot] index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1
+[meta og:title] What We Do
+[meta og:description] Knit garment manufacturing at scale — 26 production lines, 800,000 pieces monthly, from t-shirts and polos to sportswear and heavy jersey.
+[meta og:url] https://fashionasialtd.com/what-we-do
+[meta twitter:card] summary_large_image
+[meta twitter:title] Fashion Asia Limited | Green Powered Innovation
+[meta twitter:description] Modern, compliant, and sustainability-driven knit garments manufacturer.
+[meta twitter:image] https://fashionasialtd.com/images/client/og-image.jpg
+[link canonical] https://fashionasialtd.com/what-we-do
+[link icon] /icon.png?icon.0cdd14b0.png sizes=1080x1080
+[link apple-touch-icon] /apple-icon.png?apple-icon.0cdd14b0.png sizes=1080x1080
+[h1] What We Do
+[h2] A complete solution from start to finish.
+[h2] Comprehensive Range
+[a href] /
+[a href] /
+[a href] /who-we-are
+[a href] /what-we-do
+[a href] /global-partner
+[a href] /sustainability
+[a href] /life-at-fashion-asia
+[a href] /contact
+[a href] /what-we-do/t-shirts
+[a href] /what-we-do/polo-shirts
+[a href] /what-we-do/tank-tops
+[a href] /what-we-do/dresses
+[a href] /what-we-do/sleepwear
+[a href] /what-we-do/leggings
+[a href] /what-we-do/sportswear
+[a href] /what-we-do/heavy-jersey-products
+[a href] /
+[a href] /who-we-are
+[a href] /what-we-do
+[a href] /global-partner
+[a href] /sustainability
+[a href] /sustainability#reports
+[a href] /life-at-fashion-asia
+[a href] /career
+[a href] /contact
+[a href] /grievance
+[a href] mailto:admin@fashionasialtd.com
+[a href] tel:+8801711691366
+[img src] /logo.png
+[img alt] ""
+[img src] /_next/image?url=%2Flogo.png&w=96&q=75
+[img srcset] /_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+[img alt] "Fashion Asia Limited Logo"
+[video src] /videos/cutting.mp4
+[video poster] /images/client/cutting-poster.webp
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788160055835_23chlag.jpg
+[img alt] ""
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788159881709_h342kx7.jpg
+[img alt] ""
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788158795519_o3g2x8r.jpg
+[img alt] ""
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788159112986_69e16f1.jpg
+[img alt] ""
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788159954323_4sz2whv.jpg
+[img alt] ""
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788158482273_0vq7mdv.jpg
+[img alt] ""
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788159992984_esng146.jpg
+[img alt] ""
+[img src] https://hgrfdzbvbhnmarypxmkm.supabase.co/storage/v1/object/public/media/1788160214223_wusi96r.jpg
+[img alt] ""
+[img src] /images/client/showroom.jpg
+[img alt] "Sample showroom at Fashion Asia Limited, with garment rails and display plinths"
+[img src] /_next/image?url=%2Flogo.png&w=96&q=75
+[img srcset] /_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+[img alt] "Fashion Asia Limited Logo"
+[text]
+  F
+  A
+  S
+  H
+  I
+  O
+  N
+  A
+  S
+  I
+  A
+  LIMITED
+  0%
+  FASHION ASIA
+  Limited
+  Home
+  Who We Are
+  What We Do
+  Global Partner
+  Sustainability
+  Life at Fashion Asia
+  Connect
+  Scale & Precision
+  What We Do
+  Delivering efficiency, transparency, and precision at every stage of production for the global apparel market.
+  Our Craft
+  A complete solution from start to finish.
+  Concept
+  Product Development
+  Sourcing
+  Manufacturing
+  Quality Control
+  Compliance
+  Final Delivery
+  If you can imagine it, Fashion Asia can make it happen.
+  Precision Cutting
+  01. Product Catalog
+  Comprehensive Range
+  Fashion Asia transforms ideas into world-class knitwear solutions. We turn creativity into reality.
+  We specialize in developing and manufacturing all types of knitted garments for every market, age group, gender, climate, and lifestyle.
+  From everyday essentials to fashion-forward designs, we use diverse fabrics, finishes, and innovative constructions to bring our customers’ ideas to life and turn creative concepts into commercially successful products.
+  T-Shirts
+  Polo Shirts
+  Tank Tops
+  Dresses
+  Sleepwear
+  Leggings
+  Sportswear
+  Heavy Jersey Products
+  Every partnership starts in the sample room — with fit, fabric, and finish agreed before a single bulk piece is cut.
+  FASHION ASIA
+  Limited
+  A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh.
+  LEED Gold
+  WRAP
+  BSCI
+  GOTS
+  Company
+  Who We Are
+  What We Do
+  Global Partner
+  Sustainability
+  Reports & Publications
+  Life at Fashion Asia
+  Careers
+  Career
+  Contact Us
+  Grievance Cell
+  Connect
+  admin@fashionasialtd.com
+  +880 1711 691 366
+  © 2026 Fashion Asia Limited. All Rights Reserved.
+  |
+  A Concern of Northern Tosrifa Group
+  fashionasialtd.com

@@ -1,0 +1,16 @@
+# GET http://localhost:3001/_next/image?url=%2Flogo.png&w=48&q=75
+# Accept: image/webp   (2026-09-28T15:11:00Z)
+HTTP/1.1 200 OK
+Vary: Accept
+Cache-Control: public, max-age=14400, must-revalidate
+ETag: I5ug3izEvkchJVV6-tGftPBNPRU95qClVQe4r0dggXM
+Content-Type: image/webp
+Content-Disposition: attachment; filename="logo.webp"
+Content-Security-Policy: script-src 'none'; frame-src 'none'; sandbox;
+X-Nextjs-Cache: HIT
+Content-Length: 1338
+Date: Mon, 28 Sep 2026 15:11:00 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# body: 1338 bytes; file: RIFF (little-endian) data, Web/P image

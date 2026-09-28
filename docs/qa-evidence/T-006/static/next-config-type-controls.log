@@ -1,0 +1,14 @@
+# Independent NextConfig type controls against node_modules/next@16.3.6 types (tsc --strict --noEmit)
+## ok.ts:
+import type { NextConfig } from "/Volumes/D_Architect/Codebase/Fashion_asia_limited/node_modules/next";
+export const exact: NextConfig = { agentRules: false, logging: { serverFunctions: false } };
+exit=0  (expected 0)
+## bad.ts:
+import type { NextConfig } from "/Volumes/D_Architect/Codebase/Fashion_asia_limited/node_modules/next";
+export const a: NextConfig = { agentRules: "false" };                 // wrong type
+export const b: NextConfig = { logging: { serverFunction: false } };  // misspelled nested key
+export const c: NextConfig = { agentRule: false };                    // misspelled top-level key
+typectl/bad.ts(2,32): error TS2322: Type 'string' is not assignable to type 'boolean | undefined'.
+typectl/bad.ts(3,43): error TS2561: Object literal may only specify known properties, but 'serverFunction' does not exist in type 'LoggingConfig'. Did you mean to write 'serverFunctions'?
+typectl/bad.ts(4,32): error TS2561: Object literal may only specify known properties, but 'agentRule' does not exist in type 'NextConfig'. Did you mean to write 'agentRules'?
+exit=2  (expected non-zero, 3 errors)

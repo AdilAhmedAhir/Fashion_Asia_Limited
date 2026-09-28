@@ -1,0 +1,26 @@
+# GET http://localhost:3001/ADMIN/business
+# 2026-09-28T15:05:54Z
+> GET /ADMIN/business HTTP/1.1
+> Host: localhost:3001
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+
+HTTP/1.1 404 Not Found
+Cache-Control: private, no-cache, no-store, max-age=0, must-revalidate
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+ETag: "d1mhf99en6bkd"
+Content-Type: text/html; charset=utf-8
+Content-Length: 14989
+Date: Mon, 28 Sep 2026 15:05:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# body: 14989 bytes; first 300 bytes:
+<!DOCTYPE html><html lang="en" class="inter_c15e96cb-module__0bjUvq__variable playfair_display_fed1534a-module__F9WnGq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="stylesheet" href="/_next/static/chunks/3r1r6w9prekh8.css" dat
+# admin-content markers in body: none

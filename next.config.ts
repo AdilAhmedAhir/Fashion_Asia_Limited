@@ -1,6 +1,13 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+    // From Next 16.3, `next dev` rewrites AGENTS.md and creates CLAUDE.md when it
+    // detects an AI coding agent. AGENTS.md is this repo's A-Team governance file,
+    // so no server start may edit it (docs/TECH_STACK.md, T-006 decision (c)).
+    agentRules: false,
+    // From Next 16.2, `next dev` logs every Server Function call with its arguments,
+    // which here include the admin password (loginAction) and public-form PII.
+    logging: { serverFunctions: false },
     async redirects() {
         return [
             // Reports & Publications now lives on the Sustainability page.

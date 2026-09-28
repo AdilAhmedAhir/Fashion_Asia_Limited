@@ -1,0 +1,18 @@
+# GET http://localhost:3001/admin/who-we-work-with
+# 2026-09-28T15:05:54Z
+> GET /admin/who-we-work-with HTTP/1.1
+> Host: localhost:3001
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+
+HTTP/1.1 307 Temporary Redirect
+location: /admin/login
+Date: Mon, 28 Sep 2026 15:05:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body: 12 bytes; first 300 bytes:
+/admin/login
+# admin-content markers in body: none

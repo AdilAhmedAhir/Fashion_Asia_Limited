@@ -1,0 +1,367 @@
+{
+  "base": "http://localhost:3001",
+  "viewport": "1440x900",
+  "chrome": "headless=new",
+  "steps": [
+    {
+      "step": "1-home",
+      "url": "http://localhost:3001/",
+      "h1": "Green Powered Innovation",
+      "marker": "T006-v4o2wjdlfti",
+      "navEntries": 1
+    },
+    {
+      "step": "2-what-we-do",
+      "click": {
+        "method": "Input.dispatchMouseEvent (real mouse click at element centre)",
+        "x": 853.7578125,
+        "y": 58,
+        "index": 0,
+        "text": "What We Do",
+        "candidates": 3
+      },
+      "arrived": true,
+      "url": "http://localhost:3001/what-we-do",
+      "h1": "What We Do",
+      "markerSurvived": true,
+      "navEntries": 1,
+      "categoryLinks": 8
+    },
+    {
+      "step": "3-sportswear",
+      "click": {
+        "method": "Input.dispatchMouseEvent (real mouse click at element centre)",
+        "x": 892,
+        "y": 409.91961669921875,
+        "index": 0,
+        "text": "Sportswear",
+        "candidates": 1,
+        "scrolledIntoView": true
+      },
+      "arrived": true,
+      "url": "http://localhost:3001/what-we-do/sportswear",
+      "h1": "Sportswear",
+      "title": "Sportswear | Fashion Asia Limited",
+      "comingSoon": true,
+      "markerSurvived": true,
+      "navEntries": 1
+    }
+  ],
+  "fullReloadCheck": {
+    "markerSurvivedBothNavs": true,
+    "documentRequestsAfterInitialLoad": 0,
+    "mainFrameNavigatedEventsAfterInitial": 0,
+    "sameDocumentNavigations": [
+      {
+        "t": 983,
+        "phase": "initial-load",
+        "url": "http://localhost:3001/"
+      },
+      {
+        "t": 6344,
+        "phase": "nav-1:/what-we-do",
+        "url": "http://localhost:3001/what-we-do"
+      },
+      {
+        "t": 10453,
+        "phase": "nav-2:/what-we-do/sportswear",
+        "url": "http://localhost:3001/what-we-do/sportswear"
+      }
+    ]
+  },
+  "console": {
+    "errors": [],
+    "warnings": [],
+    "exceptions": [],
+    "browserLogErrors": [],
+    "browserLogErrorsKnownFrame404": 160
+  },
+  "rsc": {
+    "total": 30,
+    "failed": [],
+    "canceled": 25,
+    "statuses": {
+      "200": 30
+    },
+    "requests": [
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/who-we-are?_rsc=5CB68i4pnAekjehf"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/what-we-do?_rsc=5CB68i4pnAekjehf"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/global-partner?_rsc=5CB68i4pnAekjehf"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/sustainability?_rsc=5CB68i4pnAekjehf"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/life-at-fashion-asia?_rsc=5CB68i4pnAekjehf"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": false,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/contact?_rsc=5CB68i4pnAekjehf"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/?_rsc=tXyZJ52UQVBCVsD3"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/who-we-are?_rsc=tXyZJ52UQVBCVsD3"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do?_rsc=tXyZJ52UQVBCVsD3"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/global-partner?_rsc=tXyZJ52UQVBCVsD3"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/sustainability?_rsc=tXyZJ52UQVBCVsD3"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/life-at-fashion-asia?_rsc=tXyZJ52UQVBCVsD3"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": false,
+        "prefetch": "1",
+        "segmentPrefetch": "/!KHdlYnNpdGUp",
+        "url": "/contact?_rsc=x0-LSR3WRamHtsx1"
+      },
+      {
+        "phase": "initial-load",
+        "method": "GET",
+        "status": 200,
+        "canceled": false,
+        "prefetch": "1",
+        "segmentPrefetch": "/!KHdlYnNpdGUp/!KGZvcm1zKQ/contact/__PAGE__",
+        "url": "/contact?_rsc=X7H2k_66b24rt6LF"
+      },
+      {
+        "phase": "nav-1:/what-we-do",
+        "method": "GET",
+        "status": 200,
+        "canceled": false,
+        "prefetch": null,
+        "segmentPrefetch": null,
+        "url": "/what-we-do?_rsc=nDvKp5CiWuvdppLO"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/what-we-do/t-shirts?_rsc=IfGyEbS8zTMwdcIo"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/what-we-do/polo-shirts?_rsc=IfGyEbS8zTMwdcIo"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/what-we-do/tank-tops?_rsc=IfGyEbS8zTMwdcIo"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/what-we-do/dresses?_rsc=IfGyEbS8zTMwdcIo"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/t-shirts?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/polo-shirts?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/tank-tops?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/dresses?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/sleepwear?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/leggings?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/sportswear?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/what-we-do/heavy-jersey-products?_rsc=wU3Cxp9XI5nuzC1v"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": null,
+        "segmentPrefetch": null,
+        "url": "/what-we-do/sportswear?_rsc=ntUoZ61z4A42PaAQ"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": false,
+        "prefetch": "1",
+        "segmentPrefetch": "/_tree",
+        "url": "/career?_rsc=KW9OsxyWsgPKJeY5"
+      },
+      {
+        "phase": "nav-2:/what-we-do/sportswear",
+        "method": "GET",
+        "status": 200,
+        "canceled": true,
+        "prefetch": "1",
+        "segmentPrefetch": null,
+        "url": "/career?_rsc=ryIU4gJXXUjZgZDw"
+      }
+    ]
+  },
+  "otherFailedRequests": {
+    "knownPreloaderFrame404s_T017": 160,
+    "unexpected": []
+  },
+  "totals": {
+    "requests": 233,
+    "requestsAfterInitialLoad": 28
+  }
+}

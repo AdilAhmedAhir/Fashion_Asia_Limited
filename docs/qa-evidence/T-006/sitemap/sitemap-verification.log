@@ -1,0 +1,24 @@
+well-formed XML: local yes, prod yes (ElementTree parsed both)
+<url> entries: local=17 prod=17
+(loc, changefreq, priority) triples identical and in identical order: True
+category entries: 8 -> t-shirts, polo-shirts, tank-tops, dresses, sleepwear, leggings, sportswear, heavy-jersey-products
+static entries: 9
+loc hosts (local): ['fashionasialtd.com']
+lastmod values (local): ['2026-09-28T15:09:06.068Z']  <- request-time by design (T-022), not compared
+   ('https://fashionasialtd.com', 'weekly', '1')
+   ('https://fashionasialtd.com/who-we-are', 'monthly', '0.8')
+   ('https://fashionasialtd.com/what-we-do', 'monthly', '0.8')
+   ('https://fashionasialtd.com/what-we-do/t-shirts', 'monthly', '0.6')
+   ('https://fashionasialtd.com/what-we-do/polo-shirts', 'monthly', '0.6')
+   ('https://fashionasialtd.com/what-we-do/tank-tops', 'monthly', '0.6')
+   ('https://fashionasialtd.com/what-we-do/dresses', 'monthly', '0.6')
+   ('https://fashionasialtd.com/what-we-do/sleepwear', 'monthly', '0.6')
+   ('https://fashionasialtd.com/what-we-do/leggings', 'monthly', '0.6')
+   ('https://fashionasialtd.com/what-we-do/sportswear', 'monthly', '0.6')
+   ('https://fashionasialtd.com/what-we-do/heavy-jersey-products', 'monthly', '0.6')
+   ('https://fashionasialtd.com/global-partner', 'monthly', '0.8')
+   ('https://fashionasialtd.com/sustainability', 'monthly', '0.8')
+   ('https://fashionasialtd.com/life-at-fashion-asia', 'daily', '0.7')
+   ('https://fashionasialtd.com/contact', 'yearly', '0.5')
+   ('https://fashionasialtd.com/career', 'yearly', '0.5')
+   ('https://fashionasialtd.com/grievance', 'yearly', '0.3')

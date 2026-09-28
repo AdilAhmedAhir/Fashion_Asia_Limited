@@ -1,0 +1,13 @@
+# GET http://localhost:3001/icon.png?icon.2v7xyt03774y8.png (no redirect following) 2026-09-28T15:09:49Z
+HTTP/1.1 200 OK
+Accept-Ranges: bytes
+Cache-Control: public, max-age=0
+Last-Modified: Fri, 06 Mar 2026 17:47:02 GMT
+ETag: W/"12728-19cc4428ea2"
+Content-Type: image/png
+Content-Length: 75560
+Date: Mon, 28 Sep 2026 15:09:49 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# body bytes: 75560  sha256: 79f057621ee41beaf803f9656c8fedf235158d8598b3d95636c85a84b01d6089

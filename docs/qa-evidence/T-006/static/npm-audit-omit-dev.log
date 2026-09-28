@@ -1,0 +1,20 @@
+# npm audit --omit=dev (re-run by /qa, 2026-09-28; exit 1 expected while toolchain advisories remain)
+totals: {"info":0,"low":2,"moderate":2,"high":5,"critical":0,"total":9}
+ - @babel/core low <=7.29.0
+ - @humanfs/node moderate <0.16.8
+ - baseline-browser-mapping moderate >=2.0.0 <2.11.0
+ - brace-expansion high <=1.1.17 || 3.0.0 - 5.0.8
+ - browserslist high <=4.28.6
+ - flatted high <=3.4.1
+ - js-yaml high 4.0.0 - 4.3.1
+ - picomatch high <=2.3.1 || 4.0.0 - 4.0.3
+ - postcss-selector-parser low 6.1.0 - 6.1.2
+next flagged: false
+sharp flagged: false
+postcss flagged: false
+nanoid flagged: false
+GHSA-mq59-m269-xvcx present: false
+
+# /lead-dev pre-bump audit (scratchpad audit-pre.json) for contrast
+totals: {"info":0,"low":2,"moderate":2,"high":8,"critical":1,"total":13}
+flagged: @babel/core, @humanfs/node, baseline-browser-mapping, brace-expansion, browserslist, flatted, js-yaml, nanoid, next, picomatch, postcss, postcss-selector-parser, sharp

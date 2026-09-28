@@ -1,0 +1,10 @@
+# GET http://localhost:3001/media (no redirect following) 2026-09-28T15:09:20Z
+HTTP/1.1 308 Permanent Redirect
+location: /life-at-fashion-asia
+Refresh: 0;url=/life-at-fashion-asia
+Date: Mon, 28 Sep 2026 15:09:20 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body bytes: 21  sha256: c1a93dcfc8e29ad1c6b5728a8c87b650fff5b4d75d31efa1e2ce014287d7603d

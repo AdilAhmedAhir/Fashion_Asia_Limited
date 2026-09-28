@@ -1,0 +1,19 @@
+# GET http://localhost:3001//admin/business
+# 2026-09-28T15:05:54Z
+> GET //admin/business HTTP/1.1
+> Host: localhost:3001
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+
+HTTP/1.1 308 Permanent Redirect
+location: /admin/business
+Refresh: 0;url=/admin/business
+Date: Mon, 28 Sep 2026 15:05:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body: 15 bytes; first 300 bytes:
+/admin/business
+# admin-content markers in body: none

@@ -1,0 +1,13 @@
+--- prod/
++++ local:3001/
+@@ -22,8 +22,8 @@
+ [meta twitter:description] Modern, compliant, and sustainability-driven knit garments manufacturer.
+ [meta twitter:image] https://fashionasialtd.com/images/client/og-image.jpg
+ [link canonical] https://fashionasialtd.com
+-[link icon] /icon.png?icon.0cdd14b0.png sizes=1080x1080
+-[link apple-touch-icon] /apple-icon.png?apple-icon.0cdd14b0.png sizes=1080x1080
++[link icon] /icon.png?icon.2v7xyt03774y8.png sizes=1080x1080
++[link apple-touch-icon] /apple-icon.png?apple-icon.2v7xyt03774y8.png sizes=1080x1080
+ [h1] Green Powered Innovation
+ [h2] Innovation in Motion
+ [h2] Where Bold Vision Meets Precise Execution

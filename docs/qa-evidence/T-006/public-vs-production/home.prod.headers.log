@@ -1,0 +1,16 @@
+# GET https://www.fal.com.bd/  (2026-09-28T15:07:30Z)
+HTTP/2 200 
+age: 0
+cache-control: private, no-cache, no-store, max-age=0, must-revalidate
+content-type: text/html; charset=utf-8
+date: Mon, 28 Sep 2026 15:07:30 GMT
+link: </_next/static/media/2a65768255d6b625-s.p.d19752fb.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </_next/static/media/83afe278b6a6bb3c-s.p.3a6ba036.woff2>; rel=preload; as="font"; crossorigin=""; type="font/woff2", </logo.png>; rel=preload; as="image", </_next/static/chunks/30e4717dc578d092.css>; rel=preload; as="style"
+server: Vercel
+strict-transport-security: max-age=63072000
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-matched-path: /
+x-powered-by: Next.js
+x-vercel-cache: MISS
+x-vercel-id: bom1::iad1::x58qz-1790608048941-3333dd440041
+
+# body bytes: 146806
