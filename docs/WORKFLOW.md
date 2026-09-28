@@ -72,6 +72,19 @@ ROADMAP (`[design] [db] [sec] [migrate] [notify]`).
 
 `/security-review` inserts into ANY sequence touching these.
 
+**Custom agents** (GENESIS GATE 3, 2026-09-28; defined in `.claude/agents/`):
+- **`premortem-planner`** (read-only) runs **before `/build`** when a ticket:
+  - is tagged `[sec]` or `[db]`;
+  - touches admin writes, `submissions`, uploads or `next.config.ts`;
+  - or touches the deploy path.
+
+  Fold its "MUST-ADD ACCEPTANCE CRITERIA" into the ticket before building. A NO-GO means
+  an owner decision is needed.
+- **`supabase-engineer`** writes every `[db]` migration (the `/db` step) and never applies
+  one. The orchestrator arms `.claude/guard.json` with
+  `{"enabled": true, "allow": ["db/migrations/", "supabase-schema.sql", "docs/DATA_MODEL.md"], "note": "supabase-engineer wave"}`
+  before its wave, and sets `enabled: false` after it.
+
 ## §4 — Gates (hard; must be green before review/merge)
 1. **Typecheck:** `npx tsc --noEmit`
 2. **Build:** `npm run build`
