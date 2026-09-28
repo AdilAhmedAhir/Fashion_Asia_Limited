@@ -1,0 +1,37 @@
+{
+  "$comment": "Machine-readable stack contract. Written by /adapt (via detect-stack.mjs), editable by hand. Scripts (worktree.sh, gen-inventory.mjs, post-edit.sh) read THIS; agents read the human map docs/STACK.md. Keep the two in sync. Placeholders below are safe defaults for a JS/TS monorepo; run /adapt to overwrite them with the real project's values.",
+  "adapted": false,
+  "adaptedAt": null,
+  "language": ["typescript"],
+  "packageManager": "pnpm",
+  "monorepo": "turborepo",
+  "scanRoots": ["packages", "apps", "src"],
+  "gates": {
+    "lint": "pnpm -w turbo run lint",
+    "typecheck": "pnpm -w turbo run typecheck",
+    "test": "pnpm -w turbo run test",
+    "build": "pnpm -w turbo run build",
+    "e2e": "pnpm -w turbo run e2e"
+  },
+  "gateFilterFlag": "--filter",
+  "db": {
+    "kind": "none",
+    "schemaChangeCmd": null,
+    "typegenCmd": null,
+    "authzModel": "app-layer"
+  },
+  "deployTarget": "unknown",
+  "designSystem": null,
+  "secretPatterns": [
+    "SERVICE_ROLE",
+    "service_role",
+    "SECRET_KEY",
+    "PRIVATE_KEY",
+    "sk_live",
+    "sk-",
+    "AKIA[0-9A-Z]{16}",
+    "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+  ],
+  "clientReachableGlobs": ["/app/", "/pages/", "/components/", "/src/client/"],
+  "formatter": "auto"
+}
