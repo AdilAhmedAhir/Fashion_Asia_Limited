@@ -1,0 +1,52 @@
+{
+  "$comment": "Machine-readable stack contract for Fashion Asia. Written by /adapt on 2026-09-28 from detect-stack.mjs plus verification against package.json/package-lock.json. Scripts (worktree.sh, gen-inventory.mjs, post-edit.sh) read THIS; agents read docs/STACK.md. Keep the two in sync; change the stack via /stack-change.",
+  "adapted": true,
+  "adaptedAt": "2026-09-28",
+  "_confidence": {},
+  "language": ["typescript"],
+  "packageManager": "npm",
+  "monorepo": "single-package",
+  "scanRoots": ["src"],
+  "frameworks": ["next"],
+  "gates": {
+    "lint": null,
+    "typecheck": "npx tsc --noEmit",
+    "test": null,
+    "build": "npm run build",
+    "e2e": null
+  },
+  "_gateNotes": {
+    "lint": "Suspended, not dropped: `npm run lint` runs `next lint`, which Next 16 no longer provides, and only a legacy .eslintrc.json exists (docs/WORKFLOW.md §7 #1). Re-add the day a working lint command lands.",
+    "test": "No test runner is installed. Adding one needs an architect-reviewer decision.",
+    "e2e": "None installed. /qa live uses curl plus headless Chrome over CDP, driven by scripts kept in the session scratchpad."
+  },
+  "gateFilterFlag": null,
+  "db": {
+    "kind": "supabase-postgres",
+    "schemaChangeCmd": null,
+    "schemaChangeFlow": "Hand-written SQL in db/migrations/<NNNN>_<slug>.sql with a '-- STATUS: PENDING_USER_APPLY' header. The owner applies it in the Supabase SQL editor (there is no Supabase CLI). HARD STOP until the owner confirms, then the header flips to '-- STATUS: APPLIED <date>'. supabase-schema.sql is the rolled-up snapshot.",
+    "typegenCmd": null,
+    "typegenNote": "No generated types. Row and settings types are hand-written in src/lib/site-content.ts and the action files.",
+    "authzModel": "rls",
+    "authzNote": "RLS policies: anon has SELECT (plus INSERT on submissions); authenticated has ALL. Every writing Server Action also calls supabase.auth.getUser() first (app layer). There is no admin role: ANY authenticated account is an admin (RISKS R1), so Supabase sign-ups must stay OFF."
+  },
+  "deployTarget": "vercel",
+  "deployNote": "Vercel builds production from GitHub main. main must be pushed to BOTH remotes, origin (AdilAhmedAhir/Fashion_Asia_Limited) and client (happierbangladesh/Fashion_Asia_Limited), at the same commit, only via /ship on an owner 'deploy'. Live on www.fal.com.bd = www.fashionasialtd.com.",
+  "designSystem": "tailwind",
+  "secretPatterns": [
+    "SERVICE_ROLE",
+    "service_role",
+    "SUPABASE_SERVICE",
+    "SECRET_KEY",
+    "PRIVATE_KEY",
+    "sk_live",
+    "ghp_[A-Za-z0-9]{20,}",
+    "github_pat_[A-Za-z0-9_]{20,}",
+    "AKIA[0-9A-Z]{16}",
+    "-----BEGIN [A-Z ]*PRIVATE KEY-----"
+  ],
+  "clientReachableGlobs": ["/src/app/", "/src/components/", "/src/lib/"],
+  "formatter": "none",
+  "formatOnEdit": false,
+  "_formatNote": "The post-edit hook's format and lint step is off: Prettier isn't installed, and ESLint 9 can't read the legacy config, so running them would flag every edit. The hook's secret guard still runs on every edit."
+}

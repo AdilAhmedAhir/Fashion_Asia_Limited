@@ -1,0 +1,27 @@
+#!/bin/sh
+# Fashion Asia commit-name guard (docs/WORKFLOW.md §2). Enabled with:
+#   git config core.hooksPath .githooks
+# Every commit must be authored by happierbangladesh and carry exactly one
+# "Co-Authored-By: Claude Opus 5.5" line, with no other co-author line.
+
+msg_file="$1"
+required_author="happierbangladesh <happierbangladesh@users.noreply.github.com>"
+required_trailer="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+
+fail() {
+  echo "commit-name guard: $1" >&2
+  echo "  Rule: docs/WORKFLOW.md §2. Fix the commit rather than bypassing this hook." >&2
+  exit 1
+}
+
+author=$(git var GIT_AUTHOR_IDENT | sed -E 's/ [0-9]+ [+-][0-9]{4}$//')
+[ "$author" = "$required_author" ] || fail "author is '$author', expected '$required_author'."
+
+# Ignore comment lines, which git strips from the final message.
+body=$(grep -v '^#' "$msg_file")
+total=$(printf '%s\n' "$body" | grep -ci '^co-authored-by:')
+exact=$(printf '%s\n' "$body" | grep -cFx "$required_trailer")
+if [ "$total" -ne 1 ] || [ "$exact" -ne 1 ]; then
+  fail "the message needs exactly one '$required_trailer' line and no other co-author line (found $total co-author line(s))."
+fi
+exit 0

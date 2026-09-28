@@ -42,3 +42,18 @@ Append-only. Every entry is a row in §1 (Open) or §2 (Closed). Never edit a pr
 ## §2 — Closed (append-only)
 
 (empty)
+
+## §3 — Decision log (A-Team V7 format, from 2026-09-28)
+
+`docs/DECISION_RIGHTS.md` governs who decides. Door types: two-way (cheap to reverse) or one-way (expensive to reverse).
+
+| Date | Decision | Decided by | Door | Why / notes |
+|---|---|---|---|---|
+| 2026-09-28 | **Retire A-Team V5 and install A-Team V7 + GENESIS.** | Owner | two-way (rollback branch `backup-a-team-v5` @ `8f085e7`) | Follows the owner's REGISTRY policy: legacy projects migrate to V7 on next real touch. Taken after T-015 merged, per the owner. |
+| 2026-09-28 | **GATE 0: existing-project mode.** | Owner | two-way | The owner: "This is a complete site as you can see." |
+| 2026-09-28 | **Founder Table answers delegated to the orchestrator.** | Owner | two-way | The owner: "Answer them yourself. Let me know the conclusion." Answers are in `docs/PROJECT.md`. The idea lock still needs the owner (GATE 1). |
+| 2026-09-28 | **Commit names pinned:** `happierbangladesh` author plus exactly one `Co-Authored-By: Claude Opus 5.5` line, no other name. Enforced by `.githooks/commit-msg` and `.githooks/pre-push`. | Owner | two-way | The owner: "you are not allowed to commit it under any other name other than mine". |
+| 2026-09-28 | **Every agent runs Opus 5.5 (`model: opus`)**, including the 4 V7 reviewers, whose template default is `fable`. | Owner | two-way | The owner: "promote all the agents to prod for 5.5". This is a mind-tier change under `DECISION_RIGHTS.md`. |
+| 2026-09-28 | **Custom `/ship`:** deploy pushes `main` to both `origin` and `client` at the same commit, only on "deploy", never force, and staging only on request. | Owner | two-way | Replaces V7's stock branch-and-PR `/ship`, which doesn't fit this project's deploy. |
+| 2026-09-28 | **GATE 1: idea locked**, as written in `docs/PROJECT.md` "Locked idea". The 90-day number: 0 of 8 categories on "Coming Soon" by 2026-12-27, each with at least 3 real products added by FAL staff. | Owner | two-way (later scope changes are formal decisions) | The owner: "Great lock that". From here on, scope changes need a new decision brief. |
+| 2026-09-28 | **`/adapt` bound V7 to this stack.** Lint is suspended (Next 16 dropped `next lint`). No test runner. Schema is hand-applied SQL with no CLI or type generation. The post-edit format and lint step is off; the secret guard stays on with tuned patterns. | Orchestrator | two-way | These are implementation-level defaults, taken because the owner said "the system needs to be working now". Recorded in `docs/STACK.md` and `.claude/stack.json`. |

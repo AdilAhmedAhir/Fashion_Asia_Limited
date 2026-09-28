@@ -1,111 +1,146 @@
-# WORKFLOW.md
+# WORKFLOW.md — The Process Law
 
-Owner: `/director`. Initial lock-in: 2026-09-26.
+> How work moves from idea to shipped, and which gates are mandatory. `/sprint` and
+> `/system-architect` execute this; humans follow it for attended work. Stack basis:
+> `docs/STACK.md`. §7–§8 are append-only.
+>
+> **A-Team V7 + genesis, installed 2026-09-28**, replacing the V5 20-role workflow. The V5
+> file's project rules (identity, deploy, live-database safety, the schema hard stop, manual
+> admin checklists) are carried into the sections below. Its rows are preserved verbatim in
+> §7/§8. Full V5 text: git history before the migration commit.
 
-This is the law for how tickets move through The Claude A-Team on this repo. Every role in `AGENTS.md` reads this file for process; it does not override `docs/TECH_STACK.md` (tooling/package facts) or `docs/VISION.md` (product scope) — it sequences work around them.
+## §1 — Source of truth + branch model
+- **`main` is shipped truth.** It must always pass the §4 gates. Pushing `main` **is** a
+  production deploy (Vercel builds it), and only `/ship` does it (§6).
+- **No direct commits to `main`.** Every change lands via a branch and `git merge --no-ff`,
+  giving one merge commit per ticket, even solo.
+- **Branch naming:**
 
-**Status at initial lock-in:** `docs/VISION.md` was still being written by `/ceo` in parallel and had not landed at the time this file was authored; `docs/ROADMAP.md` does not exist yet (the first `/pm` pass is the next step per the Handoff Contract below); `docs/MARKETING.md` does not exist, so §10 is recorded as inert. Nothing below is blocked by those gaps. Re-run `/director` to tighten §3 if `VISION.md`, once it lands, implies ticket types that don't fit the rows already here.
+  | Kind | Pattern |
+  |---|---|
+  | Ticket | `t-###-slug` |
+  | Docs, tooling | `chore/slug` |
+  | Safety snapshot | `backup-<reason>` |
 
-## 1. Source of truth + branch model
+  Older branches keep their V5 names (`feat/T-###-…`, `fix/T-###-…`).
+- **One ticket = one branch = one focused merge.** No two agents edit the same files at once.
+- **Schema changes** are plain SQL files in `db/migrations/<NNNN>_<slug>.sql`.
+  - Each opens with the ticket, the author role and `-- STATUS: PENDING_USER_APPLY`.
+  - The owner applies it by hand in the Supabase SQL editor. There's no Supabase CLI.
+  - Only after the owner confirms does the header flip to `-- STATUS: APPLIED <date>`.
+  - `supabase-schema.sql` stays the rolled-up snapshot.
 
-- `main` is shipped truth. Every change lands on `main` only through a local, gated merge — never a direct commit, by any role, including at the user's own request routed through an agent (see Refuse-If in every role file).
-- One feature branch per ticket, cut from `main`:
-  - `feat/<ID>-<slug>` — new functionality.
-  - `fix/<ID>-<slug>` — bug fix.
-  - `refactor/<slug>` — no behavior change.
-  - `chore/<slug>` — tooling, config, **docs**. Docs-only work uses `chore/`: this initial setup batch (`docs/TECH_STACK.md`, `docs/MEMORY_BANK.md`, `docs/VISION.md`, `docs/WORKFLOW.md`, `docs/ROADMAP.md`) is committed by `/git` on one docs-only `chore/` branch and merged with the same `--no-ff` + gate discipline as code — see the Docs-only row in §3.
-  - `backup-<reason>` — point-in-time safety branch, no merge expected.
-- Merges into local `main` use `git merge --no-ff` and only happen after every gate in §3/§4/§5 for that ticket type is green. No fast-forward merges — `main`'s history shows one merge commit per ticket.
-- **Schema migration files.** Until `/architect` sets a different convention on first use, SQL migrations live at `db/migrations/<NNNN>_<slug>.sql` (zero-padded, ascending, one file per applied change). Each file opens with a header comment: ticket ID, authoring role, and a status line — `-- STATUS: PENDING_USER_APPLY` or `-- STATUS: APPLIED <date>` — that `/git` only flips to `APPLIED` after the user has explicitly confirmed it (§5, §7 hard stop). `supabase-schema.sql` at the repo root stays the rolled-up reference snapshot of current schema; migration files are the change log explaining how it got there. This repo has no `supabase/` CLI directory and none is being introduced by this convention — `db/migrations/` is plain SQL, applied by hand in the Supabase SQL editor, never by tooling.
+## §2 — Commit format + the name rule (enforced)
+- **Conventional Commits:** `type(scope): subject (T-###)`, where type is `feat`, `fix`,
+  `refactor`, `chore`, `docs` or `test`. Imperative mood, ≤72 characters.
+- **No:** "wip", secrets, debug prints, commented-out code, or unrelated lockfile churn.
+- **Names (owner rule, 2026-09-28; no exceptions):**
+  - **Author:** `happierbangladesh <happierbangladesh@users.noreply.github.com>` (the
+    repo-level identity).
+  - **Co-author:** the message ends with **exactly one**
+    `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` line, with **no other**
+    co-author line, whichever agent or model made the commit.
+  - **Enforced by versioned git hooks.** `.githooks/commit-msg` checks every commit, and
+    `.githooks/pre-push` checks every pushed commit. They're enabled once per clone with
+    `git config core.hooksPath .githooks`.
+  - **Never** use `--no-verify`.
+  - A commit that slips through gets fixed **before it's pushed**. Pushed commits are never
+    amended.
+- **Staging:** stage by path, never `git add -A` or `git add .`.
 
-## 2. Commit format
-
-- Conventional Commits: `<type>(<scope>): <summary>`, types `feat|fix|refactor|chore|docs`.
-- Footer: `Refs: <ticket ID>` once `docs/ROADMAP.md` exists and `/pm` has assigned a numbering scheme. For this initial setup batch — before `docs/ROADMAP.md` exists — use `Refs: SETUP`.
-- Trailer, always present: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Pinned by the user on 2026-09-28: this exact line on every commit, whichever agent makes it, and no other co-author name may appear. All role agents run on Opus 5.5 (`model: opus` in `.claude/agents/*.md`).
-- Author identity is fixed at the repo level: `happierbangladesh <happierbangladesh@users.noreply.github.com>`. Never override it with a personal identity, even at the user's own request mid-session.
-- Stage by path (`git add <specific paths>`) — never a blanket `git add -A`/`git add .` reflex. No `--no-verify`. No amending a commit that has already been pushed to any remote.
-
-## 3. Agent sequence per ticket
-
-Default flow per `AGENTS.md`: `/git → /lead-dev → /ui-ux (if UI) → /qa → /git`, refined below per ticket type. Every row ends at `/git Merge`, which only fires once every gate for that row is green (§4, §5).
+## §3 — Per-ticket sequence (by ticket type)
+Every sequence is branch → work → **gates** → **review** → merge. Tickets are tagged in
+ROADMAP (`[design] [db] [sec] [migrate] [notify]`).
 
 | Ticket type | Sequence |
 |---|---|
-| Full-stack feature (touches UI) | `/git Start` → [`/architect Review schema` if it touches the DB] → `/lead-dev` → [`/cso review` if the §5 sensitive-surface list matches] → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` |
-| Backend-only (no UI change) | `/git Start` → [`/architect Review schema` if DB touched] → `/lead-dev` → [`/cso review` if sensitive] → `/qa static` → `/qa live` → `/git Merge` |
-| Schema-touching | `/git Start` → `/architect Review schema` → **HARD STOP: user confirms the SQL has been applied by hand in the Supabase SQL editor** (§5, §7) → `/lead-dev` → [`/cso review` if sensitive] → `/qa static` → `/qa live` → `/git Merge` |
-| Security-sensitive (§5 list) | `/git Start` → `/lead-dev` → `/cso review` → [`/ui-ux` if UI] → `/qa static` → `/qa live` → `/git Merge` |
-| Docs-only (this setup batch; future `/onboard`, `/archivist`, `/director`, `/pm` passes) | `/git Start` (branch `chore/<slug>`) → `/git Merge` — no `tsc`/`build` gate (no source changed), but `/git` confirms the diff touches only `docs/` (or other non-source paths) before merging |
-| Marketing-surface | **Inert** — see §10. Activates automatically once `docs/MARKETING.md` exists; `/director` is re-run to flip this row live. |
+| **Logic / no UI** | `/build → /qa (if risky) → review → merge` |
+| **UI feature** `[design]` | `/build → /design-review → /qa (if risky) → review → merge` |
+| **Schema-touching** `[db]` | `architect-reviewer (schema) → /db (write migration) → **HARD STOP: owner applies the SQL and confirms** → /build → /qa (authz) → /security-review → review → merge` |
+| **Security-sensitive** (see the list below) | `/build → /security-review → /qa (authz as another user) → review → merge` |
+| **Data migration** `[migrate]` | `architect-reviewer (mapping) → /migrate → /qa (row counts + spot check) → review → merge` |
+| **New dependency / version bump** | `architect-reviewer (approve) → /build → /security-review (audit) → review → merge` |
+| **Docs only** | `chore/` branch → merge (diff must touch only non-source paths) |
 
-**Orchestration note** (`/system-architect sprint`): the orchestrator walks this table automatically, batches upfront decisions once per sprint, auto-merges locally the moment a ticket's row goes fully green, and stops for `/archivist` after the 3rd merge in a sprint. It never pushes to any remote — pushing is always a separate, explicit action gated by §6.
+**Security-sensitive in this project:**
+- anything under `src/app/admin/**`;
+- auth and middleware: `src/middleware.ts`, `src/lib/supabase/*`, `src/app/actions/auth-actions.ts`;
+- any Server Action that writes;
+- upload paths (`media-actions.ts`, `settings-actions.ts` `uploadFile`);
+- RLS, grants and storage policies;
+- anything that exposes `submissions`, which hold personal data.
 
-## 4. Testing minimums
+`/security-review` inserts into ANY sequence touching these.
 
-Every ticket, before `/git Merge`:
+## §4 — Gates (hard; must be green before review/merge)
+1. **Typecheck:** `npx tsc --noEmit`
+2. **Build:** `npm run build`
 
-- `npx tsc --noEmit` — clean, zero errors.
-- `npm run build` — clean.
-- `npm run lint` is **excluded from the gate.** `next lint` is broken under Next.js 16.1.6 (ESLint 9.39.3 installed, only a legacy `.eslintrc.json`, no flat `eslint.config.*` — `docs/MEMORY_BANK.md` Known Trap #10). This is a *suspended* gate, not a *dropped* one: the day a working lint command lands, `/director` re-adds it here as required, and `/architect`/`/lead-dev` should treat that as a standing follow-up until it does (tracked in §8, row 1).
-- No unit-test runner or E2E tool is installed (`docs/TECH_STACK.md` → Testing framework). Until one is chosen:
-  - `/qa static` = code review against the ticket's diff — there is no test suite to run.
-  - `/qa live` = HTTP-level and rendered-page checks against the local dev server (`npm run dev`, port 3000 — §7).
-- **No writes during any testing pass, by any agent.** Local dev points at the client's live Supabase project and live storage bucket (`docs/MEMORY_BANK.md` Known Trap #3) — there is no local or staging database. No form submissions, no admin saves, no uploads, no deletes, during `/qa static`, `/qa live`, or any other verification step. Read-only checks only.
-- `/admin/*` is gated by the client's own Supabase credentials (email + password, no OAuth, no self-serve signup), which no agent holds. Admin-side flows are never live-verified by an agent; `/qa` produces a manual checklist and the user runs it by hand.
+These are the exact commands in `docs/STACK.md` §3 and `.claude/stack.json`.
+- **Lint is suspended, not dropped.** `next lint` is broken here: ESLint 9 with only a
+  legacy `.eslintrc.json` (Known Trap #10). It returns the day a working lint command lands.
+- **No test runner is installed.** `/qa static` means a code review of the diff, plus direct
+  execution of pure functions against synthetic data.
+- **The local dev server reads the LIVE Supabase project.** No agent writes during any
+  testing pass: no form submits, admin saves, uploads, deletes or crafted Server Action
+  calls. Live checks are read-only (GET/HEAD, headers, screenshots of public pages).
+- **`/admin` needs the owner's own login,** which no agent holds. Admin write flows are
+  verified by the owner from a **manual checklist** that `/qa` writes into
+  `docs/QA_REPORT.md`. By the owner's standing choice, pending checklists don't block a
+  local merge. They go on the pre-deploy list.
+- **Production-only behavior** (for example, Next.js redacting thrown Server Action
+  messages) is checked on `npm run build && npm start -- -p 3001`, not only on `next dev`.
+- **`next.config.ts` must keep `agentRules: false`,** so `next dev` never edits
+  `AGENTS.md`/`CLAUDE.md`, **and `logging.serverFunctions: false`.** See the TECH_STACK
+  decision of 2026-09-28.
 
-## 5. PR gates checklist
+## §5 — Review stage (the quality gate)
+Before merge, the applicable reviewers run. A 🔴 blocks the merge until it's fixed, or
+explicitly waived by the owner in `docs/DECISIONS.md`.
 
-Before `/git Merge`, all of:
+| Reviewer | Scope | Verdict |
+|---|---|---|
+| **`code-reviewer`** (correctness) | logic bugs, edge cases, contract drift | `SHIP / FIX FIRST / BLOCK` |
+| **`security-reviewer`** | authorization tested as another user, secrets, personal data, server-key leaks, upload paths | `CLEARED / BLOCKED` |
+| **`design-reviewer`** | UI against DESIGN.md, screenshots at its breakpoints | `SHIP / FIX FIRST / NEEDS DIRECTION` |
+| **`architect-reviewer`** (pre-build) | schema, dependencies, cross-unit contracts | `APPROVE / REVISE / BLOCK` |
 
-- [ ] §4 testing minimums green.
-- [ ] No `.env` / `.env.local` / secret material staged.
-- [ ] No unrelated lock-file churn.
-- [ ] No debug statements (`console.log`, `debugger`) left in the diff.
-- [ ] No weakened auth, no relaxed RLS, no widened middleware matcher — without `/cso` sign-off in `docs/SECURITY.md`.
-- [ ] No commented-out code blocks.
-- [ ] If the ticket touches any of — `src/app/admin/**`, auth/middleware (`src/middleware.ts`, `src/lib/supabase/middleware.ts`, `src/app/actions/auth-actions.ts`), any server action that writes, storage upload paths (`media-actions.ts`, `settings-actions.ts::uploadFile`), or RLS policies — `/cso review` has run and signed off in `docs/SECURITY.md`.
-- [ ] If the ticket includes a schema change — `/architect` has reviewed it, the migration file exists at `db/migrations/` (§1), **and the user has explicitly confirmed the SQL was applied by hand in the Supabase SQL editor.** Hard stop: no code depending on the new schema is live-verified (`/qa live`) or merged (`/git Merge`) before that confirmation, regardless of how confident `/lead-dev` is that the SQL is correct.
-- [ ] Docs-only tickets: diff contains only `docs/` (or other non-source) paths — no source edits riding along.
+The Codex second reviewer isn't installed. `code-reviewer` holds the slot (`/codex` for
+status).
 
-## 6. Deploy flow
+## §6 — Merge & ship
 
-- **Local merge to `main` is not a deploy.** `/git Merge` (`--no-ff`, §1) only updates the local repository's `main` branch. That happens autonomously once a ticket clears §4/§5 — no additional permission is needed beyond those gates.
-- **Pushing `main` is a production deploy.** Vercel on the client's account builds production from GitHub `main`. Pushing `main` to a remote is therefore never routine and never automatic.
-- **Hard rule:** no agent pushes `main` — or takes any action that lands new commits on `origin/main` or `client/main` — unless the user types the literal word **"deploy"** in that same turn. A previously green sprint, an earlier "looks good," or the ticket simply being merged locally is not consent to deploy. Silence is not consent. Only the word "deploy," from the user, in the turn where the push happens, authorizes it.
-- **When "deploy" is given:** `/git` pushes the current local `main` to **both** `origin` and `client` at the identical commit SHA — never one without the other, never with a rebase or rewrite in between. Confirm both remotes report the same SHA after pushing.
-- **`staging` is a separate track.** It is not required to mirror `origin`/`client` and is currently known to sit at a different commit (`docs/MEMORY_BANK.md` Known Trap #1). Pushing to `staging` is not "the deploy" and doesn't require the word "deploy," but it is still never a silent side effect of another action — it happens only when the user explicitly asks for a staging push in that same turn, and it is never combined with or mistaken for the production push above.
-- No auto-deploy exists anywhere in this workflow, including under `/system-architect sprint` — the orchestrator never pushes; it stops at local merges and, after the 3rd merge in a sprint, at `/archivist`.
+**Merge to local `main`** (the orchestrator does this once green; it isn't a deploy):
+- [ ] The §4 gates are green.
+- [ ] No unresolved 🔴 from the §5 reviewers.
+- [ ] No `.env`, secrets or keys are staged. No server-only secret is reachable from a client file.
+- [ ] Every new or changed table has RLS and grants, verified rather than assumed.
+- [ ] The acceptance criteria are met; ROADMAP is checked `[x]` with the commit ref; `docs/LOG.md` is appended.
+- [ ] The commit names follow §2 (the hooks enforce this).
 
-## 7. Local dev
+**Deploy = `/ship`.** This is an owner-only hard stop.
+- It runs **only when the owner's current message contains "deploy"**.
+- It pushes `main` to **both** `origin` (`AdilAhmedAhir/Fashion_Asia_Limited`) and `client`
+  (`happierbangladesh/Fashion_Asia_Limited`), at the **same commit**, as a fast-forward.
+- **Never force. Never push only one of the two.**
+- It verifies both SHAs, then the live site (`www.fal.com.bd` = `www.fashionasialtd.com`).
+- `staging` (`AdilAhmedAhir/Fashion_Asia_Limited_staging`) is never pushed unless the owner
+  asks for it in that same message.
 
-- `npm run dev` — Next.js dev server on port 3000 (matches the `dev` launch config in `.claude/launch.json`).
-- Requires `.env.local` with `NEXT_PUBLIC_SUPABASE_URL` / `NEXT_PUBLIC_SUPABASE_ANON_KEY` (`docs/TECH_STACK.md` → Required env vars) — this points at the client's **live** Supabase project. There is no local or staging database. Treat every write path as a real write to production data (§4).
-- `/admin` login requires the client's own credentials. No agent has these. Admin-side verification is always a manual pass by the user, guided by the checklist `/qa` produces alongside its automated read-only findings.
-- Schema changes are applied by the user, by hand, in the Supabase SQL editor — there is no CLI push path (`docs/TECH_STACK.md` confirms no `supabase/` directory exists). See §1 for where the migration file lives and §5 for the hard-stop gate.
+## §7 — Known issues (append-only)
 
-## 8. Known issues
+| # | Issue | Severity | Date | Status |
+|---|---|---|---|---|
+| 1 | `npm run lint` is broken (`next lint` on Next 16, no flat ESLint config). The lint gate is suspended in §4. | 🟠 Medium | 2026-09-26 | Open |
+| 2 | `supabase-schema.sql` lacks `authenticated` RLS policies for 5 of its 6 tables. The live database has hand-added policies that were never copied back. Replaying from this file would break admin writes. | 🔴 High (disaster recovery) | 2026-09-26 | Open |
+| 3 | The `staging` remote sits at a different commit from `origin`/`client`. That's informational: staging isn't production. | 🟡 Low | 2026-09-26 | Open |
+| 4 | The purpose of `public/layout-preview.html` and the `design-preview` branch is untraced. Confirm before pruning. | 🟡 Low | 2026-09-26 | Open |
+| 5 | Any authenticated Supabase account is an admin: there's no admin role or allowlist. Keeping sign-ups OFF is the only safeguard (SEC-HIGH-2, RISKS R1). | 🔴 High | 2026-09-28 | Open. As of 2026-09-28, sign-ups were still reading as ON. |
 
-*(Fresh table — this is the first `docs/WORKFLOW.md`. The rows below are process-relevant risks carried forward from `/onboard`'s pass over `docs/MEMORY_BANK.md`, not violations of a prior workflow — there wasn't one yet. Future rows append here, oldest first; nothing is ever deleted, only marked resolved with a date.)*
-
-| # | Issue | Severity | Ticket | Date discovered | Status |
-|---|---|---|---|---|---|
-| 1 | `npm run lint` is broken (`next lint` under Next.js 16.1.6, no flat ESLint config) — lint gate suspended in §4 until fixed. | 🟠 Medium | N/A (pre-ticket, onboarding) | 2026-09-26 | Open — re-add to §4 the day a working lint command lands. |
-| 2 | `supabase-schema.sql` is missing `authenticated`-role RLS policies for 5 of its 6 tables (only `jobs` has one) — the live database almost certainly carries hand-added policies never backported to this file. A schema replay from this file alone would break admin writes. | 🔴 High (disaster-recovery risk, not a live bug) | N/A (pre-ticket, onboarding) | 2026-09-26 | Open — flag for `/architect` to reconcile the file with the live dashboard, or explicitly accept and document the gap as permanent. |
-| 3 | `staging` remote's `main` sits at a different commit than `origin`/`client` — don't assume it mirrors production. | 🟡 Low | N/A (pre-ticket, onboarding) | 2026-09-26 | Open — informational; §6 already treats `staging` as non-authoritative. |
-| 4 | `public/layout-preview.html` and the local/`origin` branch `design-preview` (unreachable from `main`'s history) have an untraced purpose/relationship — confirm with whoever owns the layout work before any `/git` prune. | 🟡 Low | N/A (pre-ticket, onboarding) | 2026-09-26 | Open. |
-
-## 9. What changed in this workflow
+## §8 — Changelog (append-only)
 
 | Date | Change |
 |---|---|
-| 2026-09-26 | Initial lock-in. Wrote `docs/WORKFLOW.md` fresh (all 10 sections) from `docs/TECH_STACK.md` and `docs/MEMORY_BANK.md`, plus the standing session decisions on branching, deploy gating, commit identity, pre-commit checks, live-DB testing safety, the schema hard-stop, and sensitive-surface triggers. §10 recorded as present-but-inert: `docs/MARKETING.md` does not exist yet, though the marketing role files themselves are already installed under `.agents/workflows/`, `.claude/agents/`, and `.claude/commands/` — this project is marketing-capable but not yet activated. |
-| 2026-09-28 | §2: the user pinned the commit trailer to `Claude Opus 5.5` on every commit, with `happierbangladesh` as the only author and no other name. All 20 role agents moved from `model: sonnet` to `model: opus`. The six unpushed commits that carried a Sonnet 5 trailer were rewritten to match, message only; the old-to-new ID map is in `docs/MEMORY_BANK.md`. |
-
-## 10. Marketing-surface review triggers
-
-**Status: inert.** `docs/MARKETING.md` does not exist. The marketing role files (`cmo`, `seo`, `copywriter`, `cro`, `analytics`, `growth`) are present in `.agents/workflows/`, `.claude/agents/`, and `.claude/commands/` — this project has not had its marketing roster removed per `AGENTS.md`'s "disabling marketing" instructions — but no role has produced `docs/MARKETING.md` yet, so no §10 trigger currently fires and no row in §3 inserts a marketing-review step today.
-
-When `/cmo` produces `docs/MARKETING.md`, re-run `/director` to activate this section with the full trigger list: modifies public-facing copy (hero, value prop, CTA, product descriptions, pricing display, error messages on public flows); changes a public route (URL change, redirect, sitemap entry, robots rule); modifies the signup, checkout, onboarding, or cancellation flow; modifies transactional emails or push notifications; adds, removes, or modifies schema markup; modifies meta tags, OpenGraph, Twitter card, robots, or canonical tags; changes Core Web Vitals signals on a public template; modifies `ANALYTICS_SPEC.md` or any tracked event property.
-
-On activation, triggered tickets insert, after `/qa` and before `/git Merge`: `/seo` (re-audit affected URLs), `/copywriter` (if copy changed), `/cro` (if a conversion flow changed), `/cso review` (if `ANALYTICS_SPEC.md` or event properties changed). These reviews produce findings and tickets; they do not block merge unless 🔴 (CRIT). 🟠 findings file follow-up tickets via `/pm`. The reverse direction — a marketing spec that requires code — is always filed as a ticket via `/pm` and picked up by engineering in its normal §3 sequence; marketing roles never write source code directly.
+| 2026-09-26 | V5 initial lock-in: branching, deploy gating, commit identity, pre-commit checks, live-database testing safety, the schema hard stop and sensitive-surface triggers. |
+| 2026-09-28 | V5 §2: the owner pinned the commit trailer to `Claude Opus 5.5`, with `happierbangladesh` as the only author and no other name. All V5 role agents moved to `model: opus`. |
+| 2026-09-28 | **Migrated to A-Team V7 + genesis.** The V5 20-role agents, commands and `AGENTS.md` were retired (the rollback branch `backup-a-team-v5` holds them). The V7 skills, reviewers, scripts and hooks were installed and adapted: the lint and format hook is off while lint is broken, and the secret patterns were tuned. The custom two-repo `/ship` and the commit-name git hooks were added. |
