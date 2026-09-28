@@ -1,0 +1,17 @@
+# 2026-09-28T17:25:12Z  anonymous plain  http://localhost:3001/admin/login
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+Cache-Control: s-maxage=31536000
+ETag: "3g71r9u7igc06"
+Content-Type: text/html; charset=utf-8
+Content-Length: 15558
+Date: Mon, 28 Sep 2026 17:25:12 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# body: 15558 bytes; error-screen strings: 0

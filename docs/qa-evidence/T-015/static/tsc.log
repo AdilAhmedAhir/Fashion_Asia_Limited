@@ -1,0 +1,1 @@
+npx tsc --noEmit  1.99s user 0.25s system 135% cpu 1.658 total

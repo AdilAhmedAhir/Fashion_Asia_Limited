@@ -1,0 +1,7 @@
+--- prod
++++ local
+@@ -19,2 +19,2 @@
+-LINK icon /icon.png?icon.0cdd14b0.png
+-LINK apple-touch-icon /apple-icon.png?apple-icon.0cdd14b0.png
++LINK icon /icon.png?icon.2v7xyt03774y8.png
++LINK apple-touch-icon /apple-icon.png?apple-icon.2v7xyt03774y8.png

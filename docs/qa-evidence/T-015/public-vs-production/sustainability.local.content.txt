@@ -1,0 +1,157 @@
+TITLE Sustainability | Fashion Asia Limited
+META viewport = width=device-width, initial-scale=1
+META theme-color = #0a0a0a
+META color-scheme = dark
+META description = Green manufacturing at Fashion Asia Limited — solar power, rainwater harvesting, waste reduction, and LEED Gold, WRAP, BSCI, SMETA, SLCP, Higg Index, GOTS, OCS, GRS, OEKO-TEX, BCI and RSC certification.
+META author = Fashion Asia Limited
+META keywords = Knit Garments,Apparel Manufacturing,Bangladesh RMG,LEED Gold Factory,Sustainable Fashion,Northern Tosrifa Group
+META creator = Fashion Asia Limited
+META robots = index, follow
+META googlebot = index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1
+LINK canonical https://fashionasialtd.com/sustainability
+META og:title = Sustainability
+META og:description = Green manufacturing at Fashion Asia Limited — solar power, rainwater harvesting, waste reduction, and LEED Gold, WRAP, BSCI, SMETA, SLCP, Higg Index, GOTS, OCS, GRS, OEKO-TEX, BCI and RSC certification.
+META og:url = https://fashionasialtd.com/sustainability
+META twitter:card = summary_large_image
+META twitter:title = Fashion Asia Limited | Green Powered Innovation
+META twitter:description = Modern, compliant, and sustainability-driven knit garments manufacturer.
+META twitter:image = https://fashionasialtd.com/images/client/og-image.jpg
+LINK icon /icon.png?icon.2v7xyt03774y8.png
+LINK apple-touch-icon /apple-icon.png?apple-icon.2v7xyt03774y8.png
+IMG src=/logo.png
+IMG alt=
+TEXT F
+TEXT A
+TEXT S
+TEXT H
+TEXT I
+TEXT O
+TEXT N
+TEXT A
+TEXT S
+TEXT I
+TEXT A
+TEXT LIMITED
+TEXT 0
+TEXT %
+A /
+IMG src=/_next/image?url=%2Flogo.png&w=96&q=75
+IMG srcset=/_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+IMG alt=Fashion Asia Limited Logo
+TEXT FASHION ASIA
+TEXT Limited
+A /
+TEXT Home
+A /who-we-are
+TEXT Who We Are
+A /what-we-do
+TEXT What We Do
+A /global-partner
+TEXT Global Partner
+A /sustainability
+TEXT Sustainability
+A /life-at-fashion-asia
+TEXT Life at Fashion Asia
+A /contact
+TEXT Connect
+TEXT Green Manufacturing
+H1 >
+  Sustainability
+TEXT Operating as a Green Factory with a strong commitment to environmental stewardship and social responsibility.
+TEXT Environmental & Social
+H2 >
+  Key Sustainability Initiatives
+TEXT We believe sustainable growth is only possible when business success aligns with social and environmental well-being.
+TEXT Use of renewable and solar energy
+TEXT Rainwater harvesting systems
+TEXT Energy-efficient production processes
+TEXT Waste reduction and responsible resource management
+TEXT Fair Price Shop facility for employees
+TEXT Educational support through the '100 Dream School Program' under Jaggo Foundation
+TEXT Global Recognition
+H2 >
+  Certifications & Audits
+TEXT These certifications demonstrate our commitment to ethical business conduct, responsible sourcing, environmental management, and international labor standards.
+IMG src=/images/client/certifications/leed-gold.jpg
+IMG alt=LEED Gold certification
+TEXT LEED Gold
+IMG src=/images/client/certifications/wrap.jpg
+IMG alt=WRAP certification
+TEXT WRAP
+IMG src=/images/client/certifications/smeta.jpg
+IMG alt=SMETA certification
+TEXT SMETA
+IMG src=/images/client/certifications/slcp.jpg
+IMG alt=SLCP certification
+TEXT SLCP
+IMG src=/images/client/certifications/higg-index.jpg
+IMG alt=Higg Index certification
+TEXT Higg Index
+IMG src=/images/client/certifications/gots.jpg
+IMG alt=GOTS certification
+TEXT GOTS
+IMG src=/images/client/certifications/ocs.jpg
+IMG alt=Organic Content Standard certification
+TEXT Organic Content Standard
+IMG src=/images/client/certifications/grs.jpg
+IMG alt=Global Recycled Standard certification
+TEXT Global Recycled Standard
+IMG src=/images/client/certifications/oeko-tex.jpg
+IMG alt=OEKO-TEX Standard 100 certification
+TEXT OEKO-TEX Standard 100
+IMG src=/images/client/certifications/bci.jpg
+IMG alt=Better Cotton Initiative certification
+TEXT Better Cotton Initiative
+IMG src=/images/client/certifications/rsc.jpg
+IMG alt=RMG Sustainability Council certification
+TEXT RMG Sustainability Council
+TEXT Transparency & Governance
+H2 >
+  Reports & Publications
+TEXT Our annual reports, audit certifications, and compliance documentation — published so buyers and stakeholders can verify what we claim.
+TEXT Reports coming soon
+A /
+IMG src=/_next/image?url=%2Flogo.png&w=96&q=75
+IMG srcset=/_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+IMG alt=Fashion Asia Limited Logo
+TEXT FASHION ASIA
+TEXT Limited
+TEXT A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh.
+TEXT LEED Gold
+TEXT WRAP
+TEXT BSCI
+TEXT GOTS
+H4 >
+  Company
+A /who-we-are
+TEXT Who We Are
+A /what-we-do
+TEXT What We Do
+A /global-partner
+TEXT Global Partner
+A /sustainability
+TEXT Sustainability
+A /sustainability#reports
+TEXT Reports & Publications
+A /life-at-fashion-asia
+TEXT Life at Fashion Asia
+H4 >
+  Careers
+A /career
+TEXT Career
+A /contact
+TEXT Contact Us
+A /grievance
+TEXT Grievance Cell
+H4 >
+  Connect
+A mailto:admin@fashionasialtd.com
+TEXT admin@fashionasialtd.com
+A tel:+8801711691366
+TEXT +880 1711 691 366
+TEXT ©
+TEXT 2026
+TEXT Fashion Asia Limited. All Rights Reserved.
+TEXT |
+TEXT A Concern of Northern Tosrifa Group
+TEXT fashionasialtd.com

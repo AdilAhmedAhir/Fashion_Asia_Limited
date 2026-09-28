@@ -1,0 +1,8 @@
+# sha256 of the T-015 source files, taken by /qa static 2026-09-28T17:21:12Z, HEAD b637a86, branch fix/T-015-admin-crud-errors
+# /cso pins (docs/SECURITY.md ticket-review:T-015): settings-actions 8df471e36cde848dc33e1fb1d3089ad475cf67be3a4e0832664bdc5bf143526d, jobs-actions 628e5e74c4dca9259ef1e5a0d3ef0d0715a70e9c2b207656792a0603ac7f684f
+# /ui-ux post-pass client prefixes: ReportsClient a057e36e, CareersClient a54ef388, WhoWeAreClient 168ff830
+8df471e36cde848dc33e1fb1d3089ad475cf67be3a4e0832664bdc5bf143526d  src/app/actions/settings-actions.ts
+628e5e74c4dca9259ef1e5a0d3ef0d0715a70e9c2b207656792a0603ac7f684f  src/app/actions/jobs-actions.ts
+a057e36e3f99cc645790d918f4cb949d52d06f9b6b3f96962ef573904bb4781e  src/app/admin/(dashboard)/reports/ReportsClient.tsx
+a54ef388952d55425931745f79303c091c119fd4cef6a917b8d9c1516bc0f5b0  src/app/admin/(dashboard)/careers/CareersClient.tsx
+168ff8309fefc5d4c72723dae0885ad6a9ebbc73988b7888709755faf4a017d1  src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx

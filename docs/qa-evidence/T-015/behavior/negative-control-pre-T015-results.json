@@ -1,0 +1,366 @@
+{
+  "summary": {
+    "when": "2026-09-28T17:37:24.377Z",
+    "chrome": "Chrome/153.0.8010.53",
+    "react": "19.2.4 production (from node_modules)",
+    "httpAttemptsBlocked": [],
+    "total": 30,
+    "passed": 8,
+    "failed": [
+      "reports: update -> {ok:false} not found",
+      "reports: update -> throw",
+      "reports: create -> {ok:false} session expired",
+      "reports: upload -> {ok:false} real reason shown",
+      "reports: upload -> throw (e.g. >1 MB body) shows UPLOAD_ERROR",
+      "reports: failed Replace keeps the attached file",
+      "reports: upload ok keeps text typed during the upload",
+      "reports: delete -> {ok:false} not found",
+      "reports: delete -> throw",
+      "reports: modal can't be dismissed mid-save; failure then shows in it",
+      "careers: update -> {ok:false} not found",
+      "careers: create -> throw",
+      "careers: delete -> {ok:false} session expired",
+      "careers: delete -> throw",
+      "leaders: blur-save -> {ok:false} not found (saveLeader now signals)",
+      "leaders: blur-save -> throw",
+      "leaders: a failed save's alert clears when a retry succeeds",
+      "leaders: add -> {ok:false} session expired",
+      "leaders: add -> throw",
+      "leaders: remove -> {ok:false} not found",
+      "leaders: remove -> throw",
+      "leaders: remove -> ok (reload, as before)"
+    ]
+  },
+  "results": [
+    {
+      "name": "reports: update -> {ok:false} not found",
+      "pass": false,
+      "error": "eval failed: ReferenceError: __args is not defined\n    at <anonymous>:1:1\n__args.filter(function(a){return a.fn===\"updateReport\"})",
+      "pageErrors": []
+    },
+    {
+      "name": "reports: update -> throw",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of undefined (reading 'disabled')\n    at <anonymous>:1:92\n!(function(){var bs=document.querySelectorAll(\".fixed button\"); return bs[bs.length-1];})().disabled",
+      "pageErrors": [
+        "Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.\n    at settle (file:///private/tmp/claude-501/-Volumes-D-Architect-Codebase-Fashion-asia-limited/89f2a12d-facc-4565-b000-b3e9d7659ba3/scratchpad/t015/uiux-rerun/harness/before/bundle.js:44438:38)"
+      ]
+    },
+    {
+      "name": "reports: create -> {ok:false} session expired",
+      "pass": false,
+      "error": "eval failed: ReferenceError: __args is not defined\n    at <anonymous>:1:1\n__args.filter(function(a){return a.fn===\"createReport\"})",
+      "pageErrors": []
+    },
+    {
+      "name": "reports: update -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "reports: upload -> {ok:false} real reason shown",
+      "expectedAlerts": [
+        "new row violates row-level security policy"
+      ],
+      "alerts": [],
+      "modalOpen": true,
+      "titleValue": "QA-T015 upload title",
+      "fileInputCleared": false,
+      "pillBefore": "Click to upload PDF file",
+      "pillAfter": "qa-report-1.pdfReplace",
+      "saveEnabled": true,
+      "sent": [
+        {
+          "fn": "uploadFile",
+          "n": 1,
+          "bucket": "reports",
+          "file": "qa-report-1.pdf"
+        }
+      ],
+      "reloaded": false,
+      "shot": "04-reports-upload-fail.png",
+      "pass": false,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: upload -> throw (e.g. >1 MB body) shows UPLOAD_ERROR",
+      "expectedAlerts": [
+        "Couldn't upload this PDF. Files must be under 1 MB. If this one is, check your connection and try again."
+      ],
+      "alerts": [],
+      "modalOpen": true,
+      "titleValue": "QA-T015 upload title",
+      "fileInputCleared": false,
+      "pillBefore": "Click to upload PDF file",
+      "pillAfter": "Click to upload PDF file",
+      "saveEnabled": true,
+      "sent": [
+        {
+          "fn": "uploadFile",
+          "n": 1,
+          "bucket": "reports",
+          "file": "qa-report-1.pdf"
+        }
+      ],
+      "reloaded": false,
+      "shot": "05-reports-upload-throw.png",
+      "pass": false,
+      "pageErrors": [
+        "native alert() dialog: Upload failed: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details."
+      ]
+    },
+    {
+      "name": "reports: failed Replace keeps the attached file",
+      "expectedAlerts": [
+        "new row violates row-level security policy"
+      ],
+      "alerts": [],
+      "modalOpen": true,
+      "titleValue": "QA-T015 upload title",
+      "fileInputCleared": false,
+      "pillBefore": "File attachedReplace",
+      "pillAfter": "qa-report-1.pdfReplace",
+      "saveEnabled": true,
+      "sent": [
+        {
+          "fn": "uploadFile",
+          "n": 1,
+          "bucket": "reports",
+          "file": "qa-report-1.pdf"
+        }
+      ],
+      "reloaded": false,
+      "shot": "06-reports-replace-fail-keeps-file.png",
+      "pass": false,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: upload ok keeps text typed during the upload",
+      "titleValue": "",
+      "pill": "qa-report-1.pdfReplace",
+      "alerts": [],
+      "reloaded": false,
+      "sentOnSave": [
+        {
+          "fn": "createReport",
+          "title": "",
+          "file_url": "[object Object]",
+          "name": null,
+          "is_active": null
+        }
+      ],
+      "pass": false,
+      "pageErrors": []
+    },
+    {
+      "name": "reports: delete -> {ok:false} not found",
+      "pass": false,
+      "error": "eval failed: ReferenceError: __args is not defined\n    at <anonymous>:1:1\n__args.filter(function(a){return a.fn===\"deleteReport\"})",
+      "pageErrors": []
+    },
+    {
+      "name": "reports: delete -> throw",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of null (reading 'parentElement')\n    at <anonymous>:1:51\n    at <anonymous>:1:127\n(function(){ var e=document.querySelector(\"table\").parentElement; if(e) e.scrollIntoView({ block: \"center\" }); return true; })()",
+      "pageErrors": [
+        "Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.\n    at settle (file:///private/tmp/claude-501/-Volumes-D-Architect-Codebase-Fashion-asia-limited/89f2a12d-facc-4565-b000-b3e9d7659ba3/scratchpad/t015/uiux-rerun/harness/before/bundle.js:44438:38)"
+      ]
+    },
+    {
+      "name": "reports: delete -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "reports: modal can't be dismissed mid-save; failure then shows in it",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of undefined (reading 'disabled')\n    at <anonymous>:1:91\n(function(){var bs=document.querySelectorAll(\".fixed button\"); return bs[bs.length-1];})().disabled && /Saving/.test((function(){var bs=document.querySelectorAll(\".fixed button\"); return bs[bs.length-",
+      "pageErrors": []
+    },
+    {
+      "name": "INFO-3 demo: a second pick during an upload, Save in the gap sends the FIRST file",
+      "inFlightUploads": 2,
+      "gap": {
+        "saveEnabledWhileSecondUploadInFlight": true,
+        "pill": "qa-report-1.pdfReplace"
+      },
+      "sentOnSave": [
+        {
+          "fn": "updateReport",
+          "id": "r1",
+          "title": "Sustainability Report 2024",
+          "file_url": "[object Object]",
+          "name": null,
+          "is_active": null
+        }
+      ],
+      "demonstrated": false,
+      "pass": true,
+      "note": "documents INFO-3; pass=true means the demo ran",
+      "pageErrors": []
+    },
+    {
+      "name": "careers: update -> {ok:false} not found",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of null (reading 'value')\n    at <anonymous>:1:50\ndocument.querySelector(\".fixed input[type=text]\").value",
+      "pageErrors": []
+    },
+    {
+      "name": "careers: create -> throw",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of null (reading 'value')\n    at <anonymous>:1:50\ndocument.querySelector(\".fixed input[type=text]\").value",
+      "pageErrors": [
+        "Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.\n    at settle (file:///private/tmp/claude-501/-Volumes-D-Architect-Codebase-Fashion-asia-limited/89f2a12d-facc-4565-b000-b3e9d7659ba3/scratchpad/t015/uiux-rerun/harness/before/bundle.js:44469:38)"
+      ]
+    },
+    {
+      "name": "careers: update -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "careers: delete -> {ok:false} session expired",
+      "pass": false,
+      "error": "eval failed: ReferenceError: __args is not defined\n    at <anonymous>:1:1\n__args.filter(function(a){return a.fn===\"deleteJob\"})",
+      "pageErrors": []
+    },
+    {
+      "name": "careers: delete -> throw",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of null (reading 'parentElement')\n    at <anonymous>:1:51\n    at <anonymous>:1:127\n(function(){ var e=document.querySelector(\"table\").parentElement; if(e) e.scrollIntoView({ block: \"center\" }); return true; })()",
+      "pageErrors": [
+        "Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.\n    at settle (file:///private/tmp/claude-501/-Volumes-D-Architect-Codebase-Fashion-asia-limited/89f2a12d-facc-4565-b000-b3e9d7659ba3/scratchpad/t015/uiux-rerun/harness/before/bundle.js:44469:38)"
+      ]
+    },
+    {
+      "name": "careers: delete -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: blur-save -> {ok:false} not found (saveLeader now signals)",
+      "expectedAlerts": [
+        "Leader not found. Reload the page to see the current list."
+      ],
+      "alerts": [],
+      "cardAlert": null,
+      "inputValue": "QA-T015 Leader Name",
+      "sent": [
+        {
+          "fn": "updateLeader",
+          "id": "1",
+          "title": "Chairman",
+          "file_url": null,
+          "name": "QA-T015 Leader Name",
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "shot": "13-leaders-save-notfound.png",
+      "pass": false,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: blur-save -> throw",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of undefined (reading 'parentElement')\n    at <anonymous>:1:130\n    at <anonymous>:1:258\n(function(){ var a=[].find.call(document.querySelectorAll(\"h2\"), function(h){ return h.textContent.trim()===\"Leadership Team\"; }).parentElement.querySelectorAll(\"div.rounded-xl\")[0].querySelector('[ro",
+      "pageErrors": [
+        "Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.\n    at settle (file:///private/tmp/claude-501/-Volumes-D-Architect-Codebase-Fashion-asia-limited/89f2a12d-facc-4565-b000-b3e9d7659ba3/scratchpad/t015/uiux-rerun/harness/before/bundle.js:44438:38)"
+      ]
+    },
+    {
+      "name": "leaders: blur-save -> ok stays silent, no reload (as before)",
+      "expectedAlerts": [],
+      "alerts": [],
+      "cardAlert": null,
+      "inputValue": "QA-T015 Leader Name",
+      "sent": [
+        {
+          "fn": "updateLeader",
+          "id": "1",
+          "title": "Chairman",
+          "file_url": null,
+          "name": "QA-T015 Leader Name",
+          "is_active": null
+        }
+      ],
+      "reloaded": false,
+      "pass": true,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: a failed save's alert clears when a retry succeeds",
+      "first": [],
+      "second": [],
+      "reloaded": false,
+      "pass": false,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: add -> {ok:false} session expired",
+      "expectedAlerts": [
+        "Your session expired. Sign in again and retry."
+      ],
+      "alerts": [],
+      "reloaded": true,
+      "alertBesideAdd": null,
+      "shot": "15-leaders-add-session.png",
+      "pass": false,
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: add -> throw",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of undefined (reading 'parentElement')\n    at <anonymous>:1:143\n    at <anonymous>:1:332\n(function(){ var a=[].find.call([].find.call(document.querySelectorAll(\"h2\"), function(h){ return h.textContent.trim()===\"Leadership Team\"; }).parentElement.querySelectorAll(\"button\"), function(b){ re",
+      "pageErrors": [
+        "Error: An error occurred in the Server Components render. The specific message is omitted in production builds to avoid leaking sensitive details.\n    at settle (file:///private/tmp/claude-501/-Volumes-D-Architect-Codebase-Fashion-asia-limited/89f2a12d-facc-4565-b000-b3e9d7659ba3/scratchpad/t015/uiux-rerun/harness/before/bundle.js:44438:38)"
+      ]
+    },
+    {
+      "name": "leaders: add -> ok (reload, as before)",
+      "pass": true,
+      "reloaded": true,
+      "expected": "reload",
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: remove -> {ok:false} not found",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of undefined (reading 'click')\n    at <anonymous>:1:370\n__ctl.mode.deleteLeader = \"fail:Leader not found. Reload the page to see the current list.\"; [].find.call([].find.call(document.querySelectorAll(\"h2\"), function(h){ return h.textContent.trim()===\"Lead",
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: remove -> throw",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of undefined (reading 'click')\n    at <anonymous>:1:312\n__ctl.mode.deleteLeader = \"throw\"; [].find.call([].find.call(document.querySelectorAll(\"h2\"), function(h){ return h.textContent.trim()===\"Leadership Team\"; }).parentElement.querySelectorAll(\"div.round",
+      "pageErrors": []
+    },
+    {
+      "name": "leaders: remove -> ok (reload, as before)",
+      "pass": false,
+      "error": "eval failed: TypeError: Cannot read properties of undefined (reading 'click')\n    at <anonymous>:1:309\n__ctl.mode.deleteLeader = \"ok\"; [].find.call([].find.call(document.querySelectorAll(\"h2\"), function(h){ return h.textContent.trim()===\"Leadership Team\"; }).parentElement.querySelectorAll(\"div.rounded-",
+      "pageErrors": []
+    },
+    {
+      "name": "INFO-4 demo: A throws, B succeeds, A's error stays",
+      "sent": [
+        "QA-T015 A",
+        "QA-T015 B"
+      ],
+      "finalAlerts": [],
+      "reloaded": false,
+      "demonstrated": false,
+      "pass": true,
+      "note": "documents INFO-4; pass=true means the demo ran",
+      "pageErrors": []
+    }
+  ]
+}

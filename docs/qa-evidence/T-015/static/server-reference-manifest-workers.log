@@ -1,0 +1,118 @@
+# T-015 /qa static: page workers registered for each of the ten actions, read from this pass's build (.next/server/server-reference-manifest.json).
+# Next forwards an action request that lands on a page without the action to Object.keys(workers)[0] (manifests-singleton selectWorkerForForwarding).
+# Action IDs are truncated; this file carries no secret material.
+createLeader  id=4005fe97…  first worker (forward target)=app/(website)/(marketing)/global-partner/page  total workers=14
+    app/(website)/(marketing)/global-partner/page
+    app/(website)/(marketing)/life-at-fashion-asia/page
+    app/(website)/(marketing)/sustainability/page
+    app/(website)/(marketing)/what-we-do/[category]/page
+    app/(website)/(marketing)/what-we-do/page
+    app/(website)/(marketing)/who-we-are/page
+    app/(website)/page
+    app/admin/(dashboard)/business/page
+    app/admin/(dashboard)/homepage/page
+    app/admin/(dashboard)/reports/page
+    app/admin/(dashboard)/settings/page
+    app/admin/(dashboard)/sustainability/page
+    app/admin/(dashboard)/who-we-are/page
+    app/admin/(dashboard)/who-we-work-with/page
+createReport  id=4047be62…  first worker (forward target)=app/(website)/(marketing)/global-partner/page  total workers=14
+    app/(website)/(marketing)/global-partner/page
+    app/(website)/(marketing)/life-at-fashion-asia/page
+    app/(website)/(marketing)/sustainability/page
+    app/(website)/(marketing)/what-we-do/[category]/page
+    app/(website)/(marketing)/what-we-do/page
+    app/(website)/(marketing)/who-we-are/page
+    app/(website)/page
+    app/admin/(dashboard)/business/page
+    app/admin/(dashboard)/homepage/page
+    app/admin/(dashboard)/reports/page
+    app/admin/(dashboard)/settings/page
+    app/admin/(dashboard)/sustainability/page
+    app/admin/(dashboard)/who-we-are/page
+    app/admin/(dashboard)/who-we-work-with/page
+deleteReport  id=40d29bc0…  first worker (forward target)=app/(website)/(marketing)/global-partner/page  total workers=14
+    app/(website)/(marketing)/global-partner/page
+    app/(website)/(marketing)/life-at-fashion-asia/page
+    app/(website)/(marketing)/sustainability/page
+    app/(website)/(marketing)/what-we-do/[category]/page
+    app/(website)/(marketing)/what-we-do/page
+    app/(website)/(marketing)/who-we-are/page
+    app/(website)/page
+    app/admin/(dashboard)/business/page
+    app/admin/(dashboard)/homepage/page
+    app/admin/(dashboard)/reports/page
+    app/admin/(dashboard)/settings/page
+    app/admin/(dashboard)/sustainability/page
+    app/admin/(dashboard)/who-we-are/page
+    app/admin/(dashboard)/who-we-work-with/page
+deleteLeader  id=40d5381a…  first worker (forward target)=app/(website)/(marketing)/global-partner/page  total workers=14
+    app/(website)/(marketing)/global-partner/page
+    app/(website)/(marketing)/life-at-fashion-asia/page
+    app/(website)/(marketing)/sustainability/page
+    app/(website)/(marketing)/what-we-do/[category]/page
+    app/(website)/(marketing)/what-we-do/page
+    app/(website)/(marketing)/who-we-are/page
+    app/(website)/page
+    app/admin/(dashboard)/business/page
+    app/admin/(dashboard)/homepage/page
+    app/admin/(dashboard)/reports/page
+    app/admin/(dashboard)/settings/page
+    app/admin/(dashboard)/sustainability/page
+    app/admin/(dashboard)/who-we-are/page
+    app/admin/(dashboard)/who-we-work-with/page
+uploadFile  id=600ee5f3…  first worker (forward target)=app/(website)/(marketing)/global-partner/page  total workers=14
+    app/(website)/(marketing)/global-partner/page
+    app/(website)/(marketing)/life-at-fashion-asia/page
+    app/(website)/(marketing)/sustainability/page
+    app/(website)/(marketing)/what-we-do/[category]/page
+    app/(website)/(marketing)/what-we-do/page
+    app/(website)/(marketing)/who-we-are/page
+    app/(website)/page
+    app/admin/(dashboard)/business/page
+    app/admin/(dashboard)/homepage/page
+    app/admin/(dashboard)/reports/page
+    app/admin/(dashboard)/settings/page
+    app/admin/(dashboard)/sustainability/page
+    app/admin/(dashboard)/who-we-are/page
+    app/admin/(dashboard)/who-we-work-with/page
+updateReport  id=60472298…  first worker (forward target)=app/(website)/(marketing)/global-partner/page  total workers=14
+    app/(website)/(marketing)/global-partner/page
+    app/(website)/(marketing)/life-at-fashion-asia/page
+    app/(website)/(marketing)/sustainability/page
+    app/(website)/(marketing)/what-we-do/[category]/page
+    app/(website)/(marketing)/what-we-do/page
+    app/(website)/(marketing)/who-we-are/page
+    app/(website)/page
+    app/admin/(dashboard)/business/page
+    app/admin/(dashboard)/homepage/page
+    app/admin/(dashboard)/reports/page
+    app/admin/(dashboard)/settings/page
+    app/admin/(dashboard)/sustainability/page
+    app/admin/(dashboard)/who-we-are/page
+    app/admin/(dashboard)/who-we-work-with/page
+updateLeader  id=60c15b7a…  first worker (forward target)=app/(website)/(marketing)/global-partner/page  total workers=14
+    app/(website)/(marketing)/global-partner/page
+    app/(website)/(marketing)/life-at-fashion-asia/page
+    app/(website)/(marketing)/sustainability/page
+    app/(website)/(marketing)/what-we-do/[category]/page
+    app/(website)/(marketing)/what-we-do/page
+    app/(website)/(marketing)/who-we-are/page
+    app/(website)/page
+    app/admin/(dashboard)/business/page
+    app/admin/(dashboard)/homepage/page
+    app/admin/(dashboard)/reports/page
+    app/admin/(dashboard)/settings/page
+    app/admin/(dashboard)/sustainability/page
+    app/admin/(dashboard)/who-we-are/page
+    app/admin/(dashboard)/who-we-work-with/page
+deleteJob  id=401def43…  first worker (forward target)=app/(website)/(forms)/career/page  total workers=2
+    app/(website)/(forms)/career/page
+    app/admin/(dashboard)/careers/page
+createJob  id=402c0daf…  first worker (forward target)=app/(website)/(forms)/career/page  total workers=2
+    app/(website)/(forms)/career/page
+    app/admin/(dashboard)/careers/page
+updateJob  id=6020010d…  first worker (forward target)=app/(website)/(forms)/career/page  total workers=2
+    app/(website)/(forms)/career/page
+    app/admin/(dashboard)/careers/page
+actions registered on app/admin/login/page: ["loginAction"]

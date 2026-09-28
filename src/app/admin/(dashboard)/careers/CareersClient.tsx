@@ -1,8 +1,17 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { Fragment, useState, useTransition } from "react";
 import { createJob, updateJob, deleteJob, type Job } from "@/app/actions/jobs-actions";
-import { Plus, Pencil, Trash2, X, Briefcase, Loader2, Eye, EyeOff } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Briefcase, Loader2, Eye, EyeOff, TriangleAlert } from "lucide-react";
+
+// Fallbacks for an unexpected throw (a dropped connection, or a failure the
+// action didn't anticipate, whose message Next.js redacts in production).
+// Every expected failure arrives as the action's own {ok:false, error} text
+// instead and is shown as-is. Saves keep T-012's wording, shared with the six
+// settings pages; delete names its own action, because "saving these changes"
+// misdescribes it.
+const GENERIC_ERROR = "Something went wrong saving these changes. Check your connection and try again.";
+const DELETE_ERROR = "Couldn't delete this job posting. Check your connection and try again.";
 
 const EMPTY_JOB: Job = {
     id: "", title: "", department: "", vacancy: 1, location: "Sreepur, Bangladesh",
@@ -29,30 +38,66 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
     const [modal, setModal] = useState<Job | null>(null);
     const [isNew, setIsNew] = useState(false);
     const [isPending, startTransition] = useTransition();
+    // One failure slot per action, each rendered next to the control that
+    // triggered it (T-015): the modal's Save button, and the table row whose
+    // delete failed.
+    const [saveError, setSaveError] = useState<string | null>(null);
+    const [deleteError, setDeleteError] = useState<{ id: string; message: string } | null>(null);
 
-    const openNew = () => { setModal({ ...EMPTY_JOB }); setIsNew(true); };
-    const openEdit = (j: Job) => { setModal({ ...j }); setIsNew(false); };
+    const openNew = () => { setModal({ ...EMPTY_JOB }); setIsNew(true); setSaveError(null); };
+    const openEdit = (j: Job) => { setModal({ ...j }); setIsNew(false); setSaveError(null); };
     const set = (field: string, val: string | number | boolean) => modal && setModal({ ...modal, [field]: val });
+
+    // The modal can't be dismissed while a save is in flight. Its outcome is
+    // shown inside the modal, and closing early would hide a failure and
+    // throw away what the admin entered.
+    const closeModal = () => {
+        if (isPending) return;
+        setModal(null);
+    };
 
     const handleSave = () => {
         if (!modal) return;
         const fd = new FormData();
         Object.entries(modal).forEach(([k, v]) => { if (k !== "id" && k !== "created_at") fd.set(k, String(v ?? "")); });
         startTransition(async () => {
-            if (isNew) await createJob(fd); else await updateJob(modal.id, fd);
-            setModal(null);
-            window.location.reload();
+            setSaveError(null);
+            try {
+                const result = isNew ? await createJob(fd) : await updateJob(modal.id, fd);
+                if (!result.ok) {
+                    // The modal stays open with everything the admin entered,
+                    // and nothing reloads, so they can fix it and retry.
+                    setSaveError(result.error);
+                    return;
+                }
+                setModal(null);
+                window.location.reload();
+            } catch {
+                setSaveError(GENERIC_ERROR);
+            }
         });
     };
 
     const handleDelete = (id: string) => {
         if (!confirm("Delete this job posting?")) return;
-        startTransition(async () => { await deleteJob(id); window.location.reload(); });
+        startTransition(async () => {
+            setDeleteError(null);
+            try {
+                const result = await deleteJob(id);
+                if (!result.ok) {
+                    setDeleteError({ id, message: result.error });
+                    return;
+                }
+                window.location.reload();
+            } catch {
+                setDeleteError({ id, message: DELETE_ERROR });
+            }
+        });
     };
 
     return (
         <div className="flex flex-col gap-8 max-w-5xl">
-            <header className="flex items-start justify-between">
+            <header className="flex items-start justify-between gap-4">
                 <div>
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Management</span>
                     <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">Career / Job Postings</h1>
@@ -62,7 +107,15 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                 </button>
             </header>
 
-            <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-hidden">
+            {/* The table needs ~690px, more than the content area below
+                ~1030px wide (768px tablet, split-screen), so it scrolls inside
+                its own card rather than having Status and Actions (the delete
+                button included) clipped away. Its scrollbar gets the same 8px
+                as globals.css gives the page's (which only sets width, so a
+                horizontal bar would otherwise be the default ~16px). The card
+                is also a size container, so a delete error can be sized to its
+                visible width (100cqw) instead of the table's. */}
+            <div className="rounded-2xl border border-white/5 bg-white/[0.02] overflow-x-auto [container-type:inline-size] [&::-webkit-scrollbar]:h-2">
                 <table className="w-full text-sm">
                     <thead>
                         <tr className="border-b border-white/5">
@@ -77,22 +130,49 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                         {jobs.length === 0 ? (
                             <tr><td colSpan={5} className="px-6 py-12 text-center text-white/30">No job postings yet. Click &quot;Post New Job&quot; to add one.</td></tr>
                         ) : jobs.map(j => (
-                            <tr key={j.id} className="border-b border-white/5 hover:bg-white/[0.02] transition-colors">
-                                <td className="px-6 py-4 text-white font-medium flex items-center gap-3">
-                                    <Briefcase size={16} className="text-white/30" /> {j.title}
-                                </td>
-                                <td className="px-6 py-4 text-white/50">{j.department || "—"}</td>
-                                <td className="px-6 py-4 text-white/50">{j.deadline || "Open"}</td>
-                                <td className="px-6 py-4">
-                                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.65rem] uppercase tracking-widest font-bold ${j.is_active ? "bg-primary/20 text-primary" : "bg-white/10 text-white/40"}`}>
-                                        {j.is_active ? <><Eye size={10} /> Active</> : <><EyeOff size={10} /> Closed</>}
-                                    </span>
-                                </td>
-                                <td className="px-6 py-4 text-right">
-                                    <button onClick={() => openEdit(j)} className="p-2 text-white/40 hover:text-white transition-colors"><Pencil size={14} /></button>
-                                    <button onClick={() => handleDelete(j.id)} className="p-2 text-red-400/50 hover:text-red-400 transition-colors"><Trash2 size={14} /></button>
-                                </td>
-                            </tr>
+                            <Fragment key={j.id}>
+                                {/* No divider between a row and its own delete error,
+                                    so the two read as one unit. */}
+                                <tr className={`${deleteError?.id === j.id ? "" : "border-b border-white/5 "}hover:bg-white/[0.02] transition-colors`}>
+                                    <td className="px-6 py-4 text-white font-medium flex items-center gap-3">
+                                        <Briefcase size={16} className="flex-none text-white/30" /> {j.title}
+                                    </td>
+                                    <td className="px-6 py-4 text-white/50">{j.department || "—"}</td>
+                                    <td className="px-6 py-4 text-white/50">{j.deadline || "Open"}</td>
+                                    <td className="px-6 py-4">
+                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.65rem] uppercase tracking-widest font-bold ${j.is_active ? "bg-primary/20 text-primary" : "bg-white/10 text-white/40"}`}>
+                                            {j.is_active ? <><Eye size={10} /> Active</> : <><EyeOff size={10} /> Closed</>}
+                                        </span>
+                                    </td>
+                                    <td className="px-6 py-4 text-right">
+                                        {/* lucide marks its icons aria-hidden, so without a
+                                            label these buttons are announced as just "button".
+                                            Delete now uses the admin's usual red-400 at rest
+                                            (as on leader cards and list editors): the old
+                                            red-400/50 was 2.5:1, under the 3:1 minimum for a
+                                            control. */}
+                                        <button onClick={() => openEdit(j)} aria-label={`Edit ${j.title || "this job posting"}`} className="p-2 text-white/40 hover:text-white transition-colors"><Pencil size={14} /></button>
+                                        <button onClick={() => handleDelete(j.id)} aria-label={`Delete ${j.title || "this job posting"}`} className="p-2 text-red-400 hover:text-red-300 transition-colors"><Trash2 size={14} /></button>
+                                    </td>
+                                </tr>
+                                {/* Directly under the row whose delete failed. Same
+                                    markup as SettingsHeader's save-failure line (T-012);
+                                    text-red-400 on this table's #0f0f0f is 6.93:1.
+                                    When the table scrolls sideways (narrow screens),
+                                    the message stays pinned to the card's visible left
+                                    edge and wraps to its visible width, so it's readable
+                                    from wherever the admin scrolled to reach Delete. */}
+                                {deleteError?.id === j.id && (
+                                    <tr className="border-b border-white/5">
+                                        <td colSpan={5} className="px-6 pb-4">
+                                            <p role="alert" className="sticky left-6 flex max-w-[calc(100cqw-3rem)] items-start gap-2 text-sm leading-relaxed text-red-400">
+                                                <TriangleAlert size={15} className="mt-0.5 flex-none" aria-hidden="true" />
+                                                {deleteError.message}
+                                            </p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </Fragment>
                         ))}
                     </tbody>
                 </table>
@@ -100,11 +180,11 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
 
             {/* Modal */}
             {modal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto py-8" onClick={() => setModal(null)}>
+                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto py-8" onClick={closeModal}>
                     <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#111] p-8 my-auto max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-8">
                             <h2 className="font-serif text-xl font-bold text-white">{isNew ? "Post New Job" : "Edit Job"}</h2>
-                            <button onClick={() => setModal(null)} className="text-white/40 hover:text-white"><X size={18} /></button>
+                            <button onClick={closeModal} disabled={isPending} aria-label="Close" className="text-white/40 enabled:hover:text-white disabled:opacity-40"><X size={18} /></button>
                         </div>
                         <div className="flex flex-col gap-5">
                             <Field label="Job Title *">
@@ -181,11 +261,22 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                                 <span className="text-sm text-white/70">Active (visible on career page)</span>
                             </label>
                         </div>
-                        <button onClick={handleSave} disabled={isPending || !modal.title}
-                            className="mt-8 flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
-                            {isPending ? <Loader2 size={16} className="animate-spin" /> : null}
-                            {isPending ? "Saving..." : isNew ? "Post Job" : "Save Changes"}
-                        </button>
+                        {/* Above the button that caused it rather than below: this
+                            modal scrolls, and a line appended under the last
+                            element could land out of view. 6.83:1 on #111. */}
+                        <div className="mt-8 flex flex-col gap-3">
+                            {saveError && (
+                                <p role="alert" className="flex items-start gap-2 text-sm leading-relaxed text-red-400">
+                                    <TriangleAlert size={15} className="mt-0.5 flex-none" aria-hidden="true" />
+                                    {saveError}
+                                </p>
+                            )}
+                            <button onClick={handleSave} disabled={isPending || !modal.title}
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                                {isPending ? <Loader2 size={16} className="motion-safe:animate-spin" /> : null}
+                                {isPending ? "Saving..." : isNew ? "Post Job" : "Save Changes"}
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}

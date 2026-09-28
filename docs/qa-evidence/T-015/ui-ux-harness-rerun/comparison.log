@@ -1,0 +1,4 @@
+# /qa re-run of /ui-ux harness (build.mjs after + run.mjs after, byte-identical copies, run from the session scratchpad), 2026-09-28T17:29:19.470Z
+# compared field by field with /ui-ux measurements-after.json (9 scenarios) and measurements-after-shift-tab.json (1 scenario); timestamps excluded
+scenarios compared: 10; differing values: 0
+page errors in re-run: {"reportsTable":0,"careersTable":0,"reportsModal":0,"reportsReplace":0,"reportsKeyboard":0,"shiftTabAfterFailure":0,"careersModal":0,"leaders":0,"focusRings":0,"pixels":0}

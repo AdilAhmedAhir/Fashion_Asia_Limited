@@ -40,6 +40,10 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 - **CSRF / Dependency CVEs.** SEC-HIGH-1 is closed in code by T-006 (`next@16.3.6`). `Origin: null` Server Action requests are now rejected, and this app configures no `allowedOrigins`. Production (`e8eace1`) still runs `16.1.6` until the next user-typed deploy. Post-bump `npm audit --omit=dev`: 0 critical, and 9 build/lint-toolchain advisories, none reachable at runtime (SEC-INFO-31).
 - **Admin login / Database RLS (SEC-HIGH-2).** The precondition is now observed in the unsafe state: the live project's public `/auth/v1/settings` read `disable_signup: false`. The `/admin` middleware gate, `requireUser()` and `updateSettings` all check only that *some* user exists, so any self-registered identity is an admin. Exploitation is kept from being trivial only because this app has never shipped the anon key to a browser (SEC-INFO-32). That is obscurity, not a control.
 
+*Amended 2026-09-28 (T-015 CSO review; appended, rows above left as written):*
+- **Assets / File uploads.** `uploadFile` has a live caller: the Reports modal uploads PDFs to a second public bucket, `reports`. Its `bucket` argument and the file's extension are caller-controlled and reach the Storage request URL unencoded (SEC-INFO-33). The only size bound on it, and on `addMediaAction`, is Next's default 1 MB Server Action body limit (SEC-INFO-35).
+- **Admin writes.** Once T-015 merges, every admin write action calls `getUser()` before any read, write or storage call, except `addMediaAction`/`deleteMediaAction` (T-019). It's a session check, not an admin check (SEC-HIGH-2).
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -529,6 +533,226 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 - **Not held for SEC-HIGH-2 or SEC-HIGH-5.** Both are 🟠, have been live since before `e8eace1`'s go-live and are not made worse by this release. Holding back a pure security patch would lengthen SEC-HIGH-1's exposure without shortening either of theirs.
 - **Recommended order:** the user does the SEC-HIGH-2 dashboard fix **now**; it needs no deploy and takes minutes. Then deploy T-006 at the next user-typed "deploy" (`docs/WORKFLOW.md` §6).
 
+### 🔒 CSO Audit — 2026-09-28 — ticket-review:T-015
+
+**Scope:** Dispatched focused review of **T-015** ("Surface failures from report, job and leader CRUD instead of failing silently, and add the session check those actions skip"). It closes this office's **SEC-HIGH-5** and 10 of **SEC-MED-10**'s 12 functions. Branch `fix/T-015-admin-crud-errors`, base `b637a86` (`main` after T-006), **entirely uncommitted working tree**.
+- **The diff under review** (5 files, +495/−117):
+  - `src/app/actions/settings-actions.ts` and `src/app/actions/jobs-actions.ts`;
+  - `ReportsClient.tsx`, `CareersClient.tsx`, and `WhoWeAreClient.tsx` (leader handlers only).
+- **Independently confirmed:**
+  - no untracked files;
+  - `git diff HEAD` is empty for `package.json`, `package-lock.json`, `next.config.ts`, `src/middleware.ts`, `src/lib/`, `src/components/`, `db/`, `supabase-schema.sql`, `.env.example` and the other four action files;
+  - `docs/ROADMAP.md` is untouched.
+
+**Method: static only, per the dispatch.**
+- **Read in full, not just the hunks:** all five files, plus:
+  - `products-actions.ts` (the cited precedent);
+  - the three admin `page.tsx` loaders;
+  - `supabase-schema.sql`'s policies;
+  - the callers of the two other throwing admin actions.
+- **Library behavior traced in installed source, not docs:**
+  - `@supabase/postgrest-js` 2.112.2 (`maybeSingle`);
+  - `@supabase/storage-js` 2.112.2 (`upload`, `getPublicUrl`);
+  - Next 16.3.6 `server/app-render/action-handler.js` (body limit, both multipart parsers) and `client/components/app-router-instance.js` (action queue);
+  - React 19.2.4 `useTransition`.
+- **One offline experiment** in the session scratchpad: how Node's `Request.formData()` keeps a crafted filename, and where storage-js's URL for it resolves. Placeholder host, no network.
+- **Type-check:** `npx tsc --noEmit --incremental false` exited 0.
+- **Nothing started or written:** no server, no build, no Supabase request, no auth action, no commit.
+
+**1. SEC-HIGH-5: ✅ closed in code. No `throw` is left, and every call site handles the result.**
+- **No throw:** the ten functions contain no `throw` statement. Each returns `ActionResult`, `UploadFileResult` or `JobActionResult`, and `tsc` enforces the return union on every path.
+- **Every call site, enumerated by grep across `src/`:** 8 sites, 10 calls (two ternaries call two functions each). All are in the three reviewed clients.
+
+| Call site | Handler | On `ok: false` | On a throw |
+|---|---|---|---|
+| `ReportsClient.tsx:76` `uploadFile` | `handleFileUpload` | Alert under the upload; file input cleared so the same file can be retried | Generic fallback |
+| `ReportsClient.tsx:111` `createReport` / `updateReport` | `handleSave` | Alert above Save; modal stays open, input intact, no reload | Generic fallback |
+| `ReportsClient.tsx:131` `deleteReport` | `handleDelete` | Alert in a row under the failed row | Generic fallback |
+| `CareersClient.tsx:63` `createJob` / `updateJob` | `handleSave` | Alert above Save; modal stays open, no reload | Generic fallback |
+| `CareersClient.tsx:83` `deleteJob` | `handleDelete` | Alert under the failed row | Generic fallback |
+| `WhoWeAreClient.tsx:66` `createLeader` | `addLeader` | Alert beside Add Leader | Generic fallback |
+| `WhoWeAreClient.tsx:82` `deleteLeader` | `removeLeader` | Alert in that leader's card | Generic fallback |
+| `WhoWeAreClient.tsx:102` `updateLeader` | `saveLeader` | Alert in that leader's card (success stays silent, as before) | Generic fallback |
+
+- **Outside the `try`:** only state setters and `confirm()`, neither of which rejects. Nothing that can reject can reach a transition's error path.
+- **Correction to SEC-HIGH-5's 2026-09-27 text.** It said the modal "just sits there" after a failure. That's wrong for React 19:
+  - In 19.2.4, `useTransition` stores the async callback's promise. `updateTransition` reads it with `useThenable()`, which rethrows a rejection during render into the nearest error boundary.
+  - This app has no `error.tsx` or `global-error.tsx` anywhere, so a failed save replaced the admin page with Next's generic error screen, as `/lead-dev` said.
+  - The conclusion stands: no actionable reason, and the edit was lost.
+- **Leaders are in scope, confirmed.** Before this diff, `WhoWeAreClient`'s three leader handlers had the same unguarded shape, and `saveLeader` gave no signal either way (`/pm`'s ROADMAP note was right).
+- **Production:** still affected until a user-typed deploy of a `main` that contains T-015.
+
+**2. SEC-MED-10: ✅ 10 of 12 closed in code. The other two are T-019, and nothing else was missed.**
+- **Order, per function** (line of `getUser()` < line of the first data or storage call):
+
+  | Function | `getUser()` | First call |
+  |---|---|---|
+  | `createReport` | 276 | 285 |
+  | `updateReport` | 303 | 314 |
+  | `deleteReport` | 328 | 333 |
+  | `createLeader` | 355 | 358 |
+  | `updateLeader` | 373 | 378 |
+  | `deleteLeader` | 394 | 399 |
+  | `uploadFile` | 414 | 423 |
+  | `createJob` | 90 | 93 |
+  | `updateJob` | 108 | 114 |
+  | `deleteJob` | 128 | 133 |
+
+  - Only `createClient()` runs before the check, and it makes no request.
+  - The "Missing … id." and "No file provided." checks come after it.
+- **The helper isn't an endpoint.** `requireUser()` is not exported, so it can't be called as an action.
+  - If a later refactor exports it from a `"use server"` file in order to share it, it becomes a callable action.
+- **Fails closed.** `getUser()` validates the token with Supabase Auth. A missing, malformed, forged or expired cookie, or a failed refresh, all yield `user = null` and therefore the session-expired result.
+  - Neither the pattern nor its string is new: `updateSettings` and `products-actions.ts` have used both in production since the 2026-09-28 deploy.
+- **Whole-surface sweep.** All 32 exported functions in the six `"use server"` modules were checked (all are function declarations; no arrow or `const` exports). For each, the line of `getUser()` was compared with the first `.from()` or `.storage` call.
+  - **Still unchecked writers:** only `addMediaAction` and `deleteMediaAction`, both in T-019.
+  - **The other unchecked exports are public by design:**
+    - seven reads gated by `anon` RLS (`getSettings`, `getReports`, `getLeaders`, `getJobs`, `getMediaAssets`, `getCategoryProducts`, `getAllCategoryProducts`);
+    - `loginAction` and `logoutAction`;
+    - the three public form actions.
+
+**3. `.select("id").maybeSingle()`: ✅ RLS-neutral, as the code comment says. "Not found" only ever means nothing was written.**
+- **The SQL.** PostgREST turns `.eq("id", …)` into `WHERE id = $1`. A WHERE that reads a column already requires SELECT, so before T-015 Postgres was already applying the table's SELECT policies to these UPDATEs and DELETEs in two ways:
+  - as a filter on existing rows, so an invisible row is skipped rather than raising an error;
+  - for UPDATE, as a check on the new row, so a new row that fails it raises "new row violates row-level security policy" and aborts the statement.
+  - `RETURNING id` reads the same column, so it requires nothing new.
+- **Consequence, under any policy shape.** A row the `authenticated` SELECT policy can't see was never writable, before or after T-015. RETURNING returns exactly the rows written, with no filter afterwards, so a write can never succeed and report "not found". What T-015 changes is only the report: a zero-row write used to return success silently, and now says "not found".
+- **Client side (postgrest-js 2.112.2).** `maybeSingle()` sends no singular `Accept` header; it's only a client-side count. Zero rows gives `data: null`, which the code maps to not-found. `id` is the primary key on all three tables, so two rows can't match.
+  - **Guardrail:** don't copy this pattern onto a non-unique filter. More than one matched row would commit, then report PGRST116 as an error.
+- **The plausible live policy shapes** (Known Trap #12):
+  - **`jobs`:** the reference file's anon policy is `TO anon`, so it never applies to `authenticated`. The `authenticated` `FOR ALL USING (true) WITH CHECK (true)` policy sees every row, so closing a job passes the new-row check.
+  - **`reports` and `leaders`: live policies unknown.**
+    - A `FOR ALL … USING (true)` policy, which Known Trap #12 expects, has no effect.
+    - Per-command write policies with no `authenticated` SELECT would leave the admin list itself empty. The list visibly works, so that shape is ruled out.
+    - A narrower `authenticated` SELECT (e.g. `USING (published)`) would hide Drafts from the admin list. Editing or deleting one would say "not found", and unpublishing would return the RLS error text. Each accurately reports that nothing was written, and each was already true before T-015, silently.
+- 🟢 **SEC-INFO-34 (new)** records this analysis.
+- **What `/qa`'s manual checklist must verify.** Use test rows only, clearly named, and delete them in the same sitting. Local runs write to the live database, so anything Published, Active or given a real name is on the live site at once.
+  1. `/admin/reports` lists at least one **Draft** row and `/admin/careers` at least one **Closed** row; create test ones if none exist. If they're listed, `authenticated` SELECT covers the rows a narrower policy would hide.
+  2. Edit and save a Draft test report, then a Closed test job. Each saves, the page reloads, the change persists, and "not found" never appears.
+  3. Toggle the test report Draft → Published → Draft, and the test job Closed → Active → Closed. Every save succeeds. These are the cases a narrower SELECT policy would reject. The report is briefly public between saves.
+  4. Leader: edit a test leader's field, keeping the placeholder name so it stays unpublished, and blur. No alert appears, and a reload shows the change. Add Leader works, and deleting the test leader works.
+  5. Deleting the Draft test report and the Closed test job both succeed.
+  6. **Not found:** open the same test row in two tabs and delete it in tab A. Then save it in tab B (report or job), or blur-edit it (leader). The "… not found. Reload the page…" text appears at the control, the modal stays open with the input intact, and nothing reloads.
+  7. **Session expired:** sign out in a second tab. Then save, delete and upload on each page in the first tab. Each shows "Your session expired. Sign in again and retry." with the input intact.
+  8. "New row violates row-level security policy" appearing anywhere in steps 2–5 means a live `authenticated` policy is narrower than the write. Record the table and step for `/cso`, and don't widen the policy by hand.
+
+**4. `uploadFile`: T-015 lowers the risk by removing the anonymous path, and changes nothing else. No overwrite is possible, but the request path can be steered.**
+- **What T-015 changes.** `uploadFile` used to have no session check. Anyone holding its action ID could upload as `anon` to any bucket whose storage policy allows anon inserts (Known Trap #14: bucket policies aren't in the repo). Now a session is required. The mechanics below are pre-existing.
+- **Overwrite: not possible.**
+  - storage-js sends `x-upsert: false`, so an existing key fails with 409.
+  - The key's `<ms timestamp>_<random>.` prefix is server-generated.
+- **Path steering: possible, for authenticated callers.** storage-js builds `${url}/object/${bucket}/${key}` with **no encoding** and passes it to `fetch`. Its WHATWG URL parser resolves `..` and `%2e%2e` segments and starts a query at `?`. Verified offline:
+  - `bucket = "../../../rest/v1/x"` sends the upload to `https://<ref>.supabase.co/rest/v1/x/<key>`.
+  - `bucket = "media/chosen.html?"` creates an object with a caller-chosen name in another bucket.
+  - **Via the extension alone,** it depends on the action path:
+    - The fetch-action path parses multipart with busboy, which strips everything up to the last `/` or `\` (Next passes no `preservePath`), so the extension can't carry a path there.
+    - The non-fetch (form-post) path uses Node's `Request.formData()`, which keeps the raw filename. There, `file.name = "a.x/%2e%2e/…/rest/v1/x"` reaches `/rest/v1/x` as well, with the bucket left at its default.
+  - **Content type** is caller-controlled too, e.g. `text/html` into a public bucket.
+- **Impact: bounded.**
+  - The request carries only the caller's own JWT plus the anon key that Supabase treats as public.
+  - The body is always a storage multipart POST. Going by their documented content types, the PostgREST and Auth endpoints don't accept that body (not tested live), and no route to read data was found.
+  - Nothing lands on this app's own origin.
+  - Net: an authenticated identity can place files with any name and any content type (≤ 1 MB, SEC-INFO-35) in any bucket its storage policies allow. That's roughly what the same identity could do against Storage directly with the anon key, so there's no escalation.
+  - T-015's raw `error.message` forwarding adds a narrow echo of those requests' error text, to authenticated callers only. T-018 removes it.
+- 🟢 **SEC-INFO-33 (new; Low; pre-existing).**
+  - **Code fix:**
+    - pin the bucket server-side (drop the parameter, or allow-list `"reports"`);
+    - build the key from no client input (a fixed `.pdf`, after a `%PDF-` magic-byte check);
+    - pass an explicit `contentType: "application/pdf"`.
+  - **Zero-code complement (user action):** in the Supabase dashboard's bucket settings, restrict the `reports` bucket's allowed MIME types to `application/pdf`, and `media`'s to image types.
+  - **Ticket:** nothing covers this today; T-015 and T-019 both leave upload validation out of scope. Recommend `/pm` file one small sensitive ticket for it together with Known Trap #9's type check on `uploadFile`.
+  - Not blocking.
+
+**5. Error text: ✅ an anonymous caller gets only the session-expired string. Authenticated callers get the SEC-MED-8 class, which T-018 already covers.**
+- **Anonymous callers.** In all ten functions the check comes first, so nothing else is reachable without a session:
+  - "Missing … id.", "No file provided." and "… not found. Reload the page…";
+  - every DB and storage message.
+  - Nothing before the check reads caller input. A malformed argument fails in the framework's decoder, which redacts it.
+  - This is T-012's precedent and string (the T-012 entry, item 2).
+- **Authenticated callers: the new app copy leaks nothing.**
+  - The not-found messages only confirm whether an id is visible to the caller, which that caller can already list via `getReports()`, `getJobs()` and `getLeaders()`.
+  - "Missing … id." is reachable only through a crafted call.
+- **SEC-MED-8, extended as planned.** The ten functions now return raw Supabase `error.message` to authenticated callers in every environment. Before, it was thrown and redacted in production.
+  - T-018's Acceptance already names "the report, leader, upload and job functions T-015 converted", so no new ticket.
+  - Only `message` is forwarded, never `details`, `hint` or the whole error object, and nothing new is logged. Postgres puts row data only in `details` ("Failing row contains …"), so SEC-INFO-29's PII concern doesn't arise. These tables hold no PII beyond public leader bios anyway.
+  - Storage messages add a bucket- and key-existence echo for a caller-chosen bucket; that's folded into SEC-INFO-33.
+
+**6. Client render surface: ✅ no new sink.**
+- **Searched the full text of all three clients** (not just the diff). None of these appear:
+  - `dangerouslySetInnerHTML`, `innerHTML`, `eval(`, `new Function`, `document.write` or `srcDoc`;
+  - a data-fed `href={…}` or `src={…}`;
+  - `window.open` or a `location` assignment.
+- Every error string renders as a JSX text child inside `role="alert"`, which React escapes.
+- `alert()` is removed.
+- No new Server Action import.
+- No `createBrowserClient` and no `NEXT_PUBLIC_*`, so the SEC-INFO-32 guardrail holds.
+- No debug statements in the diff.
+
+**7. SEC-HIGH-2: unchanged, and not expanded here.**
+- A self-registered account passes every check T-015 adds, as `docs/ROADMAP.md` already says.
+- **For whoever scopes the structural fix,** there are now eight session checks to convert:
+  - three private `requireUser()` copies (`products-actions.ts`, `settings-actions.ts`, `jobs-actions.ts`);
+  - four inline `getUser()` calls (`updateSettings`, `seedSettingsFromDefaults`, `importBuiltInGallery`, `uploadOptimizedImage`);
+  - the middleware gate.
+- T-019 adds two more callers. Recommend the structural-fix ticket first consolidate these into one helper in a plain `server-only` module, never an export of a `"use server"` file.
+
+**Standing items (status only):**
+- **Dependency audit:** unchanged by this diff. `npm audit --omit=dev` matches the T-006 baseline exactly: 9 advisories (0 critical, 5 high, 2 moderate, 2 low), the same nine toolchain packages, and no `next`. `npm ls next` shows `next@16.3.6`, so the SEC-INFO-30 floor holds.
+- **SEC-MED-2 (T-008), re-checked:** `curl -sI` of production `/` and `/admin/login` still returns only `strict-transport-security: max-age=63072000`, and `/` still sends `x-powered-by: Next.js`.
+- **The other two throwing admin actions** (`seedSettingsFromDefaults`, `importBuiltInGallery`): both callers catch the error and show a message, which production redacts to generic text. That isn't the SEC-HIGH-5 class. No action.
+
+**Secrets hygiene (this pass):**
+- The secret-shape grep over the five changed files found 0 hits.
+- No `.env*`, `*.pem`, `*.key` or `cookies.txt` file appears anywhere in git history.
+- `.env*` was never read. Secret names came from `.env.example` (still stale, Known Trap #11) and `docs/TECH_STACK.md`.
+
+**Notes for `/qa` and `/pm`:**
+- 🟢 **SEC-INFO-35 (new).** Next's default 1 MB Server Action body limit is the only size bound on `uploadFile` and `addMediaAction`.
+  - **Evidence:** `next.config.ts` sets no `serverActions.bodySizeLimit`, and `git log -S` shows it never has. The limit is enforced on both multipart paths in `action-handler.js`.
+  - **Guardrail:** raising it requires server-side size and type validation on both upload paths in the same change, plus a `/cso review`.
+  - **Not a security finding:**
+    - A report PDF over about 1 MB has never been uploadable through `uploadFile`.
+    - Under T-015 it's rejected before the action runs, so nothing is written. The admin sees the generic "check your connection" text rather than the real reason, which misses T-015's acceptance bullet on upload failures.
+    - `/qa` should record the exact text shown for a >1 MB PDF; the test is safe because nothing is written.
+    - If the client needs larger PDFs, a signed-upload-URL design (browser → Storage, with bucket-level MIME and size limits) is safer than raising the cap. That's for `/pm` and `/architect`.
+- **Silent click on a hand-edited row (Info only).** `ReportsClient.handleSave` builds its FormData outside the `try`, in pre-existing lines 101–106. A row whose `published` is null would throw in the click handler and fail silently. The column is nullable in the reference schema, but every app write stores a boolean, so only a hand-edited row can trigger this.
+- **Failed reads show as empty lists.** The three admin list reads (`getReports`, `getJobs`, `getLeaders`) turn a failed read into an empty list, which can prompt duplicate re-creation. It's the same fail-open class T-016 fixes for products, and out of T-015's scope. `/pm` may want a follow-up.
+- **`/ui-ux` nit.** `ReportsClient`'s "Replace" button isn't disabled during an upload, and that branch shows no "Uploading…" state. Next queues Server Action calls one at a time, so a second pick still lands in order.
+
+**Overall verdict this pass:** ✅ **T-015 cleared.**
+- **SEC-HIGH-5: closed in code.** No throw remains, and every call site is handled. The error-boundary mechanism the original finding misdescribed is now confirmed from React's source.
+- **SEC-MED-10: 10 of 12 closed in code.** The session check comes first in every function, and the remaining two are T-019's.
+- **`.select("id").maybeSingle()` is RLS-neutral:** "not found" means nothing was written, under any policy shape.
+- **New findings:** no 🔴, 🟠 or 🟡. Three 🟢:
+  - SEC-INFO-33 (Low): path steering in `uploadFile`; pre-existing, now authenticated-only;
+  - SEC-INFO-34: the RLS analysis above;
+  - SEC-INFO-35: the 1 MB upload cap guardrail.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** T-015 may proceed to `/ui-ux` → `/qa static` → `/qa live` (a production build, per T-015's Acceptance) → the manual checklist, including item 3's eight checks → `/git Merge`. Conditions:
+- **Server files are bound by hash.** If either changes before merge, the clearance lapses for that file until `/cso` re-reviews it.
+  - `src/app/actions/settings-actions.ts`: sha256 `8df471e36cde848dc33e1fb1d3089ad475cf67be3a4e0832664bdc5bf143526d`
+  - `src/app/actions/jobs-actions.ts`: sha256 `628e5e74c4dca9259ef1e5a0d3ef0d0715a70e9c2b207656792a0603ac7f684f`
+- **Client files are bound by invariants, not hashes, because `/ui-ux` edits them next.**
+  - **Reviewed baseline:**
+    - `ReportsClient.tsx` `27fc7aed0c17b8c6…`
+    - `CareersClient.tsx` `a68b5f944c28c190…`
+    - `WhoWeAreClient.tsx` `550a51260167fa4c…`
+  - **After `/ui-ux`, `/qa static` confirms:**
+    1. every call to the ten functions stays inside a `try`, branches on `.ok`, and reloads only on success;
+    2. error text renders only as JSX text;
+    3. no new Server Action import;
+    4. no new render sink.
+  - Any change beyond className, layout or copy comes back to `/cso`.
+
+**Pre-deploy position, stated now to save a round trip:**
+- A `main` holding T-006 and this ticket, at the hashes above, adds no sensitive surface beyond what this pass reviewed, and it ends SEC-HIGH-5's live exposure.
+- It needs no further `/cso` pass for T-015's own surface.
+- It is not held for SEC-HIGH-2, for the same reasons as T-006.
+- Deploying still needs the user's typed "deploy".
+
+**Actions taken:** no commit, no source edit, no server started, no remote touched, no auth action, no access to the live database.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -568,6 +792,13 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 | SEC-INFO-32 — the Supabase anon key is not shipped to browsers (verified against the build, production and git history). This corrects the "every visitor holds it" premise in the T-001, T-004 and T-005 entries | No ticket. Guardrail: nothing may ship the key to a browser while SEC-HIGH-2 or its structural fix is open. Recommend `/archivist` record it as a Known Trap | Open. Guardrail |
 | SEC-MED-14 — plaintext GitHub PAT for `happierbangladesh` in local `.git/config` (inline `credential.helper` plus credentials embedded in a remote URL). Not committed; can leak via `git config --list` or `git remote -v` into agent transcripts | User action: revoke it, reissue as a fine-grained single-repo PAT with an expiry, move it to Keychain or `gh auth setup-git`, strip the URL credentials, and log the rotation in §6 | Open. Doesn't block deploy |
 | SEC-MED-10 — erratum, 2026-09-28 | Headline count should read **12** write functions (7 + 2 + 3, as the finding's own list states). T-015 plus T-019 cover all 12 | Erratum only; status unchanged |
+| SEC-HIGH-5 — status update, 2026-09-28 (T-015 CSO entry) | Fixed by **T-015** (branch `fix/T-015-admin-crud-errors`) | ✅ **Closed in code 2026-09-28, pending merge.** No `throw` is left in the ten actions, and all 8 call sites (10 calls) handle both `ok: false` and a throw. The closure is bound to `settings-actions.ts` sha256 `8df471e3…` and `jobs-actions.ts` `628e5e74…`, plus the client invariants in the T-015 sign-off. Leader CRUD is confirmed in scope. Correction: before the fix, a failure blanked the page through React 19's error-boundary path; it didn't leave a static modal. **Production is still exposed** until a user-typed deploy of a `main` containing T-015 |
+| SEC-MED-10 — status update, 2026-09-28 (T-015 CSO entry) | **T-015** (10 functions); **T-019** (`addMediaAction`, `deleteMediaAction`) | 10 of 12 closed in code by T-015; auth-first was verified line by line in each. The remaining 2 are open under T-019. A sweep of all 32 exported actions found no other unchecked writer |
+| SEC-MED-8 — status update, 2026-09-28 (T-015 CSO entry) | **T-018**, whose Acceptance already lists the functions T-015 converted | Open, and extended as planned. The ten T-015 functions now return raw `error.message` to authenticated callers; before, it was thrown and redacted in production. Only `message` is forwarded, never `details`. Doesn't block deploy |
+| SEC-INFO-33 — `uploadFile`'s caller-controlled `bucket` and client-supplied extension reach the Storage request URL unencoded. An authenticated caller can steer the upload to any path on the Supabase host, or choose any object name in any bucket, with any content type (≤ 1 MB). No overwrite is possible (`x-upsert: false`), and nothing exceeds the caller's own Supabase rights. T-015 removed the anonymous path | Not yet filed. Recommend `/pm` file one small sensitive ticket: pin the bucket server-side, build the key without client input (a fixed `.pdf` after a `%PDF-` check), and pass an explicit `contentType`. User action alongside it: restrict the allowed MIME types of the `reports` bucket (and of `media`) in the Supabase dashboard | Open. 🟢 Low; doesn't block deploy |
+| SEC-INFO-34 — `.select("id").maybeSingle()` after an UPDATE or DELETE is RLS-neutral, because the `WHERE id =` filter already applied SELECT policies. "Not found" means zero rows were written, under any policy shape | No ticket. Guardrail: use this pattern only on unique-key filters; in postgrest-js 2.112.2, `maybeSingle()` is only a client-side count | Closed as informational. The `/qa` manual-checklist items are in the T-015 entry, item 3 |
+| SEC-INFO-35 — Next's default 1 MB Server Action body limit is the only size bound on `uploadFile` and `addMediaAction`. Report PDFs over about 1 MB can't be uploaded, and the admin sees the generic fallback text | No ticket from this office. Guardrail: any change that raises `serverActions.bodySizeLimit` must add server-side size and type validation to both upload paths in the same change, and needs `/cso review`. Supporting larger PDFs is a product question for `/pm`/`/architect`; signed upload URLs are preferred | Open. Guardrail |
+| SEC-HIGH-2 — structural-fix scope note, 2026-09-28 (T-015 CSO entry) | For the role-scoping ticket recommended above | After T-015 there are 8 session-check sites: 3 private `requireUser()` copies, 4 inline `getUser()` calls and the middleware gate. Consolidate them into one `server-only` helper first, and never export it from a `"use server"` file |
 
 ## 6. Secrets log
 
@@ -596,3 +827,8 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
      1. Restore T-006's lockfile (`git checkout <T-006 merge commit> -- package-lock.json`), then re-apply the other ticket's intended lockfile changes on top.
      2. Re-run `npm ls next` and `npm audit --omit=dev`.
      3. Hold any deploy until both are clean.
+8. **Unfamiliar objects in any storage bucket (SEC-INFO-33, 2026-09-28).** `uploadFile` lets an authenticated caller choose the bucket, the object name and the content type, so item 3's check of `media` alone isn't enough.
+   - **Where to look:** every bucket in the Storage dashboard, `reports` above all. Objects from legitimate `uploadFile` use are normally named `<13-digit ms timestamp>_<base36>.pdf` and hold PDFs. Flag anything else, especially `text/html` or `image/svg+xml` content, or names outside that pattern.
+   - **Response:**
+     1. Note each object's created-at time, then delete it.
+     2. Treat the incident as item 6 (an unknown identity) or item 1 (a known admin's session compromised). Once T-015 is deployed, an anonymous caller can't reach `uploadFile`.

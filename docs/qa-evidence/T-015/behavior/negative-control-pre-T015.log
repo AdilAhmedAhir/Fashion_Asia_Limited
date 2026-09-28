@@ -1,0 +1,36 @@
+# Negative control for t015-behavior.mjs (final version, sha256 e0c9a710c5d79b81…): the same 30 scenarios against the PRE-T-015 clients
+# (git show HEAD:<file>), built into the /ui-ux harness's 'before' slot (baseline/ = HEAD ReportsClient/CareersClient/WhoWeAreClient, sha256 e3ae3209 / 36e6d9dd / ffb40408),
+# same stubs, same driver, exit 1. Expected: every failure-path scenario FAILS. Passes are only the success-path reloads, the silent
+# leader save, and the two always-run demos. 'leaders: remove -> ok' also fails as a selector artifact (the old markup has no aria-label).
+FAIL  reports: update -> {ok:false} not found  ERROR eval failed: ReferenceError: __args is not defined
+FAIL  reports: update -> throw  ERROR eval failed: TypeError: Cannot read properties of undefined (reading 'disabled')
+FAIL  reports: create -> {ok:false} session expired  ERROR eval failed: ReferenceError: __args is not defined
+PASS  reports: update -> ok (reload, as before)
+FAIL  reports: upload -> {ok:false} real reason shown
+FAIL  reports: upload -> throw (e.g. >1 MB body) shows UPLOAD_ERROR
+FAIL  reports: failed Replace keeps the attached file
+FAIL  reports: upload ok keeps text typed during the upload
+FAIL  reports: delete -> {ok:false} not found  ERROR eval failed: ReferenceError: __args is not defined
+FAIL  reports: delete -> throw  ERROR eval failed: TypeError: Cannot read properties of null (reading 'parentElement')
+PASS  reports: delete -> ok (reload, as before)
+FAIL  reports: modal can't be dismissed mid-save; failure then shows in it  ERROR eval failed: TypeError: Cannot read properties of undefined (reading 'disabled')
+PASS  INFO-3 demo: a second pick during an upload, Save in the gap sends the FIRST file
+FAIL  careers: update -> {ok:false} not found  ERROR eval failed: TypeError: Cannot read properties of null (reading 'value')
+FAIL  careers: create -> throw  ERROR eval failed: TypeError: Cannot read properties of null (reading 'value')
+PASS  careers: update -> ok (reload, as before)
+FAIL  careers: delete -> {ok:false} session expired  ERROR eval failed: ReferenceError: __args is not defined
+FAIL  careers: delete -> throw  ERROR eval failed: TypeError: Cannot read properties of null (reading 'parentElement')
+PASS  careers: delete -> ok (reload, as before)
+FAIL  leaders: blur-save -> {ok:false} not found (saveLeader now signals)
+FAIL  leaders: blur-save -> throw  ERROR eval failed: TypeError: Cannot read properties of undefined (reading 'parentElement')
+PASS  leaders: blur-save -> ok stays silent, no reload (as before)
+FAIL  leaders: a failed save's alert clears when a retry succeeds
+FAIL  leaders: add -> {ok:false} session expired
+FAIL  leaders: add -> throw  ERROR eval failed: TypeError: Cannot read properties of undefined (reading 'parentElement')
+PASS  leaders: add -> ok (reload, as before)
+FAIL  leaders: remove -> {ok:false} not found  ERROR eval failed: TypeError: Cannot read properties of undefined (reading 'click')
+FAIL  leaders: remove -> throw  ERROR eval failed: TypeError: Cannot read properties of undefined (reading 'click')
+FAIL  leaders: remove -> ok (reload, as before)  ERROR eval failed: TypeError: Cannot read properties of undefined (reading 'click')
+PASS  INFO-4 demo: A throws, B succeeds, A's error stays
+
+8/30 pass; http(s) attempts: 0

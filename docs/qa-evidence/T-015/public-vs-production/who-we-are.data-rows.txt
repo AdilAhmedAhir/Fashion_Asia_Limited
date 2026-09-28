@@ -1,0 +1,27 @@
+# rows the public page renders from the table T-015's admin page edits; local=26 prod=26 identical=True
+IMG alt=
+IMG alt=Fashion Asia Limited Logo
+  Who We Are
+  About Us
+IMG alt=Fashion Asia Limited knitwear
+  What Partners Can Count On
+  The Company We Intend to Be
+  How We Get There
+  Milestones & Achievements
+  Northern Steel Re-Rolling Mill Ltd. was founded by Shafiuddin Ahmed and Tosrifa Khatoon.
+  Fashion Asia Ltd. was established.
+  Construction of the new factory building started.
+  Achieved LEED Certification and started operations in our Green Building.
+  Achieved Grade ‘A’ in the amfori BSCI Audit.
+  Awarded Responsible Supplier by Kappahl.
+  Our Values
+  Quality Excellence
+  Reliability & Accountability
+  Respect for People
+  Innovation & Continuous Improvement
+  Sustainability & Integrity
+  Leadership
+IMG alt=Fashion Asia Limited Logo
+  Company
+  Careers
+  Connect

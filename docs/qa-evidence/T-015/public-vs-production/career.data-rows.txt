@@ -1,0 +1,15 @@
+# rows the public page renders from the table T-015's admin page edits; local=14 prod=14 identical=True
+  Career Opportunities
+  Open Positions
+  Senior Executive
+  Job Responsibilities
+  Employment Status
+  Educational Requirements
+  Workplace
+  Job Location
+  Salary
+  Compensation & Other Benefits
+  Submit Your Application
+  Company
+  Careers
+  Connect
