@@ -22,7 +22,7 @@ This is the law for how tickets move through The Claude A-Team on this repo. Eve
 
 - Conventional Commits: `<type>(<scope>): <summary>`, types `feat|fix|refactor|chore|docs`.
 - Footer: `Refs: <ticket ID>` once `docs/ROADMAP.md` exists and `/pm` has assigned a numbering scheme. For this initial setup batch — before `docs/ROADMAP.md` exists — use `Refs: SETUP`.
-- Trailer, always present: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`.
+- Trailer, always present: `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. Pinned by the user on 2026-09-28: this exact line on every commit, whichever agent makes it, and no other co-author name may appear. All role agents run on Opus 5.5 (`model: opus` in `.claude/agents/*.md`).
 - Author identity is fixed at the repo level: `happierbangladesh <happierbangladesh@users.noreply.github.com>`. Never override it with a personal identity, even at the user's own request mid-session.
 - Stage by path (`git add <specific paths>`) — never a blanket `git add -A`/`git add .` reflex. No `--no-verify`. No amending a commit that has already been pushed to any remote.
 
@@ -100,6 +100,7 @@ Before `/git Merge`, all of:
 | Date | Change |
 |---|---|
 | 2026-09-26 | Initial lock-in. Wrote `docs/WORKFLOW.md` fresh (all 10 sections) from `docs/TECH_STACK.md` and `docs/MEMORY_BANK.md`, plus the standing session decisions on branching, deploy gating, commit identity, pre-commit checks, live-DB testing safety, the schema hard-stop, and sensitive-surface triggers. §10 recorded as present-but-inert: `docs/MARKETING.md` does not exist yet, though the marketing role files themselves are already installed under `.agents/workflows/`, `.claude/agents/`, and `.claude/commands/` — this project is marketing-capable but not yet activated. |
+| 2026-09-28 | §2: the user pinned the commit trailer to `Claude Opus 5.5` on every commit, with `happierbangladesh` as the only author and no other name. All 20 role agents moved from `model: sonnet` to `model: opus`. The six unpushed commits that carried a Sonnet 5 trailer were rewritten to match, message only; the old-to-new ID map is in `docs/MEMORY_BANK.md`. |
 
 ## 10. Marketing-surface review triggers
 
