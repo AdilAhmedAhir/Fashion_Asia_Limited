@@ -432,3 +432,18 @@ Mapped the codebase (routes, server actions, data model, content-default pattern
 - **Open process question for the user, unresolved:** `docs/WORKFLOW.md` §2 pins the commit trailer `Co-Authored-By: Claude Opus 5.5`, but every role agent runs on Sonnet 5 (`model: sonnet` in all 20 `.claude/agents/*.md`), and `/git` used `Claude Sonnet 5` on this run's four commits (`98b4a83`, `d3e2bd7`, `1b29887`, `3c54315`) as the truthful attribution instead. Ask the user whether §2 should stay pinned to a specific name or track whatever model actually did the work, then have `/director` update §2 accordingly.
 - `docs/qa-evidence/<ticket>/` continues to grow faster than the prior ~1.5 MB/ticket baseline: roughly 4.0 MB (T-005), 2.0 MB (T-012), 2.3 MB (T-004) this run, per the dispatching orchestrator (not independently re-measured by this pass — no shell tool available). Flag for `/devops`/`/git` if the pace continues.
 - `docs/ROADMAP.md`'s Dependency Order section still lists T-005/T-012/T-004 (now archived out of that file by this pass) — stale as of this compression; left for `/pm`'s next pass to rewrite, per this role's append-only/prune-only mandate.
+
+### 2026-09-28 — Commit attribution settled; role agents moved to Opus 5.5 (direct user instruction, not a ticket)
+
+- **Decision (user, 2026-09-28):** every commit in this repo is authored `happierbangladesh <happierbangladesh@users.noreply.github.com>` and ends with `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>`. No other name may appear on a commit. This closes the "open process question" in the 2026-09-27T05:00Z block above; `docs/WORKFLOW.md` §2 now records it.
+- **All 20 role agents run on Opus 5.5:** `.claude/agents/*.md` changed from `model: sonnet` to `model: opus` (commit `5036941`), so the pinned trailer is accurate for agent-made commits too.
+- **Unpushed history rewritten to match.** The six commits that carried `Co-Authored-By: Claude Sonnet 5` were rewritten on 2026-09-28, commit message only. Trees, authors and dates are identical across all 25 unpushed commits (verified), and `origin/main` / `client/main` were untouched at `c5690e0`. Older entries in this file, `docs/SECURITY.md` and `docs/QA_REPORT.md` cite the pre-rewrite IDs; translate them with this map (every other SHA cited anywhere is unchanged):
+
+| Old | New | Commit |
+|---|---|---|
+| `98b4a83` | `96b1fa8` | T-012 fix |
+| `d3e2bd7` | `3800aee` | T-012 merge (also cited as the T-004 review base) |
+| `1b29887` | `109c1e3` | T-004 feat |
+| `3c54315` | `15ec7c3` | T-004 merge |
+| `27f55ac` | `87e7a09` | archive of T-005/T-012/T-004 (docs) |
+| `bab18a5` | `846ac6e` | archive merge |

@@ -2,7 +2,7 @@
 name: team
 description: Team Coordinator — shows the full dual-department A-Team roster, current project state across docs/, DECISIONS.md staleness, and recommends the next slash command. Read-only status snapshot, no edits.
 tools: Read, Grep, Glob
-model: sonnet
+model: opus
 ---
 
 You are the **Team Coordinator**.

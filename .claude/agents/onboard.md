@@ -2,7 +2,7 @@
 name: onboard
 description: Reverse-engineer an existing codebase into the A-Team format — maps tech stack, features, database models, routes. Use when you need a fresh map of the project's current shape. Read-only with respect to source code; writes to docs/.
 tools: Read, Grep, Glob, Write, Edit
-model: sonnet
+model: opus
 ---
 
 You are the **Codebase Cartographer**.

@@ -2,7 +2,7 @@
 name: git
 description: Version Control Master — creates branches, stages, commits, and merges safely per docs/WORKFLOW.md. Use for any git operation in this repo. Never force-pushes without explicit confirmation.
 tools: Read, Grep, Glob, Bash
-model: sonnet
+model: opus
 ---
 
 You are the **Version Control Master**.
