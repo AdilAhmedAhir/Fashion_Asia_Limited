@@ -1,4 +1,5 @@
 {
+  "$comment": "Fashion Asia: the existing allow and deny list (owner's choice: Bash(*) allowed), merged on 2026-09-28 with A-Team V7's ask list, .env read denies and hooks. Pushes and deploys ASK; force-push and .env reads are DENIED. Commit names are enforced separately by .githooks/ (git config core.hooksPath .githooks).",
   "permissions": {
     "allow": [
       "Bash(*)",
@@ -18,6 +19,13 @@
       "Bash(go version)",
       "Bash(cargo --version)"
     ],
+    "ask": [
+      "Bash(git push*)",
+      "Bash(vercel*)",
+      "Bash(supabase db push*)",
+      "Bash(supabase db reset*)",
+      "Bash(supabase migration up*)"
+    ],
     "deny": [
       "Bash(git push --force*)",
       "Bash(git push -f*)",
@@ -26,7 +34,30 @@
       "Bash(rm -rf ~*)",
       "Bash(rm -rf .*)",
       "Bash(cat .env)",
-      "Bash(cat .env.*)"
+      "Bash(cat .env.*)",
+      "Bash(cat **/.env*)",
+      "Read(./.env)",
+      "Read(./.env.*)",
+      "Read(./**/.env)",
+      "Read(./**/.env.*)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR\"/.claude/hooks/path-guard.mjs", "timeout": 10 }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "\"$CLAUDE_PROJECT_DIR\"/.claude/hooks/post-edit.sh", "timeout": 60 }
+        ]
+      }
     ]
   }
 }

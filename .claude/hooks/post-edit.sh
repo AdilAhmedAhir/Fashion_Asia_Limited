@@ -52,6 +52,13 @@ if [ "$in_client" -eq 1 ]; then
   done <<< "$patterns"
 fi
 
+# --- Project adaptation (/adapt, 2026-09-28): skip format + lint when stack.json sets
+# "formatOnEdit": false. In this project Prettier isn't installed and ESLint 9 can't read the
+# legacy .eslintrc.json (docs/WORKFLOW.md §7 #1), so running them would flag every edit and
+# reformat whole files. The secret guard above still runs on every edit.
+fmt_on=$(node -e "try{const s=require('$STACK');console.log(s.formatOnEdit===false?'no':'yes')}catch(e){console.log('yes')}" 2>/dev/null || echo yes)
+[ "$fmt_on" = "no" ] && exit 0
+
 # --- Format + lint (by file type; degrade gracefully if no toolchain) ---
 case "$file" in
   *.ts|*.tsx|*.js|*.jsx|*.mjs|*.cjs|*.css|*.json)
