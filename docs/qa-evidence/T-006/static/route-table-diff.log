@@ -1,0 +1,8 @@
+# Route table: /lead-dev's 16.1.6 baseline (untouched tree, scratchpad routes-baseline.txt) vs this QA build on 16.3.6
+IDENTICAL — 28 route lines, every ƒ/○ marker unchanged
+
+# Same comparison against the pre-deploy build log of e8eace1 (what production runs), scratchpad predeploy-build.log
+IDENTICAL
+
+# Config-validation warnings in build.log (Invalid next.config / unrecognized key):
+0

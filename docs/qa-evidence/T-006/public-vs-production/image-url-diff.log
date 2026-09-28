@@ -1,0 +1,8 @@
+# /what-we-do card image URLs, this build (:3001, 16.3.6) vs the sprint baseline chain
+# T-004's image-urls-new.txt is lexically sorted; this pass's extraction is document order, so both comparisons are shown.
+## 1) sorted set vs docs/qa-evidence/T-004/public-regression/image-urls-new.txt
+IDENTICAL (8/8, diff exit 0)
+## 2) document order vs T-004's raw what-we-do.log document order
+IDENTICAL (8/8, same card order, diff exit 0)
+## 3) this build vs live production (same page, fetched back-to-back)
+IDENTICAL (8/8, diff exit 0)

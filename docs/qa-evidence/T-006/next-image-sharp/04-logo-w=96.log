@@ -1,0 +1,16 @@
+# GET http://localhost:3001/_next/image?url=%2Flogo.png&w=96&q=75
+# Accept: image/png   (2026-09-28T15:11:00Z)
+HTTP/1.1 200 OK
+Vary: Accept
+Cache-Control: public, max-age=14400, must-revalidate
+ETag: AAQ_3rNwXI19684VYTfcQcS7jnwD4LWibsW4MGui_Jw
+Content-Type: image/png
+Content-Disposition: attachment; filename="logo.png"
+Content-Security-Policy: script-src 'none'; frame-src 'none'; sandbox;
+X-Nextjs-Cache: MISS
+Content-Length: 1407
+Date: Mon, 28 Sep 2026 15:11:00 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# body: 1407 bytes; file: PNG image data, 96 x 96, 8-bit colormap, non-interlaced

@@ -1,0 +1,3 @@
+# which sharp backend loads under Node v25.9.0 on Darwin arm64, 2026-09-28T15:00:25Z
+sharp 0.35.5 libvips 8.18.7 webp 1.6.0 webp output: {"file":true,"buffer":true,"stream":true}
+node_modules/@img/sharp-darwin-arm64/lib/sharp-darwin-arm64-0.35.5.node

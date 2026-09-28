@@ -1,0 +1,7 @@
+# Explains admin_login.rsc (307 -> /admin/login?_rsc): Next 16.x RSC cache-busting enforcement, not the auth gate.
+# A bare RSC request with no/mismatched _rsc is redirected to add it; with no router-state headers the hash is empty.
+# Same behavior on a public page; the redirected URL returns 200 text/x-component (no loop). 2026-09-28T15:06:44Z
+GET /admin/login         -H 'RSC: 1' -> status=307 location=/admin/login?_rsc content-type=- set-cookie=0 body=0 bytes
+GET /admin/login?_rsc    -H 'RSC: 1' -> status=200 location=- content-type=text/x-component set-cookie=0 body=8340 bytes
+GET /what-we-do          -H 'RSC: 1' -> status=307 location=/what-we-do?_rsc content-type=- set-cookie=0 body=0 bytes
+GET /what-we-do?_rsc     -H 'RSC: 1' -> status=200 location=- content-type=text/x-component set-cookie=0 body=34158 bytes

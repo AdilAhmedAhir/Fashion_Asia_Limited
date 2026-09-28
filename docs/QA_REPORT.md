@@ -1075,3 +1075,312 @@ Report back per-row pass/fail. Any ❌ on Steps 1–2 reopens T-004 (and T-003/T
 ### Handoff Contract
 
 ✅ **QA Cleared.** Static Pass ✅, Live Pass ✅ — zero 🔴 across both. Run: `/git Merge T-004 to main per WORKFLOW §6.` (§10 remains inert — no `docs/MARKETING.md` exists — so no marketing-review chain inserts here.) The Manual Checklist above is **not** a merge blocker per `docs/WORKFLOW.md` §4/§7 (admin-write flows are always a post-hoc user pass, same precedent as every prior ticket's manual checklist this sprint) — but it is the *real* acceptance test for the client feature this sprint exists to ship, and it should be run before the *next* production `deploy`, alongside the other still-open pre-deploy items already on record (`docs/MEMORY_BANK.md` "Standing state carried forward": T-006/SEC-HIGH-1, SEC-HIGH-2's user-confirmation, SEC-HIGH-5, and the still-pending T-002/T-003/T-012 manual checklists — Step 1 of *this* checklist, once run, retroactively satisfies T-003's Step 1 and T-012's Step 2). Three 🟡 non-blocking findings logged this pass (WARN-1/2/3 above) — none require a fix before merge; recommend `/pm` pick them up as fast-follow tickets on its next pass. `docs/SECURITY.md`'s own T-004 entry separately recommends elevating **T-014**'s scheduling priority (image-scheme allow-list) given SEC-MED-13's reachability correction — not this office's call to enforce, relaying it here since it sits alongside this ticket's own merge decision.
+
+---
+
+## Static Pass — T-006 — 2026-09-28
+
+**Dispatch:** `/qa static T-006`, then `/qa live` in the same dispatch, strictly in that order, from `/system-architect`. `/cso review T-006` runs in parallel (static and audit only, starts no servers). Branch `fix/T-006-next-security-bump`, base `d0e655a` (`git merge-base HEAD main` = `main` = `d0e655a`). All work is uncommitted. Ticket: "Bump `next` to close SEC-HIGH-1" (`docs/ROADMAP.md`, checked `[x]` in this diff). **Sprint 1 is live in production at `e8eace1`**, and this change replaces it on the next user-typed "deploy". I edited no source file and committed nothing. The only files this pass wrote are this section and `docs/qa-evidence/T-006/`.
+
+### Files reviewed
+- `package-lock.json`: all 43 touched `packages` entries, traced one by one (below).
+- `next.config.ts`: full file. The `redirects()` block is byte-compared to `main`.
+- `package.json`: unchanged. Checked for byte identity.
+- `docs/TECH_STACK.md`: `/architect`'s "Next.js 16.3.6 security bump" decision, parts (a)–(f), plus the three one-line edits that point to it (`:13`, `:203`, `:232`).
+- `docs/ROADMAP.md`: the T-006 checkbox, the only change.
+- Read for context, not in the diff: `src/middleware.ts`, `src/lib/supabase/middleware.ts` (0-byte diff under `src/`), `src/components/ui/BrandLogo.tsx`, every `"use client"` file that imports a Server Action, and the parts of `node_modules/next@16.3.6/dist` that consume the two new config keys.
+- `/lead-dev`'s raw logs in the session scratchpad: build baseline and post-bump, route tables, `npm ls`, audit before and after, the pre-bump hashes, and a pre-bump lockfile copy (`package-lock.pre.json`, SHA-256 identical to `git show main:package-lock.json`).
+
+### Scope confirmation
+- `git diff main --stat` shows 4 files: `docs/ROADMAP.md`, `docs/TECH_STACK.md`, `next.config.ts`, `package-lock.json`. There are no untracked files and 0 bytes of diff under `src/`.
+- `package.json` is **byte-identical** to `main`. The SHA-256 `26068c14…c375` matches three ways: this branch, `git show main:package.json`, and `/lead-dev`'s pre-bump hash. `git diff main -- package.json` is 0 bytes. The declared range and the lockfile root range both still read `^16.1.6`.
+- These hashes equal `main`'s and `/lead-dev`'s pre-bump values, and were unchanged by this pass's gate: `AGENTS.md` (`96aacc61…`), `tsconfig.json` (`fb8dab29…`) and `.gitignore`. `next build` did not rewrite `tsconfig.json`. There is no `CLAUDE.md` anywhere in the tree, `node_modules` included.
+- **`next.config.ts` is in scope**, per `/architect`'s ruling (`docs/TECH_STACK.md:59`). Its diff is exactly the two decision (c) keys plus two explanatory comments. Everything from `async redirects()` to end of file is byte-identical to `main` (`diff` exit 0).
+- `docs/TECH_STACK.md` changes three existing lines and adds the decision section, all T-006. `docs/ROADMAP.md` flips the checkbox only. Nothing else changed.
+- Evidence: `docs/qa-evidence/T-006/static/package-json-identity.log`, `lockfile-trace.log`.
+
+### Acceptance criteria (`docs/ROADMAP.md` T-006), verified against the diff and re-executed
+
+| # | Bullet | Result |
+|---|---|---|
+| 1 | `next` resolves to `16.3.6`+ and still satisfies `^16.1.6`; lockfile-only | ✅ `npm ls` shows `next@16.3.6`. The build banner reads `▲ Next.js 16.3.6 (Turbopack)`. `package.json` is byte-identical, and the lockfile root entry `""` is untouched. |
+| 2 | `npm audit --omit=dev` no longer reports the `next` range, including `GHSA-mq59-m269-xvcx` | ✅ **Re-run by this pass**, not taken from `/lead-dev`'s log. Totals went from 13 (1 critical, 8 high) to **9 (0 critical, 5 high)**. `next`, `sharp`, `postcss` and `nanoid` are all absent, and the string `GHSA-mq59-m269-xvcx` appears nowhere in the audit JSON. The flagged set is identical to `/lead-dev`'s post-bump audit. See `npm-audit-omit-dev.log`. |
+| 3 | Nothing outside `next`'s own tree is bumped | ✅ All 43 lockfile entries trace to `next` (table below). |
+| 4 | `npx tsc --noEmit` and `npm run build` both clean | ✅ Re-run by this pass (see "Gate" below). |
+| 5 | `/cso review` re-runs the audit and confirms SEC-HIGH-1 is gone | ⏳ `/cso`'s bullet; it's running in parallel. This pass's independent audit agrees with the condition `/cso` has to confirm. Per `/architect` (e), `/cso` also has to confirm `npm ls next` shows exactly `16.3.6`, which `npm-ls.log` records. |
+| 6 | Folded 2026-09-28: `/qa live` repeats the production checks on a production build | ➡️ Part 2, below. |
+
+### `/architect`'s decision, parts (a)–(e), checked against the diff
+- **(a) Exactly `16.3.6`.** Confirmed from `npm ls`, `node_modules/next/package.json` and the build banner. It's not 16.3.3–16.3.5, which are exposed to the `next/og` RCE that `/architect` says the feed doesn't carry yet. The app imports `next/og` nowhere (`grep -rn "next/og" src/` finds nothing), so that advisory isn't reachable here in any case.
+- **(b) Method.**
+  - `npm ls next sharp postcss nanoid` exits 0: `next@16.3.6`, `sharp@0.35.5` (≥ 0.35.4), `postcss@8.5.23` deduped at every position, `nanoid@3.3.19`.
+  - `package.json` is byte-identical (above).
+  - The decision (c) keys are present and type-check (below).
+  - tsc and build are clean, and the route table matches the pre-bump baseline.
+  - `.next/dev` was last written at 18:07 local, before the 20:45 bump. Together with `AGENTS.md`'s unchanged hash, that shows nobody ran `next dev` on 16.3.6 before the keys landed (step 6's ordering condition).
+- **(c) The two keys: present, real, load-bearing, and inert in production.**
+  - *Type-level.* An independent control file checked against `next@16.3.6`'s types (`next-config-type-controls.log`). The exact keys compile (exit 0). `agentRules: "false"`, `logging.serverFunction` and `agentRule` each fail with TS2322 or TS2561. So the type is strict, and a typo can't be silently ignored.
+  - *Runtime resolution.* `next/dist/server/config`'s own `loadConfig()` was run for the dev and prod-server phases (the same zod validation and defaults merge the server uses). Both give `agentRules: false` and `logging: {serverFunctions: false, browserToTerminal: "warn"}`, with no validation warning, no `serverActions.allowedOrigins`, and 4 redirects. This confirms `/architect`'s claim that `browserToTerminal` keeps its `'warn'` default.
+  - *Where they bite.* `agentRules` gates the only call site of the AGENTS.md/CLAUDE.md writer: `start-server.js:419-420`, inside `if (isDev)`. `next build` and `next start` never reach it, and the writer touches only the root `AGENTS.md` and `CLAUDE.md`. `logging.serverFunctions` feeds `renderOpts.logServerFunctions` (`base-server.js:424`). That is consumed only in `action-handler.js:822` behind `process.env.NODE_ENV === 'development'`, where it would log the raw `boundActionArguments`: `loginAction`'s `FormData`, and so the admin email and password. All four `app-page*.runtime.prod.js` bundles contain **0** references. So both keys change dev behavior only, and production output is unaffected, as `/architect` stated.
+  - *The `agentRules` gate is load-bearing here, not theoretical.* Negative control, read-only calls only: in this shell `getAgentName()` returns `"claude-code_2-1-281_agent"`, and `hasCurrentAgentRules(repo)` returns `false`. Without `agentRules: false`, any `next dev` started from this environment would rewrite `AGENTS.md` and create `CLAUDE.md`. Evidence: `next-config-resolution.log`.
+- **(d) What changes between 16.1.6 and 16.3.6.** The build prints the expected `middleware` → `proxy` deprecation warning, as `/architect` expected; it isn't a regression. `src/middleware.ts` and `src/lib/supabase/middleware.ts` have 0-byte diffs. The behavioral items (transport-variant matching, `x-nextjs-data`, `Origin: null`, streams) can only be observed live, so they're Part 2.
+- **(e) The remaining audit findings are exactly `/architect`'s 9 follow-up rows:** `@babel/core`, `@humanfs/node`, `baseline-browser-mapping`, `brace-expansion`, `browserslist`, `flatted`, `js-yaml`, `picomatch`, `postcss-selector-parser`. The root `postcss` copy cleared because npm deduped it, so it doesn't go to the follow-up. `baseline-browser-mapping` stays at 2.10.0 and still satisfies `next`'s `^2.9.19`, as predicted. Per the ruling, none of these fails T-006.
+
+### Lockfile movement: all 43 entries traced to `next` (`lockfile-trace.log`)
+There are 2 added, 1 removed and 40 changed `packages` entries. The top-level keys (`name`, `version`, `lockfileVersion`, `requires`) and the root `""` entry are unchanged. Every `resolved` URL is on `registry.npmjs.org`, and every entry has an `integrity` hash.
+
+| Movement | Entries | Forced by |
+|---|---|---|
+| `next` 16.1.6 → 16.3.6 | 1 | The target |
+| `@next/env` + 8 × `@next/swc-*` → 16.3.6 | 9 | `next@16.3.6` exact pins |
+| `@swc/helpers` 0.5.15 → 0.5.23 | 1 | `next@16.3.6` exact pin `0.5.23` |
+| `sharp` 0.34.5 → 0.35.5 | 1 | `next`'s optional `sharp` moved from `^0.34.4` to `^0.35.4` |
+| 14 × `@img/sharp-<platform>` 0.34.5 → 0.35.5, 10 × `@img/sharp-libvips-*` 1.2.4 → 1.3.4 | 24 | `sharp@0.35.5` exact optional pins |
+| `@img/sharp-freebsd-wasm32`, `@img/sharp-webcontainers-wasm32` (added) | 2 | New `sharp@0.35.5` optional dependencies (`os: freebsd` and `cpu: wasm32`) |
+| `@emnapi/runtime` 1.8.1 → 1.11.3 | 1 | `@img/sharp-wasm32@0.35.5` requires `^1.11.3`, which 1.8.1 doesn't satisfy. The other dependent, `@napi-rs/wasm-runtime` (`^1.4.3`), is still satisfied |
+| `sharp/node_modules/semver` 7.7.4 → 7.8.5 | 1 | `sharp@0.35.5` requires `^7.8.5` (nested, `sharp`-private) |
+| root `postcss` 8.5.6 → 8.5.23, plus removal of `next/node_modules/postcss` 8.4.31 | 2 | `next`'s exact pin `8.5.23`, deduped with the root copy (the root's `^8.5.6` is still satisfied) |
+| `nanoid` 3.3.11 → 3.3.19 | 1 | `postcss@8.5.23` requires `^3.3.16` |
+
+Metadata fields (`libc`, `engines`, `cpu`, `hasInstallScript`, `peerDependenciesMeta`) changed only on entries whose version also moved, so the npm version caused no metadata-only churn. The dispatch's "43 entries in total" is confirmed.
+
+### Hunt list, applied to a framework bump
+- **Auth.** No gate code changed. The framework under the gate did, so Part 2 probes it (`RSC: 1`, `.rsc`, prefetch headers, `x-nextjs-data`).
+- **CSRF.** The fix for `GHSA-mq59-m269-xvcx` is in the installed version, and no `serverActions.allowedOrigins` is configured, so `Origin: null` is rejected. A live negative test isn't in this plan: no Server Action POSTs, and it's `/cso`'s optional call under `/architect` (f).
+- **Logging.** The diff removes a dev-log PII path and adds no `console.*` or `debugger`.
+- **Secrets.** None: 0 of 390 added lines match a secret shape.
+- **Commented-out code.** None. The two comments are prose.
+- **Input, XSS, SQL, N+1, cache, race, external API, CSP.** Not applicable: no application code changed.
+
+### Gate (re-run by this pass)
+- **No server running.** Before building I confirmed there were no listeners on :3000 or :3001 and no `next` process for this checkout. The only Next process on the machine is an unrelated project (`Start_Daily_HQ`, `next dev -p 3311`), which I left alone. Two MCP helper processes have this repo as their cwd, but neither is a Next server and neither listens on a port.
+- **`npx tsc --noEmit`** exits 0 with no output. Because `tsconfig.json` has `incremental: true`, I also forced a full check with `--incremental false`, which also exits 0. `tsbuildinfo` was untouched.
+- **`npm run build`** exits 0 (`build.log`). The banner reads `Next.js 16.3.6 (Turbopack)`. The only warning is the expected `middleware` deprecation, and there's no config-validation warning. The route table has **28 lines, identical** to `/lead-dev`'s 16.1.6 baseline and to the pre-deploy build of `e8eace1` (what production runs), with every `ƒ`/`○` marker unchanged (`route-table-diff.log`).
+- **Tree unchanged by the gate.** The hashes of all 7 tracked or relevant files are unchanged, and `git status --porcelain` is identical before and after.
+
+### Findings
+- 🟢 **INFO-1**: two **extraneous** entries in local `node_modules`, `@img/sharp-wasm32@0.35.5` and `@emnapi/runtime@1.11.3`, total about 9.4 MB. The lockfile is correct (both are `optional: true`). `sharp` 0.35 dropped `cpu: ["wasm32"]` from `@img/sharp-wasm32` and moved the platform gate onto the two new wrapper packages. npm therefore installs the ungated inner package on every platform, even though it skips the only packages that depend on it.
+  - `npm ls` still exits 0.
+  - `sharp` loads the native `@img/sharp-darwin-arm64` binary (libvips 8.18.7, WebP output available), per `sharp-backend.log`.
+  - The loader never references the plain `@img/sharp-wasm32` path, so output file tracing shouldn't pull it into a function bundle.
+  - This is upstream packaging, not T-006's to fix. It's just dead weight on each install. For `/devops`, only if Vercel function size ever gets tight.
+- 🟢 **INFO-2**: four lockfile movements aren't named in `/architect`'s (b) "Expected lockfile movement" list. They are `@emnapi/runtime` 1.8.1 → 1.11.3, the nested `sharp/node_modules/semver` 7.7.4 → 7.8.5, and the two added `@img/sharp-{freebsd,webcontainers}-wasm32` wrappers. All four are forced by `sharp@0.35.5`'s own manifest (traced above), so they're inside `next`'s tree, not unrelated churn. The hoisted `@emnapi/runtime` is shared with `@napi-rs/wasm-runtime`, the lint toolchain's optional wasm resolver, whose `^1.4.3` range is still satisfied. Recorded so `/cso`'s review and `/architect`'s list agree on what "expected" covered.
+- 🟢 **INFO-3**: doc drift the bump creates outside this diff, for each doc's owner:
+  - `docs/TECH_STACK.md:15` still quotes "PostCSS 8.5.6"; it resolves to 8.5.23 now. For `/architect`.
+  - `docs/WORKFLOW.md:50` and §8 row 1 say lint is broken "under Next.js 16.1.6". For `/director`.
+  - `docs/MEMORY_BANK.md` Known Trap #10 and §11 still say 16.1.6 is installed. For `/archivist`, at archive time.
+  - `docs/ROADMAP.md` T-006's `Files:` line still lists only `package.json` and `package-lock.json`, while `/architect` ruled `next.config.ts` into scope (`TECH_STACK.md:59`). For `/pm`.
+- 🟢 **INFO-4**: no regression test was added, because no runner exists (`docs/TECH_STACK.md`). The lockfile-trace, dependents, type-control and config-resolution scripts are kept in the session scratchpad, as with every earlier pass, and their outputs under `docs/qa-evidence/T-006/static/` are the re-runnable record.
+
+### Regression test
+None added, since there's no test runner (INFO-4). The evidence logs record each check's exact command and output.
+
+### Verdict
+✅ **Static Pass.** Zero 🔴, zero 🟡, four 🟢.
+- **Acceptance.** Bullets 1–4 are verified by re-execution rather than taken from `/lead-dev`'s logs. Bullet 5 is `/cso`'s, and bullet 6 is Part 2.
+- **`/architect`'s (a)–(e).** All hold against the diff.
+- **Scope.** `package.json` is byte-identical to `main`, and all 43 lockfile entries trace to `next`'s own tree. There's no unrelated churn.
+- **The new config keys.** They're real, strictly typed, resolved by Next's own loader, dev-only in effect, and the `agentRules` one is load-bearing in this very shell.
+- **Gate.** `tsc` (incremental and full) and `build` are both clean, and the route table matches the 16.1.6 baseline and production's build.
+
+**Zero 🔴, so this pass proceeds to Part 2 (Live), as the dispatch's gate requires.**
+
+## Live Pass — T-006 — 2026-09-28
+
+**Dispatch:** `/qa live` for T-006, in the same dispatch as the Static Pass above and gated on its zero-🔴 result. This was a pre-approved Standard Plan:
+- read-only GET/HEAD via `curl`, custom request headers included;
+- header inspection;
+- headless-Chrome screenshots of public pages, using a CDP driver kept in the session scratchpad.
+
+**What I didn't do.** No login, form submission, admin save or Server Action POST of any kind, and no write to the client's live Supabase project. Every request this pass sent was a GET: a `curl` call, a browser page load, or a link click. Production (`https://www.fal.com.bd`, `e8eace1`) received only anonymous GETs of public URLs, for the baseline diff. `/cso review T-006` ran in parallel (see the `docs/SECURITY.md` note in Flow 9).
+
+**Servers.** No server was running for this checkout when the pass started. I started, used and stopped two, and confirmed both ports free afterwards (no listener, and `curl` returns `000`):
+- `npm run build && npm start -- -p 3001`, from 15:05:11Z to 15:14:36Z;
+- `npm run dev` on :3000, from 15:15:42Z to 15:16:32Z.
+
+An unrelated project's dev server (`Start_Daily_HQ`, :3311) ran throughout, and I didn't touch it.
+
+### Browser / runner
+No E2E runner is installed (`docs/TECH_STACK.md`). I used `curl` for HTTP, and headless Google Chrome driven over the raw DevTools Protocol by throwaway scripts in the session scratchpad. It's the T-005 technique, and nothing was added to the repo or `package.json`.
+
+The navigation driver (`cdp-nav.mjs`):
+- clicks with real `Input.dispatchMouseEvent` events;
+- sets a `window` marker before the first click;
+- records console output, exceptions, `Log` entries, every request (with its `RSC` and prefetch headers), and main-frame versus same-document navigations.
+
+The Chrome profiles lived in the scratchpad and were deleted afterwards, and no headless Chrome was left running.
+
+### Flows
+
+| # | Flow | Verdict | Evidence (`docs/qa-evidence/T-006/…`) | Console errors | Failed requests |
+|---|---|---|---|---|---|
+| 1 | Production build and boot on :3001 | ✅ | `production-server/next-build-and-start-3001.log` | n/a | 0 server errors or warnings |
+| 2 | Admin gate: 11 dashboard routes × 5 transports, plus 10 extra shapes | ✅ 65/65 | `admin-auth-gate/summary.tsv`, one `.log` per probe, `rsc-cache-busting-note.log` | n/a (HTTP) | 0 |
+| 3 | Public pages vs production: `/`, `/what-we-do`, 8 categories | ✅ 10/10 | `public-vs-production/summary.tsv`, `*.content.diff`, `*.content.txt`, `*.headers.log`, `image-url-diff.log` | n/a (HTTP) | 0 |
+| 4 | Sitemap vs production | ✅ 17/17 | `sitemap/` | n/a | 0 |
+| 5 | Unknown slug, legacy redirects, robots, icons | ✅ (WARN-1 is pre-existing) | `routes-redirects-icons/` | n/a | 0 |
+| 6 | `/_next/image` returns WebP (`sharp` 0.35) | ✅ 4/4 | `next-image-sharp/` | n/a | 0 |
+| 7 | Client-side navigation `/` → `/what-we-do` → `/what-we-do/sportswear` (CDP) | ✅ | `client-navigation/01-home.png`, `02-what-we-do.png`, `03-category-sportswear.png`, `nav-report.json` | 0 | 0 `_rsc` failures; 160 known T-017 frame 404s |
+| 8 | Render checks: the 404 page, and `/admin/login` (load only) | ✅ | `screenshots/` | 0 | 0 unexpected |
+| 9 | Dev check for `agentRules` on :3000 | ✅ | `dev-agentrules/` | 0 | 0 unexpected |
+
+### Flow detail
+
+**1. Production build.** I ran exactly `npm run build && npm start -- -p 3001`.
+- The build banner reads `Next.js 16.3.6 (Turbopack)`, with the same 28-line route table as the Static Pass.
+- The `next start` banner reads `▲ Next.js 16.3.6`, and the listener was `next-server (v16.3.6)`, PID 15309.
+- The server log after start has no error, warning or `sharp` message for the whole pass.
+
+**2. Admin gate.** All requests were `curl` with no cookies.
+- **Core probes: 55/55 pass.** I probed the 11 dashboard routes (`/admin`, `/admin/business`, `/careers`, `/homepage`, `/media`, `/reports`, `/settings`, `/submissions`, `/sustainability`, `/who-we-are`, `/who-we-work-with`) five ways each: plain, `RSC: 1`, `RSC: 1` plus `Next-Router-Prefetch: 1`, the `.rsc` suffix, and `x-nextjs-data: 1`. Every one returned `307` with `location: /admin/login`, no `Set-Cookie`, and a 12-byte body.
+- **`x-nextjs-data` (the GHSA-3g8h-86w9-wvmq case).** `/admin` with `x-nextjs-data: 1` keeps a real `Location: /admin/login`, and so does `x-nextjs-data` combined with `RSC: 1`.
+- **Extra shapes on `/admin/business`, all read-only:**
+  - The segment-prefetch header (`Next-Router-Segment-Prefetch: /_tree`), the `.segments/_tree.segment.rsc` path and a `?_rsc=` query all return `307` to the login page. This is the GHSA-267c/26hh class.
+  - A trailing slash and `//admin/business` return `308` to `/admin/business`, which is itself gated.
+  - `/ADMIN/business` and `/%61dmin/business` return `404`.
+  - `/admin/login` returns `200` with no admin markers.
+- **Across all 65 probes:** 0 `Set-Cookie`, 0 bodies containing admin-only strings, and no `200` other than `/admin/login`. On gated paths, the middleware redirects transport variants before Next's RSC cache-busting check runs (INFO-5).
+
+**3. Public pages vs production.** I fetched each page from :3001 and from production back to back. Each response was normalized to what a visitor gets, then diffed: title, meta/OG/canonical tags, h1–h3, link targets, image and video sources and alts, and visible text, with chunk hashes and the flight payload excluded.
+- **Status:** 10/10 return `200` on both sides, with no `Set-Cookie` and no "Application error".
+- **The only diff on every page** is the icon links' cache-buster query: `/icon.png?icon.0cdd14b0.png` became `?icon.2v7xyt03774y8.png`, and the same for `apple-icon`. Next generates it (INFO-6).
+- **Everything else is identical:** title, description, canonical, OG tags, headings, every link, every image URL and alt, and every line of visible text.
+- **Data.** All 8 category pages still show "Coming Soon" on both sides, since no products exist yet. `/what-we-do` has all 8 category links. Its 8 Supabase image URLs match production and the sprint's baseline chain, both T-004's sorted list and its document order.
+
+**4. Sitemap.** Both sides return `200 application/xml`. Parsed with `xml.etree`, the file is well-formed, with **17 entries** (9 static, 8 categories). The `(loc, changefreq, priority)` triples are identical to production's, in the same order. `lastmod` differs by design (it's request-time, T-022), so it isn't compared.
+
+**5. Unknown slug, redirects, robots and icons.**
+- `/what-we-do/nonexistent-category-xyz` returns `404` with the custom page. Its content matches production's 404 apart from the icon query.
+- The legacy paths all return `308` with the same `Location` production gives:
+  - `/reports` → `/sustainability#reports`
+  - `/business` → `/what-we-do`
+  - `/who-we-work-with` → `/global-partner`
+  - `/media` → `/life-at-fashion-asia`
+- `/robots.txt` returns `200 text/plain`, byte-identical to production.
+- `/apple-icon.png` returns `200 image/png`: the app icon, 25,648 B, the same bytes as production.
+- `/icon.png` returns `200 image/png`, but it serves `public/icon.png` rather than the app icon. See WARN-1.
+
+**6. `/_next/image`.** The header logo's srcset uses `/_next/image?url=%2Flogo.png&w=48&q=75` (1x) and `w=96` (2x).
+- With `Accept: image/webp`, the w=48 request returns `200 image/webp`, 1,338 B of genuine RIFF/WebP: `x-nextjs-cache: MISS`, then `HIT` on repeat.
+- A browser-style `Accept` for w=96 also returns `image/webp`.
+- The control request with `Accept: image/png` returns a **96×96** `image/png`, resized from the 1080×1080 source. That shows the `sharp` pipeline actually ran rather than passing the file through.
+- The optimizer wrote cache entries under `.next/cache/images/`.
+
+Together with the static `sharp-backend.log` (native `@img/sharp-darwin-arm64`, libvips 8.18.7), this shows `sharp` 0.35.5 loads and works under `next start`.
+
+**7. Client-side navigation (Chrome, 1440×900).**
+- **Steps.** I loaded `/`, waited 4.5 s of wall-clock time for the Preloader, and set `window.__qaMarker`. A real mouse click on the header's "What We Do" link arrived at `/what-we-do` (`<h1>` "What We Do"). I then scrolled the "Sportswear" card into view, and a real mouse click arrived at `/what-we-do/sportswear`: `<h1>` "Sportswear", title "Sportswear | Fashion Asia Limited", with "Coming Soon" shown.
+- **No full reload.** The marker survived both hops. There were 0 Document requests and 0 main-frame navigations after the initial load, `performance` navigation entries stayed at 1, and both hops registered as same-document navigations.
+- **Console:** 0 errors, 0 warnings, 0 exceptions and 0 browser-log errors.
+- **`_rsc` traffic:** 30 requests, all `200`, none failed. The client cancelled 25 of them after their `200` headers arrived; those are prefetch and navigation streams the router no longer needed (`nav-report.json`), not failures.
+- **Other failed requests:** exactly 160, all the known `/sequence/hero/frame_N.webp` 404s from the Preloader (T-017, pre-existing). None were unexpected.
+
+**8. Render checks.**
+- **The 404 page.** `/what-we-do/nonexistent-category-xyz` renders the custom "Page Not Found" page, with 0 console messages and 0 exceptions. Its only failed requests are:
+  - the page's own 404;
+  - the 160 T-017 frame 404s;
+  - Chrome's default `/favicon.ico` probe for error pages (none exists in the repo, so this is pre-existing);
+  - 8 `_rsc` prefetches cancelled by the router.
+- **`/admin/login`** renders the sign-in card, with nothing typed or submitted: 0 console messages, 0 exceptions, 0 failed requests.
+
+**9. Dev check for `agentRules`.**
+
+*Before the run:*
+- `AGENTS.md` matched `main` (`96aacc61…`, mtime 2026-08-10).
+- No `CLAUDE.md` existed anywhere in the tree (searched case-insensitively, including `node_modules`, `.next` and `.claude`).
+- In the same shell environment the dev server inherits, `getAgentName()` returned `"claude-code_2-1-281_agent"` and `hasCurrentAgentRules(repo)` returned `false`. Without the key, the generator would have fired.
+
+*The run:*
+- I started `npm run dev` on :3000 (`Next.js 16.3.6 (Turbopack)`).
+- With curl I loaded `/`, `/what-we-do`, `/what-we-do/sportswear` and `/admin` (307).
+- I loaded `/contact` in headless Chrome so its client form component mounted: 0 errors, just React's DevTools notice and `[HMR] connected`.
+- Then I stopped the server.
+
+*Results:*
+- **`AGENTS.md` is byte-identical to `main`**, and its mtime is unchanged.
+- **There's no `CLAUDE.md`** anywhere.
+- The dev log has 0 "Generated … for AI agents" lines and no mention of either file.
+- **`git status --porcelain --untracked-files=all` matches the pre-dev snapshot, except for ` M docs/SECURITY.md`.** That file's mtime is 15:16:46Z, 14 seconds **after** the dev server stopped (15:16:32Z, port confirmed free). Its diff is a 4-line append headed "Amended 2026-09-28 (T-006 CSO review…)", which is `/cso`'s parallel review, not the dev run. Excluding it, the 196 lines are identical.
+- **Server Function logging wasn't observable in this plan.** The dev log shows 5 GETs and 0 POSTs, so no Server Function ran. 16.3.6 logs a Server Function only when it runs through the action handler (a POST). Public pages call their `"use server"` reads directly from Server Components, and no client component calls an action on mount. So the absence of `└─ ƒ …` lines is vacuous.
+  - What does show the setting is Next's own `loadConfig()` for the dev phase: `logging.serverFunctions: false`, so `logServerFunctions` is `false` (Static Pass).
+  - Running Next's own formatter locally with dummy values also answers `/architect`'s open question (INFO-7).
+
+### Findings (live)
+- 🟡 **WARN-1: under `next start`, `/icon.png` serves a stray logo from another brand. Production is correct today, but the T-006 deploy could change that.**
+  - **Two files claim the URL.** `src/app/icon.png` is the official Fashion Asia mark (1080×1080, 25,648 B), the metadata route every page's `<link rel="icon">` points to. `public/icon.png` is 4097×4096 and 75,560 B, and shows **a purple graduation cap on an orange circle, which isn't this client's brand**.
+  - **History.** `public/icon.png` arrived with the 2026-03-06 placeholder favicon (`2c2f967`). The 2026-03-08 official-logo commit (`d6b779f`) replaced the app icons but left this file behind, and nothing references it.
+  - **Why it's not a T-006 regression.** Under `next start` the public file wins, because `filesystem.js` checks `publicFolder` before `appFile`. The order is identical in 16.1.6 and 16.3.6 (I compared it using `npm pack next@16.1.6`), so the behavior predates this ticket.
+  - **What's unknown.** Production on Vercel (16.1.6) serves the app icon. I can't verify locally whether Vercel's 16.3.6 build keeps that precedence.
+  - **Impact.** Cosmetic, but brand-visible: the browser-tab icon of the client's corporate site would become another brand's logo.
+  - **Proposals.**
+    1. After the next deploy, `/devops` (or the orchestrator's post-deploy checks) confirms that `https://www.fal.com.bd/icon.png` still hashes to `73ebfbd1…`, which is `src/app/icon.png`.
+    2. `/pm` tickets deleting the unreferenced `public/icon.png`. That removes the ambiguity on every runtime, and it's a single, reversible file removal, ideally made before or with the next deploy.
+  - Evidence: `routes-redirects-icons/icon-precedence.log`. This doesn't block the merge.
+- 🟢 **INFO-5: bare RSC requests now redirect.** Under Next 16.x's cache-busting check, a bare `RSC: 1` GET with no `_rsc` parameter gets a `307` to `?_rsc`, which then returns `200 text/x-component` with no loop (`rsc-cache-busting-note.log`). Real client navigations always send a valid `_rsc` (Flow 7: 30 of 30 returned `200`). This matters only to hand-written probes, and future `/qa` scripts should expect it. On gated paths the middleware answers first.
+- 🟢 **INFO-6: the icon cache-buster changed format.** It moved from 8 to 13 characters. Browsers will re-fetch the icons once after deploy. The file bytes are unchanged, so it has no visible effect.
+- 🟢 **INFO-7, for `/cso`: this settles `/architect` (c)'s open question.**
+  - In 16.3.6, Next's dev Server Function logger (`server-action-logger.js`, `safe-stable-stringify` at depth 2 and breadth 3) prints a `FormData` argument as `{}`. So `loginAction`'s credentials and the public forms' PII wouldn't have been printed even with logging on.
+  - Plain-object arguments are printed, for example `createCategoryProduct`'s product fields and `updateSettings`'s settings payload.
+  - The key is still correct: it stops that admin-payload logging today and guards against a future `FormData` expansion.
+  - The `next.config.ts` comment ("which here include the admin password") describes what the arguments contain, not what 16.3.6 prints. It's accurate enough, and I'm not asking for a change.
+  - Evidence: `dev-agentrules/server-function-logging-observability.log`.
+- 🟢 **INFO-8: Server Actions weren't exercised.** They're the one surface T-006 changes that no agent can exercise under this plan: login, admin saves and the three public forms. The only related data point is that `/admin/login` renders cleanly (Flow 8). The Manual Checklist below covers the rest. The optional `Origin: null` negative test stays `/cso`'s call under `/architect` (f), and this pass didn't run it.
+- 🟢 **INFO-9: known noise, unchanged by T-006.** Each desktop page load still makes 160 Preloader frame requests that 404 (T-017), and Chrome's `/favicon.ico` probe on error pages still returns 404.
+
+### Evidence secret-scan
+I scanned the whole `docs/qa-evidence/T-006/` tree, re-run after the last evidence file was written (201 files in 10 folders, `static/` included, 2.8 MB), for secret shapes: `ghp_`, `gho_`, `github_pat_`, `sk_live_`/`sk_test_`, AWS key shapes, `service_role`, `SUPABASE_SERVICE_ROLE`, the JWT prefix `eyJhbGci`, `sb_secret_`/`sb_publishable_`, private-key headers, `authorization:` and `apikey:`.
+- **0 hits.**
+- No transcript contains a `Set-Cookie` header (0 files).
+- No `.env` values appear; only the filename `.env.local` shows up, in the build and dev banners.
+- The dummy strings from the local formatter check appear nowhere in the evidence.
+- The binary files are screenshots and response bodies of public assets (PNG, WebP, HTML).
+
+The largest file is `client-navigation/01-home.png` (1.27 MB, the photographic hero).
+
+### Saved specs
+No test runner exists (`docs/TECH_STACK.md`). The probe scripts (`probe-admin.sh`, `public-diff.sh` with `normalize.mjs`, `probe-misc.sh`, `cdp-nav.mjs`, `cdp-shot.mjs`) stay in the session scratchpad, as is this repo's practice. Every request and header they sent is recorded in the per-probe transcripts and summaries above, so each assertion can be re-run against a fresh `npm run build && npm start`.
+
+### Verdict
+✅ **Live Pass.** All 9 flows pass, with zero 🔴, one 🟡 and five 🟢. The 🟡 is pre-existing, not a T-006 regression, and comes with a requested deploy-time check. Across more than 120 `curl` requests and 5 headless-Chrome sessions:
+- the admin gate holds for every transport variant, including those the 16.2.x advisories covered, with no `Set-Cookie`;
+- the public site's content is identical to production apart from a framework cache-buster, and the sitemap is identical;
+- the unknown slug returns 404, and the legacy redirects and `robots.txt` match production;
+- `sharp` 0.35 produces WebP;
+- a real client-side navigation completes with no reload, 0 console errors and 0 failed `_rsc` requests;
+- `agentRules: false` held under a dev server started from an environment Next detects as an agent.
+
+Both servers are stopped and their ports free. No source file was edited and nothing was committed.
+
+---
+
+## Erratum — Manual Checklist — T-004 — 2026-09-28
+
+`/pm` asked for this (`docs/ROADMAP.md`, fourth pass: "`/qa` should update that line on its next pass"). This file is append-only, so the correction goes here rather than into the original.
+
+In "Manual Checklist — T-004" → "Before you start", the third bullet ("Reassurance…") **is no longer true**. Since the 2026-09-28 deploy, production (`e8eace1` on `origin` and `client`) runs T-001 through T-005, and local builds and production read the same live Supabase project. A test product added from `localhost` or from production appears on the live `https://www.fal.com.bd/what-we-do/<category>` the moment it's added.
+- Name test products unmistakably, for example "TEST — delete me".
+- Do the checklist's Cleanup section in the same sitting, before you close the tab.
+
+Everything else in that checklist still stands.
+
+## Manual Checklist — T-006 — 2026-09-28
+
+**For the user.** T-006 swaps the framework under every Server Action, and no agent may run one (`docs/WORKFLOW.md` §4). Run this once. You can do it on a production build of `main` after T-006 merges (`npm run build && npm start`) before you type "deploy", or on the live site straight after the deploy. It takes a few minutes. If you're about to run the pending T-004 checklist anyway, its Steps 1–2 cover rows 1–2 here.
+
+| # | Step | Action | Expected result | Pass/Fail |
+|---|---|---|---|---|
+| 1 | Sign in | Go to `/admin/login` and sign in with your own email and password | You land on the dashboard, with no error and no endless spinner | |
+| 2 | One admin save | On any settings page, change nothing and click **Save Changes**. On `/admin/business`, this is also the still-pending bootstrap Save. | It saves with no error text. This writes the same content back to the live database. | |
+| 3 | One public form (recommended) | On `/contact`, send one message clearly marked "TEST — T-006, please ignore" | A success message appears on the page, and the message shows up under `/admin/submissions`. This creates one real row in your inbox. | |
+| 4 | Sign out | Sign out from the admin | You're back at `/admin/login` | |
+
+Any ❌ reopens T-006 for `/lead-dev`. If T-006 is already deployed, `/devops` should also consider rolling back to the previous Vercel deployment. This checklist isn't a merge blocker, following the §4/§7 precedent for every manual checklist this sprint.
+
+### Handoff Contract
+
+✅ **QA Cleared.** Static Pass ✅ and Live Pass ✅, with zero 🔴 across both. Run: `/git Merge T-006 to main per WORKFLOW §6.`, once `/cso review T-006` has signed off in `docs/SECURITY.md`. T-006's acceptance bullet 5 and its prescribed sequence put `/cso review` before `/git Merge`. §10 is inert, since no `docs/MARKETING.md` exists, so no marketing-review chain inserts here.
+
+Merging doesn't reach production. SEC-HIGH-1 only closes on the live site when the user types "deploy". After that deploy:
+- check WARN-1's icon hash;
+- `/devops` watches for the router-state-header error `/architect` flagged;
+- run the Manual Checklist above if it wasn't run before the deploy.

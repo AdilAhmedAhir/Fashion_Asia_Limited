@@ -1,0 +1,14 @@
+{
+  "url": "http://localhost:3001/admin/login",
+  "width": 1440,
+  "height": 900,
+  "waitMs": 3000,
+  "isMobile": false,
+  "consoleMessageCount": 0,
+  "consoleMessages": [],
+  "exceptionCount": 0,
+  "exceptions": [],
+  "totalResponses": 16,
+  "failedRequestCount": 0,
+  "failedRequests": []
+}

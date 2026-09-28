@@ -10,7 +10,7 @@ Every version below is quoted from `package.json` / `package-lock.json`; every b
 
 ## Frontend
 
-- **Next.js 16.1.6** (`next: "^16.1.6"`, resolved `16.1.6`), App Router, React Server Components by default (`docs/PROJECT_STATE.md` §1, still current).
+- **Next.js** (`next: "^16.1.6"`), App Router, React Server Components by default (`docs/PROJECT_STATE.md` §1, still current). Resolved `16.1.6` until T-006; T-006 moves the lockfile to **`16.3.6`**, which is also the **minimum approved version** from 2026-09-28. The range stays `^16.1.6` on purpose. See "Next.js 16.3.6 security bump" at the end of this section.
 - **React 19.2.4 / react-dom 19.2.4** (both resolved exactly to `19.2.4`).
 - **Tailwind CSS 3.4.19** + **PostCSS 8.5.6** + **autoprefixer 10.4.27**. Theme in `tailwind.config.ts`: colors `background #1a1f1a`, `foreground #f5faf5`, `primary #016138`, `secondary #02894f`, `accent #0EC97A`, `surface #0a0a0a`; fonts `Inter` (sans) and `Playfair Display` (serif) loaded via `next/font/google` in `src/app/layout.tsx`.
 - **clsx 2.1.1** + **tailwind-merge 3.5.0** → `cn()` helper in `src/lib/utils.ts`.
@@ -21,6 +21,116 @@ Every version below is quoted from `package.json` / `package-lock.json`; every b
   - **framer-motion 12.34.3** — `src/components/ui/ScrollReveal.tsx`.
   - CSS micro-interactions via Tailwind utility classes.
 - `next/image` is used in exactly one place (`src/components/ui/BrandLogo.tsx`, for local `/logo.png`). No other component uses it — see Notes below.
+
+### Next.js 16.3.6 security bump: `/architect` decision, 2026-09-28 (T-006, closes SEC-HIGH-1)
+
+Checked on 2026-09-28 against: the npm registry manifest for `next@16.3.6`; the Next.js 16.2, 16.3 and 16.3 Turbopack release posts; the v16.3.3–v16.3.6 GitHub release notes; the advisories named below; and the 16.3.6 docs for `proxy`, `logging`, `cookies`, `revalidatePath`, the Turbopack file-system cache and the AI-agents guide. This pass had no shell, so installed versions come from `package-lock.json`.
+
+**(a) Target: exactly `16.3.6`, which is also the floor.** The audit range (`9.3.4-canary.0 - 16.3.2`) makes `16.3.3` the first release outside it, and `16.3.3` carries the fixes for both RCEs `/cso` cited in SEC-HIGH-1 (GHSA-2xp9-vwfh-vxw4, GHSA-p293-qw3h-jr36). But `16.2.0` through `16.3.5` are all affected by a later critical advisory, GHSA-vcvr-r3jv-pc5j / CVE-2026-94545 (RCE in the Node.js `next/og` `ImageResponse`). It was published 2026-09-22 and is fixed only in `16.3.6`. This cycle's audit range stops at `16.3.2`, so the feed doesn't carry it yet. This app never imports `next/og` (zero hits in `src/`), so it isn't exposed. Even so, a clean `npm audit` on `16.3.3`–`16.3.5` would be a false clean. `16.3.6` is npm's `latest` and already inside `^16.1.6`. This entry approves no other package.
+
+**(b) Method: `npm update next`, lockfile-only.** `/lead-dev` runs these steps in order:
+1. Stop any `next dev` or `next start` serving this checkout. A running server keeps 16.1.6 in memory and then reads a half-replaced `node_modules`. If a server wasn't started by an agent, ask through the orchestrator.
+2. `npm run build` on the untouched tree. Keep its route table as the baseline.
+3. `npm update next`
+4. `npm ls next sharp postcss nanoid`. `next` must be exactly `16.3.6` and `sharp` at least `0.35.4`. If npm resolves a newer `16.3.x`, stop and bring its release notes back to `/architect`. If it resolves `16.4` or later, stop, because that's outside this review.
+5. `package.json` must be byte-identical and still say `"next": "^16.1.6"`. Current npm doesn't save ranges on `update`. If the file changed anyway, stop and report; don't hand-edit it back.
+6. Add the two keys in (c) to `next.config.ts`. Do this after step 3, because 16.1.6's `NextConfig` type has no `agentRules`. Do it before anyone runs `next dev` on 16.3.6. If the 16.3.6 types reject either key, stop and report; don't cast.
+7. `npx tsc --noEmit` and `npm run build`, both clean. Diff the route table against step 2.
+8. `npm audit --omit=dev`. Record the result against (e).
+
+Not chosen:
+- Raising the range to `^16.3.6`. The ticket says lockfile-only, and any regenerated lockfile resolves to the newest `^16` anyway, so the floor is recorded here instead.
+- `npm audit fix`. It would also move toolchain packages outside `next`'s tree, and `--force` can jump majors.
+- A bare `npm update`. It moves every range.
+
+Expected lockfile movement. All of it comes from `next`'s own tree and is in scope:
+- `next`, `@next/env` and `@next/swc-*` move to `16.3.6`.
+- `@swc/helpers` goes from `0.5.15` to `0.5.23`.
+- `sharp` goes from `0.34.5` to `0.35.x`, plus its `@img/*` binaries.
+- `next`'s exact `postcss` pin goes from `8.4.31` to `8.5.23`. npm may dedupe it with the root copy (`8.5.6` to `8.5.23`, still inside the root's `^8.5.6`). That follows from `next`'s pin; it isn't a separate bump.
+- `nanoid` may move to the newest 3.x, because `postcss@8.5.23` requires `^3.3.16`.
+
+Anything else in the lockfile diff is unrelated churn.
+
+**(c) Two `next.config.ts` keys ship with the bump.** Both are required, both restore 16.1.6 behavior, and neither changes production output.
+- **`agentRules: false`.** From 16.3, when `next dev` detects an AI coding agent in its environment, it upserts a Next.js-managed block into the root `AGENTS.md`. It also generates a `CLAUDE.md` containing `@AGENTS.md` (nextjs.org/docs/app/guides/ai-agents). Every agent-started dev server here would trigger this, including `/qa live` and the `dev` configuration in `.claude/launch.json`. `AGENTS.md` is this repo's A-Team governance file, and no root `CLAUDE.md` exists. The injected block is written as instructions to agents, and tells them committing it "keeps the tree clean". No tool may rewrite either file as a side effect of starting a server. Opting in later is a `/director` decision about `AGENTS.md`.
+- **`logging: { serverFunctions: false }`.** From 16.2, `next dev` prints every Server Function call "with its function name, arguments, and duration". Here those arguments include `loginAction`'s `FormData`, which carries the admin email and password, and the PII from the three public forms. The docs don't say whether `FormData` entries get expanded, and the flag makes that moot. It affects dev only. `/cso` confirms it at T-006's review. `logging.browserToTerminal` (default `'warn'` since 16.2) stays at its default.
+
+`redirects()` stays byte-identical. T-006's file list gains `next.config.ts`. That's a ruling on how the bump lands, not a scope expansion.
+
+**(d) What changes for this app between 16.1.6 and 16.3.6.**
+- **`src/middleware.ts`.** Still supported. It has been deprecated since 16.0, and the build warning continues; that's expected, not a regression. Keep it for T-006.
+  - Renaming it to `proxy.ts` would move the Supabase session refresh from the Edge runtime to Node.js. Proxy is Node-only, and a `runtime` export throws. That changes the auth gate itself, so it needs its own `/pm` ticket with `/cso review`, using `npx @next/codemod@canary middleware-to-proxy .`, before a future major removes `middleware`.
+  - Two fixes in this range change what reaches the middleware. GHSA-267c-6grr-h53f was fixed in 16.2.5, and its follow-up GHSA-26hh-7cqf-hhc6 in 16.2.6. The follow-up says the first fix "did not apply to `middleware.ts` with Turbopack", which is exactly this app's setup. Matchers now also cover App Router transport variants (`.rsc`, segment prefetch), so expect the middleware to run on those requests. The `startsWith("/admin")` logic needs no change.
+  - GHSA-3g8h-86w9-wvmq (fixed in 16.2.6): an external `x-nextjs-data` header can no longer turn the `/admin` → `/admin/login` 307 into a redirect with no `Location` header.
+- **Server Actions.**
+  - GHSA-mq59-m269-xvcx (fixed in 16.1.7) now rejects `Origin: null` unless it's listed in `experimental.serverActions.allowedOrigins`. This app sets no allowlist, and every caller is same-origin, so no legitimate submit changes.
+  - The only other changes are the dev logging in (c) and an opt-in offline mode that stays off.
+  - Nothing is documented as changing for the `"use server"` read functions that public pages and `sitemap.ts` call directly: `getSettings`, `getCategoryProducts`, `getMediaAssets`, `getReports`, `getLeaders` and `getJobs`.
+- **`cookies()` and dynamic rendering: no change.** The docs' version history has no entry after 15.0.
+  - `createClient()` still makes every settings-reading page and `/sitemap.xml` render per request, so their `revalidate = 60` exports stay inert.
+  - Cache Components and Partial Prefetching are opt-in in 16.3 and stay off. 16.3 says they become defaults in a future major; that will need its own decision.
+- **`revalidatePath`: no documented change.** It's still a no-op on these per-request routes (`docs/QA_REPORT.md` T-005 WARN-1).
+- **Metadata routes: no documented change** to `sitemap.ts` or `robots.ts`. 16.2's multiple-icon-formats change only applies to icons that share a base name, and `icon.png` and `apple-icon.png` don't.
+- **Redirects in `next.config.ts`: no change.** The request-smuggling fix in this range concerns rewrites, and this app has none.
+- **Turbopack build.**
+  - From 16.3, `next build` writes a persistent cache to `.next/cache/turbopack`. It's gitignored, and Vercel restores `.next/cache` between builds, so the first build after the bump is cold. If a build ever looks stale, the lever is `experimental.turbopackFileSystemCacheForBuild: false`. Don't set it preemptively.
+  - 16.3 also moves server rendering to native Node.js streams.
+  - 16.3 bundles small prefetches by default, so captures showing fewer `_rsc` requests than T-005's are expected.
+  - 16.2 added support for `postcss.config.ts`. It doesn't affect this app's `postcss.config.mjs`.
+- **Cosmetic.** 16.2 redesigned the built-in production 500 page. This app uses that page, because it has no `error.tsx` or `global-error.tsx`.
+- **Toolchain.**
+  - Unchanged: Node `>=20.9.0`, the React peer `^19` (met by 19.2.4) and TypeScript 5.9.3.
+  - `eslint-config-next` stays at 16.1.6. It isn't in `next`'s tree and declares no peer on `next`. Realign it when lint is fixed (`docs/WORKFLOW.md` §8, row 1).
+  - If `next build` rewrites `tsconfig.json`, that diff is framework-generated and in scope. `next-env.d.ts` is gitignored.
+
+**(e) The other 12 audit findings.** Traced through `package-lock.json` and the `next@16.3.6` manifest:
+
+| Finding (severity) | Installed | Pulled in by | After T-006 |
+|---|---|---|---|
+| `sharp` (high) | 0.34.5, optional | `next` only (`^0.34.4`; 16.3.6 declares `^0.35.4`) | Clears |
+| `postcss` (high) | 8.4.31 under `next`; 8.5.6 at the root | `next`'s exact pin (now `8.5.23`). The root copy is a direct dependency for Tailwind and autoprefixer | `next`'s copy clears. The root copy clears only if npm dedupes it; otherwise it goes to the follow-up |
+| `nanoid` (high) | 3.3.11 | both `postcss` copies | Likely clears (`postcss@8.5.23` requires `^3.3.16`). Confirm with the audit |
+| `baseline-browser-mapping` (moderate) | 2.10.0 | `next` (`^2.9.19` in 16.3.6) and `browserslist` | Likely stays: 2.10.0 already satisfies both ranges. Follow-up |
+| `browserslist` (high) | 4.28.1 | `autoprefixer`; Babel, via lint | Follow-up |
+| `postcss-selector-parser` (low) | 6.1.2 | `tailwindcss`, `postcss-nested` | Follow-up |
+| `picomatch` (high) | 2.3.1 and 4.0.3 | Tailwind's glob and watch stack; `fast-glob` from `@next/eslint-plugin-next`; `typescript-estree` | Follow-up |
+| `brace-expansion` (high) | 1.1.12 and 5.0.4 | `minimatch` 3 (ESLint and its plugins); `minimatch` 10 (`typescript-estree`) | Follow-up |
+| `flatted` (high) | 3.3.3 | ESLint's cache (`flat-cache`) | Follow-up |
+| `js-yaml` (high) | 4.1.1 | `@eslint/eslintrc` | Follow-up |
+| `@humanfs/node` (moderate) | 0.16.7 | `eslint` | Follow-up |
+| `@babel/core` (low) | 7.29.0 | `eslint-plugin-react-hooks`, via `eslint-config-next` | Follow-up |
+
+Every follow-up row belongs either to the Tailwind/PostCSS CSS build or to ESLint. Those packages are declared under `dependencies`, not `devDependencies`, which is why `--omit=dev` counts them. None of them is imported by `src/` at runtime. They run only inside `next build` or lint, on inputs this project controls.
+
+**Ruling: they stay out of T-006, which covers `next` and its own tree only.**
+- A residual toolchain finding does not fail T-006.
+- `next` dropping out of the audit is necessary but not sufficient to close SEC-HIGH-1. Because of (a), `/cso` also confirms that `npm ls next` shows exactly `16.3.6`.
+
+**Recommended low-priority follow-up for `/pm`: clear the toolchain advisories.**
+- Update the named packages lockfile-only, within their existing ranges: `npm update <names>`, or `npm audit fix` without `--force`.
+- Re-audit, keep `tsc` and `build` clean, and confirm the compiled CSS is unchanged.
+- Two adjacent items need `/architect` sign-off when they're ticketed:
+  - Realign `eslint-config-next` with `next` as part of the lint fix.
+  - Optionally move build-only and lint-only packages to `devDependencies`, so `--omit=dev` reflects the runtime surface. That's a manifest-only change, and it's safe on Vercel, which installs `devDependencies` for the build.
+
+**(f) T-006-specific checks for `/qa`.** These are on top of the ticket's acceptance. All are read-only, and all run on the production build unless noted.
+1. `npm ls next` shows 16.3.6, and the build banner says 16.3.6. Restart any dev server that was already running.
+2. The route table has the same routes, each keeping its pre-bump rendering marker. The "middleware" deprecation warning is expected.
+3. After any `next dev` run on the branch, `AGENTS.md` is byte-identical to `main` and there's no root `CLAUDE.md`. If either appeared before (c) landed, `/git` restores `AGENTS.md` and removes the generated `CLAUDE.md`, whose content is exactly `@AGENTS.md`.
+4. Unauthenticated requests never get a 200 with admin content. That covers `GET /admin/business` with `RSC: 1`, the same request with `Next-Router-Prefetch: 1` added, and `GET /admin/business.rsc`. A 307 to `/admin/login` or a 404 passes. Separately, `GET /admin` with `x-nextjs-data: 1` must return a 307 with a real `Location: /admin/login` header.
+5. The four legacy paths return a 308 with today's `Location` values.
+6. `/robots.txt`, `/icon.png` and `/apple-icon.png` return 200. Under `next start`, the header logo's `/_next/image` URL returns `image/webp` for an `Accept: image/webp` request, which shows `sharp` 0.35 loads. Any other result gets investigated.
+7. One real client-side navigation, `/` → `/what-we-do` → a category page, completes without a full reload, with 0 console errors and 0 failed `_rsc` requests.
+
+These checks invoke no Server Action (`docs/WORKFLOW.md` §4). An `Origin: null` negative test is optional and is `/cso`'s call. If it's run, it may only target a `requireUser()`-gated action, so a failed check still can't write. It never targets `form-actions.ts` or any SEC-MED-10 function.
+
+After the next deploy, `/devops` should watch Vercel runtime logs for "The router state header was sent but could not be parsed". This isn't a T-006 gate. It was reported on 16.2.0 with a broad `proxy.ts` matcher (vercel/next.js#91723) and closed without a reproduction, so confidence is low. This app's matcher is broad, though.
+
+**Rubric.** Same package, so there's no new dependency to weigh.
+- Maintenance: released 2026-09-22.
+- Reversibility: one lockfile revert plus two config lines.
+- Stack-wide cost: no new runtime or build step. The new defaults in (c) are neutralized, and the build cache in (d) is accepted.
 
 ## Backend / CMS
 
@@ -90,7 +200,7 @@ Two alternatives were considered and rejected, not just deprioritized: **(1) ext
 
 ## Dev tools
 
-- **ESLint 9.39.3** + **eslint-config-next 16.1.6**, but the only config file is the legacy `.eslintrc.json` (`{"extends": "next/core-web-vitals"}`) — no flat `eslint.config.*` exists at the project root (confirmed by glob). `npm run lint` runs `next lint`, which Next.js 16 no longer ships cleanly — see `docs/MEMORY_BANK.md` Known Traps. Treat `npm run lint` as broken until that's fixed.
+- **ESLint 9.39.3** + **eslint-config-next 16.1.6**, but the only config file is the legacy `.eslintrc.json` (`{"extends": "next/core-web-vitals"}`) — no flat `eslint.config.*` exists at the project root (confirmed by glob). `npm run lint` runs `next lint`, which Next.js 16 no longer ships cleanly — see `docs/MEMORY_BANK.md` Known Traps. Treat `npm run lint` as broken until that's fixed. `eslint-config-next` stays at 16.1.6 through T-006 on purpose. It isn't in `next`'s dependency tree and declares no peer on `next`. Realign it with `next` when lint is fixed (2026-09-28; Frontend → Next.js 16.3.6 decision (d)).
 - Type-checking: `npx tsc --noEmit` (not re-run this session — no shell tool was available to this onboarding pass; carried forward from prior-work context, not independently re-verified).
 - Package manager: **npm** (`package-lock.json` present; no `pnpm-lock.yaml` / `yarn.lock`).
 
@@ -119,6 +229,6 @@ Two alternatives were considered and rejected, not just deprioritized: **(1) ext
 - **Naming quirk, T-001 (2026-09-26).** `site_settings.business.products` (the JSONB key) and the TypeScript `Product` type in `src/lib/site-content.ts` both hold **categories** (T-Shirts, Polo Shirts, ...), not the new individual catalog items — the name predates this feature and was deliberately left unchanged, to avoid touching `BusinessClient.tsx` / `business/page.tsx` / `what-we-do/page.tsx` (all outside T-001's file list) and to avoid a live-data key rename. The new per-category catalog items — VISION.md's actual "product": image/name/description — are the **`CategoryProduct`** TypeScript type and the new **`products`** SQL table. Do not conflate the two "products." `Product.slug` (T-001's schema decision, (b) above) is a category's permanent identity and public URL segment, and is **live in code today**: `slugify()`, `dedupeSlug()`, and the read-time carry-forward/fallback logic all sit in `src/lib/site-content.ts::normalizeProducts()`; the save-time write path (collision-checked, then id-scoped per decision (d)) is `resolveCategoriesForSave()`/`updateSettings()`, which T-003 implemented — see the Database section above for the full contract. *(Corrected 2026-09-27 — this bullet previously called `Product.slug` "not yet in code," true only before T-001 shipped it; flagged stale in `docs/MEMORY_BANK.md`'s T-001 entry and left uncorrected through T-003.)*
 - **Amendment, 2026-09-27 (T-003 — Category identity).** `Product` (category) now also carries `Product.id` — a category's own internal identity, server-issued, never public, never displayed, never one of `ObjectListEditor`'s editable fields, never written to or read from `public.products`. Do not confuse this with `CategoryProduct.id`, the real DB-generated UUID primary key of an individual product **row** in `public.products`, used throughout `products-actions.ts`. Two different types, two different `id` fields, two different purposes: `Product.id` lets a `business` save tell "the same category, edited" apart from "a different category" (`resolveCategoriesForSave`/`updateSettings` in `settings-actions.ts`) — and that same stored value is also what `products-actions.ts`'s `checkCategoryAttachable()` reads, via the shared `readStoredCategoryIdentities()` helper exported from `site-content.ts`, to decide whether a category has been bootstrapped and may accept products (Database section above, the same-day "legacy (id-less) categories" follow-up). `CategoryProduct.id` remains the separate thing every read/write in `products-actions.ts` keys on for product rows themselves. *(Corrected 2026-09-27 — this bullet previously said `Product.id` is "never read outside `resolveCategoriesForSave`/`updateSettings`"; true only until the same-day bootstrap follow-up extended `readStoredCategoryIdentities()` into `products-actions.ts` too.)*
 - **Server Action failure-reporting convention (2026-09-27; prerequisite for SEC-HIGH-4, `docs/SECURITY.md`, due with T-004).** `products-actions.ts` (T-003) already returns a typed result from every write action — `{ ok: true, ... } | { ok: false, error: string }` — for its caller to branch on. `settings-actions.ts`'s `updateSettings` still `throw`s a plain `Error` for the equivalent class of user-facing guard failure (auth, slug/id collision, delete-guard, malformed payload); Next.js redacts a thrown Server Action message to a generic string in production, and none of the 7 settings-page admin clients catch it today. Convention going forward: **a user-facing guard failure is returned as a typed `{ ok: false, error }` result, never thrown; `throw` is reserved for genuinely unexpected/infrastructure failures** (a DB connection error, a bug), where falling through to a generic error boundary is the correct behavior. Every caller of a Server Action that can return `{ ok: false }` must handle that branch — awaiting the call and ignoring the result is a bug. This entry does not itself convert `updateSettings` — that conversion is SEC-HIGH-4's fix, owned by whichever ticket picks it up — it only fixes the pattern so T-004 and later admin work don't each invent a different shape.
-- `next.config.ts` defines only `redirects()` — no `images.remotePatterns`. Every Supabase-hosted / user-uploaded image is rendered with a plain `<img>`, never `next/image` (confirmed: the only `next/image` usage in the tree is `BrandLogo.tsx`, pointing at a local file). If you introduce `next/image` for a remote/Supabase URL, it will fail until you add `remotePatterns`.
+- `next.config.ts` defines `redirects()` and no `images.remotePatterns`. From T-006 it also sets `agentRules: false` and `logging: { serverFunctions: false }` (Frontend → Next.js 16.3.6 decision (c), 2026-09-28). Don't remove either key without a new `/architect` entry. Every Supabase-hosted / user-uploaded image is rendered with a plain `<img>`, never `next/image` (confirmed: the only `next/image` usage in the tree is `BrandLogo.tsx`, pointing at a local file). If you introduce `next/image` for a remote/Supabase URL, it will fail until you add `remotePatterns`.
 - `pg` (`^8.19.0`) is a `devDependency` with no matching `import`/`require` anywhere under `src/` — looks unused today; confirm before removing (it may back an uncommitted one-off script).
 - No `supabase/` directory (CLI project, migrations) exists — do not assume `supabase db push`/migrations tooling is available for this project. Schema changes go through the SQL editor by hand.

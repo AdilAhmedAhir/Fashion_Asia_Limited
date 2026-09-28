@@ -1,0 +1,26 @@
+# GET http://localhost:3001/admin/login
+# 2026-09-28T15:05:54Z
+> GET /admin/login HTTP/1.1
+> Host: localhost:3001
+> User-Agent: curl/8.7.1
+> Accept: */*
+> 
+
+HTTP/1.1 200 OK
+Vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch, Accept-Encoding
+x-nextjs-cache: HIT
+x-nextjs-prerender: 1
+x-nextjs-prerender: 1
+x-nextjs-stale-time: 300
+X-Powered-By: Next.js
+Cache-Control: s-maxage=31536000
+ETag: "ld01n6lgnvc06"
+Content-Type: text/html; charset=utf-8
+Content-Length: 15558
+Date: Mon, 28 Sep 2026 15:05:54 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+
+# body: 15558 bytes; first 300 bytes:
+<!DOCTYPE html><html lang="en" class="inter_c15e96cb-module__0bjUvq__variable playfair_display_fed1534a-module__F9WnGq__variable"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="preload" href="/_next/static/media/2a65768255d6b625-s.p.3u4ll
+# admin-content markers in body: none

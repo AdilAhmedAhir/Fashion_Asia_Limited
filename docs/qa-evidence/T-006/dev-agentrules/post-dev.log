@@ -1,0 +1,31 @@
+# POST-DEV checks 2026-09-28T15:16:47Z (dev server on :3000 started 15:15:42Z, stopped 15:16:32Z)
+1) AGENTS.md sha256 branch=96aacc614c1ee9a3085814f48b61ba41bb40a2ca3911e0a42d3cb4bb65497205 main=96aacc614c1ee9a3085814f48b61ba41bb40a2ca3911e0a42d3cb4bb65497205 -> BYTE-IDENTICAL
+   git diff main -- AGENTS.md: empty
+   AGENTS.md mtime: 2026-08-10T13:18:49 (pre-dev: 2026-08-10T13:18:49)
+2) CLAUDE.md anywhere in repo (case-insensitive, incl. node_modules/.next/.claude):
+   (end of list — empty means none)
+3) git status --porcelain --untracked-files=all: CHANGED
+2a3
+>  M docs/SECURITY.md
+   incl. ignored files (excluding node_modules/, .next/): CHANGED
+2a3
+>  M docs/SECURITY.md
+4) dev log scan:
+   'Generated ... for AI agents' lines: 0
+   lines mentioning AGENTS.md / CLAUDE.md: 0
+   Server Function log lines ('└─ ƒ name(args)'): 0
+   lines naming any Server Action function: 0
+   request log lines:
+      GET / 200 in 2.9s (next.js: 1763ms, proxy.ts: 39ms, application-code: 1126ms)
+      GET /what-we-do 200 in 698ms (next.js: 394ms, proxy.ts: 4ms, application-code: 301ms)
+      GET /what-we-do/sportswear 200 in 1269ms (next.js: 516ms, proxy.ts: 1.9ms, application-code: 751ms)
+      GET /contact 200 in 254ms (next.js: 208ms, proxy.ts: 4ms, application-code: 42ms)
+      GET / 200 in 315ms (next.js: 8ms, proxy.ts: 6ms, application-code: 300ms)
+   POST requests in log: 0
+
+# Attribution of the single git-status difference (3) above:
+#   docs/SECURITY.md mtime 2026-09-28T15:16:46Z = 14 s AFTER the dev server was stopped (15:16:32Z; :3000 confirmed no listener, curl 000).
+#   Diff is a pure 4-line append headed '*Amended 2026-09-28 (T-006 CSO review; appended, rows above left as written):*'
+#   = /cso review T-006, running in parallel per the dispatch, writing its own file. Next's only project-dir writer (generate-agent-files.js) targets AGENTS.md/CLAUDE.md only.
+#   Excluding that concurrent /cso write, git status post-dev == pre-dev:
+#   IDENTICAL (196 lines)

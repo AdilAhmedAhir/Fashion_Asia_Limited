@@ -1,0 +1,13 @@
+# Server Function logging during the dev run: was it OBSERVABLE? — No (vacuous under a read-only plan). 2026-09-28T15:17:36Z
+# Why: 16.3.6 logs a Server Function only when it runs through the action handler (a POST with a Next-Action id):
+#   action-handler.js:822: if (process.env.NODE_ENV === 'development' && ctx.renderOpts.logServerFunctions && // TODO: For now, skip logging for 'use cache' Server Functions as the
+#   Public pages call 'use server' reads (getSettings, getCategoryProducts, ...) directly from Server Components — not via the action handler.
+#   No client component calls a Server Action on mount (only on submit/click): ContactForm, CareerPageClient, GrievanceForm submit via useActionState;
+#   CategoryProductsManager's useEffect (:94-101) only manages focus and is behind the admin gate anyway.
+#   The dev log above has 0 POST lines, so zero Server Functions executed; absence of '└─ ƒ' lines therefore proves nothing on its own.
+# What does prove the setting (static + resolved, see docs/qa-evidence/T-006/static/next-config-resolution.log):
+#   loadConfig(PHASE_DEVELOPMENT_SERVER) -> logging.serverFunctions=false; derived renderOpts.logServerFunctions=false.
+# Settles /architect's open question on FormData expansion (Next's own formatter, run locally with dummy values):
+#   (prevState, FormData)  -> {"error":null}, {}
+#   (plain object input)   -> {"category_slug":"sportswear","description":"desc","image":"https://x/y.jpg","...":"1 item not stringified"}
+#   => FormData prints as {} in 16.3.6 (credentials/PII not printed even with the flag on); plain-object args ARE printed (depth 2, breadth 3).

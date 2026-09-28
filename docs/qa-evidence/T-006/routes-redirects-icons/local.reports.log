@@ -1,0 +1,10 @@
+# GET http://localhost:3001/reports (no redirect following) 2026-09-28T15:09:20Z
+HTTP/1.1 308 Permanent Redirect
+location: /sustainability#reports
+Refresh: 0;url=/sustainability#reports
+Date: Mon, 28 Sep 2026 15:09:20 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body bytes: 23  sha256: cf570826ae31c5be526c4950c4afa2e195a975a7c2e95a6b701e486ce368543b

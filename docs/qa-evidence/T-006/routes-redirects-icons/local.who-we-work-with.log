@@ -1,0 +1,10 @@
+# GET http://localhost:3001/who-we-work-with (no redirect following) 2026-09-28T15:09:20Z
+HTTP/1.1 308 Permanent Redirect
+location: /global-partner
+Refresh: 0;url=/global-partner
+Date: Mon, 28 Sep 2026 15:09:20 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body bytes: 15  sha256: 026cd878fb43e6146965207aad8cf267816f141b96ad261f05a2acdbe4f08d8c

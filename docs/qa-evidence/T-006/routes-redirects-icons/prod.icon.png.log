@@ -1,0 +1,19 @@
+# GET https://www.fal.com.bd/icon.png (no redirect following) 2026-09-28T15:09:47Z
+HTTP/2 200 
+accept-ranges: bytes
+access-control-allow-origin: *
+age: 0
+cache-control: public, max-age=0, must-revalidate
+content-disposition: inline
+content-type: image/png
+date: Mon, 28 Sep 2026 15:09:48 GMT
+etag: "1c301477ac68653a121348a8f6b18d2b"
+server: Vercel
+strict-transport-security: max-age=63072000
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-matched-path: /icon.png
+x-vercel-cache: PRERENDER
+x-vercel-id: bom1::jp44h-1790608187952-b0714d88f009
+content-length: 25648
+
+# body bytes: 25648  sha256: 73ebfbd1fcb461dd89b183b8ca315bdcbc3e3bfcf7e60162ccd05301d37e8f57

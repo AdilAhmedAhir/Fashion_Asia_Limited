@@ -1,0 +1,11 @@
+page	local_status	prod_status	local_setcookie	prod_setcookie	local_app_error	visible_404_text_local	visible_404_text_prod	content_diff_lines	diff_is_only_icon_query
+/	200	200	0	0	0	0	0	4	yes
+/what-we-do	200	200	0	0	0	0	0	4	yes
+/what-we-do/t-shirts	200	200	0	0	0	0	0	4	yes
+/what-we-do/polo-shirts	200	200	0	0	0	0	0	4	yes
+/what-we-do/tank-tops	200	200	0	0	0	0	0	4	yes
+/what-we-do/dresses	200	200	0	0	0	0	0	4	yes
+/what-we-do/sleepwear	200	200	0	0	0	0	0	4	yes
+/what-we-do/leggings	200	200	0	0	0	0	0	4	yes
+/what-we-do/sportswear	200	200	0	0	0	0	0	4	yes
+/what-we-do/heavy-jersey-products	200	200	0	0	0	0	0	4	yes

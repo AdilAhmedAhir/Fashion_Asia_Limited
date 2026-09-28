@@ -1,0 +1,12 @@
+# GET https://www.fal.com.bd/reports (no redirect following) 2026-09-28T15:09:20Z
+HTTP/2 308 
+cache-control: public, max-age=0, must-revalidate
+content-type: text/plain
+date: Mon, 28 Sep 2026 15:09:20 GMT
+location: /sustainability#reports
+refresh: 0;url=/sustainability#reports
+server: Vercel
+strict-transport-security: max-age=63072000
+x-vercel-id: bom1::7lzl6-1790608160602-5b8b7ca5af0f
+
+# body bytes: 15  sha256: 7c040f8633b8823d72ed63da9b3b2dfe9846e912c66a64c9433ec9c4815d76c2

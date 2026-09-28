@@ -1,0 +1,13 @@
+--- prod/what-we-do/leggings
++++ local:3001/what-we-do/leggings
+@@ -15,8 +15,8 @@
+ [meta twitter:description] Modern, compliant, and sustainability-driven knit garments manufacturer.
+ [meta twitter:image] https://fashionasialtd.com/images/client/og-image.jpg
+ [link canonical] https://fashionasialtd.com/what-we-do/leggings
+-[link icon] /icon.png?icon.0cdd14b0.png sizes=1080x1080
+-[link apple-touch-icon] /apple-icon.png?apple-icon.0cdd14b0.png sizes=1080x1080
++[link icon] /icon.png?icon.2v7xyt03774y8.png sizes=1080x1080
++[link apple-touch-icon] /apple-icon.png?apple-icon.2v7xyt03774y8.png sizes=1080x1080
+ [h1] Leggings
+ [a href] /
+ [a href] /

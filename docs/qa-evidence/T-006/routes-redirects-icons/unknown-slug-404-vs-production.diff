@@ -1,0 +1,13 @@
+# Unknown slug /what-we-do/nonexistent-category-xyz: local :3001 (16.3.6) vs production (16.1.6), normalized content. Both 404. 2026-09-28T15:20:45Z
+--- prod
++++ local:3001
+@@ -23,6 +23,6 @@
+ [meta twitter:description] Modern, compliant, and sustainability-driven knit garments manufacturer.
+ [meta twitter:image] https://fashionasialtd.com/images/client/og-image.jpg
+ [link canonical] https://fashionasialtd.com
+-[link icon] /icon.png?icon.0cdd14b0.png sizes=1080x1080
+-[link apple-touch-icon] /apple-icon.png?apple-icon.0cdd14b0.png sizes=1080x1080
++[link icon] /icon.png?icon.2v7xyt03774y8.png sizes=1080x1080
++[link apple-touch-icon] /apple-icon.png?apple-icon.2v7xyt03774y8.png sizes=1080x1080
+ [text]
+# Only difference: the framework's icon cache-buster query (same as every other page).

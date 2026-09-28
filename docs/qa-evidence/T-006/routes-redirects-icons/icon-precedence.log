@@ -1,0 +1,18 @@
+# /icon.png: which file is served, and is the difference from production a T-006 regression? 2026-09-28T15:18:14Z
+## Two files map to the URL /icon.png in this repo (both since 2026-03, commits 2c2f967 / d6b779f):
+   public/icon.png  75560 B  4097x4096  sha256:79f057621ee4
+   src/app/icon.png  25648 B  1080x1080  sha256:73ebfbd1fcb4
+   src/app/apple-icon.png  25648 B  1080x1080  sha256:73ebfbd1fcb4
+## Served bytes (see *.log in this folder):
+   local.icon.png                               75560 B sha256:79f057621ee4
+   local.icon.png_icon.2v7xyt03774y8.png        75560 B sha256:79f057621ee4
+   prod.icon.png                                25648 B sha256:73ebfbd1fcb4
+   prod.icon.png_icon.0cdd14b0.png              25648 B sha256:73ebfbd1fcb4
+   local.apple-icon.png                         25648 B sha256:73ebfbd1fcb4
+   prod.apple-icon.png                          25648 B sha256:73ebfbd1fcb4
+## next start filesystem lookup order, next@16.1.6 (npm pack, scratchpad) vs next@16.3.6 (node_modules):
+   16.1.6: nextStaticFolder legacyStaticFolder publicFolder appFile pageFile 
+   16.3.6: nextStaticFolder legacyStaticFolder publicFolder appFile pageFile 
+## Conclusion: identical order in both versions -> under 'next start', public/icon.png has always shadowed the app/icon.png metadata route.
+   Production (Vercel, 16.1.6) serves the metadata route (25648 B). Not introduced by T-006; a pre-existing next-start-vs-Vercel divergence from the duplicate file.
+   The <link rel=icon> cache-buster changed format (?icon.0cdd14b0.png -> ?icon.2v7xyt03774y8.png): framework-generated, file bytes unchanged.

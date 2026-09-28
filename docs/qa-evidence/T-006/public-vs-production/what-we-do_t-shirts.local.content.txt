@@ -1,0 +1,104 @@
+[title x1] T-Shirts | Fashion Asia Limited
+[meta theme-color] #0a0a0a
+[meta color-scheme] dark
+[meta description] T-Shirts from Fashion Asia Limited — a 100%-export-oriented knitwear manufacturer with 26 production lines and 800,000 pieces monthly capacity.
+[meta author] Fashion Asia Limited
+[meta keywords] Knit Garments,Apparel Manufacturing,Bangladesh RMG,LEED Gold Factory,Sustainable Fashion,Northern Tosrifa Group
+[meta creator] Fashion Asia Limited
+[meta robots] index, follow
+[meta googlebot] index, follow, max-video-preview:-1, max-image-preview:large, max-snippet:-1
+[meta og:title] T-Shirts
+[meta og:description] T-Shirts from Fashion Asia Limited — a 100%-export-oriented knitwear manufacturer with 26 production lines and 800,000 pieces monthly capacity.
+[meta og:url] https://fashionasialtd.com/what-we-do/t-shirts
+[meta twitter:card] summary_large_image
+[meta twitter:title] Fashion Asia Limited | Green Powered Innovation
+[meta twitter:description] Modern, compliant, and sustainability-driven knit garments manufacturer.
+[meta twitter:image] https://fashionasialtd.com/images/client/og-image.jpg
+[link canonical] https://fashionasialtd.com/what-we-do/t-shirts
+[link icon] /icon.png?icon.2v7xyt03774y8.png sizes=1080x1080
+[link apple-touch-icon] /apple-icon.png?apple-icon.2v7xyt03774y8.png sizes=1080x1080
+[h1] T-Shirts
+[a href] /
+[a href] /
+[a href] /who-we-are
+[a href] /what-we-do
+[a href] /global-partner
+[a href] /sustainability
+[a href] /life-at-fashion-asia
+[a href] /contact
+[a href] /what-we-do
+[a href] /contact
+[a href] /
+[a href] /who-we-are
+[a href] /what-we-do
+[a href] /global-partner
+[a href] /sustainability
+[a href] /sustainability#reports
+[a href] /life-at-fashion-asia
+[a href] /career
+[a href] /contact
+[a href] /grievance
+[a href] mailto:admin@fashionasialtd.com
+[a href] tel:+8801711691366
+[img src] /logo.png
+[img alt] ""
+[img src] /_next/image?url=%2Flogo.png&w=96&q=75
+[img srcset] /_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+[img alt] "Fashion Asia Limited Logo"
+[img src] /_next/image?url=%2Flogo.png&w=96&q=75
+[img srcset] /_next/image?url=%2Flogo.png&w=48&q=75 1x, /_next/image?url=%2Flogo.png&w=96&q=75 2x
+[img alt] "Fashion Asia Limited Logo"
+[text]
+  F
+  A
+  S
+  H
+  I
+  O
+  N
+  A
+  S
+  I
+  A
+  LIMITED
+  0%
+  FASHION ASIA
+  Limited
+  Home
+  Who We Are
+  What We Do
+  Global Partner
+  Sustainability
+  Life at Fashion Asia
+  Connect
+  What We Do
+  T-Shirts
+  All Products
+  Coming Soon
+  We're still building out this part of the catalog. In the meantime, contact us
+  to ask about our T-Shirts range directly.
+  FASHION ASIA
+  Limited
+  A 100% export-oriented knitwear manufacturing company and proud sister concern of Northern Tosrifa Group, operating from a LEED Gold certified facility in Sreepur, Bangladesh.
+  LEED Gold
+  WRAP
+  BSCI
+  GOTS
+  Company
+  Who We Are
+  What We Do
+  Global Partner
+  Sustainability
+  Reports & Publications
+  Life at Fashion Asia
+  Careers
+  Career
+  Contact Us
+  Grievance Cell
+  Connect
+  admin@fashionasialtd.com
+  +880 1711 691 366
+  © 2026 Fashion Asia Limited. All Rights Reserved.
+  |
+  A Concern of Northern Tosrifa Group
+  fashionasialtd.com

@@ -1,0 +1,27 @@
+start 2026-09-28T15:15:42Z
+
+> fashion-asia-limited@0.1.0 dev
+> next dev
+
+▲ Next.js 16.3.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://192.168.68.100:3000
+- Environments: .env.local
+✓ Ready in 339ms
+✓ Running next.config.ts took 92ms
+⚠ The "middleware" file convention is deprecated. Please use "proxy" instead.
+
+  To migrate automatically, run:
+  npx @next/codemod@canary middleware-to-proxy .
+
+  Learn more: https://nextjs.org/docs/messages/middleware-to-proxy
+
+Browserslist: browsers data (caniuse-lite) is 7 months old. Please run:
+  npx update-browserslist-db@latest
+  Why you should do it regularly: https://github.com/browserslist/update-db#readme
+ GET / 200 in 2.9s (next.js: 1763ms, proxy.ts: 39ms, application-code: 1126ms)
+ GET /what-we-do 200 in 698ms (next.js: 394ms, proxy.ts: 4ms, application-code: 301ms)
+ GET /what-we-do/sportswear 200 in 1269ms (next.js: 516ms, proxy.ts: 1.9ms, application-code: 751ms)
+ GET /contact 200 in 254ms (next.js: 208ms, proxy.ts: 4ms, application-code: 42ms)
+ GET / 200 in 315ms (next.js: 8ms, proxy.ts: 6ms, application-code: 300ms)
+[?25h

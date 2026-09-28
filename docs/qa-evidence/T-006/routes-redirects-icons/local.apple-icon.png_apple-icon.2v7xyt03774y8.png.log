@@ -1,0 +1,12 @@
+# GET http://localhost:3001/apple-icon.png?apple-icon.2v7xyt03774y8.png (no redirect following) 2026-09-28T15:09:49Z
+HTTP/1.1 200 OK
+vary: rsc, next-router-state-tree, next-router-prefetch, next-router-segment-prefetch
+x-nextjs-cache: HIT
+cache-control: public, max-age=0, must-revalidate
+content-type: image/png
+Date: Mon, 28 Sep 2026 15:09:49 GMT
+Connection: keep-alive
+Keep-Alive: timeout=5
+Transfer-Encoding: chunked
+
+# body bytes: 25648  sha256: 73ebfbd1fcb461dd89b183b8ca315bdcbc3e3bfcf7e60162ccd05301d37e8f57

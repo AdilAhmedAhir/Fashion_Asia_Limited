@@ -1,0 +1,66 @@
+label	status	location	set_cookie_count	content_type	body_bytes	admin_markers	request
+admin.plain	307	/admin/login	0	-	12	none	GET /admin 
+admin.rsc	307	/admin/login	0	-	12	none	GET /admin -H RSC: 1
+admin.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin -H RSC: 1 -H Next-Router-Prefetch: 1
+admin.dot-rsc	307	/admin/login	0	-	12	none	GET /admin.rsc 
+admin.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin -H x-nextjs-data: 1
+admin_business.plain	307	/admin/login	0	-	12	none	GET /admin/business 
+admin_business.rsc	307	/admin/login	0	-	12	none	GET /admin/business -H RSC: 1
+admin_business.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/business -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_business.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/business.rsc 
+admin_business.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/business -H x-nextjs-data: 1
+admin_careers.plain	307	/admin/login	0	-	12	none	GET /admin/careers 
+admin_careers.rsc	307	/admin/login	0	-	12	none	GET /admin/careers -H RSC: 1
+admin_careers.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/careers -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_careers.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/careers.rsc 
+admin_careers.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/careers -H x-nextjs-data: 1
+admin_homepage.plain	307	/admin/login	0	-	12	none	GET /admin/homepage 
+admin_homepage.rsc	307	/admin/login	0	-	12	none	GET /admin/homepage -H RSC: 1
+admin_homepage.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/homepage -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_homepage.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/homepage.rsc 
+admin_homepage.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/homepage -H x-nextjs-data: 1
+admin_media.plain	307	/admin/login	0	-	12	none	GET /admin/media 
+admin_media.rsc	307	/admin/login	0	-	12	none	GET /admin/media -H RSC: 1
+admin_media.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/media -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_media.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/media.rsc 
+admin_media.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/media -H x-nextjs-data: 1
+admin_reports.plain	307	/admin/login	0	-	12	none	GET /admin/reports 
+admin_reports.rsc	307	/admin/login	0	-	12	none	GET /admin/reports -H RSC: 1
+admin_reports.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/reports -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_reports.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/reports.rsc 
+admin_reports.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/reports -H x-nextjs-data: 1
+admin_settings.plain	307	/admin/login	0	-	12	none	GET /admin/settings 
+admin_settings.rsc	307	/admin/login	0	-	12	none	GET /admin/settings -H RSC: 1
+admin_settings.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/settings -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_settings.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/settings.rsc 
+admin_settings.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/settings -H x-nextjs-data: 1
+admin_submissions.plain	307	/admin/login	0	-	12	none	GET /admin/submissions 
+admin_submissions.rsc	307	/admin/login	0	-	12	none	GET /admin/submissions -H RSC: 1
+admin_submissions.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/submissions -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_submissions.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/submissions.rsc 
+admin_submissions.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/submissions -H x-nextjs-data: 1
+admin_sustainability.plain	307	/admin/login	0	-	12	none	GET /admin/sustainability 
+admin_sustainability.rsc	307	/admin/login	0	-	12	none	GET /admin/sustainability -H RSC: 1
+admin_sustainability.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/sustainability -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_sustainability.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/sustainability.rsc 
+admin_sustainability.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/sustainability -H x-nextjs-data: 1
+admin_who-we-are.plain	307	/admin/login	0	-	12	none	GET /admin/who-we-are 
+admin_who-we-are.rsc	307	/admin/login	0	-	12	none	GET /admin/who-we-are -H RSC: 1
+admin_who-we-are.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/who-we-are -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_who-we-are.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/who-we-are.rsc 
+admin_who-we-are.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/who-we-are -H x-nextjs-data: 1
+admin_who-we-work-with.plain	307	/admin/login	0	-	12	none	GET /admin/who-we-work-with 
+admin_who-we-work-with.rsc	307	/admin/login	0	-	12	none	GET /admin/who-we-work-with -H RSC: 1
+admin_who-we-work-with.rsc-prefetch	307	/admin/login	0	-	12	none	GET /admin/who-we-work-with -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_who-we-work-with.dot-rsc	307	/admin/login	0	-	12	none	GET /admin/who-we-work-with.rsc 
+admin_who-we-work-with.x-nextjs-data	307	/admin/login	0	-	12	none	GET /admin/who-we-work-with -H x-nextjs-data: 1
+admin_business.segment-prefetch-tree	307	/admin/login	0	-	12	none	GET /admin/business -H RSC: 1 -H Next-Router-Prefetch: 1 -H Next-Router-Segment-Prefetch: /_tree
+admin_business.segments-path	307	/admin/login	0	-	12	none	GET /admin/business.segments/_tree.segment.rsc -H RSC: 1 -H Next-Router-Prefetch: 1
+admin_business.rsc-query	307	/admin/login	0	-	12	none	GET /admin/business?_rsc=qa01 -H RSC: 1
+admin_business.trailing-slash	308	/admin/business	0	-	15	none	GET /admin/business/ 
+admin_business.uppercase	404	-	0	text/html; charset=utf-8	14989	none	GET /ADMIN/business 
+admin_business.pct-encoded-a	404	-	0	text/html; charset=utf-8	14989	none	GET /%61dmin/business 
+admin_business.double-slash	308	/admin/business	0	-	15	none	GET //admin/business 
+admin.x-nextjs-data-plus-rsc	307	/admin/login	0	-	12	none	GET /admin -H x-nextjs-data: 1 -H RSC: 1
+admin_login.plain	200	-	0	text/html; charset=utf-8	15558	none	GET /admin/login 
+admin_login.rsc	307	/admin/login?_rsc	0	-	0	none	GET /admin/login -H RSC: 1

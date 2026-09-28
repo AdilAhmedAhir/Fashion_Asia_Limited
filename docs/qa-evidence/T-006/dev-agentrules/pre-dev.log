@@ -1,0 +1,10 @@
+# PRE-DEV snapshot 2026-09-28T15:15:36Z
+AGENTS.md (branch) sha256: 96aacc614c1ee9a3085814f48b61ba41bb40a2ca3911e0a42d3cb4bb65497205
+AGENTS.md (main)   sha256: 96aacc614c1ee9a3085814f48b61ba41bb40a2ca3911e0a42d3cb4bb65497205
+AGENTS.md mtime: 2026-08-10T13:18:49
+CLAUDE.md anywhere in repo (case-insensitive, incl. node_modules/.next/.claude):
+  (end of list)
+agent detection in this shell env (inherited by npm run dev):
+  hasCurrentAgentRules(repo) -> false
+  getAgentName() -> "claude-code_2-1-281_agent"
+ports: 3000 listener? none

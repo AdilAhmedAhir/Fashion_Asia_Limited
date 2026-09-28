@@ -1,0 +1,6 @@
+# package.json identity, 2026-09-28T15:00:24Z
+branch  : 26068c14d0df4a0c5705b4c92c1c31ec506b41476aacc412bc7924a28e99c375
+main    : 26068c14d0df4a0c5705b4c92c1c31ec506b41476aacc412bc7924a28e99c375
+lead-dev pre-bump hash (scratchpad hashes-pre.txt): 26068c14d0df4a0c5705b4c92c1c31ec506b41476aacc412bc7924a28e99c375
+git diff main -- package.json : 0 bytes
+declared range: ^16.1.6   lockfile root range: ^16.1.6
