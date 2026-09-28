@@ -261,6 +261,25 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Backend-only row)
   - **Notes:** Ranked #12. This has been live since the 2026-09-28 deploy: every crawl sees all 17 URLs as "just modified". T-005 WARN-1's comment-only fix rides along with T-018 instead, which already edits that function under `/cso review`. §10 is inert, so there's no `/seo` review.
 
+## GENESIS blueprint follow-up — 2026-09-28 (A-Team V7)
+
+- [ ] **T-023** [db] [sec] — Admin allowlist: only named FAL admins can use `/admin` or write data, even if Supabase sign-ups are ever turned back on
+  - **Source:** GENESIS GATE 2 (the blueprint the owner approved on 2026-09-28); `docs/RISKS.md` R1; `docs/SECURITY.md` SEC-HIGH-2, plus `/cso`'s 2026-09-28 recommendation to rank an admin-role fix above T-015 and T-018.
+  - **Files:**
+    - a new `db/migrations/0002_admin-allowlist.sql` (`supabase-engineer`);
+    - `src/lib/supabase/middleware.ts` (the `/admin` gate checks the allowlist);
+    - one shared `requireAdmin()` replacing the per-file session checks in `settings-actions.ts`, `products-actions.ts`, `jobs-actions.ts` and `media-actions.ts`;
+    - every `authenticated` RLS policy, including `submissions` SELECT;
+    - `supabase-schema.sql` and `docs/DATA_MODEL.md`.
+  - **Acceptance:**
+    - A signed-in account that **isn't** on the allowlist can't reach `/admin`: it's redirected, with an honest "not authorized" message. Every writing Server Action returns `{ ok: false, error: "…not authorized…" }` for it, and RLS denies its reads and writes on every table, `submissions` included. Test this as another user: the migration's VERIFY block gives the owner an SQL-editor check that impersonates a non-admin, and the manual checklist covers the UI.
+    - The existing FAL admin account keeps full access, confirmed by the owner's checklist.
+    - The allowlist lives in the database, not in code. Adding or removing an admin is a documented owner SQL step (`docs/DATA_MODEL.md`).
+    - No new blanket `USING (true)` policy for `authenticated`.
+    - `npx tsc --noEmit` and `npm run build` are clean. The production-build check passes, because the gate lives in middleware.
+  - **Sequence:** `premortem-planner` → **`/debate`** (a one-way door: allowlist table, JWT custom claim, or app-only check) → owner decision recorded in `docs/DECISIONS.md` → `supabase-engineer` (migration) → `security-reviewer` → **HARD STOP: the owner applies the SQL** → `/build` (middleware + `requireAdmin`) → `security-reviewer` → `/qa` (production build + owner checklist) → review → merge.
+  - **Notes:** Until this ships, keeping Supabase sign-ups **OFF** is the only safeguard. It's a one-way door because it changes every access policy. Rank it ahead of T-018 and T-019: it's the structural fix those findings keep pointing at.
+
 ### Dependency Order
 
 **Refreshed 2026-09-28 (fourth `/pm` pass).** The T-005, T-012 and T-004 entries are gone: all three merged, shipped in the 2026-09-28 deploy, and were archived into `docs/MEMORY_BANK.md` §12 (`87e7a09`, `846ac6e`). The earlier "consider landing before T-004" notes on T-010 and T-013 are also superseded. T-004 built a new component with stable row keys, so it doesn't extend `ObjectListEditor`, and its ▲/▼ controls call `reorderCategoryProducts` directly on production. Everything is ranked by live risk to the client now that Sprint 1 is on production. `/system-architect sprint` stops at `/archivist` after the 3rd merge, so items 1–3 are what ship next. Nothing reaches production until the user types "deploy" again.
