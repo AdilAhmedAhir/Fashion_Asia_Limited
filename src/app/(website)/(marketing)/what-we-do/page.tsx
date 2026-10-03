@@ -3,7 +3,9 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import CategoryCardGrid, { toCategoryCards } from "@/components/catalog/CategoryCardGrid";
 import { getSettings } from "@/app/actions/settings-actions";
 import { normalizeProducts } from "@/lib/site-content";
-import { ArrowRight } from "lucide-react";
+import { PRODUCTS_PATH } from "@/lib/nav";
+import Link from "next/link";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { Fragment } from "react";
 import type { Metadata } from "next";
 
@@ -112,9 +114,28 @@ export default async function BusinessPage() {
                     </div>
                 </ScrollReveal>
 
-                {/* One photo card per category, each linking to its own detail
-                    page (T-005). */}
-                <CategoryCardGrid categories={categories} hrefBase="/what-we-do" />
+                {/* One photo card per category, each linking to its own page
+                    under /products (T-025; T-005 put them under /what-we-do). */}
+                <CategoryCardGrid categories={categories} hrefBase={PRODUCTS_PATH} />
+
+                {/* The site's outline pill button, as on the homepage, with
+                    three deliberate differences: the foreground token instead
+                    of pure #fff text, a visible focus ring, and no hover glow.
+                    The glow is a box-shadow, and so is the focus ring, so
+                    animating one would fade the other in; only colours
+                    transition here, and the ring appears at once. */}
+                <ScrollReveal className="mt-12 w-fit">
+                    <Link
+                        href={PRODUCTS_PATH}
+                        className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-colors duration-300 hover:bg-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                    >
+                        View all products
+                        <ArrowUpRight
+                            aria-hidden="true"
+                            className="h-4 w-4 motion-safe:transition-transform motion-safe:duration-300 motion-safe:group-hover:rotate-45"
+                        />
+                    </Link>
+                </ScrollReveal>
             </section>
 
             {/* Showroom band — moved here from /global-partner. The photograph is

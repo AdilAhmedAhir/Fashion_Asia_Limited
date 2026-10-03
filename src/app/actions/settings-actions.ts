@@ -9,6 +9,7 @@ import {
     readStoredCategoryIdentities,
     type Product,
 } from "@/lib/site-content";
+import { PRODUCTS_PATH, categoryPath } from "@/lib/nav";
 
 // ============================================
 // SETTINGS CRUD
@@ -162,17 +163,20 @@ export async function updateSettings(key: string, value: Record<string, unknown>
     // who_we_are also supplies the culture pillars rendered on /life-at-fashion-asia.
     if (key === "who_we_are") revalidatePath("/life-at-fashion-asia");
 
-    // Each category's own detail page (T-005's /what-we-do/<slug> scheme),
-    // in addition to /what-we-do itself (already covered by SETTINGS_ROUTES
-    // above) — built only from the slugs this same save just resolved and
-    // validated, never a raw client-supplied string. A category add/rename/
-    // delete also changes sitemap.ts's own output (it lists one entry per
-    // live category), so the sitemap route is revalidated here too — it was
-    // not before T-005, which would have left a stale sitemap between
-    // deploys until its own time-based revalidation caught up.
+    // The /products overview (it shows every category's card) and each
+    // category's own page at /products/<slug> (T-025; T-005 put them under
+    // /what-we-do/<slug>, which now only redirects), in addition to
+    // /what-we-do itself (already covered by SETTINGS_ROUTES above) — built
+    // only from the slugs this same save just resolved and validated, never a
+    // raw client-supplied string. A category add/rename/delete also changes
+    // sitemap.ts's own output (it lists one entry per live category), so the
+    // sitemap route is revalidated here too — it was not before T-005, which
+    // would have left a stale sitemap between deploys until its own
+    // time-based revalidation caught up.
     if (savedCategories) {
+        revalidatePath(PRODUCTS_PATH);
         for (const category of savedCategories) {
-            revalidatePath(`/what-we-do/${category.slug}`);
+            revalidatePath(categoryPath(category.slug));
         }
         revalidatePath("/sitemap.xml");
     }

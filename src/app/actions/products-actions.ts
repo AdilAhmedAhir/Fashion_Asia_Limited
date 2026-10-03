@@ -25,6 +25,7 @@ import {
     type CategoryProduct,
     type CategoryProductInput,
 } from "@/lib/site-content";
+import { PRODUCTS_PATH, categoryPath } from "@/lib/nav";
 
 export type ProductActionResult =
     | { ok: true; product: CategoryProduct }
@@ -79,9 +80,13 @@ async function checkCategoryAttachable(categorySlug: string): Promise<CategoryAt
     return { attachable: false, reason: "not_found" };
 }
 
+// The two pages that show a category's products (T-025): its own page at
+// /products/<slug>, and the /products overview, which lists every category's
+// products. /what-we-do shows only the category cards, never products, and
+// /what-we-do/<slug> now only redirects, so neither is revalidated here.
 function revalidateCategory(categorySlug: string) {
-    revalidatePath(`/what-we-do/${categorySlug}`);
-    revalidatePath("/what-we-do");
+    revalidatePath(categoryPath(categorySlug));
+    revalidatePath(PRODUCTS_PATH);
 }
 
 function sanitizeInput(input: CategoryProductInput) {

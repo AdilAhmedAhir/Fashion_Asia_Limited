@@ -1,6 +1,7 @@
 import { MetadataRoute } from 'next';
 import { getSettings } from '@/app/actions/settings-actions';
 import { normalizeProducts } from '@/lib/site-content';
+import { PRODUCTS_PATH, categoryPath } from '@/lib/nav';
 
 // Async per Next's documented sitemap.ts data-fetching support. Category
 // entries are generated from the live category list (normalizeProducts())
@@ -16,8 +17,10 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const business = await getSettings('business');
     const categories = normalizeProducts(business.products);
 
+    // Category pages live under /products since T-025. The old
+    // /what-we-do/<slug> URLs only redirect, so they're no longer listed.
     const categoryEntries: MetadataRoute.Sitemap = categories.map((category) => ({
-        url: `${baseUrl}/what-we-do/${category.slug}`,
+        url: `${baseUrl}${categoryPath(category.slug)}`,
         lastModified: new Date(),
         changeFrequency: 'monthly',
         priority: 0.6,
@@ -38,6 +41,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         },
         {
             url: `${baseUrl}/what-we-do`,
+            lastModified: new Date(),
+            changeFrequency: 'monthly',
+            priority: 0.8,
+        },
+        {
+            url: `${baseUrl}${PRODUCTS_PATH}`,
             lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,

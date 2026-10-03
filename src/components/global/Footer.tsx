@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { BrandLogo } from "@/components/ui/BrandLogo";
+import { PRODUCTS_PATH } from "@/lib/nav";
 
 const footerLinks = [
     {
@@ -7,6 +8,7 @@ const footerLinks = [
         links: [
             { label: "Who We Are", href: "/who-we-are" },
             { label: "What We Do", href: "/what-we-do" },
+            { label: "Products", href: PRODUCTS_PATH },
             { label: "Global Partner", href: "/global-partner" },
             { label: "Sustainability", href: "/sustainability" },
             { label: "Reports & Publications", href: "/sustainability#reports" },

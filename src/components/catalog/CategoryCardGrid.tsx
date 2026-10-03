@@ -29,7 +29,7 @@ type PathStart =
 type CategoryCardGridProps = {
     categories: CategoryCardData[];
     /**
-     * The root-relative path the cards link under, such as "/what-we-do": each
+     * The root-relative path the cards link under, such as "/products": each
      * card links to `${hrefBase}/${slug}`. A trailing slash is stripped.
      */
     hrefBase: `/${PathStart}${string}`;
@@ -37,15 +37,21 @@ type CategoryCardGridProps = {
     className?: string;
 };
 
+// The runtime twin of PathStart: a slash, then a lowercase letter or digit.
+const PATH_START = /^\/[a-z0-9]/;
+
 // Backs up the type at runtime, in case a cast slips past it. Trailing
-// slashes are stripped, so "/what-we-do/" can't produce
-// "/what-we-do//t-shirts". A base that would still give an empty,
-// protocol-relative or doubled-slash href is refused outright, since a wrong
-// link is worse than a loud error.
+// slashes are stripped, so "/products/" can't produce "/products//t-shirts".
+// The first character after the slash is held to the same set PathStart
+// allows, which also refuses "/\host": browsers read a backslash as a slash,
+// so that href would be protocol-relative. A base that would still give an
+// empty, protocol-relative or doubled-slash href, or that holds a backslash
+// anywhere, is refused outright, since a wrong link is worse than a loud
+// error.
 function normalizeHrefBase(hrefBase: string): string {
     const base = hrefBase.replace(/\/+$/, "");
-    if (!base.startsWith("/") || base.includes("//")) {
-        throw new Error(`CategoryCardGrid: hrefBase must be a root-relative path such as "/what-we-do", got ${JSON.stringify(hrefBase)}.`);
+    if (!PATH_START.test(base) || base.includes("//") || base.includes("\\")) {
+        throw new Error(`CategoryCardGrid: hrefBase must be a root-relative path such as "/products", got ${JSON.stringify(hrefBase)}.`);
     }
     return base;
 }
@@ -107,7 +113,7 @@ function CategoryCard({ category, href }: { category: CategoryCardData; href: st
                     free text, so an over-long one would otherwise grow this
                     block past the top of the card and clip the title. */}
                 {category.description && (
-                    <p className="line-clamp-3 text-xs leading-relaxed text-white/70">
+                    <p className="line-clamp-3 break-words text-xs leading-relaxed text-white/70">
                         {category.description}
                     </p>
                 )}

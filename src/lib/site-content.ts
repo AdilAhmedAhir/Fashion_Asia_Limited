@@ -586,8 +586,8 @@ export function resolveCategoriesForSave(
             return {
                 ok: false,
                 error: claimant === title
-                    ? `Two categories are both named "${title}", which would both use the page /what-we-do/${slug}. Rename one of them and save again.`
-                    : `"${claimant}" and "${title}" would both use the page /what-we-do/${slug}. Rename one of them and save again.`,
+                    ? `Two categories are both named "${title}", which would both use the page /products/${slug}. Rename one of them and save again.`
+                    : `"${claimant}" and "${title}" would both use the page /products/${slug}. Rename one of them and save again.`,
             };
         }
         seenSlugs.set(slug, title);
