@@ -22,7 +22,10 @@ export default function Header() {
             <header
                 className={cn(
                     "fixed top-0 z-[1000] w-full transition-all duration-300 ease-in-out",
-                    scrolled ? "bg-background/90 py-4 backdrop-blur-md border-b border-white/5" : "bg-transparent py-6"
+                    scrolled ? "bg-background/90 py-4 backdrop-blur-md border-b border-white/5" : "bg-transparent py-6",
+                    // Opaque while the mobile menu is open, so menu items
+                    // scrolled up pass under the logo instead of showing through.
+                    menuOpen && "bg-background"
                 )}
             >
                 <div className="container flex items-center justify-between">

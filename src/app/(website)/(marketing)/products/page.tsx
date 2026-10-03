@@ -35,8 +35,11 @@ export const metadata: Metadata = {
 // products-actions.ts cover it after every category or product write.
 export const revalidate = 60;
 
-// A failed read is kept apart from an empty catalog, so the page never claims
-// that no products exist when it simply couldn't read them.
+// How the product read ended. getAllCategoryProducts() logs a database error
+// itself and returns {}, which looks exactly like an empty catalog, so that
+// case does show the Coming Soon note. Only a read that throws is kept apart
+// as { ok: false }: the category grid still shows, with no note claiming the
+// catalog is empty.
 type ProductRead = { ok: true; bySlug: Map<string, CategoryProduct[]> } | { ok: false };
 
 /** @purpose The /products overview: every category as a photo card, then a section of products for each category that has any. */
@@ -49,8 +52,13 @@ export default async function ProductsPage() {
         getAllCategoryProducts().then(
             // Own keys only: the grouped record is a plain object, so a
             // category slugged "constructor" must not resolve to
-            // Object.prototype's member of that name.
-            (grouped): ProductRead => ({ ok: true, bySlug: new Map(Object.entries(grouped)) }),
+            // Object.prototype's member of that name. The parameter is typed
+            // on purpose, so a change to getAllCategoryProducts()'s return
+            // shape fails to compile here instead of misreading products.
+            (grouped: Record<string, CategoryProduct[]>): ProductRead => ({
+                ok: true,
+                bySlug: new Map(Object.entries(grouped)),
+            }),
             (error: unknown): ProductRead => {
                 // Next's own control-flow signals pass straight through: at
                 // build time, cookies() throws one to mark this route as
@@ -78,8 +86,9 @@ export default async function ProductsPage() {
               .filter((section) => section.products.length > 0)
         : [];
 
-    // Only when the read worked and no displayed category has a product yet
-    // (the live catalog on 2026-10-03). There are no placeholder products.
+    // Only when the read didn't throw and no displayed category has a product
+    // yet (the live catalog on 2026-10-03; also a logged database error, see
+    // ProductRead). There are no placeholder products.
     const showComingSoon = productsBySlug !== null && sections.length === 0;
 
     return (

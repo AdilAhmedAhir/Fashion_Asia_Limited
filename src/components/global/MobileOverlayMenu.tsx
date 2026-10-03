@@ -24,7 +24,13 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
     return (
         <AnimatePresence>
             {isOpen && (
+                // data-lenis-prevent hands wheel and trackpad scrolling back to
+                // this overlay: otherwise Lenis takes the wheel for the page
+                // behind it, and a menu taller than the screen can't be
+                // scrolled with a mouse. The page itself stays put, because
+                // the effect above locks body scrolling while the menu is open.
                 <motion.div
+                    data-lenis-prevent
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}

@@ -92,7 +92,7 @@ export default async function CategoryDetailPage(
                 (d) (docs/TECH_STACK.md) makes that field internal-only: never
                 displayed, never in the DOM or the RSC/serialized payload. */}
             <PageHeader
-                tag="What We Do"
+                tag="Products"
                 title={category.title}
                 description={category.description}
             />

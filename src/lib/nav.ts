@@ -33,7 +33,7 @@ export const PRODUCTS_PATH = "/products";
  * Pass a normalized category's own `slug`, never a raw route param.
  */
 export function categoryPath(slug: string): string {
-    return `${PRODUCTS_PATH}/${slug}`;
+    return `${PRODUCTS_PATH}/${encodeURIComponent(slug)}`;
 }
 
 export const MAIN_NAV: NavLink[] = [
