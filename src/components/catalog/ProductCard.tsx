@@ -25,8 +25,11 @@ export default function ProductCard({ product, categoryTitle, headingLevel: Head
     // The photo shows the product itself, so unlike the decorative category-card
     // photo it gets a name (T-024, closing T-021). The database doesn't require
     // one (products.name defaults to ''), so a blank name falls back to the
-    // product's category rather than leaving the alt empty.
-    const alt = product.name.trim() || `Product from our ${categoryTitle} range`;
+    // product's category for the alt, and renders no heading rather than an
+    // empty one.
+    // Precondition: categoryTitle is non-empty (normalizeProducts drops categories with a blank title).
+    const name = product.name.trim();
+    const alt = name || `Product from our ${categoryTitle} range`;
 
     return (
         <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-surface">
@@ -38,9 +41,11 @@ export default function ProductCard({ product, categoryTitle, headingLevel: Head
                 className="h-48 w-full shrink-0 object-cover md:h-56"
             />
             <div className="flex flex-col gap-2 p-5">
-                <Heading className="font-serif text-lg font-bold leading-snug text-white">
-                    {product.name}
-                </Heading>
+                {name && (
+                    <Heading className="break-words font-serif text-lg font-bold leading-snug text-foreground">
+                        {name}
+                    </Heading>
+                )}
                 {product.description && (
                     <p className="text-sm leading-relaxed text-white/70">
                         {product.description}

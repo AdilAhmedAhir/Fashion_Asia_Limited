@@ -18,16 +18,42 @@ export function toCategoryCards(categories: Product[]): CategoryCardData[] {
     return categories.map(({ title, slug, description, image }) => ({ title, slug, description, image }));
 }
 
+// The character after hrefBase's leading slash. Requiring one makes a bare "/"
+// and a "//host" base type errors: either would turn a card's href
+// protocol-relative ("//t-shirts" points at a host named t-shirts).
+type PathStart =
+    | "a" | "b" | "c" | "d" | "e" | "f" | "g" | "h" | "i" | "j" | "k" | "l" | "m"
+    | "n" | "o" | "p" | "q" | "r" | "s" | "t" | "u" | "v" | "w" | "x" | "y" | "z"
+    | "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9";
+
 type CategoryCardGridProps = {
     categories: CategoryCardData[];
-    /** The path the cards link under, with no trailing slash: each card links to `${hrefBase}/${slug}`. */
-    hrefBase: `/${string}`;
+    /**
+     * The root-relative path the cards link under, such as "/what-we-do": each
+     * card links to `${hrefBase}/${slug}`. A trailing slash is stripped.
+     */
+    hrefBase: `/${PathStart}${string}`;
     /** Outer spacing only, such as a margin. It can't override the grid's own columns or gaps. */
     className?: string;
 };
 
+// Backs up the type at runtime, in case a cast slips past it. Trailing
+// slashes are stripped, so "/what-we-do/" can't produce
+// "/what-we-do//t-shirts". A base that would still give an empty,
+// protocol-relative or doubled-slash href is refused outright, since a wrong
+// link is worse than a loud error.
+function normalizeHrefBase(hrefBase: string): string {
+    const base = hrefBase.replace(/\/+$/, "");
+    if (!base.startsWith("/") || base.includes("//")) {
+        throw new Error(`CategoryCardGrid: hrefBase must be a root-relative path such as "/what-we-do", got ${JSON.stringify(hrefBase)}.`);
+    }
+    return base;
+}
+
 /** @purpose Category photo-card grid (2 columns on phones, 4 from md): each card links to its category page and is revealed on scroll. */
 export default function CategoryCardGrid({ categories, hrefBase, className }: CategoryCardGridProps) {
+    const base = normalizeHrefBase(hrefBase);
+
     return (
         // className comes first, so a page's extra spacing can't displace the
         // grid's own classes and the rendered class string stays unchanged.
@@ -35,10 +61,12 @@ export default function CategoryCardGrid({ categories, hrefBase, className }: Ca
             {/* Titles are client-entered and can repeat, so the key pairs the
                 title with its position rather than trusting uniqueness. `slug`
                 is normalizeProducts()'s safe, dedupe-guaranteed output, never
-                the raw title, so it's safe to use directly as a path segment. */}
+                the raw title, so it's safe to use directly as a path segment.
+                The stagger restarts every 4 cards (one row from md up), so a
+                long list never waits seconds to appear. */}
             {categories.map((category, i) => (
-                <ScrollReveal key={`${category.title}-${i}`} delay={i * 0.1}>
-                    <CategoryCard category={category} href={`${hrefBase}/${category.slug}`} />
+                <ScrollReveal key={`${category.title}-${i}`} delay={(i % 4) * 0.1}>
+                    <CategoryCard category={category} href={`${base}/${category.slug}`} />
                 </ScrollReveal>
             ))}
         </div>
@@ -72,7 +100,7 @@ function CategoryCard({ category, href }: { category: CategoryCardData; href: st
             {/* Title and description share one bottom block so the card
                 looks right whether or not a description is set. */}
             <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-4">
-                <span className="line-clamp-2 font-serif text-lg font-bold leading-snug text-white">
+                <span className="line-clamp-2 break-words font-serif text-lg font-bold leading-snug text-foreground">
                     {category.title}
                 </span>
                 {/* Clamped: the card is a fixed height and the description is
