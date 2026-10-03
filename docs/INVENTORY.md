@@ -4,7 +4,7 @@
 
 > **Reuse rubric:** exact match → **reuse** · close (differs by config) → **extend with a variant/prop** · genuinely new → **create** in the right unit, add a one-line `@purpose` comment, regenerate this file. Search here before writing any new component/util/schema, and state your reuse/extend/new choice in the ticket summary.
 
-## src  _(202)_
+## src  _(207)_
 
 | Export | Kind | Purpose | File |
 |---|---|---|---|
@@ -27,7 +27,8 @@
 | `CareersClient` | default function | — | `src/app/admin/(dashboard)/careers/CareersClient.tsx` |
 | `CategoryCardData` | type | The fields a category photo card renders, and nothing more (no internal id). | `src/components/catalog/CategoryCardGrid.tsx` |
 | `CategoryCardGrid` | default function | Category photo-card grid (2 columns on phones, 4 from md): each card links to its category page and is revealed on scroll. | `src/components/catalog/CategoryCardGrid.tsx` |
-| `CategoryDetailPage` | default function | — | `src/app/(website)/(marketing)/what-we-do/[category]/page.tsx` |
+| `CategoryDetailPage` | default function | — | `src/app/(website)/(marketing)/products/[category]/page.tsx` |
+| `categoryPath` | function | A category page's public path, /products/<slug>. | `src/lib/nav.ts` |
 | `CategoryProduct` | type | — | `src/lib/site-content.ts` |
 | `CategoryProductInput` | type | — | `src/lib/site-content.ts` |
 | `CategoryProductsManager` | function | — | `src/components/admin/CategoryProductsManager.tsx` |
@@ -66,7 +67,7 @@
 | `FormInput` | function | — | `src/components/ui/FormInput.tsx` |
 | `FormStatusMessage` | function | — | `src/components/ui/FormStatusMessage.tsx` |
 | `GeneralData` | interface | — | `src/app/admin/(dashboard)/settings/ContactSettingsClient.tsx` |
-| `generateMetadata` | function | — | `src/app/(website)/(marketing)/what-we-do/[category]/page.tsx` |
+| `generateMetadata` | function | — | `src/app/(website)/(marketing)/products/[category]/page.tsx` |
 | `GET` | function | — | `src/app/api/keep-alive/route.ts` |
 | `getAllCategoryProducts` | function | — | `src/app/actions/products-actions.ts` |
 | `getCategoryProducts` | function | — | `src/app/actions/products-actions.ts` |
@@ -115,6 +116,7 @@
 | `metadata` | const | — | `src/app/(website)/(forms)/grievance/page.tsx` |
 | `metadata` | const | — | `src/app/(website)/(marketing)/global-partner/page.tsx` |
 | `metadata` | const | — | `src/app/(website)/(marketing)/life-at-fashion-asia/page.tsx` |
+| `metadata` | const | — | `src/app/(website)/(marketing)/products/page.tsx` |
 | `metadata` | const | — | `src/app/(website)/(marketing)/sustainability/page.tsx` |
 | `metadata` | const | — | `src/app/(website)/(marketing)/what-we-do/page.tsx` |
 | `metadata` | const | — | `src/app/(website)/(marketing)/who-we-are/page.tsx` |
@@ -140,6 +142,8 @@
 | `ProductActionResult` | type | — | `src/app/actions/products-actions.ts` |
 | `ProductCard` | default function | One catalog product tile: the photo, then the serif name and full description in normal flow below it. | `src/components/catalog/ProductCard.tsx` |
 | `ProductGrid` | default function | Product grid (1 column on phones, 2 from sm, 4 from md) of ProductCards, each revealed on scroll with a staggered delay. | `src/components/catalog/ProductGrid.tsx` |
+| `PRODUCTS_PATH` | const | The /products overview path, shared by the menu, pages, sitemap and revalidation. | `src/lib/nav.ts` |
+| `ProductsPage` | default function | The /products overview: every category as a photo card, then a section of products for each category that has any. | `src/app/(website)/(marketing)/products/page.tsx` |
 | `ProductVoidResult` | type | — | `src/app/actions/products-actions.ts` |
 | `readStoredCategoryIdentities` | function | — | `src/lib/site-content.ts` |
 | `RECOMMENDED_UPLOAD_HEIGHT` | const | — | `src/lib/upload-limits.ts` |
@@ -151,8 +155,9 @@
 | `ReportsPage` | default function | — | `src/app/admin/(dashboard)/reports/page.tsx` |
 | `resolveCategoriesForSave` | function | — | `src/lib/site-content.ts` |
 | `revalidate` | const | — | `src/app/(website)/(marketing)/global-partner/page.tsx` |
+| `revalidate` | const | — | `src/app/(website)/(marketing)/products/[category]/page.tsx` |
+| `revalidate` | const | — | `src/app/(website)/(marketing)/products/page.tsx` |
 | `revalidate` | const | — | `src/app/(website)/(marketing)/sustainability/page.tsx` |
-| `revalidate` | const | — | `src/app/(website)/(marketing)/what-we-do/[category]/page.tsx` |
 | `revalidate` | const | — | `src/app/(website)/(marketing)/what-we-do/page.tsx` |
 | `revalidate` | const | — | `src/app/(website)/(marketing)/who-we-are/page.tsx` |
 | `revalidate` | const | — | `src/app/(website)/page.tsx` |
@@ -212,4 +217,4 @@
 | `WhoWeWorkWithSettingsPage` | default function | — | `src/app/admin/(dashboard)/who-we-work-with/page.tsx` |
 
 
-_202 exports across 1 unit(s)._
+_207 exports across 1 unit(s)._

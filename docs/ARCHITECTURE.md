@@ -8,7 +8,7 @@
 
 | Route group | What it serves |
 |---|---|
-| `(website)` | The public site: Lenis smooth scroll, preloader, header and footer. It includes the marketing pages, the dynamic `/what-we-do/[category]` route and the `(forms)` group (contact, career, grievance). |
+| `(website)` | The public site: Lenis smooth scroll, preloader, header and footer. It includes the marketing pages, the `/products` overview, the dynamic `/products/[category]` route and the `(forms)` group (contact, career, grievance). Since T-025 (2026-10-03), `/what-we-do/<slug>` 308-redirects to `/products/<slug>` (`next.config.ts`). |
 | `admin` | `/admin/login` plus the `(dashboard)` editors, all behind the middleware gate. |
 
 - **Data:** one Supabase project, owned by the client. It serves production **and** local

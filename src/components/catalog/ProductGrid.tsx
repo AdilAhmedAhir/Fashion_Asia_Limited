@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils";
 import type { CategoryProduct } from "@/lib/site-content";
 
 type ProductGridProps = {
-    products: Pick<CategoryProduct, "id" | "name" | "description" | "image">[];
+    products: Pick<CategoryProduct, "name" | "description" | "image">[];
     /** The category these products belong to. It names any photo whose product name is blank. */
     categoryTitle: string;
     /** Passed to every card; see ProductCard. */
@@ -22,9 +22,14 @@ export default function ProductGrid({ products, categoryTitle, headingLevel, cla
         // product's photo and full description readable at 360px.
         <div className={cn(className, "grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4 lg:gap-6")}>
             {/* The stagger restarts every 4 cards (one row from md up), so a
-                long list never waits seconds to appear. */}
+                long list never waits seconds to appear. Keyed by name and
+                position, never the product's row id: a key on a client
+                component like ScrollReveal is written into the page's
+                serialized payload, and T-025 requires no UUID-shaped string
+                in the HTML of the catalog pages. Names can repeat or be
+                blank, so the position keeps every key unique. */}
             {products.map((product, i) => (
-                <ScrollReveal key={product.id} delay={(i % 4) * 0.1}>
+                <ScrollReveal key={`${product.name}-${i}`} delay={(i % 4) * 0.1}>
                     <ProductCard product={product} categoryTitle={categoryTitle} headingLevel={headingLevel} />
                 </ScrollReveal>
             ))}

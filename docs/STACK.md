@@ -37,7 +37,7 @@
 5. **e2e:** none. `/qa live` uses read-only `curl` plus headless Chrome over CDP, with
    scripts kept in the session scratchpad, never in the repo.
 
-- **Production-only checks:** `npm run build && npm start -- -p 3001`.
+- **Production-only checks:** `npm run build && npm start -- -p 3101`. This is the `prod` entry in `.claude/launch.json`. Port 3001 is used by another local project; changed 2026-10-03.
 - **Filter one unit:** n/a (single package).
 - **The dev server is the LIVE database** (§5). Gates and QA never write.
 

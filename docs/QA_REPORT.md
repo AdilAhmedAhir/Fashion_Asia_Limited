@@ -1781,3 +1781,99 @@ This checklist isn't a merge blocker, following the §4/§7 precedent for every 
 - **`/pm` + `/cso`:** INFO-3, the pre-existing Replace race. It's handler logic.
 - **`/archivist`:** INFO-2's forwarding trace. The session-expired text reaches admins through a public route's worker, which is a concrete instance of SEC-MED-10's premise.
 - **Deploy:** SEC-HIGH-5 stays live in production until the user types "deploy" for a `main` that contains this merge.
+
+## Live Pass — T-025 — 2026-10-03
+**Target:** a production build of `309bc0d`, served by `next start` on **:3101**. The documented `-p 3001` is held by an unrelated local project; see STACK.md §3. All checks were read-only (curl GET and HEAD, headless Chrome GETs). There was no sign-in and no write. `security-reviewer` re-confirmed the matrix and the leak scans on the `f1bd94d` build.
+
+| # | Attack | Result |
+|---|---|---|
+| 1 | **Redirect matrix** | **PASS** |
+| 2 | **Leaks** | **PASS**, but it proves little yet: no category id or product exists in the live data. Owner rows 2 and 6 re-test it. |
+| 3 | **Links and SEO** | **PASS** |
+| 4 | **States** | **PASS** |
+| — | **Premortem diff rules** | **PASS** |
+
+**1. Redirect matrix.**
+- `/what-we-do` → 200, with no `Location` header. `/what-we-do/` → 308 → `/what-we-do`.
+- Each of the 8 old slugs gives exactly one 308 to `/products/<slug>`, then 200. With a trailing slash it takes 2 hops.
+- The query string is kept.
+- Unknown, mixed-case and nested paths end in 404, never in a loop.
+- `/business` → `/what-we-do` in one hop.
+- `/products` and `/products/<slug>` → 200 with no redirect. `/products/no-such-slug` → 404.
+- 15 open-redirect variants all stay on the site, and a forged `Host` or `X-Forwarded-Host` still gets a relative `Location`.
+
+**2. Leaks.**
+- 0 UUID-shaped strings and 0 `"id":` keys on 11 pages.
+- 0 JWT- or key-shaped strings in `.next/static` (48 files).
+- No browser-side data fetch. The only off-site requests are the public Storage photos.
+
+**3. Links and SEO.**
+- `/sitemap.xml` lists 18 `<loc>` entries, none under `/what-we-do/<slug>`.
+- None of the 18 listed pages links to `/what-we-do/…`.
+- The canonical and `og:url` are correct on all 9 new URLs.
+- "Products" is in the header, the mobile menu and the footer. "View all products" goes to `/products`.
+
+**4. States.**
+- With 0 products, `/products` shows the Coming Soon note.
+- An unknown slug gets a 404 with `noindex`.
+- `/admin/products`, `/admin/business` and `/admin` → 307 to `/admin/login`, with no `Set-Cookie`.
+- Not run: a failed product read, because it needs a server restart mid-test. It's folded into T-016's WARN-3.
+
+**Premortem diff rules.**
+- `next.config.ts` is +7/−0, with both flags intact.
+- No new `"use server"` exports.
+- `site-content.ts` changes only its 2 messages.
+- `BusinessClient.tsx` is untouched.
+
+**Pre-existing, not caused by T-025:**
+- The Preloader requests 160 hero frames that don't exist (T-017).
+- The 404 page's body renders only with JavaScript.
+- 404 pages carry two robots tags.
+- The redirect is case-insensitive. That isn't a defect.
+
+**Evidence:** the session scratchpad `t-025-qa/`, plus `design-reviewer`'s `t-025/` and `security-reviewer`'s re-check script. Per STACK.md §3, these are kept out of the repo.
+
+## Manual Checklist — T-025 — 2026-10-03
+> **Note, 2026-10-03:** this checklist is written for T-025's state. **Once T-026 merges, the categories and products move to `/admin/products`.** From then on, do row 1's first Save there, with the **"Save categories"** button, and the same for row 8. The page-text Save on `/admin/business` will no longer touch categories. If the owner does the recommended first Save on the live site before then, mark row 1 as already done.
+
+**For the owner.** This takes about 15 minutes. It checks what agents can't: a filled-in `/products`, and that no hidden id reaches a public page once real ids exist.
+
+**Choose an option and date it:**
+- **A:** add a test product named `ZZ-TEST T-025 (delete me)` now, and delete it in the same sitting.
+- **B:** check rows 2, 4, 5 and 6 on the first real product, and skip rows 1, 3 and 7.
+
+Option: ☐ A ☐ B   Date: ____
+
+**Where:** the local production build, `npm run build && npm start -- -p 3101` on `main`, at `http://localhost:3101`. Sign in at `/admin/login`, and view the public pages in a private window. For option B after a deploy, use `https://www.fashionasialtd.com`.
+
+**Before you start:**
+- **Every step writes to the LIVE database,** even from localhost.
+- **The first Save (row 1) is permanent.** It stores each category's hidden id and fixes the 8 addresses at their current values (`t-shirts` … `heavy-jersey-products`). Staff need it done before they can add any product.
+- **While the test product exists, the public can see it.** The live site shows it at `/what-we-do/t-shirts` until the deploy, so keep that time short.
+- **You'll need one photo:** JPG or WebP, under 400 KB, at most 2400 px wide.
+
+| # | Step | Expected | Pass/Fail |
+|---|---|---|---|
+| 1 | **First Save** (skip it if already done). On `/admin/business` (after T-026, on `/admin/products`), change nothing and click Save (after T-026, **"Save categories"**). | It saves with no red text, and the pages and the 8 card links look the same. In the product manager, **T-Shirts** no longer says "hasn't been saved yet". | |
+| 2 | **No category id on the public pages.** Run the read-only command below. | Every line ends in `0`. | |
+| 3 | **Add the test product.** Under **T-Shirts**, add `ZZ-TEST T-025 (delete me)` with the description `ZZ-TEST wrap check ZZTESTaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa end` and a photo. Optionally add `ZZ-TEST T-025 B (delete me)` under **Dresses**. | It appears straight away, with no red text. | |
+| 4 | **`/products` with a product.** Check it at full width and at about 360 px. | Coming Soon is gone. There's one **T-Shirts** section with an arrowed heading that links to `/products/t-shirts`, and the product card shows photo, name and description. No empty sections. T-Shirts comes above Dresses: that's the menu order, not A–Z. The long word wraps and nothing scrolls sideways. | |
+| 5 | **Category page and the old address.** Open `/products/t-shirts`, then `/what-we-do/t-shirts`. | Both show the product. The second ends up at `/products/t-shirts`. "All Products" goes to `/products`. | |
+| 6 | **No product id on the public pages.** Run the command again, while the product still exists. | Every line ends in `0`. This is the real test. | |
+| 7 | **Cleanup.** Delete the test products. | `/products` and `/products/t-shirts` show Coming Soon again, and the live `/what-we-do/t-shirts` no longer shows the product. | |
+| 8 | **Optional: the duplicate-name check.** Add a category titled `T-Shirts` and Save, then reload without saving. | Red text names the page **`/products/t-shirts`**, and nothing is saved. After the reload there are still 8 categories. | |
+
+The command for rows 2 and 6. It only reads, and goes on one line:
+
+    for p in what-we-do products products/t-shirts products/dresses; do printf '%-22s' "/$p"; curl -s "http://localhost:3101/$p" | grep -oiE '[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}' | wc -l; done
+
+**Cleanup notes:** deleting a product keeps its photo in Storage → `media`; removing it is optional. The row 1 first Save stays; that's intended.
+
+**After the deploy (optional):** resubmit `https://fashionasialtd.com/sitemap.xml` in Search Console. Seeing the old addresses as "Page with redirect" is expected.
+
+**Reporting back:**
+- A ❌ in row 4 or 5 reopens T-025.
+- A count above 0 in row 2 or 6 is a 🔴 leak. Report the page and the count to `/security-review`.
+- A ❌ in row 1 or 8 goes to the category save path (T-003, T-026).
+
+This checklist doesn't block the merge; it's the dated populated-catalog check the premortem asked for.

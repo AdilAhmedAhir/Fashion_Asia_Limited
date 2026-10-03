@@ -8,17 +8,22 @@ import ProductGrid from "@/components/catalog/ProductGrid";
 import { getSettings } from "@/app/actions/settings-actions";
 import { getCategoryProducts } from "@/app/actions/products-actions";
 import { normalizeProducts } from "@/lib/site-content";
+import { PRODUCTS_PATH, categoryPath } from "@/lib/nav";
 import type { Metadata } from "next";
 
-// Same ISR shape as the parent /what-we-do list page. No generateStaticParams
-// is defined on purpose: with dynamicParams left at its Next.js default
-// (true), a category slug added in /admin later resolves on the very next
-// request — no code change, no redeploy (T-005 acceptance). The read chain
-// (getSettings -> createClient -> cookies()) already forces this route to
-// render per-request, exactly like /what-we-do/page.tsx does today, so a
+// Moved here from /what-we-do/[category] (T-025). The old URLs redirect to
+// this route permanently (next.config.ts), and browsers cache that redirect,
+// so this route has to keep serving even if T-025 is ever rolled back.
+//
+// Same ISR shape as the /products overview and /what-we-do. No
+// generateStaticParams is defined on purpose: with dynamicParams left at its
+// Next.js default (true), a category slug added in /admin later resolves on
+// the very next request — no code change, no redeploy (T-005 acceptance). The
+// read chain (getSettings -> createClient -> cookies()) already forces this
+// route to render per-request, exactly like /products/page.tsx, so a
 // product/category edit is reflected as soon as it's requested; `revalidate`
-// here only mirrors that sibling page's declared cadence, and the
-// revalidatePath("/what-we-do/<slug>") calls already wired in
+// here only mirrors the sibling pages' declared cadence, and the
+// revalidatePath(categoryPath(slug)) calls already wired in
 // settings-actions.ts::updateSettings and
 // products-actions.ts::revalidateCategory are what make an edit-triggered
 // refresh immediate rather than waiting out this window.
@@ -50,14 +55,14 @@ export async function generateMetadata(
     if (!category) return {};
 
     // Falls back to already-published, factual site copy (the same 100%-
-    // export-oriented / 26-lines / 800K-pieces claims used in this file's
-    // own parent page and site-wide) rather than inventing new claims —
+    // export-oriented / 26-lines / 800K-pieces claims used on /what-we-do
+    // and site-wide) rather than inventing new claims —
     // every one of today's 8 live categories still ships with an empty
     // description by design (site-content.ts), so this fallback is the
     // common case today, not an edge case.
     const description = category.description ||
         `${category.title} from Fashion Asia Limited — a 100%-export-oriented knitwear manufacturer with 26 production lines and 800,000 pieces monthly capacity.`;
-    const canonical = `/what-we-do/${category.slug}`;
+    const canonical = categoryPath(category.slug);
 
     return {
         title: category.title,
@@ -87,7 +92,7 @@ export default async function CategoryDetailPage(
                 (d) (docs/TECH_STACK.md) makes that field internal-only: never
                 displayed, never in the DOM or the RSC/serialized payload. */}
             <PageHeader
-                tag="What We Do"
+                tag="Products"
                 title={category.title}
                 description={category.description}
             />
@@ -95,7 +100,7 @@ export default async function CategoryDetailPage(
             <section className="container py-24">
                 <ScrollReveal>
                     <Link
-                        href="/what-we-do"
+                        href={PRODUCTS_PATH}
                         className="inline-flex items-center gap-2 rounded-sm text-xs font-bold uppercase tracking-[0.2em] text-primary transition-colors duration-300 hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />

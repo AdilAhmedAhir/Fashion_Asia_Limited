@@ -24,12 +24,20 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
     return (
         <AnimatePresence>
             {isOpen && (
+                // data-lenis-prevent hands wheel and trackpad scrolling back to
+                // this overlay: otherwise Lenis takes the wheel for the page
+                // behind it, and a menu taller than the screen can't be
+                // scrolled with a mouse. overscroll-contain keeps the page
+                // put: the body-scroll lock in the effect above doesn't, and
+                // without it, scrolling past the end of the menu scrolled the
+                // page behind it too (measured with Lenis active).
                 <motion.div
+                    data-lenis-prevent
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.4 }}
-                    className="fixed inset-0 z-[999] flex flex-col justify-start bg-background px-6 sm:px-12 overflow-y-auto pt-28 pb-12"
+                    className="fixed inset-0 z-[999] flex flex-col justify-start bg-background px-6 sm:px-12 overflow-y-auto overscroll-contain pt-28 pb-12"
                 >
                     <nav className="flex flex-col gap-4">
                         {menuLinks.map((link, i) => (

@@ -33,13 +33,23 @@ export default function ProductCard({ product, categoryTitle, headingLevel: Head
 
     return (
         <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-surface">
-            <img
-                src={product.image}
-                alt={alt}
-                loading="lazy"
-                decoding="async"
-                className="h-48 w-full shrink-0 object-cover md:h-56"
-            />
+            {/* The photo's lower edge fades into the card's own surface, so a
+                product shot on a white studio backdrop flows into the dark
+                card the way the category cards sit under their scrim, rather
+                than ending in a hard bright edge like a generic shop tile
+                (T-025, from T-024's design review). The fade sits only on the
+                lower third, keeping the product itself clear, and carries no
+                content, so it's invisible to assistive technology. */}
+            <div className="relative h-48 shrink-0 md:h-56">
+                <img
+                    src={product.image}
+                    alt={alt}
+                    loading="lazy"
+                    decoding="async"
+                    className="h-full w-full object-cover"
+                />
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-surface to-transparent" />
+            </div>
             <div className="flex flex-col gap-2 p-5">
                 {name && (
                     <Heading className="break-words font-serif text-lg font-bold leading-snug text-foreground">
@@ -47,7 +57,7 @@ export default function ProductCard({ product, categoryTitle, headingLevel: Head
                     </Heading>
                 )}
                 {product.description && (
-                    <p className="text-sm leading-relaxed text-white/70">
+                    <p className="break-words text-sm leading-relaxed text-white/70">
                         {product.description}
                     </p>
                 )}
