@@ -180,6 +180,12 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - **Add to the AC (T-024 code review):**
       - the server must require a non-blank product `name` and `image`. Today only the editor's add button enforces them, so a blank name or an empty image can still arrive through edits or direct action calls;
       - a product with neither a name nor a description shouldn't leave an empty padded block (`ProductCard.tsx`).
+    - **Add from T-025's reviews:**
+      - **Files:** add `src/app/(website)/(marketing)/products/page.tsx`. Its grouping callback is now type-annotated, so a new `getAllCategoryProducts()` return shape has to be handled there (`code-reviewer`).
+      - **WARN-3 scope:** after a failed product read, `/products` and `/products/<slug>` show a "couldn't load products" state, not "Coming Soon".
+      - **SEC-INFO-37:** `getAllCategoryProducts()` throws for a category slugged `constructor`, because it groups into a plain object. Use `Object.create(null)` or a `Map`; the same goes for `CategoryProductsManager.tsx:87,106`.
+      - **SEC-INFO-36:** add a product mapper like `toCategoryCards`, so whole product rows don't reach the catalog components.
+      - A title of 255+ characters can save a slug ending in `-`, and the category's next save is then refused (security-review, for `/pm`).
   - **Source:** `docs/QA_REPORT.md` Static Pass — T-004 WARN-1, WARN-2, WARN-3, 2026-09-27 (`docs/MEMORY_BANK.md` T-004 entry: "QA and `/cso` both recommend picking these three (WARN-1/2/3) up as `/pm` fast-follow tickets"). Also a PM source check on 2026-09-28, same race class as WARN-1, for `/qa` to confirm: `ImageUploadField.tsx:249-251` calls `onChange` on every keystroke in its hand-editable path box, and `CategoryProductsManager.tsx:532` wires that `onChange` straight to `persist()`. Typing a path into a product row therefore fires one `updateCategoryProduct` write per keystroke, and those writes aren't serialized.
   - **Files:** `src/components/admin/CategoryProductsManager.tsx` (`ProductRow.persist()` :409-445 and its `<ImageUploadField>` :532; the `<AddProductForm>` mount :242; the empty-state line :252), `src/app/actions/products-actions.ts` (`getAllCategoryProducts` :125-143), `src/app/admin/(dashboard)/business/page.tsx`, `src/app/admin/(dashboard)/business/BusinessClient.tsx` (pass the load state through). `src/components/admin/ImageUploadField.tsx` is touched only if the chosen fix needs a new prop there (see Notes).
   - **Flags:** schema-touching: **no** · sensitive: **yes** (`src/app/admin/**`, Server Action module) · UI: **yes**
@@ -266,7 +272,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Flags:** schema-touching: **no** · sensitive: **no** · UI: **no**
   - **Acceptance:**
     - `<lastmod>` values no longer come from request time or process start, so they stay stable across requests and across serverless instances. Omitting `<lastmod>` satisfies this. Two fetches a few seconds apart return identical `<lastmod>` values, or none; today every entry changes on every fetch.
-    - All 17 entries (9 static, 8 categories) are still present, with unchanged `loc`/`changefreq`/`priority`, in the same order, and the file is still valid XML (the T-005 Live Pass parse method).
+    - All 18 entries (10 static, 8 categories; T-025 added `/products` and moved the category entries to `/products/<slug>`) are still present, with unchanged `loc`/`changefreq`/`priority`, in the same order, and the file is still valid XML (the T-005 Live Pass parse method).
     - `npx tsc --noEmit` and `npm run build` stay clean.
   - **Sequence:** `/git Start` → `/lead-dev` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Backend-only row)
   - **Notes:** Ranked #12. This has been live since the 2026-09-28 deploy: every crawl sees all 17 URLs as "just modified". T-005 WARN-1's comment-only fix rides along with T-018 instead, which already edits that function under `/cso review`. §10 is inert, so there's no `/seo` review.
@@ -328,7 +334,26 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
   Risk: low. It's shared UI, so it runs first and alone.
 
-- [ ] **T-025** — Move category pages to `/products/<slug>`, and add the `/products` overview page, the "View all products" button and the "Products" menu item [app:site][design][sec]
+- [x] **T-025** — Move category pages to `/products/<slug>`, and add the `/products` overview page, the "View all products" button and the "Products" menu item [app:site][design][sec]
+  Done 2026-10-03:
+  - **Commits:**
+    - `271bdd3`: the premortem folded in;
+    - `309bc0d`: the build;
+    - `f1bd94d`: design FIX FIRST plus security's SEC-MED-15 one-liner;
+    - `c8d4d85`: `overscroll-contain` and encoded card links.
+  - **Reviews:**
+    - `design-reviewer`: FIX FIRST, then SHIP;
+    - `security-reviewer`: CLEARED, with a re-check, which closed SEC-MED-15 in code;
+    - `code-reviewer`: SHIP three times;
+    - QA production-build matrix: all PASS on :3101;
+    - Codex: SKIPPED.
+  - **Accepted visible changes** are in DECISIONS (2026-10-03):
+    - every page's header tag moves to `text-accent` (T-027's `PageHeader` part);
+    - the category tag says "Products";
+    - "Products" is in the menu, plus the "View all products" button;
+    - the header goes solid while the menu is open, and the menu scrolls with a mouse without dragging the page.
+  - **Deferred:** the code reviewer's `nav.ts` comment rewording, because `nav.ts` is hash-bound by the security clearance. It goes in the next `nav.ts` change.
+  - **Owner:** the T-025 manual checklist is in QA_REPORT, and doesn't block the merge.
   AC:
   - **`/products`:**
     - a page header;
@@ -441,7 +466,12 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
 **Follow-ups found in this run** (backlog; not part of the `/products` run):
 - [ ] **T-027** — Make `text-primary` micro-labels pass WCAG AA sitewide [app:site][design]
   AC:
-  - Every `text-primary` text label on a dark background reaches at least 4.5:1, or 3:1 where it's large text under DESIGN.md §3. Measured from pixels: the "01. PRODUCT CATALOG" and "ALL PRODUCTS" kickers are 2.21:1, "contact us" is 2.61:1, and the `PageHeader` tag (`src/components/ui/PageHeader.tsx:15`, on every page) is about 2.77:1. `design-reviewer` suggests `text-accent`, which measures 7.69:1.
+  - Every `text-primary` text label on a dark background reaches at least 4.5:1, or 3:1 where it's large text under DESIGN.md §3. Measured from pixels:
+    - the "01. PRODUCT CATALOG" kicker and the category page's "ALL PRODUCTS" back link are 2.21:1;
+    - the category page's "contact us" is 2.61:1;
+    - the homepage's inline "Who We Work With" kicker (`src/app/(website)/page.tsx:83`) is also `text-primary`.
+
+    `design-reviewer` suggests `text-accent`, about 7.7:1. **The `PageHeader` tag is already done:** T-025 (2026-10-03) moved it to `text-accent`, which measures about 9.5:1 on 5 pages.
   - DESIGN.md §2 gains a `scrim` token for the photo-card gradient (Low).
   Source: `design-reviewer`, T-024 review, 2026-10-03.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Rank it with T-020 and T-011.
@@ -454,6 +484,15 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
     - the preloader is shortened or skipped.
   - Default motion is unchanged.
   Source: `design-reviewer` and `code-reviewer`, T-024 review, 2026-10-03. It breaks the a11y floor in CLAUDE.md; it isn't an AA failure (WCAG 2.3.3 is AAA).
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
+- [ ] **T-029** — Make the mobile menu keyboard- and screen-reader-safe [app:site][design]
+  AC:
+  - While the menu is open, focus stays inside it; today Tab moves into page cards hidden behind the overlay.
+  - Escape closes the menu and returns focus to the toggle.
+  - The toggle has `aria-expanded` and `aria-controls`.
+  - The decorative ordinals ("04") are `aria-hidden` (1.22:1), so they stop leaking into link names.
+  - Header and menu links show a `ring-accent` focus ring instead of the browser default.
+  Source: `design-reviewer`, T-025 review, 2026-10-03. This is an existing problem, not caused by T-025.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
 
 ### Dependency Order

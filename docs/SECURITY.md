@@ -44,6 +44,16 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 - **Assets / File uploads.** `uploadFile` has a live caller: the Reports modal uploads PDFs to a second public bucket, `reports`. Its `bucket` argument and the file's extension are caller-controlled and reach the Storage request URL unencoded (SEC-INFO-33). The only size bound on it, and on `addMediaAction`, is Next's default 1 MB Server Action body limit (SEC-INFO-35).
 - **Admin writes.** Once T-015 merges, every admin write action calls `getUser()` before any read, write or storage call, except `addMediaAction`/`deleteMediaAction` (T-019). It's a session check, not an admin check (SEC-HIGH-2).
 
+*Amended 2026-10-03 (T-025 CSO review; appended, rows above left as written):*
+- **Public catalog routes.** `/products` and `/products/<slug>` are new public read surfaces.
+  - They read only the anon-readable `products` table and `site_settings.business`.
+  - They render per request with `Cache-Control: private, no-store`, and ship no browser-side data fetch.
+  - `/what-we-do/<slug>` is now a relative 308 to `/products/<slug>` (`next.config.ts`). It was tested against open-redirect, CRLF and host-poisoning vectors (T-025 entry, item 1).
+- **String-built XML.** `/sitemap.xml` is served as `application/xml`, and Next 16.3.6 writes its `<loc>` values unescaped. It's the one public sink where CMS data isn't escaped by React (SEC-MED-15).
+- **Session cookies.** The installed `@supabase/ssr` 0.8.0 defaults to `httpOnly: false`, and `src/lib/supabase/` passes no override. This was confirmed from the installed source; the live `Set-Cookie` header is still unverified.
+  - So any script running on this origin can read an admin's session.
+  - That's why an in-origin script sink outranks defacement here.
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -753,6 +763,303 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 
 **Actions taken:** no commit, no source edit, no server started, no remote touched, no auth action, no access to the live database.
 
+### 🔒 CSO Audit — 2026-10-03 — ticket-review:T-025
+
+**Scope:** Dispatched by `/system-architect` per `docs/WORKFLOW.md` §3, because **T-025** ("Move category pages to `/products/<slug>`, and add the `/products` overview…") touches two writing Server Action files and `next.config.ts`.
+- **The diff under review:** `git diff main...t-025-products-routes`, commits `271bdd3` (docs) and `309bc0d` (code). It touches 15 files (+344/−50):
+  - `next.config.ts`, `settings-actions.ts`, `products-actions.ts`, `src/lib/nav.ts` and `sitemap.ts`;
+  - the new `products/page.tsx`, and `products/[category]/page.tsx`, moved from `what-we-do/[category]` (85% similar);
+  - `what-we-do/page.tsx`, the three catalog components and `Footer.tsx`;
+  - `site-content.ts` (two message strings) and two docs.
+- **The contract:** T-025's Acceptance plus the premortem's MUST-ADD block in `docs/ROADMAP.md`.
+- **Independently confirmed:**
+  - `package.json`, `package-lock.json`, `src/middleware.ts`, `src/lib/supabase/`, `db/` and `supabase-schema.sql` are untouched.
+  - The only dirty file is `.claude/launch.json`, which adds the `prod` launcher for port 3101. It has 0 key-shaped strings.
+
+**Method.**
+- **Static:** full reads of every touched source file, plus the producers and callers they depend on:
+  - `getAllCategoryProducts`, `normalizeProducts` and `resolveCategoriesForSave`;
+  - `ScrollReveal`;
+  - the admin business page and `CategoryProductsManager`.
+- **Offline execution:** the repo's real `normalizeProducts`, `resolveCategoriesForSave`, `isWellFormedSlug`, `slugify` and `categoryPath` (Node 25 type stripping), together with Next 16.3.6's real `resolveSitemap`. 13/13 assertions passed. The script lives in the session scratchpad, not the repo.
+- **One headless-Chrome run** on a local `file://` copy of that serializer's output, with an isolated throwaway profile that was deleted afterwards. No network.
+- **Live, read-only:** GET and HEAD with no cookie only.
+  - `:3101` serves the production build of `309bc0d`, build id `4N4efaRW60P5y6wGufi3U`. It was written 2 minutes after the commit, and the served HTML carries that id.
+  - `:3000` is the dev server.
+- **Not done:** no sign-in, no Server Action call, no form submit, no write to the live database, no source edit, no commit. `.env*` was never read.
+- **Typecheck:** `npx tsc --noEmit --incremental false` exited 0.
+
+**1. The `/what-we-do/:slug` redirect: ✅ no open redirect, no header injection, no loop, and an additive-only diff.**
+- **Why it can't leave the origin.** `Location` is always relative, and it always starts with the fixed `/products/`.
+  - A value of `/` followed by a letter is a path-absolute URL, so no captured value can make it protocol-relative or give it a scheme.
+  - Next copies the captured segment into `Location` still percent-encoded.
+- **Vectors tried** (one hop each, then followed by hand, on-origin only). All ended on this origin, at a 404 under `/products/`:
+  - `%2F%2F`, `%2f%2f`, `%5C%5C`, `%5C`, and the double-encoded `%252F%252F`;
+  - `http:%2F%2F…`, `https:…`, `javascript:alert(1)`, `@host` and `%40host`;
+  - the full-width solidus `%EF%BC%8F%EF%BC%8F`, the ideographic full stop `%E3%80%82`, and the right-to-left override `%E2%80%AE`;
+  - `..%2F..%2Fadmin`, `%2e%2e%2f…`, `%3F…`, `%23…`, `%09`, `%00`, `;…` and `<script>`;
+  - a 9,000-character slug.
+- **Raw `\` and `//` inside the path:** Next's own repeated-slash normalizer collapses them first. That gives 2 hops, still on-origin.
+- **`/what-we-do/..` and `%2e%2e`:** these resolve to `/` (the homepage, 200), and the rule never sees them.
+- **CRLF** (`%0d%0aSet-Cookie:…`, `%0aX-Injected:…`, and an embedded `Location:`): the CR/LF stay percent-encoded, and no header was injected.
+- **A spoofed `Host: evil.example` or `X-Forwarded-Host`:** `Location` is still `/products/t-shirts`.
+- **The premortem matrix, all passing:**
+
+  | Request | Result |
+  |---|---|
+  | `/what-we-do` | 200, no `Location` |
+  | `/what-we-do/` | 308 → `/what-we-do` → 200 |
+  | each of the 8 old slugs | one 308 → 200 |
+  | `/what-we-do/t-shirts/` | 2 hops → 200 |
+  | a query string | kept, re-encoded (`next=//x` becomes `next=%2F%2Fx`) |
+  | `/what-we-do/no-such-slug` | 308 → 404 |
+  | `/what-we-do/t-shirts/extra` | 404 |
+  | `/business` | one hop → `/what-we-do` |
+  | `/products` and `/products/<slug>` | 200, no redirect |
+  | `/products/no-such-slug` | 404 |
+
+  - Source matching is case-insensitive: `/WHAT-WE-DO/t-shirts` → 308 → 200, and `/What-We-Do/T-Shirts` → `/products/T-Shirts` → 404. Neither loops.
+- **No interaction with the 4 existing rules.** No existing destination matches the new source, and the new destination matches no source.
+- **The `/admin` gate is unchanged.** Redirects run before middleware, and the new source can't match `/admin`. An anonymous GET of `/admin` or `/admin/business` still answers 307 → `/admin/login` on both servers.
+- **Additive-only, confirmed:** `next.config.ts` shows +7/−0. `agentRules: false`, `logging: { serverFunctions: false }` and the 4 existing rules are byte-identical.
+- **For `/ship`'s live check.** On Vercel, `redirects()` run in the platform's routing layer from the build output, not in `next start`. Add two read-only GETs on production:
+  - `/what-we-do/%2F%2Fevil.example`;
+  - `/what-we-do/%0d%0aX:1`.
+
+  Each must answer one 308 whose `Location` starts with `/products/`, and the second must carry no `X` header.
+
+**2. Server Actions: ✅ only revalidate targets changed. No new endpoint, and auth still comes first.**
+- **Exports.** All six `"use server"` modules have identical export name lists before and after, 32 runtime exports in total.
+  - The two new `@/lib/nav` imports add no export.
+  - `revalidateCategory()` stays unexported.
+- **`getUser()` order is unchanged.** It's the first await after `createClient()` in:
+  - `updateSettings` (`:75`);
+  - `createCategoryProduct` (`:152`), `updateCategoryProduct` (`:203`), `deleteCategoryProduct` (`:259`) and `reorderCategoryProducts` (`:286`), via `requireUser()`.
+  - The diff only touches the post-write revalidate block and the private helper.
+- **Every revalidate target is a slug the server resolved, never client input.**
+  - **`updateSettings`:** `savedCategories` is the output of `resolveCategoriesForSave`. A frozen slug is re-checked with `isWellFormedSlug`, and a fresh one is `slugify(title)`. It never reads an incoming `.slug` (re-verified by execution).
+  - **`revalidateCategory`'s five call sites:** each passes either a slug that passed `checkCategoryAttachable` (a frozen identity plus `isWellFormedSlug`) or the `category_slug` Postgres returned for the row just read or deleted.
+- **The premortem's revalidation list is met, by reading the code only:**
+  - a business save revalidates `/what-we-do` (via `SETTINGS_ROUTES`), `/products`, each `/products/<slug>` and `/sitemap.xml`;
+  - a product write revalidates `/products/<slug>` and `/products`.
+
+**3. `categoryPath()` and `PRODUCTS_PATH`: ✅ no data can turn them into an off-site or protocol-relative URL.**
+- **The output** is the constant `/products/` followed by the slug.
+- **What a malformed slug could still do:**
+  - in a React `href`, move within the origin only (`..`, `?`, `#`, `/`), and React escapes the attribute;
+  - in the metadata canonical and `og:url`, nothing more: they're resolved against `metadataBase` and escaped by React;
+  - break out of the one sink that isn't escaped, the sitemap. See item 4.
+- **The T-024 carry-forward holds.** `CategoryCardGrid`'s runtime check now mirrors its type. It refuses `/\…` and any backslash, so a base can't become protocol-relative.
+
+**4. 🟡 SEC-MED-15 (new; pre-existing since T-005, and not made worse by T-025): a stored-XSS sink in `/sitemap.xml`.**
+- **The sink.** Next 16.3.6's `resolveSitemap` concatenates `<loc>${item.url}</loc>` with no escaping (`next/dist/build/webpack/loaders/metadata/resolve-route-data.js:112`), and the route is served as `application/xml`.
+- **The source.** `normalizeProducts()` still returns a stored `slug` verbatim, trimmed only (`site-content.ts:441-442`; that's SEC-INFO-19). `sitemap.ts` then builds `${baseUrl}${categoryPath(category.slug)}`.
+- **Proved end to end by execution:**
+  1. A stored slug `x</loc><x:script xmlns:x="http://www.w3.org/1999/xhtml">…</x:script><loc>y` went through the real `normalizeProducts()`, `categoryPath()` and `resolveSitemap`. It came out as well-formed XML containing an XHTML-namespace `<script>`.
+  2. Headless Chrome ran that script: the document root gained `data-poc="script-ran"`.
+- **Reachability: not through the app.**
+  - `resolveCategoriesForSave` never reads a client `.slug`, and it refuses to carry a malformed stored one forward. Both were re-verified by execution.
+  - No other action writes `site_settings.business.products`.
+  - Planting the slug therefore takes a direct database write: the Supabase dashboard, or PostgREST with the anon key plus any authenticated session.
+  - That second route is SEC-HIGH-2's chain. Sign-ups were still ON on 2026-10-03, per the orchestrator; this office didn't re-probe it, because that needs the key's value.
+  - The anon key is still not public (SEC-INFO-32, re-verified this pass).
+- **Why it ranks above SEC-INFO-19's link sink.** Every other sink CMS data reaches is escaped by React, so a rogue account can only deface. This one runs script on the site's own origin, which is also `/admin`'s.
+  - `@supabase/ssr` 0.8.0 defaults to `httpOnly: false`, so a signed-in admin who opens a link to `https://<site>/sitemap.xml` hands over the session's tokens.
+  - That gives persistence beyond deleting a rogue account, and in-origin phishing of visitors.
+  - Crawlers would also get a broken sitemap.
+- **Erratum.** The T-005 entry's "Sitemap entries" bullet says Next's sitemap renderer serializes the URL "escaping reserved characters". That's false for `<loc>` in 16.3.6. SEC-MED-4's T-005-half closure rested partly on it, so for the sitemap sink it's superseded by this finding.
+- **Severity: 🟡 Medium.** There's no direct exploit today: it needs a credential the public doesn't hold, and it sits behind SEC-HIGH-2. **It escalates to 🟠 if the anon key ever reaches a browser**, the same trigger that makes SEC-HIGH-2 🔴.
+- **Fix.** Either change alone closes the sitemap sink.
+  - **(a) The root cause:** SEC-INFO-19's recommended gate.
+    - In `normalizeProducts()`, keep a stored slug only if `isWellFormedSlug()` passes; otherwise fall back to `dedupeSlug(slugify(title), seen)`. This closes every slug sink at once.
+    - It's safe: a malformed slug can neither be saved nor have products attached.
+    - T-025's contract freezes `site-content.ts`, so this belongs in T-026 (category admin) or a small sensitive ticket, with `/cso review`.
+  - **(b) Defense in depth, inside T-025's own helper:** ``return `${PRODUCTS_PATH}/${encodeURIComponent(slug)}`;``. It's the identity on every well-formed slug and encodes `<` and `&` (both verified).
+- **Not blocking T-025.** Recommend shipping (a) or (b) before or with the next deploy; either is one line.
+
+**5. Data exposure on the new and moved pages: ✅ only the public tables, with no id, key or browser fetch.**
+- **Production HTML:** 0 UUID-shaped strings, 0 JWT-shaped strings, and none of the product-row field names (`category_slug`, `sort_order`, `created_at`, `updated_at`). Checked on `/products`, all 8 `/products/<slug>` pages, `/what-we-do`, `/` and the 404.
+- **RSC navigation payloads** (`?_rsc`, `text/x-component`) of `/products` and `/products/t-shirts`: 0 UUIDs.
+- **The dev server's** `/products`, `/products/t-shirts` and `/what-we-do`: 0 UUIDs.
+- **Honest scope.** The live catalog has no products (`/products` renders its Coming Soon note), so the product-row half of this check is vacuous today. The category `id` is covered by structure instead:
+  - `toCategoryCards()` narrows before any prop, and `CategoryCardData`'s `id?: never` makes passing a whole `Product` a type error (tsc exits 0);
+  - on the category page, only `title`, `description` and `slug` leave `findCategory`'s result;
+  - React keys are `slug-index`, `title-index` and `name-index`, never an id.
+- **No browser-side data fetch.**
+  - The only client component on these pages is `ScrollReveal`, whose props are `delay`, `className` and children.
+  - `@/lib/supabase/client` has 0 importers in `src/`.
+  - `.next/static` (48 files) has 0 hits for JWT shapes, `sb_publishable_`/`sb_secret_`, every `stack.json` `secretPatterns` entry, `NEXT_PUBLIC_SUPABASE`, `supabase.co`, `createBrowserClient` and `apikey`. The browser bundle holds no Supabase client at all.
+- **What the pages read.** Product data comes only from the anon-readable `products` table (`getAllCategoryProducts()` and `getCategoryProducts()`; SEC-INFO-9, SEC-INFO-21), and categories from `site_settings.business`.
+- **No cross-user cache.** These pages render per request (they're absent from the prerender manifest) with `Cache-Control: private, no-cache, no-store`, so one visitor's render is never served to another. Every viewer sees the same rows anyway.
+- 🟢 **SEC-INFO-36 (new). A guardrail: `ProductGrid`'s `Pick<…>` narrows the type, not the object.**
+  - The full `products` rows (`select("*")`: `id`, `category_slug`, `sort_order` and timestamps) are handed to `ProductGrid` and `ProductCard`.
+  - That's safe today only because both are server components. In production they serialize nothing but rendered elements.
+  - In dev, React's debug channel can carry server-component props (as `CategoryCardGrid`'s own comment says). None of it was inlined in the dev HTML this pass.
+  - If either component ever gains `"use client"`, every row field ships in the production payload.
+  - Product ids aren't secret (the table is anon-readable), so this is Info. Mirror `toCategoryCards` with a narrowing mapper plus `id?: never`, in whichever ticket next edits these components (T-016).
+
+**6. Incidental, pre-existing, and not caused by T-025.**
+- 🟢 **SEC-INFO-37 (new; Low; availability only). A category whose slug is `constructor` breaks product grouping. It's reachable through the ordinary admin UI.**
+  - **Reachable:** `slugify("Constructor")` is `constructor`, and `isWellFormedSlug("constructor")` is true, so it's attachable.
+  - **The producer:** `getAllCategoryProducts()` (`products-actions.ts:143-146`) groups into a plain object. `grouped["constructor"] ??= []` finds the inherited `Object` function, so `.push` throws a `TypeError` (verified by execution).
+  - **`/products`:** the page catches the error and logs it, then shows the grid with no product section for any category. Its `Object.entries` → `Map` conversion is correct, but it's never reached.
+  - **`/admin/business`:** the page fails to load. Its `Promise.all` has no catch, and no `error.tsx` exists.
+  - **In the browser, before any product exists:** `CategoryProductsManager.tsx:87` resolves the inherited function (`.length` is 1, `.map` is undefined), so selecting the category throws. The spread at `:106` throws "not iterable" on the first add.
+  - **No data is exposed.**
+  - **Fix:** a null-prototype object or a `Map` server-side, with `Object.hasOwn` (or a `Map`) at the client lookups; or reserve `Object.prototype` member names when deriving slugs. Route it to T-016 or T-026, both of which edit these files.
+- **A note for `/pm` (not a security finding).** `resolveCategoriesForSave` stores `slugify(title).slice(0, 255)`, which can end in `-` for a title of 255 or more characters (verified by execution).
+  - That slug fails `isWellFormedSlug`, so the category's next save is refused ("needs a developer to fix its stored data"), and it can never take products.
+  - Fix: trim a trailing `-` after the slice.
+- **A note for `/qa` (not a security finding).** `getAllCategoryProducts()` turns a Supabase error into `{}`, so a failed product read on `/products` shows the Coming Soon note.
+  - The page's own "never claims that no products exist when it couldn't read them" holds only for thrown errors.
+  - It's the same fail-open class T-016 fixes. The AC's literal wording is met: the grid still shows, and the error is logged.
+
+**7. As another user: N/A for writes, and the reason.**
+- **No authorization surface changed.** T-025 changes no RLS policy, grant, middleware, auth helper or write logic, and it adds no endpoint (the export lists are identical).
+- **There's no second user to impersonate.** There's one role (any authenticated account is an admin, R1), and public pages show every viewer the same rows.
+- **The owner's law forbids it anyway:** no agent signs in or writes.
+- **What was done instead, read-only, as an anonymous visitor with no cookie:**
+  - `/admin` and `/admin/business` answered 307 → `/admin/login` on both servers;
+  - the catalog pages exposed only public-table fields;
+  - per-request renders are `no-store`, so they can't be shared across users.
+
+**Standing items (status only):**
+- **SEC-HIGH-2:** unchanged and open. Sign-ups were reported still ON on 2026-10-03. SEC-MED-15 adds a reason to close it.
+- **SEC-INFO-32 holds.** No key shape appears anywhere in `.next/static` or in any served HTML or RSC payload checked.
+- **Dependencies:**
+  - `package.json` and `package-lock.json` are untouched. The lockfile sha256 `6a026457868784a9…` equals T-006's binding, and `npm ls next` shows `next@16.3.6`.
+  - `npm audit --omit=dev` now reports **16** advisories (0 critical, 12 high, 2 moderate, 2 low), up from T-015's 9. With the lockfile identical, that's growth in the advisory feed only:
+    - a new `braces` advisory (`GHSA-vfj7-8cjw-p6xm`) cascades through `micromatch` → `fast-glob`/`chokidar` → `tailwindcss`, and through `@next/eslint-plugin-next` → `eslint-config-next`;
+    - new highs landed on `brace-expansion`, `browserslist`, `flatted`, `js-yaml` and `picomatch`.
+  - All of it is build or lint toolchain. `tailwindcss` and `eslint-config-next` are listed under `dependencies`, which is why `--omit=dev` counts them. None runs at request time.
+  - This is a status update to SEC-INFO-31, whose lockfile-only ticket and `devDependencies` move now cover 16 packages.
+
+**Secrets hygiene (this pass):**
+- **Over the diff:** the `stack.json` `secretPatterns` plus JWT and `sb_` shapes found 0 hits.
+- **Added lines:** no `process.env`, `NEXT_PUBLIC_*`, `"use client"`, raw-HTML sink, `fetch(` or debug print. The one `console.error` is the required server-side log of a failed read.
+- **`.env*`:** never read. Key names came from `docs/STACK.md` and `.claude/stack.json`.
+
+**Overall verdict this pass:** ✅ **T-025 cleared.**
+- **The redirect is safe** against every open-redirect, CRLF and host-poisoning vector tried, and the config diff is additive-only.
+- **The Server Actions changed only their revalidate targets.** Those come from server-resolved slugs, there's no new export, and auth still comes first.
+- **The pages expose only public-table fields.** There's no id, key or browser fetch, and no key in the bundle.
+- **New findings:**
+  - one 🟡: SEC-MED-15, a pre-existing sitemap XSS sink that T-025 didn't widen, with a one-line fix either way;
+  - two 🟢: SEC-INFO-36 (a narrowing guardrail) and SEC-INFO-37 (the `constructor` slug; availability only).
+- **No 🔴 or 🟠 finding.**
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** T-025 may proceed to `/qa` (the production-build matrix, read-only) → `code-reviewer` → merge. Conditions:
+- **Server and config files are bound by sha256 at `309bc0d`.** If one changes before merge, the clearance lapses for that file until `/cso` re-reviews it.
+  - `next.config.ts` `a44a56d9f997bb13…`
+  - `src/app/actions/settings-actions.ts` `8ca4d1ef35057fbe…`
+  - `src/app/actions/products-actions.ts` `bb3ba3e231219a09…`
+  - `src/lib/nav.ts` `82e6e75d2f4742f7…`
+  - `src/app/sitemap.ts` `105e10253fdd12fb…`
+  - `products/page.tsx` `a970fb2cd0f922e2…`
+  - `products/[category]/page.tsx` `3e2dca9def343a05…`
+- **One change is pre-cleared.** If SEC-MED-15's fix (b) is applied, `nav.ts` may differ from its hash by exactly that one line in `categoryPath()`. `/qa static` confirms the diff is that line and nothing else.
+- **Client-facing components are bound by invariants, not hashes.** `CategoryCardGrid`, `ProductGrid`, `ProductCard` and `what-we-do/page.tsx` may change for design, provided they still:
+  1. add no `"use client"`;
+  2. use no id as a key;
+  3. pass no whole `Product` or product row into a client component;
+  4. add no raw-HTML sink;
+  5. keep the `hrefBase` runtime check.
+
+**Pre-deploy position:**
+- A `main` holding T-025 at these hashes adds no sensitive surface beyond what this pass reviewed.
+- It isn't held for SEC-HIGH-2 or SEC-MED-15, both of which are pre-existing.
+- `/ship`'s live check adds the two encoded-redirect GETs from item 1.
+- Deploying still needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md` (this entry, plus its §3, §5 and §7 rows). No commit.
+- Made only GET and HEAD requests, with no cookie, to `:3101` and `:3000`.
+- Ran one headless Chrome on a local file, and removed its throwaway profile.
+- No sign-in, no Server Action call, no access to the live database beyond those page reads.
+
+### 🔒 CSO Audit — 2026-10-03 — ticket-review:T-025 (re-check of fix commit `f1bd94d`)
+
+**Scope:** Re-check of the clearance conditions above, dispatched by `/system-architect`.
+- **The commit:** `f1bd94d` (parent `309bc0d`, branch `t-025-products-routes`, authored `happierbangladesh`). It touches 6 files (+28/−10): the design FIX FIRST items, code-review minors, and SEC-MED-15's fix (b).
+- **Verified against** `git diff 309bc0d f1bd94d`. The working tree equals `f1bd94d` for `src/` and `next.config.ts`.
+
+**1. The builder's claims: ✅ all true.**
+
+| Bound file | `309bc0d` | `f1bd94d` | Change |
+|---|---|---|---|
+| `next.config.ts` | `a44a56d9…` | `a44a56d9…` | none |
+| `settings-actions.ts` | `8ca4d1ef…` | `8ca4d1ef…` | none |
+| `products-actions.ts` | `bb3ba3e2…` | `bb3ba3e2…` | none |
+| `sitemap.ts` | `105e1025…` | `105e1025…` | none |
+| `nav.ts` | `82e6e75d…` | `507e5c62…` | +1/−1: exactly the pre-cleared `encodeURIComponent(slug)` line in `categoryPath()` |
+| `products/page.tsx` | `a970fb2c…` | `af42e298…` | a type on the grouping callback's parameter, and three reworded comments; the runtime logic is unchanged |
+| `products/[category]/page.tsx` | `3e2dca9d…` | `aa384615…` | the `PageHeader` tag literal `"What We Do"` → `"Products"` |
+
+- **Also unchanged:** `site-content.ts` and the four invariant-bound components (`CategoryCardGrid`, `ProductGrid`, `ProductCard`, `what-we-do/page.tsx`) are byte-identical, so their invariants hold trivially.
+- **The other three files are UI only:**
+  - `Header.tsx` adds a `menuOpen && "bg-background"` class;
+  - `MobileOverlayMenu.tsx` adds a `data-lenis-prevent` attribute;
+  - `PageHeader.tsx` changes `text-primary` → `text-accent`.
+
+  The two client components among them were already client components; no `"use client"` was added anywhere.
+- **Added lines** contain no raw-HTML sink, `process.env`, `NEXT_PUBLIC_*`, client DB import, `fetch(`, new `href` or debug print. Secret patterns: 0 hits.
+- **Typecheck:** `npx tsc --noEmit --incremental false` exited 0.
+
+**2. The served build is `f1bd94d`'s code.**
+- `:3101` serves build `L3uwd8IEWt6SeramWKAQx`, as the HTML shows. It was written at 19:31:36, 21 s before the commit, so it was built from the working tree.
+- The last source edit was 19:31:02 (`MobileOverlayMenu.tsx`), and the build contains it: `data-lenis-prevent` appears in 2 static chunks.
+- The encoding `categoryPath` appears in 11 server chunks, and the new tag shows in the served HTML.
+- Nothing in `src/` or `next.config.ts` changed after the build, and the tree equals the commit.
+
+**3. Live re-check on `:3101` (read-only, no cookie): ✅ unchanged from `309bc0d`.**
+- **The premortem redirect rows all pass again:**
+  - 8/8 old slugs give one 308 → 200, and the trailing slash takes 2 hops;
+  - the query is kept, and an unknown slug ends in 404;
+  - `/business` takes one hop;
+  - `/products` pages answer 200, and `/products/no-such-slug` is 404.
+- **The eight adversarial vectors re-run** (encoded `//` and `\`, raw `//` and `\`, `http:%2F%2F`, the full-width solidus, `..%2F`, a leading `//host`) all stayed on-origin.
+- **CRLF** stayed encoded, and `Host` and `X-Forwarded-Host` spoofing had no effect.
+- **The admin gate holds:** `/admin` and `/admin/business` still answer 307 → `/admin/login`.
+- **Leaks:**
+  - 24 responses (the HTML and `?_rsc` payloads of `/products`, the 8 category pages, `/what-we-do`, `/` and the 404) have 0 UUID-shaped strings, 0 JWT-shaped strings and 0 row-field names;
+  - `.next/static` (48 files) has 0 key-pattern or Supabase-client hits.
+- **Encoding changed nothing visible:**
+  - the 18 sitemap `<loc>` values are byte-identical to the `309bc0d` build;
+  - the canonical and `og:url` on all 8 category pages are `https://fashionasialtd.com/products/<slug>`.
+
+**4. SEC-MED-15: ✅ the sitemap sink is closed in code by fix (b).** I re-ran the offline check with the committed `categoryPath()` and Next's real `resolveSitemap`.
+- **The planted payload is neutralized:** it leaves no element, there's one `<loc>` per entry, and the `<loc>` text holds no `<` or `&`.
+- **All 8 live slugs are unchanged.**
+- **16 hostile slugs** each encode to a single segment (no `/ ? # \ < > & "` after `/products/`) that resolves on this origin.
+- **Edge case considered:** `encodeURIComponent` throws only on a lone surrogate. Postgres can't store one in UTF-8 text or JSONB, so it can't turn into a sitemap 500.
+- **Residual:** the stored slug is still unvalidated at the source. That's SEC-INFO-19, which now reaches only React- and RSC-escaped sinks. The root cause, fix (a), goes to T-026.
+- **Production stays exposed** until a user-typed deploy of a `main` containing `f1bd94d`.
+
+**5. Ruling on the builder's open point (the category-card `href`s): React's attribute escaping plus the fixed `/products/` prefix is sufficient. No change is required for T-025.**
+- **The question.** `CategoryCardGrid.tsx:75` builds `${base}/${category.slug}` itself, not through `categoryPath()`, so a malformed stored slug would appear unencoded in the card `href`s on `/what-we-do` and `/products`.
+- **Why that's safe.** Each point was tested offline with the 16 hostile slugs:
+  1. **It can't leave the origin.** The base is fixed and checked at runtime (`normalizeHrefBase`: `^\/[a-z0-9]`, no `//`, no backslash), so every `href` starts with `/products/` and is path-absolute. All 16 resolved on this origin, including `//host`, `\\host`, `/\host`, tab-prefixed, `javascript:` and `http://` forms.
+  2. **It can't break out of the attribute.** React 19.2.4 escapes the value: each slug rendered as exactly one `<a href="…">`, with no raw `<`, `>` or `"` inside and nothing injected.
+  3. **It can't break out of the RSC inline script.** `next/link` is a client component (`'use client'` in `next/dist/client/app-dir/link.js`), so its `href` is serialized there; live, all 8 card `href`s appear in both the `?_rsc` payload and the HTML. Next's `htmlEscapeJsonString` (`next/dist/shared/lib/htmlescape.js`) escapes `& < > U+2028 U+2029` in that script.
+  4. **The worst case is a same-origin GET to an unintended path** (`/products/../../admin` resolves to `/admin`), including `Link`'s prefetch. GETs change nothing, Server Actions need a POST that passes the Origin check, and `/admin` is gated. That's SEC-INFO-19's existing Info-level residual.
+- **Why the sitemap was different in kind.** It's XML built from strings with no escaping at all, which is what fix (b) closed. The card `href` goes through the same React and RSC escaping as the category titles and descriptions, which are already free admin-entered text.
+- **Root cause → T-026.** Recommend `/pm` add an explicit T-026 AC bullet: `normalizeProducts()` keeps a stored slug only if `isWellFormedSlug()` passes, with `/cso review`. That one change closes, at the source, the card `href`, the section links, the canonical, revalidation and the sitemap. It also closes SEC-INFO-19.
+- **Optional consistency, not needed for security.** If T-026 (or T-025, at the builder's choice) wants the card to match `categoryPath()` for a malformed slug:
+  - `` href={`${base}/${encodeURIComponent(category.slug)}`} `` is pre-cleared under the invariants in the T-025 sign-off; anything beyond that one expression comes back to `/cso`.
+  - This office's advice is to leave it out of T-025: it changes nothing for any slug the app can store, and the root-cause fix makes it moot.
+
+**Re-check verdict: ✅ CLEARED.** The clearance carries to `f1bd94d`.
+- **Bound by sha256, unchanged:** `next.config.ts` `a44a56d9f997bb13…`, `settings-actions.ts` `8ca4d1ef35057fbe…`, `products-actions.ts` `bb3ba3e231219a09…`, `sitemap.ts` `105e10253fdd12fb…`.
+- **Bound by sha256, new:** `nav.ts` `507e5c62c5f6347f…`, `products/page.tsx` `af42e29862093b8d…`, `products/[category]/page.tsx` `aa3846155de3215c…`.
+- **Unchanged:** the invariant conditions and the pre-deploy position in the T-025 sign-off. `/ship`'s live check still adds the two encoded-redirect GETs.
+- **Actions taken:**
+  - GET and HEAD only to `:3101`, with no cookie;
+  - offline scripts in the session scratchpad;
+  - this append (and two §5 rows).
+
+  No sign-in, no Server Action call, no write to the live database, no commit.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -799,6 +1106,14 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 | SEC-INFO-34 — `.select("id").maybeSingle()` after an UPDATE or DELETE is RLS-neutral, because the `WHERE id =` filter already applied SELECT policies. "Not found" means zero rows were written, under any policy shape | No ticket. Guardrail: use this pattern only on unique-key filters; in postgrest-js 2.112.2, `maybeSingle()` is only a client-side count | Closed as informational. The `/qa` manual-checklist items are in the T-015 entry, item 3 |
 | SEC-INFO-35 — Next's default 1 MB Server Action body limit is the only size bound on `uploadFile` and `addMediaAction`. Report PDFs over about 1 MB can't be uploaded, and the admin sees the generic fallback text | No ticket from this office. Guardrail: any change that raises `serverActions.bodySizeLimit` must add server-side size and type validation to both upload paths in the same change, and needs `/cso review`. Supporting larger PDFs is a product question for `/pm`/`/architect`; signed upload URLs are preferred | Open. Guardrail |
 | SEC-HIGH-2 — structural-fix scope note, 2026-09-28 (T-015 CSO entry) | For the role-scoping ticket recommended above | After T-015 there are 8 session-check sites: 3 private `requireUser()` copies, 4 inline `getUser()` calls and the middleware gate. Consolidate them into one `server-only` helper first, and never export it from a `"use server"` file |
+| SEC-MED-15 — stored-XSS sink in `/sitemap.xml`. Next 16.3.6 writes `<loc>` unescaped, and `normalizeProducts()` returns a stored slug verbatim; proved by execution and headless Chrome. Pre-existing since T-005; T-025 doesn't widen it. No app write path can plant it: that takes a direct DB write (the dashboard, or the anon key plus any session, i.e. SEC-HIGH-2's chain) | Not yet filed. Recommend (a) the `isWellFormedSlug()` gate in `normalizeProducts()` (SEC-INFO-19's fix), in T-026 or a small sensitive ticket, and/or (b) `encodeURIComponent` in `categoryPath()`, pre-cleared to ride T-025 | Open, 🟡 Medium. Escalates to 🟠 if the anon key ever reaches a browser. Recommend closing it before or with the next deploy. Doesn't block T-025 |
+| SEC-INFO-19 — status update, 2026-10-03 (T-025 CSO entry) | Same fix as before; it's now also SEC-MED-15's root cause | Open. Priority raised: the unvalidated stored slug is now known to reach a script-capable sink, not only a same-origin link |
+| SEC-MED-4 — erratum, 2026-10-03 (T-025 CSO entry) | The T-005 entry's premise that Next escapes sitemap URLs is false for `<loc>` in 16.3.6 | The T-005-half closure no longer covers the sitemap sink; that's tracked as SEC-MED-15 |
+| SEC-INFO-36 — `ProductGrid`'s `Pick<…>` narrows the type, not the runtime object. Full `products` rows reach `ProductGrid` and `ProductCard`, which is safe only while both stay server components | Guardrail. Recommend a narrowing mapper plus `id?: never`, like `toCategoryCards`, in T-016 | Open. Informational |
+| SEC-INFO-37 — a category slugged `constructor` makes `getAllCategoryProducts()` throw (the plain-object record finds the inherited `Object` member) and breaks `CategoryProductsManager`'s lookups. `/products` fails soft and shows no product sections; `/admin/business` fails to load. Reachable through ordinary admin UI | Recommend folding into T-016 or T-026: a null-prototype object or `Map` server-side, `Object.hasOwn` or a `Map` at the client lookups, or reserving `Object.prototype` names when deriving slugs | Open. 🟢 Low; availability only. Doesn't block deploy |
+| SEC-INFO-31 — status update, 2026-10-03 (T-025 CSO entry) | Same lockfile-only ticket | Open. 16 advisories now (0 critical, 12 high, 2 moderate, 2 low), with the lockfile byte-identical to T-006's (`6a026457…`), so it's advisory-feed growth only, led by `braces` `GHSA-vfj7-8cjw-p6xm` via `tailwindcss` and `eslint-config-next`. All build or lint toolchain; none reachable at runtime |
+| SEC-MED-15 — status update, 2026-10-03 (T-025 re-check of `f1bd94d`) | Fix (b) shipped in `f1bd94d`: `categoryPath()` encodes the slug | ✅ **The sitemap sink is closed in code, pending merge.** Verified offline (the planted payload leaves no markup) and live (18/18 sitemap URLs unchanged). Bound to `nav.ts` sha256 `507e5c62…`. **Production is still exposed** until a user-typed deploy of a `main` containing `f1bd94d`. The root cause stays open as SEC-INFO-19, for T-026 |
+| SEC-INFO-19 — status update, 2026-10-03 (T-025 re-check) | Recommend `/pm` add it as an explicit T-026 AC bullet (`normalizeProducts()` keeps a stored slug only if `isWellFormedSlug()` passes), with `/cso review` | Open. Informational again: with fix (b) in, every remaining sink (card `href`s, section links, canonical) is React- or RSC-escaped and prefix-confined, verified with 16 hostile slugs. No change is required in `CategoryCardGrid` |
 
 ## 6. Secrets log
 
@@ -832,3 +1147,9 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
    - **Response:**
      1. Note each object's created-at time, then delete it.
      2. Treat the incident as item 6 (an unknown identity) or item 1 (a known admin's session compromised). Once T-015 is deployed, an anonymous caller can't reach `uploadFile`.
+9. **Unexpected markup in `/sitemap.xml`, or a category URL that isn't `/products/<a-z0-9->` (SEC-MED-15, 2026-10-03).** No app write path can store such a slug, so it was planted. Treat it as item 6 (an unknown identity) or item 1 (a known admin's credential compromised), never as a content-editing slip.
+   - **Where to look:** `site_settings`, key `business`, at each `value.products[].slug`. Anything outside `^[a-z0-9]+(-[a-z0-9]+)*$` is planted.
+   - **Response:**
+     1. The owner fixes the slug in the Supabase SQL editor, per the hand-applied-SQL rule.
+     2. Supabase session cookies here are readable by script. So if an admin may have opened the sitemap since the slug was planted, treat that admin's session as stolen: rotate their password and revoke their sessions.
+     3. Review Authentication → Users.
