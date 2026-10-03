@@ -365,7 +365,48 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
   - `src/lib/nav.ts`;
   - `src/components/global/Footer.tsx`;
   - `what-we-do/page.tsx`.
-  Sequence: `premortem-planner` (it touches `next.config.ts`) → `/build` → `/design-review` → `/security-review` → `/qa` (live, read-only) → `code-reviewer` → merge.
+  **Premortem (2026-10-03): GO WITH ADDITIONS.** These MUST-ADD criteria are folded in and binding:
+  - **Redirect rule:** exactly `{ source: "/what-we-do/:slug", destination: "/products/:slug", permanent: true }`, with a comment saying it overrides any future `/what-we-do/<x>` page. The `next.config.ts` diff only adds lines: `agentRules: false`, `logging: { serverFunctions: false }` and the 4 existing redirect rules stay byte-identical.
+  - **Redirect matrix,** run read-only with `curl` on a production build (`npm run build && npm start -- -p 3001`):
+    - `/what-we-do` → 200, with no `Location` header;
+    - `/what-we-do/` → `/what-we-do` → 200;
+    - each of the 8 old slugs → one 308 → 200;
+    - `/what-we-do/t-shirts/` → 200 in at most 2 hops;
+    - the query string is kept;
+    - unknown and mixed-case paths end in 200 or 404, never a loop;
+    - `/business` → `/what-we-do` in one hop;
+    - `/products` and `/products/<slug>` → 200 with no redirect;
+    - `/products/no-such-slug` → 404.
+  - **`/products` read and layout:**
+    - One `getAllCategoryProducts()` call inside `Promise.all` with `getSettings("business")`. `getAllCategoryProducts()` itself stays unchanged.
+    - Sections follow the category list, in the staff's order.
+    - The category name is an `h2` link; product names are `h3` (`headingLevel`).
+    - The note shows only when no *displayed* category has products.
+  - **No leaks:**
+    - No category `id` in any prop or React key on `/products`, and no browser-side data fetch.
+    - On the production build, 0 UUID-shaped strings in the HTML of `/products` and `/products/<slug>`.
+    - 0 anon-key-shaped strings in `.next/static`.
+  - **Server Actions:**
+    - No new export in any `"use server"` file. A shared path helper, if needed, goes in `src/lib/nav.ts`.
+    - `getUser()` stays the first call in every write action touched.
+    - Revalidate targets: a business save revalidates `/what-we-do`, `/products`, each `/products/<slug>` and `/sitemap.xml`. A product write revalidates `/products/<slug>` and `/products`.
+    - These are verified by reading the code only. No agent saves anything.
+  - **`site-content.ts`:** the diff is only the 2 slug-collision message strings. No slug, id or default changes.
+  - **`BusinessClient.tsx` help text** (`:65`, `:82`) isn't touched here; it moves to T-026, which rewrites that page.
+  - **`/design-review` additions:**
+    - the closed header at 1280×800;
+    - the open menu at 360×640 and 1024×768;
+    - a keyboard Tab pass that reaches "Connect".
+  - **Owner checklist row:** the populated-catalog check, using either a `ZZ-TEST T-025 (delete me)` product on the local production build or the first real product. It's the owner's choice, and it gets dated.
+  - **At close:** T-022's AC count goes from 17 to 18 sitemap entries, plus ARCHITECTURE §1's route row and `/ship`'s live check (`/what-we-do` → 200; one old slug → 308 → 200).
+
+  **Also folded in, carried forward from T-024's reviews:**
+  - `hrefBase`'s runtime check mirrors its type, rejecting `/\…` (`CategoryCardGrid.tsx:47`).
+  - `break-words` on product and category descriptions.
+  - Design guidance: populated product tiles shouldn't look like any shop's. `design-reviewer` suggested a `surface` mat for white-backdrop shots, a `from-surface` photo fade, or an AA-passing micro-label. The builder chooses; `/design-review` judges.
+  - Any *new* label uses an AA-passing token, never `text-primary` on dark (see T-027).
+
+  Sequence: `premortem-planner` (it touches `next.config.ts`) ✅ → `/build` → `/design-review` → `/security-review` → `/qa` (production-build matrix, read-only) → `code-reviewer` → merge.
   Risk: the URL change, mitigated by the permanent redirect. Slugs stay as they are: `/products/t-shirts`, not the client's "t-shirt".
 
 - [ ] **T-026** — A dedicated admin "Products" page for categories and their products [app:admin][design][sec]
