@@ -1,6 +1,6 @@
-import Link from "next/link";
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import CategoryCardGrid, { toCategoryCards } from "@/components/catalog/CategoryCardGrid";
 import { getSettings } from "@/app/actions/settings-actions";
 import { normalizeProducts } from "@/lib/site-content";
 import { ArrowRight } from "lucide-react";
@@ -27,7 +27,7 @@ export const revalidate = 60;
 
 export default async function BusinessPage() {
     const data = await getSettings("business");
-    const products = normalizeProducts(data.products);
+    const categories = toCategoryCards(normalizeProducts(data.products));
     const processSteps: string[] = data.processSteps?.length ? data.processSteps : [];
     // Blank lines separate paragraphs, so the copy stays a single textarea in the admin.
     const craftParagraphs: string[] = (data.whatWeDoText || "").split(/\n\s*\n/).map((p: string) => p.trim()).filter(Boolean);
@@ -112,50 +112,9 @@ export default async function BusinessPage() {
                     </div>
                 </ScrollReveal>
 
-                {/* Photo cards per the client's reference — photograph behind,
-                    name on a scrim at the bottom left. Photos are real production
-                    shots (no per-product photography exists), B&W for cohesion. */}
-                <div className="grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
-                    {/* Titles are client-entered and can repeat, so the key pairs
-                        the title with its position rather than trusting uniqueness.
-                        Each card links to its own detail page (T-005) — `slug` is
-                        already normalizeProducts()'s safe, dedupe-guaranteed output,
-                        never the raw title, so it's safe to use directly as a path
-                        segment. */}
-                    {products.map((product, i) => (
-                        <ScrollReveal key={`${product.title}-${i}`} delay={i * 0.1}>
-                            <Link
-                                href={`/what-we-do/${product.slug}`}
-                                className="group relative block h-48 overflow-hidden rounded-xl border border-white/10 bg-surface md:h-56 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                            >
-                                <img
-                                    src={product.image}
-                                    alt=""
-                                    aria-hidden="true"
-                                    loading="lazy"
-                                    decoding="async"
-                                    className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-700 group-hover:scale-105 group-hover:opacity-90"
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
-                                {/* Title and description share one bottom block so the
-                                    card looks right whether or not a description is set. */}
-                                <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-4">
-                                    <span className="line-clamp-2 font-serif text-lg font-bold leading-snug text-white">
-                                        {product.title}
-                                    </span>
-                                    {/* Clamped: the card is a fixed height and the description is
-                                        free text, so an over-long one would otherwise grow this
-                                        block past the top of the card and clip the title. */}
-                                    {product.description && (
-                                        <p className="line-clamp-3 text-xs leading-relaxed text-white/70">
-                                            {product.description}
-                                        </p>
-                                    )}
-                                </div>
-                            </Link>
-                        </ScrollReveal>
-                    ))}
-                </div>
+                {/* One photo card per category, each linking to its own detail
+                    page (T-005). */}
+                <CategoryCardGrid categories={categories} hrefBase="/what-we-do" />
             </section>
 
             {/* Showroom band — moved here from /global-partner. The photograph is
