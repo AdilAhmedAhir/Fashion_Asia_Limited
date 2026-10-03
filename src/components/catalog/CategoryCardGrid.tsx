@@ -72,7 +72,7 @@ export default function CategoryCardGrid({ categories, hrefBase, className }: Ca
                 long list never waits seconds to appear. */}
             {categories.map((category, i) => (
                 <ScrollReveal key={`${category.title}-${i}`} delay={(i % 4) * 0.1}>
-                    <CategoryCard category={category} href={`${base}/${category.slug}`} />
+                    <CategoryCard category={category} href={`${base}/${encodeURIComponent(category.slug)}`} />
                 </ScrollReveal>
             ))}
         </div>
