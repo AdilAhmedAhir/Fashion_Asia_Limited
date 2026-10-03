@@ -175,6 +175,11 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Notes:** Ranked #2. Out of scope: `uploadFile`'s missing size and type checks (`docs/MEMORY_BANK.md` Known Trap #9). DB-error branches may forward `error.message` exactly as T-012 does (the tracked SEC-MED-8 class); T-018 then replaces that across all three action files in one pass. The new `getUser()` checks don't mitigate SEC-HIGH-2, because a self-registered account passes `getUser()`, so that finding stays a user action.
 
 - [ ] **T-016** — Fix the product editor's ordinary-use data bugs before staff start using it
+  - **2026-10-03 notes, from the `/products` run:**
+    - **Re-point Files.** Per T-026's `architect-reviewer` ruling, the editor moves from `business/{page,BusinessClient}.tsx` to `src/app/admin/(dashboard)/products/*`.
+    - **Add to the AC (T-024 code review):**
+      - the server must require a non-blank product `name` and `image`. Today only the editor's add button enforces them, so a blank name or an empty image can still arrive through edits or direct action calls;
+      - a product with neither a name nor a description shouldn't leave an empty padded block (`ProductCard.tsx`).
   - **Source:** `docs/QA_REPORT.md` Static Pass — T-004 WARN-1, WARN-2, WARN-3, 2026-09-27 (`docs/MEMORY_BANK.md` T-004 entry: "QA and `/cso` both recommend picking these three (WARN-1/2/3) up as `/pm` fast-follow tickets"). Also a PM source check on 2026-09-28, same race class as WARN-1, for `/qa` to confirm: `ImageUploadField.tsx:249-251` calls `onChange` on every keystroke in its hand-editable path box, and `CategoryProductsManager.tsx:532` wires that `onChange` straight to `persist()`. Typing a path into a product row therefore fires one `updateCategoryProduct` write per keystroke, and those writes aren't serialized.
   - **Files:** `src/components/admin/CategoryProductsManager.tsx` (`ProductRow.persist()` :409-445 and its `<ImageUploadField>` :532; the `<AddProductForm>` mount :242; the empty-state line :252), `src/app/actions/products-actions.ts` (`getAllCategoryProducts` :125-143), `src/app/admin/(dashboard)/business/page.tsx`, `src/app/admin/(dashboard)/business/BusinessClient.tsx` (pass the load state through). `src/components/admin/ImageUploadField.tsx` is touched only if the chosen fix needs a new prop there (see Notes).
   - **Flags:** schema-touching: **no** · sensitive: **yes** (`src/app/admin/**`, Server Action module) · UI: **yes**
@@ -239,7 +244,11 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/cso review` (className-only diff; required by WORKFLOW §5's literal `src/app/admin/**` trigger) → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Security-sensitive row, UI)
   - **Notes:** Ranked #8, with T-011 straight after it. Kept separate from T-011 for a clean revert: this is one CTA color treatment across public and admin, while T-011 is admin label opacity and focus rings in two shared components. Out of scope: `text-primary` used as plain, non-CTA text on dark backgrounds (e.g. admin kicker labels); `/ui-ux` logs it as its own finding if it fails. This touches the public forms' CTA; §10 is inert, so there's no marketing review.
 
-- [ ] **T-021** — Give catalog photos on `/what-we-do` and the category pages a meaningful accessible name
+- [x] **T-021** — Give catalog photos on `/what-we-do` and the category pages a meaningful accessible name
+  - **Closed 2026-10-03 by T-024** (`9755389`, `49e13ba`).
+    - Product photos now carry the product's name, with a fallback of "Product from our {category} range".
+    - Category-card photos stay decorative (`alt=""`; `aria-hidden` dropped), because the visible title already names each link (WCAG H2). `design-reviewer` agreed; see DECISIONS 2026-10-03.
+    - Live, there are 0 products, so the product `alt` was verified by an offline render and a SYNTHETIC grid. The owner's first-product checklist row re-checks it.
   - **Source:** `docs/QA_REPORT.md` Static Pass — T-005 WARN-4, 2026-09-27 ("Recommend: `/pm` fast-follow across both `what-we-do/page.tsx` and `[category]/page.tsx` together")
   - **Files:** `src/app/(website)/(marketing)/what-we-do/[category]/page.tsx` (product photo, `alt=""` plus `aria-hidden`, :142), `src/app/(website)/(marketing)/what-we-do/page.tsx` (category-card photo, :133)
   - **Flags:** schema-touching: **no** · sensitive: **no** · UI: **yes** (public)
@@ -294,7 +303,19 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
 - Each ticket is built in place on its own branch, one at a time, with no worktrees: a second checkout would need a copy of `.env.local`.
 - T-025 and T-026 both edit `settings-actions.ts`, and T-026 and T-016 both edit the product editor, so they can't overlap anyway.
 
-- [ ] **T-024** — Shared catalog components: the category photo-card grid and the product card, with meaningful image names [app:site][design]
+- [x] **T-024** — Shared catalog components: the category photo-card grid and the product card, with meaningful image names [app:site][design]
+  Done 2026-10-03:
+  - **Commits:** `9755389`, then `49e13ba`, the follow-up fixing design-review's FIX FIRST plus code-review's minor items.
+  - **Reviews:** `code-reviewer` SHIP twice; `design-reviewer` FIX FIRST, then SHIP. Codex: SKIPPED (not connected).
+  - **Visible changes accepted** (recorded in DECISIONS):
+    - catalog titles go from #fff to the `foreground` token;
+    - the product grid is 1 column below 640 px;
+    - the `/what-we-do` reveal stagger is capped at 0.3 s;
+    - a blank product name renders no heading;
+    - long words wrap.
+  - **Carried forward:**
+    - to T-025: a backslash `hrefBase` edge case, and `break-words` on descriptions;
+    - to T-016: the name and image are required server-side.
   AC:
   - One reusable category photo-card grid renders today's `/what-we-do` "Product Catalog" cards with the same look: photo, dark gradient, serif title, 2 columns on phones and 4 from `md`. Each card is a link, and the page passes in its destination.
   - One reusable product card and product grid render today's category-page product tiles (image, name, description), with the same look.
@@ -375,6 +396,24 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
   Risk: the shared record. Two admin pages saving one record is exactly the overwrite risk the architect review is for.
 
 After T-026 this run also does **T-016** (above), by the owner's decision on 2026-10-03, because staff are about to use the product editor.
+
+**Follow-ups found in this run** (backlog; not part of the `/products` run):
+- [ ] **T-027** — Make `text-primary` micro-labels pass WCAG AA sitewide [app:site][design]
+  AC:
+  - Every `text-primary` text label on a dark background reaches at least 4.5:1, or 3:1 where it's large text under DESIGN.md §3. Measured from pixels: the "01. PRODUCT CATALOG" and "ALL PRODUCTS" kickers are 2.21:1, "contact us" is 2.61:1, and the `PageHeader` tag (`src/components/ui/PageHeader.tsx:15`, on every page) is about 2.77:1. `design-reviewer` suggests `text-accent`, which measures 7.69:1.
+  - DESIGN.md §2 gains a `scrim` token for the photo-card gradient (Low).
+  Source: `design-reviewer`, T-024 review, 2026-10-03.
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Rank it with T-020 and T-011.
+- [ ] **T-028** — Respect `prefers-reduced-motion` sitewide [app:site][design]
+  AC:
+  - With reduced motion set:
+    - `ScrollReveal` content shows without sliding (`MotionConfig reducedMotion="user"` in `src/app/(website)/layout.tsx`);
+    - the card hover zoom is `motion-safe:` only;
+    - Lenis smooth scrolling is off;
+    - the preloader is shortened or skipped.
+  - Default motion is unchanged.
+  Source: `design-reviewer` and `code-reviewer`, T-024 review, 2026-10-03. It breaks the a11y floor in CLAUDE.md; it isn't an AA failure (WCAG 2.3.3 is AAA).
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
 
 ### Dependency Order
 

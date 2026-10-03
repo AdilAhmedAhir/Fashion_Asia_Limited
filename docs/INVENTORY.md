@@ -4,7 +4,7 @@
 
 > **Reuse rubric:** exact match → **reuse** · close (differs by config) → **extend with a variant/prop** · genuinely new → **create** in the right unit, add a one-line `@purpose` comment, regenerate this file. Search here before writing any new component/util/schema, and state your reuse/extend/new choice in the ticket summary.
 
-## src  _(197)_
+## src  _(202)_
 
 | Export | Kind | Purpose | File |
 |---|---|---|---|
@@ -25,6 +25,8 @@
 | `CareerPage` | default function | — | `src/app/(website)/(forms)/career/page.tsx` |
 | `CareerPageClient` | default function | — | `src/app/(website)/(forms)/career/CareerPageClient.tsx` |
 | `CareersClient` | default function | — | `src/app/admin/(dashboard)/careers/CareersClient.tsx` |
+| `CategoryCardData` | type | The fields a category photo card renders, and nothing more (no internal id). | `src/components/catalog/CategoryCardGrid.tsx` |
+| `CategoryCardGrid` | default function | Category photo-card grid (2 columns on phones, 4 from md): each card links to its category page and is revealed on scroll. | `src/components/catalog/CategoryCardGrid.tsx` |
 | `CategoryDetailPage` | default function | — | `src/app/(website)/(marketing)/what-we-do/[category]/page.tsx` |
 | `CategoryProduct` | type | — | `src/lib/site-content.ts` |
 | `CategoryProductInput` | type | — | `src/lib/site-content.ts` |
@@ -136,6 +138,8 @@
 | `PRODUCT_IMAGE_FALLBACK` | const | — | `src/lib/site-content.ts` |
 | `PRODUCT_IMAGES` | const | — | `src/lib/site-content.ts` |
 | `ProductActionResult` | type | — | `src/app/actions/products-actions.ts` |
+| `ProductCard` | default function | One catalog product tile: the photo, then the serif name and full description in normal flow below it. | `src/components/catalog/ProductCard.tsx` |
+| `ProductGrid` | default function | Product grid (1 column on phones, 2 from sm, 4 from md) of ProductCards, each revealed on scroll with a staggered delay. | `src/components/catalog/ProductGrid.tsx` |
 | `ProductVoidResult` | type | — | `src/app/actions/products-actions.ts` |
 | `readStoredCategoryIdentities` | function | — | `src/lib/site-content.ts` |
 | `RECOMMENDED_UPLOAD_HEIGHT` | const | — | `src/lib/upload-limits.ts` |
@@ -184,6 +188,7 @@
 | `TextArea` | function | — | `src/components/admin/SettingsForm.tsx` |
 | `TextInput` | function | — | `src/components/admin/SettingsForm.tsx` |
 | `TINYPNG_URL` | const | — | `src/lib/upload-limits.ts` |
+| `toCategoryCards` | function | Narrow categories to the fields a CategoryCardGrid card renders, so a category's internal id never reaches component props. | `src/components/catalog/CategoryCardGrid.tsx` |
 | `updateCategoryProduct` | function | — | `src/app/actions/products-actions.ts` |
 | `updateJob` | function | — | `src/app/actions/jobs-actions.ts` |
 | `updateLeader` | function | — | `src/app/actions/settings-actions.ts` |
@@ -207,4 +212,4 @@
 | `WhoWeWorkWithSettingsPage` | default function | — | `src/app/admin/(dashboard)/who-we-work-with/page.tsx` |
 
 
-_197 exports across 1 unit(s)._
+_202 exports across 1 unit(s)._
