@@ -50,6 +50,19 @@ type CategoryAttachability =
     | { attachable: false; reason: "not_found" }
     | { attachable: false; reason: "not_yet_bootstrapped"; title: string };
 
+// The one copy of the "category not saved yet" answer (T-026), shared by every
+// write below. It names the page and the button staff actually use: categories
+// moved from /admin/business to /admin/products, and its Save button is
+// "Save categories".
+const categoryNotSavedYet = (title: string) =>
+    `"${title}" hasn't been saved as a category yet. Open /admin/products and click Save categories once (no other changes needed), then try again.`;
+
+function attachabilityError(attachability: Exclude<CategoryAttachability, { attachable: true }>, categorySlug: string) {
+    return attachability.reason === "not_yet_bootstrapped"
+        ? categoryNotSavedYet(attachability.title)
+        : `Category "${categorySlug}" does not exist.`;
+}
+
 // Products may only attach to a category that already has a genuine,
 // stored, well-formed id + slug — i.e. has survived at least one save under
 // docs/TECH_STACK.md decision (d). normalizeProducts()'s read-time,
@@ -123,8 +136,9 @@ export async function getCategoryProducts(categorySlug: string): Promise<Categor
 
 // Every product across every category, grouped by category_slug and ordered
 // exactly like getCategoryProducts — one query for the whole admin page
-// (src/app/admin/(dashboard)/business/page.tsx, T-004) instead of one round
-// trip per category. Same "no auth check, anon-readable" shape as
+// (src/app/admin/(dashboard)/products/page.tsx since T-026; T-004 put it on
+// /admin/business) instead of one round trip per category. Same "no auth
+// check, anon-readable" shape as
 // getCategoryProducts above; a category with zero products simply has no key
 // in the returned record rather than an empty array entry.
 export async function getAllCategoryProducts(): Promise<Record<string, CategoryProduct[]>> {
@@ -156,14 +170,7 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
     if (!categorySlug) return { ok: false, error: "Missing category." };
 
     const attachability = await checkCategoryAttachable(categorySlug);
-    if (!attachability.attachable) {
-        return {
-            ok: false,
-            error: attachability.reason === "not_yet_bootstrapped"
-                ? `"${attachability.title}" hasn't been saved yet under the current system. Open /admin/business and click Save once (no other changes needed), then try again.`
-                : `Category "${categorySlug}" does not exist.`,
-        };
-    }
+    if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, categorySlug) };
 
     const sanitized = sanitizeInput(input);
 
@@ -209,14 +216,7 @@ export async function updateCategoryProduct(id: string, input: CategoryProductIn
     if (!categorySlug) return { ok: false, error: "Missing category." };
 
     const attachability = await checkCategoryAttachable(categorySlug);
-    if (!attachability.attachable) {
-        return {
-            ok: false,
-            error: attachability.reason === "not_yet_bootstrapped"
-                ? `"${attachability.title}" hasn't been saved yet under the current system. Open /admin/business and click Save once (no other changes needed), then try again.`
-                : `Category "${categorySlug}" does not exist.`,
-        };
-    }
+    if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, categorySlug) };
 
     // Read the row's category before the update so a product moved to a
     // different category (not exposed by T-004's planned UI, but the type
@@ -291,14 +291,7 @@ export async function reorderCategoryProducts(categorySlug: string, orderedIds: 
     if (!orderedIds?.length) return { ok: false, error: "Nothing to reorder." };
 
     const attachability = await checkCategoryAttachable(slug);
-    if (!attachability.attachable) {
-        return {
-            ok: false,
-            error: attachability.reason === "not_yet_bootstrapped"
-                ? `"${attachability.title}" hasn't been saved yet under the current system. Open /admin/business and click Save once (no other changes needed), then try again.`
-                : `Category "${slug}" does not exist.`,
-        };
-    }
+    if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, slug) };
 
     for (let i = 0; i < orderedIds.length; i++) {
         const { error } = await supabase

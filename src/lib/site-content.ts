@@ -329,7 +329,8 @@ export type Product = {
 };
 
 // A category's frozen identity as it already sits in storage, read fresh by
-// updateSettings immediately before every `business` save — never taken from
+// saveCategories (settings-actions.ts; updateSettings until T-026) immediately
+// before every category save — never taken from
 // client memory (docs/TECH_STACK.md decision (d), 2026-09-27, and its
 // same-day "legacy (id-less) categories" follow-up). Shared by
 // resolveCategoriesForSave's carry-forward lookup, computeRemovedCategories'
@@ -403,10 +404,18 @@ function dedupeSlug(slug: string, seen: Set<string>): string {
 // accept both forms and fill the gaps: a missing image falls back to the one
 // that name used to resolve to, a missing description simply hides the line.
 // Entries without a usable title are dropped rather than rendered as blank cards.
-// A stored `slug` always wins over a fresh computation, even after a title
-// edit, so a category's public URL never moves once assigned. Freshly
+// A well-formed stored `slug` always wins over a fresh computation, even after
+// a title edit, so a category's public URL never moves once assigned. Freshly
 // computed slugs are deduped against every slug already assigned earlier in
 // this same call — stored or computed — via `seen`, shared across the reduce.
+//
+// A stored slug is kept only if isWellFormedSlug() passes (docs/SECURITY.md
+// SEC-MED-15, root-cause fix, T-026). Every slug this returns reaches a URL,
+// a link or the sitemap's unescaped <loc>, so a malformed one (only possible
+// through a direct database edit: the save path never writes one) falls back
+// to the title's slug instead of being passed through verbatim. That costs
+// nothing a malformed slug ever had: resolveCategoriesForSave refuses to carry
+// it forward, and products-actions.ts never lets products attach to it.
 export function normalizeProducts(raw: unknown): Product[] {
     if (!Array.isArray(raw)) return [];
 
@@ -439,7 +448,7 @@ export function normalizeProducts(raw: unknown): Product[] {
             const id = typeof row.id === "string" ? row.id.trim() : "";
 
             const storedSlug = typeof row.slug === "string" ? row.slug.trim() : "";
-            const slug = storedSlug || dedupeSlug(slugify(title), seen);
+            const slug = isWellFormedSlug(storedSlug) ? storedSlug : dedupeSlug(slugify(title), seen);
             seen.add(slug);
 
             acc.push({ id, title, slug, description, image });
@@ -464,18 +473,17 @@ export function isWellFormedSlug(value: string): boolean {
 
 // A server-issued id for a brand-new category. Deliberately backed by the
 // runtime's Web Crypto global rather than Node's `crypto` module import:
-// this file has zero import statements today and is already imported by a
-// client component (BusinessClient.tsx, type-only, confirmed by reading it)
-// — globalThis.crypto.randomUUID() is available in both server and browser
-// runtimes, so this stays safe even if a client component ever starts
-// importing a VALUE (not just a type) from this shared module
+// this file has zero import statements and is imported by client components
+// too (the admin editors) — globalThis.crypto.randomUUID() is available in
+// both server and browser runtimes, so this stays safe whichever side a
+// value from this shared module ends up on
 // (docs/TECH_STACK.md decision (d), 2026-09-27).
 function randomUUID(): string {
     return globalThis.crypto.randomUUID();
 }
 
-// Save-time counterpart to normalizeProducts() above, for the `business`
-// settings write path (src/app/actions/settings-actions.ts::updateSettings).
+// Save-time counterpart to normalizeProducts() above, for the category write
+// path (src/app/actions/settings-actions.ts::saveCategories, T-026).
 // normalizeProducts() is READ-time only and silently auto-suffixes a
 // colliding freshly-computed slug via dedupeSlug() so a page always has
 // something to render. Decision (b) (docs/TECH_STACK.md) requires the
@@ -602,7 +610,7 @@ export function resolveCategoriesForSave(
 // an id-diff, never a slug-diff, so a brand-new row that happens to compute
 // the identical slug a deleted row just vacated can never make the deletion
 // invisible (closes CRIT-1 / SEC-HIGH-3 on the delete-guard's own side of the
-// same root cause). Called by updateSettings immediately after a successful
+// same root cause). Called by saveCategories immediately after a successful
 // resolveCategoriesForSave().
 export function computeRemovedCategories(
     existingById: ReadonlyMap<string, ExistingCategoryRef>,
@@ -616,7 +624,7 @@ export function computeRemovedCategories(
     return removed;
 }
 
-// Factored out of updateSettings's own pre-fetch parsing so
+// Factored out of the category save's own pre-fetch parsing so
 // products-actions.ts can share the identical "which categories are
 // genuinely frozen" read without re-deriving it (docs/TECH_STACK.md decision
 // (d)'s same-day "legacy (id-less) categories" follow-up). A category with
@@ -640,6 +648,63 @@ export function readStoredCategoryIdentities(raw: unknown): Map<string, Existing
     }
 
     return result;
+}
+
+// The What We Do page's own text: everything in site_settings.business except
+// the categories (T-026). The row has one writer per field:
+// settings-actions.ts::saveWhatWeDoText writes exactly these 4 (and the "Sync
+// content from code" panel may reset them), while `products` (the categories)
+// is written only by saveCategories. Any other stored key has no writer, and
+// both saves carry it through untouched.
+/** @purpose The 4 What We Do page-text fields in site_settings.business: everything there except the categories. */
+export type WhatWeDoText = {
+    processTitle: string;
+    processSteps: string[];
+    whatWeDoTagline: string;
+    whatWeDoText: string;
+};
+
+const WHAT_WE_DO_TEXT_UNREADABLE = "The page text couldn't be read, so nothing was saved. Reload the page and try again.";
+
+/**
+ * @purpose Copy exactly the 4 What We Do text fields out of an untrusted value, refusing the whole value if any field is missing or mistyped.
+ *
+ * Builds a brand-new object from the 4 allowed keys only, so nothing else a
+ * caller sends (categories, ids, anything) can ride along into storage. A
+ * missing or wrongly typed field rejects the whole value: nothing is trimmed,
+ * coerced or capped, so what's stored is exactly what the editor showed.
+ * Only own properties count, never inherited ones.
+ */
+export function pickWhatWeDoText(raw: unknown): { ok: true; value: WhatWeDoText } | { ok: false; error: string } {
+    if (!raw || typeof raw !== "object" || Array.isArray(raw)) {
+        return { ok: false, error: WHAT_WE_DO_TEXT_UNREADABLE };
+    }
+
+    const row = raw as Record<string, unknown>;
+    const own = (key: keyof WhatWeDoText) => (Object.prototype.hasOwnProperty.call(row, key) ? row[key] : undefined);
+
+    const processTitle = own("processTitle");
+    const processSteps = own("processSteps");
+    const whatWeDoTagline = own("whatWeDoTagline");
+    const whatWeDoText = own("whatWeDoText");
+
+    if (typeof processTitle !== "string" || typeof whatWeDoTagline !== "string" || typeof whatWeDoText !== "string") {
+        return { ok: false, error: WHAT_WE_DO_TEXT_UNREADABLE };
+    }
+    if (!Array.isArray(processSteps)) {
+        return { ok: false, error: WHAT_WE_DO_TEXT_UNREADABLE };
+    }
+
+    // An index loop, not .every(): .every() skips holes in a sparse array,
+    // which would then be stored as null.
+    const steps: string[] = [];
+    for (let i = 0; i < processSteps.length; i++) {
+        const step: unknown = processSteps[i];
+        if (typeof step !== "string") return { ok: false, error: WHAT_WE_DO_TEXT_UNREADABLE };
+        steps.push(step);
+    }
+
+    return { ok: true, value: { processTitle, processSteps: steps, whatWeDoTagline, whatWeDoText } };
 }
 
 export interface Certification {

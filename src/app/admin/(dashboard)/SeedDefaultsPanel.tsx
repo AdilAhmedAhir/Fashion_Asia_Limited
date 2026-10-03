@@ -13,7 +13,9 @@ const CONFIG_KEYS = ["contact", "general"];
 const LABELS: Record<string, string> = {
     homepage: "Homepage",
     who_we_are: "Who We Are",
-    business: "What We Do",
+    // Only the page text is reset (T-026): seedSettingsFromDefaults never
+    // writes the categories, which live in the same stored row.
+    business: "What We Do page text (categories are never touched)",
     who_we_work_with: "Global Partner",
     sustainability: "Sustainability",
     contact: "Contact details",
@@ -37,12 +39,20 @@ export default function SeedDefaultsPanel() {
         );
         if (!confirmed) return;
 
+        setResult(null);
         startTransition(async () => {
             try {
-                const { seeded } = await seedSettingsFromDefaults(selected);
-                setResult({ ok: true, message: `Synced ${seeded.length} page(s): ${seeded.join(", ")}.` });
-            } catch (err) {
-                setResult({ ok: false, message: err instanceof Error ? err.message : "Sync failed." });
+                // Returns its failures (T-026) rather than throwing them,
+                // because Next redacts a thrown Server Action message in
+                // production.
+                const outcome = await seedSettingsFromDefaults(selected);
+                if (!outcome.ok) {
+                    setResult({ ok: false, message: outcome.error });
+                    return;
+                }
+                setResult({ ok: true, message: `Synced ${outcome.seeded.length} page(s): ${outcome.seeded.join(", ")}.` });
+            } catch {
+                setResult({ ok: false, message: "Sync failed. Check your connection and try again." });
             }
         });
     };
@@ -100,8 +110,11 @@ export default function SeedDefaultsPanel() {
                 {isPending ? "Syncing..." : `Sync ${selected.length} page(s) from code`}
             </button>
 
+            {/* An error is role="alert" and a success role="status"
+                (docs/DESIGN.md §6). Success is text-accent: text-primary as
+                text on this dark panel fails AA (DESIGN.md §2). */}
             {result && (
-                <p role="status" className={`mt-4 text-sm ${result.ok ? "text-primary" : "text-red-400"}`}>
+                <p role={result.ok ? "status" : "alert"} className={`mt-4 text-sm ${result.ok ? "text-accent" : "text-red-400"}`}>
                     {result.message}
                 </p>
             )}
