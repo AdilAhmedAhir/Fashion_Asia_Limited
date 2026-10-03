@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import ProductGrid from "@/components/catalog/ProductGrid";
 import { getSettings } from "@/app/actions/settings-actions";
 import { getCategoryProducts } from "@/app/actions/products-actions";
 import { normalizeProducts } from "@/lib/site-content";
@@ -124,44 +125,12 @@ export default async function CategoryDetailPage(
                         </div>
                     </ScrollReveal>
                 ) : (
-                    // Same photo-card materials as the /what-we-do teaser grid
-                    // (rounded-xl border, bg-surface, fixed-height crop) but a
-                    // different layout: that grid links onward into a category,
-                    // so a clamped, overlaid teaser is enough there. This card
-                    // has nowhere further to click — it IS the product detail
-                    // (VISION Feature 1: buyers see the real range, image +
-                    // name + description) — so the description is real,
-                    // admin-entered catalog copy and renders in full, in normal
-                    // flow below the photo, instead of being clamped over it.
-                    <div className="mt-12 grid grid-cols-2 gap-4 md:grid-cols-4 lg:gap-6">
-                        {products.map((product, i) => (
-                            <ScrollReveal key={product.id} delay={i * 0.1}>
-                                <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-surface">
-                                    <img
-                                        src={product.image}
-                                        alt=""
-                                        aria-hidden="true"
-                                        loading="lazy"
-                                        decoding="async"
-                                        className="h-48 w-full shrink-0 object-cover md:h-56"
-                                    />
-                                    <div className="flex flex-col gap-2 p-5">
-                                        {/* h2, not h3: PageHeader above renders this page's only
-                                            h1 and nothing sits at h2 between it and this repeating
-                                            product list, so h2 keeps heading order unbroken. */}
-                                        <h2 className="font-serif text-lg font-bold leading-snug text-white">
-                                            {product.name}
-                                        </h2>
-                                        {product.description && (
-                                            <p className="text-sm leading-relaxed text-white/70">
-                                                {product.description}
-                                            </p>
-                                        )}
-                                    </div>
-                                </div>
-                            </ScrollReveal>
-                        ))}
-                    </div>
+                    // Product names stay h2 (ProductGrid's default), not h3:
+                    // PageHeader above renders this page's only h1 and nothing
+                    // sits at h2 between it and this repeating product list, so
+                    // h2 keeps heading order unbroken. Only the category's title
+                    // string is passed in, never the category object.
+                    <ProductGrid products={products} categoryTitle={category.title} className="mt-12" />
                 )}
             </section>
         </div>
