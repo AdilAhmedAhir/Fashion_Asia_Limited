@@ -458,7 +458,100 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
   - the admin sidebar (`src/app/admin/(dashboard)/layout.tsx`);
   - `src/app/actions/settings-actions.ts` (the partial-save contract);
   - `src/components/admin/*` labels. This is reuse: `ObjectListEditor` already takes `addLabel`.
-  Sequence: `architect-reviewer` (the cross-page save contract) → `premortem-planner` (admin writes) → `/build` → `/design-review` (code-level only) → `/security-review` → `/qa` → `code-reviewer` → merge.
+  **Contract (`architect-reviewer`, 2026-10-03: APPROVE; binding).** It needs no migration, no new settings key, no new dependency and no new database object. If the build needs any of those, a client-held version token, or an exported generic writer, re-run `/architect-review`.
+  1. **One writer per field of `site_settings[key='business'].value`:**
+     - `products` (the categories) is written only by `saveCategories`.
+     - `processTitle`, `processSteps`, `whatWeDoTagline` and `whatWeDoText` are written only by `saveWhatWeDoText`. `seedSettingsFromDefaults` may reset them too.
+     - Any other stored key: no writer. Both actions carry it through untouched.
+  2. **Signatures:**
+     - `src/lib/site-content.ts`, pure and shared:
+       - `type WhatWeDoText = { processTitle: string; processSteps: string[]; whatWeDoTagline: string; whatWeDoText: string }`;
+       - `pickWhatWeDoText(raw: unknown): { ok: true; value: WhatWeDoText } | { ok: false; error: string }`.
+     - `settings-actions.ts`:
+       - `type SaveCategoriesResult = { ok: true; categories: Product[] } | { ok: false; error: string }`;
+       - `saveCategories(categories: Product[]): Promise<SaveCategoriesResult>`;
+       - `saveWhatWeDoText(input: WhatWeDoText): Promise<ActionResult>`;
+       - `writeBusinessFields(supabase, build: (stored) => BuildResult | Promise<BuildResult>): Promise<ActionResult>`, which is **private and not exported** (every `"use server"` export is a public endpoint).
+  3. **`writeBusinessFields`:**
+     - **Read:** `value, updated_at` via `.eq("key","business").maybeSingle()`. The merge base is the raw stored `row.value`, or `{}` if it isn't a plain object. **Never `getSettings()`**: its defaults would get frozen into storage.
+     - **Write when the row exists:** a conditional update. Pass `row.updated_at` back **exactly as returned**; never parse it, because microseconds would be lost. That's `.update({ value: next, updated_at: new Date().toISOString() }).eq("key","business")` plus `.eq("updated_at", <raw string>)`, or `.is("updated_at", null)` when it's null, then `.select("key")`. 0 rows → SAVE_CONFLICT.
+     - **Write when the row is missing:** `insert`. Error code `23505` → SAVE_CONFLICT; any other error → its message.
+     - **On a conflict:** fail closed, with no automatic retry.
+  4. **`saveCategories`:**
+     - `getUser()` is the first statement; no user → SESSION_EXPIRED.
+     - Inside `build`, keep every rule: `readStoredCategoryIdentities(stored.products)`, `resolveCategoriesForSave`, `computeRemovedCategories`, and the delete-guard count with "Remove its products first".
+     - Return `{ ...stored, products: resolved }`, then `{ ok: true, categories: resolved }`.
+     - Every error is returned, never thrown.
+  5. **`saveWhatWeDoText`:** `getUser()` first. `pickWhatWeDoText` builds a new object from the 4 allowed keys only. A missing or wrongly typed field rejects the whole save, with no trimming, coercion or length cap. It writes `{ ...stored, ...picked }`.
+  6. **`updateSettings`:** after `getUser()`, `key === "business"` → `{ ok:false, error: BUSINESS_MOVED }`. Delete the old `business` branch and `SETTINGS_ROUTES.business`.
+  7. **`seedSettingsFromDefaults`:** for `business`, it overlays `SITE_SETTINGS.business` **without `products`**. It currently wipes category ids and staff-added categories, a live bug. Relabel the panel's option.
+  8. **`products-actions.ts`:** the 3 copies of the "not saved yet" message become one constant that points at `/admin/products` and names the real Save button.
+  9. **Client:**
+     - **Data:** the `/admin/products` loader fetches the business settings and all products together, and passes `normalizeProducts(data.products)` plus the products map.
+     - **Two lists:** `draft` is the category editor's list, and `confirmed` is the server's last confirmed list. "Save categories" calls `saveCategories(draft)`. On success, both become `result.categories`. On failure, show the error and keep the draft.
+     - **`CategoryProductsManager` gets `confirmed`, never `draft`.** Product rows keep saving immediately on their own.
+     - **First Save:** while any confirmed category has no `id`, a visible message points at the categories Save.
+     - **Save label:** the button names its scope, via an optional `saveLabel` on `SettingsHeader` that defaults to "Save Changes".
+     - **No sibling-route imports.**
+     - **`/admin/business`:** loads and saves only the 4 text fields, and gets a one-line pointer to `/admin/products`.
+  10. **Revalidation** uses only slugs the server resolved:
+      - `saveWhatWeDoText`: `/admin` and `/what-we-do`. It adds `/products` only if a `products` page reads one of the 4 fields.
+      - `saveCategories`: `/admin`, `/what-we-do`, `/products`, `/products/<slug>` for every saved and removed category, and `/sitemap.xml`. Not `/`, and not `/what-we-do/<slug>`, which is now a redirect.
+  11. **Error strings** (constants, not exported):
+      - SAVE_CONFLICT: "Another save changed these settings at the same moment, so nothing was saved. Click Save again."
+      - BUSINESS_MOVED: see the premortem's wording below.
+      - `pickWhatWeDoText`: "The page text couldn't be read, so nothing was saved. Reload the page and try again."
+
+  **Accepted limitation:** two stale tabs of the same page (or two admins) are last-writer-wins on category content. That can revert a rename's title, drop a newer empty category, or bring back a deleted empty one. It can't orphan products, because ids plus the delete guard prevent that. This is the same as every settings editor today.
+
+  **Premortem (`premortem-planner`, 2026-10-03: GO WITH ADDITIONS). These MUST-ADD criteria are binding:**
+  - **The compare-and-swap is checked by code reading:**
+    - one read feeds the ids, the guard and the swap;
+    - a read error, or a stored `value` that isn't an object, stops the save;
+    - the `updated_at` condition uses the raw string and never goes through a JS `Date`;
+    - `.select("key")` or `count` follows the write, and 0 rows gives SAVE_CONFLICT plus a `console.error` with both stamps;
+    - `ok: true` only after a confirmed changed row;
+    - insert, never upsert;
+    - revalidate only after a confirmed write.
+  - **Public endpoints:** exactly two new exports, `saveCategories` and `saveWhatWeDoText`, each with `getUser()` as its first await. `writeBusinessFields`, `pickWhatWeDoText` and the message constants aren't exported from any `"use server"` file, and any read the new pages need lives outside `"use server"` files.
+  - **Loads fail closed.** Both `/admin/products` and `/admin/business` build editable state only from a read that can tell "failed" from "empty". On failure they show a `role="alert"` message ("couldn't load — refresh") and no Save button. Public pages keep their fallback to defaults.
+  - **The category editor:**
+    - a blank title blocks Save and names the row (#n), because otherwise it's treated as a deletion;
+    - `id` passes through unchanged;
+    - `draft` and `confirmed` are set from props once, and replaced only by `saveCategories`' returned list (no effect or key reset);
+    - after SAVE_CONFLICT, any `ok:false` or a thrown call, the draft stays and the message says to click Save again;
+    - "Unsaved category changes" shows while `draft` differs from `confirmed`;
+    - a category removed in the draft stays in the product manager until the save succeeds;
+    - before the first Save, the card says: "Click Save categories once with no other changes. Renaming a category before that changes its web address."
+  - **BUSINESS_MOVED wording**, which has to make sense on an old tab: "Nothing was saved. This editor has moved: copy anything you typed, reload, and edit categories under Admin → Products."
+  - **The sync:**
+    - `business` goes through `writeBusinessFields` with only the 4 text fields;
+    - `seedSettingsFromDefaults` returns `{ ok, error }`, and `SeedDefaultsPanel` displays it;
+    - the option is relabeled "What We Do page text (categories are never touched)".
+  - **Wording:** no "Save Changes" or `/admin/business` in any category or product text (`CategoryProductsManager.tsx:187,237`, and the shared products-actions message). Help text names `/products/<slug>`. That includes the `BusinessClient.tsx:65,82` help text T-025 deferred here.
+  - **The admin gate:**
+    - the production-build route list shows `ƒ /admin/products`;
+    - the anonymous probes (plain, `RSC: 1`, prefetch, `.rsc`, a trailing slash, `//admin/products`) each return 307 to `/admin/login` with no `Set-Cookie`;
+    - `products/*` and `business/*` don't import from each other.
+  - **Before the first Save, read-only:** check that each live category's `slugify(title)` equals its URL slug. **Done on 2026-10-03: all 8 match.**
+  - **Owner SQL check, read-only, before merge: a HARD STOP.** It covers the `site_settings` policies, its triggers and `updated_at::text`. The query was given to the owner on 2026-10-03.
+  - **QA errata:** dated corrections on the pending T-002, T-003, T-012, T-004, T-006 and T-025 rows that send the owner to `/admin/business` for categories, products or the first Save.
+  - **The owner's two-tab checklist,** on the production build against the LIVE database, with `ZZ-TEST T-026 (delete me)` records:
+    1. the first Save, if still pending, then reload;
+    2. a second unchanged Save;
+    3. a text save in a stale tab can't wipe a category save;
+    4. a category save in a stale tab can't wipe the text;
+    5. the delete guard;
+    6. session expired;
+    7. cleanup.
+
+    Never run "Sync Content From Code". Rows 1–3 and 7 block deploy.
+  - **`/ship` for this release:** close every `/admin` tab and tell FAL staff not to edit until the live check passes; reload open admin tabs after the deploy; record whether Vercel Skew Protection is on; live check that `/admin/products` → 307 `/admin/login`.
+  - **Docs at close:** DATA_MODEL §3 and STACK §4 name the two new save actions, ARCHITECTURE §1 gets the new admin route, and INVENTORY is regenerated.
+
+  **Also folded in:** SEC-MED-15's root cause, from the T-025 security review. `normalizeProducts()` keeps a stored slug only if `isWellFormedSlug()` passes, which closes every slug path at once.
+
+  Sequence: `architect-reviewer` ✅ APPROVE (2026-10-03) → `premortem-planner` ✅ GO WITH ADDITIONS (2026-10-03) → `/build` → `/design-review` (code-level only; the admin is NOT VISUALLY VERIFIED by agents) → `/security-review` → `/qa` → `code-reviewer` → **HARD STOP: the owner's read-only SQL check** → merge.
   Risk: the shared record. Two admin pages saving one record is exactly the overwrite risk the architect review is for.
 
 After T-026 this run also does **T-016** (above), by the owner's decision on 2026-10-03, because staff are about to use the product editor.
