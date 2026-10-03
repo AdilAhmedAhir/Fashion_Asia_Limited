@@ -18,8 +18,13 @@ import { ImageUploadField } from "@/components/admin/ImageUploadField";
 // duplicating the identical text into every nested list editor on a page
 // that has several (e.g. HomepageSettingsClient's three) would repeat an
 // unrelated message next to lists that had nothing to do with it.
-export function SettingsHeader({ title, tag, onSave, saving, error }: {
-    title: string; tag: string; onSave: () => void; saving: boolean; error?: string | null;
+//
+// `saveLabel` (T-026) lets a page name what its button saves, for a page that
+// saves only part of what it shows: /admin/products' "Save categories" doesn't
+// save its products, which save on their own. Every other page keeps the
+// default.
+export function SettingsHeader({ title, tag, onSave, saving, error, saveLabel = "Save Changes" }: {
+    title: string; tag: string; onSave: () => void; saving: boolean; error?: string | null; saveLabel?: string;
 }) {
     return (
         <header className="mb-10 flex flex-col gap-3">
@@ -31,7 +36,7 @@ export function SettingsHeader({ title, tag, onSave, saving, error }: {
                 <button onClick={onSave} disabled={saving}
                     className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
-                    {saving ? "Saving..." : "Save Changes"}
+                    {saving ? "Saving..." : saveLabel}
                 </button>
             </div>
             {/* Same visual language as ImageUploadField's hard-block error —
@@ -52,6 +57,30 @@ export function SettingsHeader({ title, tag, onSave, saving, error }: {
                     {error}
                 </p>
             )}
+        </header>
+    );
+}
+
+/**
+ * @purpose A settings page's header when its saved content couldn't be loaded: the page title and a role="alert" message, with no Save button.
+ *
+ * T-026's fail-closed load. An editor filled from fallback defaults after a
+ * failed read would save those defaults over the real content, so a page
+ * whose read failed shows this instead of its editor. The tag is
+ * `text-accent`, not SettingsHeader's `text-primary`: primary as text on the
+ * dark admin fails AA (docs/DESIGN.md §2), and new code doesn't copy that.
+ */
+export function SettingsLoadError({ title, tag, message }: { title: string; tag: string; message: string }) {
+    return (
+        <header className="mb-10 flex flex-col gap-3">
+            <div>
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{tag}</span>
+                <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">{title}</h1>
+            </div>
+            <p role="alert" className="flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-red-400">
+                <TriangleAlert size={15} className="mt-0.5 flex-none" aria-hidden="true" />
+                {message}
+            </p>
         </header>
     );
 }
