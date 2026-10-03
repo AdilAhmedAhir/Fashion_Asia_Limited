@@ -248,6 +248,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - The `/what-we-do` category cards get the same treatment, unless `/ui-ux` records why a decorative image is correct inside that linked card: the link text already names the category, so an `alt` repeating it would be read twice.
     - Visual output is unchanged. `/qa live` confirms the rendered `alt` on `/what-we-do` and all eight category pages. `npx tsc --noEmit` and `npm run build` stay clean.
   - **Sequence:** `/git Start` → `/lead-dev` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Full-stack row)
+  - **2026-10-03:** folded into **T-024** (the shared catalog components rebuild both of these images). It closes when T-024 merges.
   - **Notes:** Ranked #11. It matters now because T-004 lets real products exist. If real products exist by the time `/qa live` runs, that pass also closes T-005 INFO-4 (the populated grid's variable-height cards were only ever reasoned through statically).
 
 - [ ] **T-022** — Stop `/sitemap.xml` from stamping every URL as modified on every request
@@ -280,7 +281,104 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `premortem-planner` → **`/debate`** (a one-way door: allowlist table, JWT custom claim, or app-only check) → owner decision recorded in `docs/DECISIONS.md` → `supabase-engineer` (migration) → `security-reviewer` → **HARD STOP: the owner applies the SQL** → `/build` (middleware + `requireAdmin`) → `security-reviewer` → `/qa` (production build + owner checklist) → review → merge.
   - **Notes:** Until this ships, keeping Supabase sign-ups **OFF** is the only safeguard. It's a one-way door because it changes every access policy. Rank it ahead of T-018 and T-019: it's the structural fix those findings keep pointing at.
 
+## Client request — 2026-10-03: the `/products` catalog (A-Team V7)
+
+**Source:** the client's request, relayed by the owner on 2026-10-03:
+- a `/products` page;
+- category pages under `/products/<slug>`;
+- a way to add categories in the admin.
+
+The owner added a "View all products" button on `/what-we-do`. The owner's decisions, batched once on 2026-10-03, are in `docs/DECISIONS.md` §3.
+
+**This run goes first, in this order: T-024 → T-025 → T-026 → T-016.**
+- Each ticket is built in place on its own branch, one at a time, with no worktrees: a second checkout would need a copy of `.env.local`.
+- T-025 and T-026 both edit `settings-actions.ts`, and T-026 and T-016 both edit the product editor, so they can't overlap anyway.
+
+- [ ] **T-024** — Shared catalog components: the category photo-card grid and the product card, with meaningful image names [app:site][design]
+  AC:
+  - One reusable category photo-card grid renders today's `/what-we-do` "Product Catalog" cards with the same look: photo, dark gradient, serif title, 2 columns on phones and 4 from `md`. Each card is a link, and the page passes in its destination.
+  - One reusable product card and product grid render today's category-page product tiles (image, name, description), with the same look.
+  - `/what-we-do` and the category page render through these components with **no visible change**, shown by screenshots before and after at 360, 768, 1024 and 1440.
+  - Every catalog photo gets a meaningful accessible name (the category or product name) instead of `alt=""` plus `aria-hidden`. This closes **T-021**. If `/design-review` judges a photo decorative inside a link that already names it, that reasoning is recorded instead.
+  - Semantic tokens only. Motion keeps the existing `ScrollReveal` and `prefers-reduced-motion` behavior.
+  Touches:
+  - new `src/components/catalog/*`. This is new: INVENTORY has no such component, and the markup is inline in the two pages today;
+  - `src/app/(website)/(marketing)/what-we-do/page.tsx` and `…/what-we-do/[category]/page.tsx` (refactor only).
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
+  Risk: low. It's shared UI, so it runs first and alone.
+
+- [ ] **T-025** — Move category pages to `/products/<slug>`, and add the `/products` overview page, the "View all products" button and the "Products" menu item [app:site][design][sec]
+  AC:
+  - **`/products`:**
+    - a page header;
+    - the category photo-card grid, with every category linking to `/products/<slug>`;
+    - below it, one section per category **that has products**. The heading is the category name, linking to its page, and its products follow in a grid.
+    - Categories with no products get no empty section. While no category has products (the live state on 2026-10-03), one honest note says products are being added. There are no placeholder products.
+    - If the product read fails, the page still shows the category grid and logs the error server-side.
+  - **Category pages** are served at `/products/<slug>` with today's content.
+    - The back link goes to `/products`.
+    - Canonical and OpenGraph URLs use the new path.
+    - An unknown slug is still a 404.
+  - **Old links keep working.** `/what-we-do/<slug>` permanently redirects (308) to `/products/<slug>` (`next.config.ts`). `/what-we-do` itself is unchanged.
+  - **Every internal reference uses the new path:**
+    - the `/what-we-do` category cards;
+    - `sitemap.ts`, which adds `/products` and moves the category entries to `/products/<slug>`;
+    - the `revalidatePath` targets in `settings-actions.ts` and `products-actions.ts`, which add `/products` and `/products/<slug>`;
+    - the slug-collision messages in `site-content.ts`.
+  - **A "View all products" button** sits in the `/what-we-do` Product Catalog section, under the category grid, and links to `/products`. It uses the existing button style, with AA contrast and a visible focus ring.
+  - **"Products"** is added to `MAIN_NAV` right after "What We Do" (header and mobile menu) and to the footer links, so URLs keep matching menu names.
+  - `/products` has its own metadata (title, description, canonical, OpenGraph), following the existing page pattern.
+  - **Read-only live QA:**
+    - all 8 old URLs redirect;
+    - every new URL answers 200;
+    - the sitemap lists the new paths;
+    - no hidden category id leaks;
+    - screenshots at 360, 768, 1024 and 1440.
+  Touches:
+  - new `src/app/(website)/(marketing)/products/page.tsx`;
+  - `products/[category]/page.tsx`, moved from `what-we-do/[category]`;
+  - `next.config.ts`;
+  - `src/app/sitemap.ts`;
+  - `src/app/actions/settings-actions.ts` and `products-actions.ts` (revalidate targets only);
+  - `src/lib/site-content.ts` (message text only);
+  - `src/lib/nav.ts`;
+  - `src/components/global/Footer.tsx`;
+  - `what-we-do/page.tsx`.
+  Sequence: `premortem-planner` (it touches `next.config.ts`) → `/build` → `/design-review` → `/security-review` → `/qa` (live, read-only) → `code-reviewer` → merge.
+  Risk: the URL change, mitigated by the permanent redirect. Slugs stay as they are: `/products/t-shirts`, not the client's "t-shirt".
+
+- [ ] **T-026** — A dedicated admin "Products" page for categories and their products [app:admin][design][sec]
+  AC:
+  - A new admin page, `/admin/products`, appears as "Products" in the admin sidebar. It has two parts:
+    - **Categories:** add ("Add category"), rename, change the image and description, reorder, delete;
+    - **Products in each category:** the existing product manager.
+  - `/admin/business` keeps only the What We Do page text ("Our Craft" and the Product Catalog intro copy), plus a one-line pointer to `/admin/products`.
+  - **The two pages can't overwrite each other.** They share one stored record, `site_settings.business`.
+    - Each page's save changes only its own fields.
+    - A stale tab on one page can never wipe the other page's edits.
+    - `architect-reviewer` sets the exact design before building.
+    - Category saves keep every existing rule: server-issued ids, frozen slugs, collision rejection and the delete guard.
+  - The first-Save step stays visible. Until the categories have been saved once, the products part says so and points to the Categories Save.
+  - Help text names the new public URLs (`/products/<slug>`).
+  - The security posture is unchanged:
+    - the page sits behind the existing `/admin` gate;
+    - every write checks the session;
+    - RLS is unchanged, and there are no new database objects.
+  - `/qa` writes the owner's manual checklist into `docs/QA_REPORT.md`, because agents can't sign in. The admin UI is **NOT VISUALLY VERIFIED** by agents.
+  Touches:
+  - new `src/app/admin/(dashboard)/products/*`;
+  - `src/app/admin/(dashboard)/business/{page,BusinessClient}.tsx`;
+  - the admin sidebar (`src/app/admin/(dashboard)/layout.tsx`);
+  - `src/app/actions/settings-actions.ts` (the partial-save contract);
+  - `src/components/admin/*` labels. This is reuse: `ObjectListEditor` already takes `addLabel`.
+  Sequence: `architect-reviewer` (the cross-page save contract) → `premortem-planner` (admin writes) → `/build` → `/design-review` (code-level only) → `/security-review` → `/qa` → `code-reviewer` → merge.
+  Risk: the shared record. Two admin pages saving one record is exactly the overwrite risk the architect review is for.
+
+After T-026 this run also does **T-016** (above), by the owner's decision on 2026-10-03, because staff are about to use the product editor.
+
 ### Dependency Order
+
+**2026-10-03:** the `/products` client request above runs first: T-024, then T-025, then T-026, then T-016. T-021 is folded into T-024. After that, the order below resumes, without T-016, which is done in that run.
 
 **Refreshed 2026-09-28 (fourth `/pm` pass).** The T-005, T-012 and T-004 entries are gone: all three merged, shipped in the 2026-09-28 deploy, and were archived into `docs/MEMORY_BANK.md` §12 (`87e7a09`, `846ac6e`). The earlier "consider landing before T-004" notes on T-010 and T-013 are also superseded. T-004 built a new component with stable row keys, so it doesn't extend `ObjectListEditor`, and its ▲/▼ controls call `reorderCategoryProducts` directly on production. Everything is ranked by live risk to the client now that Sprint 1 is on production. `/system-architect sprint` stops at `/archivist` after the 3rd merge, so items 1–3 are what ship next. Nothing reaches production until the user types "deploy" again.
 
