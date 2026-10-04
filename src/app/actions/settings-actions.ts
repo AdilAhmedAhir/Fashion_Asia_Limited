@@ -259,6 +259,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 // 3. The write changes the row only if it still carries the exact stamp read
 //    in step 1. The stamp goes back exactly as PostgREST returned it, never
 //    through a JS Date, which would drop its microseconds and never match.
+//    The new stamp is always later than the one read (at least 1 ms past it,
+//    even on a server whose clock runs behind), so stamps only move forward
+//    and no save can write back a stamp another save still holds, which would
+//    let that save's swap pass by mistake (a lost update). Date only computes
+//    that new stamp.
 //    `.select("key")` then counts the changed rows: 0 means another save got
 //    there first (or something else blocked the row), and the save fails
 //    closed with SAVE_CONFLICT. There's no automatic retry.
@@ -297,7 +302,8 @@ async function writeBusinessFields(
     const built = await build(row ? (row.value as StoredBusinessValue) : {});
     if (!built.ok) return { ok: false, error: built.error };
 
-    const writtenStamp = new Date().toISOString();
+    const prev = typeof readStamp === "string" ? Date.parse(readStamp) : NaN;
+    const writtenStamp = new Date(Number.isFinite(prev) ? Math.max(Date.now(), prev + 1) : Date.now()).toISOString();
 
     if (!row) {
         const { data: inserted, error: insertError } = await supabase

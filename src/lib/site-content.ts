@@ -580,8 +580,12 @@ export function resolveCategoriesForSave(
             // No id, or an id absent from existingById: a new category.
             // Fresh id, fresh slug derived only from the title — again, the
             // incoming item's own `.slug` field is never read here either.
+            // Cutting a long title's slug at 255 can end it on a dash, which
+            // isWellFormedSlug rejects, so the category's next save would be
+            // refused; the dash is trimmed. slugify never starts with a dash,
+            // so the result can't be empty.
             id = randomUUID();
-            slug = slugify(title).slice(0, 255);
+            slug = slugify(title).slice(0, 255).replace(/-+$/, "");
         }
 
         // Collision check — across ALL resolved slugs so far, whether frozen
