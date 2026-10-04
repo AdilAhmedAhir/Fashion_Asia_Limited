@@ -14,16 +14,20 @@ import type { CategoryProduct, CategoryProductInput, Product } from "@/lib/site-
 const GENERIC_ERROR = "Something went wrong. Check your connection and try again.";
 
 /**
- * The product editor nested inside `/admin/business`, one level below the
- * category cards ("Product Catalog" above). Deliberately a *separate* save
- * model from the rest of the page (docs/ROADMAP.md T-004, design point 1):
- * every add/edit/delete/reorder here is its own immediate Server Action
- * against `public.products`, not batched behind the page's own Save Changes
- * button — so this component owns its own state entirely and never folds
- * product data into `BusinessClient`'s `data` (the object that DOES get sent
- * to `updateSettings`). A product operation must never touch `site_settings`
- * — keeping the two states structurally separate is what guarantees that,
- * not a runtime check.
+ * The product editor on `/admin/products`, below the category editor (T-026;
+ * T-004 put it on `/admin/business`). Deliberately a *separate* save model
+ * from the categories (docs/ROADMAP.md T-004, design point 1): every
+ * add/edit/delete/reorder here is its own immediate Server Action against
+ * `public.products`, not batched behind the page's "Save categories" button —
+ * so this component owns its own state entirely and never folds product data
+ * into the page's category draft (the list that DOES get sent to
+ * `saveCategories`). A product operation must never touch `site_settings` —
+ * keeping the two states structurally separate is what guarantees that, not a
+ * runtime check.
+ *
+ * `categories` is the page's last server-confirmed category list, never its
+ * unsaved draft (T-026 contract, item 9), so a category only appears here, or
+ * disappears, once a categories save has succeeded.
  */
 export function CategoryProductsManager({
     categories,
@@ -74,9 +78,9 @@ export function CategoryProductsManager({
     };
 
     // categories (and therefore `selected`) is a live prop, not copied into
-    // state — it's BusinessClient's own in-progress `data.products`, so a
-    // rename/add/bootstrap-save up there is reflected here on the very next
-    // render with no separate sync step.
+    // state — it's the page's confirmed category list, so a successful
+    // categories save (a rename, an add, the first bootstrap save) is
+    // reflected here on the very next render with no separate sync step.
     const selected = categories.find(c => c.slug === selectedSlug) ?? null;
     // A category only ever gets a real `id` by surviving a save under
     // docs/TECH_STACK.md decision (d) — "" is the not-yet-assigned sentinel
@@ -183,8 +187,8 @@ export function CategoryProductsManager({
                 <span>
                     <strong className="font-bold text-accent">Products save automatically.</strong> The moment you
                     add, edit, reorder, or delete one below, it&apos;s live on the public site — there&apos;s no Save
-                    button down here. That&apos;s different from the category cards above, which only take effect
-                    once you click <strong className="font-bold text-white">Save Changes</strong>.
+                    button down here. That&apos;s different from the categories above, which only take effect
+                    once you click <strong className="font-bold text-foreground">Save categories</strong>.
                 </span>
             </div>
 
@@ -217,7 +221,7 @@ export function CategoryProductsManager({
             </div>
 
             {categories.length === 0 ? (
-                <p className="text-sm text-white/50">Add a category above first, then come back here to add its products.</p>
+                <p className="text-sm text-white/50">Add a category above and click Save categories, then come back here to add its products.</p>
             ) : !selected ? (
                 <p className="text-sm text-white/50">Pick a category above to manage its products.</p>
             ) : !bootstrapped ? (
@@ -234,7 +238,8 @@ export function CategoryProductsManager({
                     <span>
                         <strong className="font-bold">&quot;{selected.title}&quot; hasn&apos;t been saved yet.</strong>{" "}
                         Products can only be added to a category once it&apos;s been saved at least once. Click{" "}
-                        <strong>Save Changes</strong> above (no other changes needed), then come back here.
+                        <strong>Save categories</strong> at the top of this page (no other changes needed), then come
+                        back here.
                     </span>
                 </div>
             ) : (

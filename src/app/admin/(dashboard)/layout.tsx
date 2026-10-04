@@ -3,7 +3,7 @@ import Link from "next/link";
 import {
     LogOut, LayoutDashboard, Image as ImageIcon, Inbox,
     ShieldCheck, Home, Users, Briefcase, Leaf, FileText,
-    Settings, Globe
+    Settings, Globe, Shirt
 } from "lucide-react";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
@@ -18,6 +18,9 @@ const navItems = [
             { href: "/admin/homepage", icon: Home, label: "Homepage" },
             { href: "/admin/who-we-are", icon: Users, label: "Who We Are" },
             { href: "/admin/business", icon: Briefcase, label: "What We Do" },
+            // Categories and their products (T-026), right after What We Do,
+            // matching the public menu's order.
+            { href: "/admin/products", icon: Shirt, label: "Products" },
             { href: "/admin/who-we-work-with", icon: Globe, label: "Global Partner" },
             { href: "/admin/sustainability", icon: Leaf, label: "Sustainability" },
         ]
