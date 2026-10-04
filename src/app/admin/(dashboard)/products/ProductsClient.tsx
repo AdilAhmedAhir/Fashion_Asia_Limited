@@ -105,7 +105,7 @@ export default function ProductsClient({ load }: { load: ProductsLoad }) {
                             <Info size={16} className="mt-0.5 flex-none" aria-hidden="true" />
                             <span>
                                 <strong className="font-bold">These categories haven&apos;t been saved yet.</strong>{" "}
-                                Click Save categories once with no other changes. Renaming a category before that
+                                Click <strong className="font-bold">Save categories</strong> once with no other changes. Renaming a category before that
                                 changes its web address.
                             </span>
                         </div>
@@ -115,7 +115,7 @@ export default function ProductsClient({ load }: { load: ProductsLoad }) {
                         <p className="text-sm leading-relaxed text-white/70">
                             Each category is a photo card on /what-we-do and /products, with its own page at
                             /products/&lt;slug&gt; (for example, /products/t-shirts). Changes here go live only when you
-                            click <strong className="font-bold text-white">Save categories</strong>. After its first
+                            click <strong className="font-bold text-foreground">Save categories</strong>. After its first
                             save, a category keeps its web address even if you rename it.
                         </p>
                         {/* Always mounted, so screen readers hear each change

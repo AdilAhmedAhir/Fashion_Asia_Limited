@@ -188,7 +188,7 @@ export function CategoryProductsManager({
                     <strong className="font-bold text-accent">Products save automatically.</strong> The moment you
                     add, edit, reorder, or delete one below, it&apos;s live on the public site — there&apos;s no Save
                     button down here. That&apos;s different from the categories above, which only take effect
-                    once you click <strong className="font-bold text-white">Save categories</strong>.
+                    once you click <strong className="font-bold text-foreground">Save categories</strong>.
                 </span>
             </div>
 

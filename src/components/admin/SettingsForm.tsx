@@ -31,7 +31,7 @@ export function SettingsHeader({ title, tag, onSave, saving, error, saveLabel = 
             <div className="flex items-start justify-between">
                 <div>
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{tag}</span>
-                    <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">{title}</h1>
+                    <h1 className="mt-2 font-serif text-3xl font-bold text-foreground md:text-4xl">{title}</h1>
                 </div>
                 <button onClick={onSave} disabled={saving}
                     className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
@@ -75,7 +75,7 @@ export function SettingsLoadError({ title, tag, message }: { title: string; tag:
         <header className="mb-10 flex flex-col gap-3">
             <div>
                 <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{tag}</span>
-                <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">{title}</h1>
+                <h1 className="mt-2 font-serif text-3xl font-bold text-foreground md:text-4xl">{title}</h1>
             </div>
             <p role="alert" className="flex max-w-2xl items-start gap-2 text-sm leading-relaxed text-red-400">
                 <TriangleAlert size={15} className="mt-0.5 flex-none" aria-hidden="true" />
