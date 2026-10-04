@@ -110,6 +110,12 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - Verified on both known consumers — `/admin/business` "Product Cards" and `/admin/homepage` "Facility photo" — via `/qa live`'s manual checklist (admin write actions can't be automated per `docs/WORKFLOW.md` §4/§7).
     - `npx tsc --noEmit` and `npm run build` stay clean.
   - **Sequence:** `/git Start` → `/lead-dev` → `/qa static` → `/qa live` (manual checklist handed to the user for the reorder/delete repro itself) → `/git Merge`
+  - **Re-scoped 2026-10-04** (T-016's `architect-reviewer`; DECISIONS 2026-10-04):
+    - T-010 now also owns the **shared upload race** on `ObjectListEditor` image lists: `ImageUploadField` calls the `onChange` it captured when an upload started (`ImageUploadField.tsx:126-128`), and `ObjectListEditor.update` builds the new list from that older `items`.
+    - The result: on every image list (the categories on `/admin/products`, the homepage facility photos), typing during an upload can be reverted, and clicking Save categories during an upload silently drops that image.
+    - It also owns T-009's race when a second image is picked before the first finishes uploading.
+    - **The fix needs stable row keys first.** A "call the latest callback" fix alone would put an uploaded image on whichever row slid into that position after a reorder, which is worse than today's revert. So the deferred rekey below is now in scope.
+    - It needs its own `/architect-review`, because it changes a shared admin component used in 6 places. Order: after T-016 and T-033.
   - **Notes:** Root cause (index-keyed list rows) predates T-002; T-002 made the consequence more visible by adding a second piece of per-row transient state. Not a hard dependency for T-004 — T-004's per-category product editor is a new, dedicated component per its own file list (this doc, T-004), not necessarily a reuse of `ObjectListEditor` itself — but landing this fix first is recommended if T-004 ends up extending `ObjectListEditor` directly.
 
 - [ ] **T-011** — Fix WCAG AA contrast and keyboard-focus visibility in shared admin upload/list components
@@ -180,7 +186,181 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/cso review` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Security-sensitive row, UI). `/qa` also writes a manual checklist, since these are admin writes (`docs/WORKFLOW.md` §4). A realistic failure trigger is signing out in a second tab, then saving.
   - **Notes:** Ranked #2. Out of scope: `uploadFile`'s missing size and type checks (`docs/MEMORY_BANK.md` Known Trap #9). DB-error branches may forward `error.message` exactly as T-012 does (the tracked SEC-MED-8 class); T-018 then replaces that across all three action files in one pass. The new `getUser()` checks don't mitigate SEC-HIGH-2, because a self-registered account passes `getUser()`, so that finding stays a user action.
 
-- [ ] **T-016** — Fix the product editor's ordinary-use data bugs before staff start using it
+- [ ] **T-016** — Fix the product editor's ordinary-use data bugs before staff start using it [app:admin][design][sec]
+  **Binding contract (`architect-reviewer`, 2026-10-04: REVISE, doc-only; folded here verbatim, so no second `/architect-review` is needed).** It needs no migration, SQL, new dependency or new database object, so there's no owner HARD STOP. **Where the older notes, AC or Files below conflict with this contract, the contract wins.**
+  - **Scope guard:** code only. These stay untouched: `settings-actions.ts`, `SettingsForm.tsx` (`ObjectListEditor`), `category-draft.ts`, `ProductsClient`'s draft/confirmed logic, `resolveCategoriesForSave`, `src/components/catalog/*`, `/products/[category]`, `next.config.ts`, `db/` and `supabase-schema.sql`. No new exported function in any `"use server"` file; type exports are fine.
+  - **Facts behind it** (checked read-only):
+    - `Object.create(null)` crashes `/admin/products`. React 19.2.4's serializer throws on null-prototype props ("Classes or null prototypes are not supported"); a `Map` survives the trip to the client.
+    - Next runs one Server Action at a time per tab, but documents that as an implementation detail that may change. So within one tab, WARN-1 is stale closures and responses overwriting newer typing; across tabs, whole-row writes clobber edits and `sort_order`. The fix must not depend on one-at-a-time.
+    - `products.category_slug` and `products.name` are `VARCHAR(255)` (migration 0001), so 255 is a schema limit, not a policy number.
+    - There's no `error.tsx` in `src/app`, so a thrown read on `/admin/products` lands on Next's bare error page.
+    - `checkCategoryAttachable` reads through `getSettings`, which falls back to code defaults (no ids) on a failed read. That refuses the product write with a misleading message but fails closed; a "re-check after insert, then delete" built on it could delete real products.
+  1. **The product read** (`products-actions.ts`).
+     - New type: `export type AllProductsRead = { ok: true; byCategory: Map<string, CategoryProduct[]> } | { ok: false };`
+     - New signature: `getAllCategoryProducts(): Promise<AllProductsRead>`. The query stays the same: `select("*")`, ordered by `category_slug`, then `sort_order`. Rows are grouped into a `Map` in query order, by a private helper.
+     - A database error is logged with `console.error` on the server and returns `{ ok: false }`. A throw calls `unstable_rethrow(error)` first, then logs and returns `{ ok: false }`. The function never rejects, except with Next's own control-flow signals. `ok: false` carries no error text, the same shape as `EditorSettingsRead`.
+  2. **The public `/products` page.** `ok: false` renders as an empty catalog: the category grid plus Coming Soon (DECISIONS 2026-10-04). The action has already logged it. The existing rejection handler stays, with `unstable_rethrow`. The database-error path looks exactly as it does today; a thrown read (today only the `constructor` crash) now shows Coming Soon too. Rewrite the comment above `ProductRead`. `getCategoryProducts` and `/products/<slug>` don't change.
+  3. **The admin load.** `ProductsLoad = { ok: true; categories: Product[]; products: AllProductsRead } | { ok: false }`.
+     - A failed category read still turns the whole page off, as today.
+     - When `products.ok` is false, the "Products in Each Category" card shows only a fixed-copy `role="alert"` (PRODUCTS_LOAD_FAILED): no picker, no add form and no rows, so "No products in this category yet" can't appear.
+     - The category editor stays usable, because the server's delete guard re-counts products. The load is read once (`useState(load)`), so only a manual refresh brings the products back.
+  4. **The editor's grouped state** (`CategoryProductsManager`). The prop becomes `initialProductsByCategory: ReadonlyMap<string, CategoryProduct[]>`. State is a `Map`; every lookup is `.get(slug) ?? []`, and every update builds a new `Map`. No lookup by slug on a plain object remains, which closes the browser half of SEC-INFO-37.
+  5. **`updateCategoryProduct` becomes a partial update.**
+     - In `site-content.ts`: `export type CategoryProductPatch = Partial<Pick<CategoryProduct, "name" | "description" | "image">>;`
+     - New signature: `updateCategoryProduct(id: string, patch: CategoryProductPatch): Promise<ProductActionResult>`. In this order:
+       1. `getUser()` is the first await (SESSION_EXPIRED).
+       2. An empty `id` returns "Missing product id."
+       3. Take only `name`, `description` and `image`, and only when each is an own property whose value is a string. Anything else, including `null`, a number or an object, is ignored, never turned into "". Trim what's taken, the way `sanitizeInput` does. *(Amended 2026-10-04, premortem C3.)* `createCategoryProduct` keeps `sanitizeInput` unchanged: a non-string name or image there becomes "" and fails item 7.
+       4. If none is present, return NOTHING_TO_SAVE.
+       5. Validate (item 7) before any database read.
+       6. Read the row's stored `category_slug` with `.maybeSingle()`. No row returns PRODUCT_NOT_FOUND.
+       7. Run `checkCategoryAttachable` on that stored slug, never on a value the client sent.
+       8. Update only the fields taken in step 3, plus `updated_at`, then `.select().maybeSingle()`. Null returns PRODUCT_NOT_FOUND.
+     - **It never writes `category_slug` or `sort_order`.** Any other key in the payload is ignored. *(Corrected 2026-10-04, premortem C5:)* that doesn't protect tabs left open across the deploy. With Vercel Skew Protection they keep calling the old deployment's whole-row update; without it, their action ids don't resolve, because Next recalculates them between builds. `/ship`'s staff freeze and tab reloads are what protect them.
+  6. **WARN-1: one save queue per product**, owned by `CategoryProductsManager` and keyed by product id, inside `CategoryProductsManager.tsx`; no new shared module. *(Amended 2026-10-04 from the premortem, C1 and C2.)*
+     - **The queue belongs to the product, not to the row on screen.** A row that unmounts (a category switch) and mounts again uses the same queue. So a product never has two saves in flight, and a commit waiting to be sent is never dropped or sent twice.
+     - At most one update is in flight per product. Commits made meanwhile merge into exactly one follow-up save, sent when the first one settles.
+     - A save sends only what the user has committed: Name or Description on blur (Tab or a click away) when changed, the path box on blur or Enter, an upload finishing, or Retry. Text still being typed is never sent.
+     - Each save's fields are worked out at send time: whatever differs between the committed values and the last confirmed values. Both are read through refs, never from an older captured closure, so `ImageUploadField.tsx:126-128`'s stale `onChange` can't do harm. If nothing differs, nothing is sent.
+     - Committed saves, including a waiting follow-up, are always sent and always reach `onSaved`, whether or not their row is on screen. There's no is-mounted check anywhere in the save path.
+     - **The draft follows the product.** While a row is on screen, whenever its confirmed values change (its own save landing, or any other change to the `product` prop), each draft field the user hasn't changed since it was last synced or sent takes the new value. A field the user has changed keeps their text.
+     - **Status:** a row shows its product's save state wherever it mounts. "Saving…" shows while a save is in flight or waiting. "Saved" shows only once nothing is waiting and the latest attempt succeeded, so never while the latest attempt failed.
+     - **After a failure** (`ok: false` or a throw), keep the draft and show that error with Retry. The queue keeps working: a commit already waiting when the failure lands is sent, and every later commit, and Retry, goes through the queue like any other. Each save is built from all the committed values, so it carries the failed fields too. Starting a send clears the error. A commit or Retry with nothing to send also clears it, because the row then matches the server.
+     - **Nothing retries on its own:** no timers, no backoff, and no resend unless the user has committed something or pressed Retry since the failure. A commit that was already waiting when the failure landed counts as the user's.
+     - Name, Description and the path box stay editable during a save (today they're disabled, which drops keys typed after tabbing out mid-save). Up, down and delete stay disabled while their product has a save in flight or waiting.
+  7. **Validation (the domain rule).**
+     - The helper: `export function hasVisibleText(value: unknown): boolean` in `site-content.ts`. True only for a string with at least one character other than whitespace, invisible formatting characters (`\p{Default_Ignorable_Code_Point}`) or control characters (`\p{C}`); one module-level regex with the `u` flag. Checked with TS 5.9.3 at the ES2017 target and in Node: zero-width space, LRM, RLO, BOM and U+3164 are rejected; Bengali text passes.
+     - `createCategoryProduct`: after `getUser()` and the check that a category slug was sent, and before any read, the trimmed `name` and `image` must pass `hasVisibleText` (PRODUCT_NAME_REQUIRED or PRODUCT_IMAGE_REQUIRED). The description stays optional.
+     - `updateCategoryProduct`: the same check for whichever of `name` and `image` step 3 took.
+     - `AddProductForm`: `canAdd` uses the same helper. That only mirrors the rule in the browser; the server decides.
+  8. **The path box** (`ImageUploadField.tsx`): one new optional prop, `commitPathOnBlur?: boolean`, default false, which keeps today's behavior exactly for every other consumer. When true:
+     - typing changes only local text and never calls `onChange`;
+     - blur or Enter calls `onChange(text.trim())` once, if the text differs from `value`;
+     - the box's text follows `value` whenever `value` changes, unless the user has typed in the box since it last matched `value`; then their text stays until blur or Enter commits it. Finishing an upload always replaces the text with the new path. *(Amended 2026-10-04, a consequence of item 6's "the draft follows the product".)*
+     - the box is read-only while an upload is in flight;
+     - finishing an upload still calls `onChange(url)` straight away.
+
+     Only `ProductRow` sets it. The upload code path and the placeholder don't change.
+  9. **WARN-2:** `<AddProductForm key={selected.slug} …/>`, so switching category throws away the half-filled add form.
+  10. **Error messages,** as non-exported constants. `/design-review` may tune the wording; the names, the files they live in and when they show are binding.
+      - In `products-actions.ts`: SESSION_EXPIRED: "Your session expired. Sign in again and retry." (replaces the 4 existing copies, word for word); PRODUCT_NOT_FOUND: "Product not found." (unchanged); PRODUCT_NAME_REQUIRED: "A product needs a name. Type one in, then try again."; PRODUCT_IMAGE_REQUIRED: "A product needs an image. Upload one or paste its path, then try again."; NOTHING_TO_SAVE: "There was nothing to save."
+      - In `ProductsClient.tsx`: PRODUCTS_LOAD_FAILED: "The products couldn't be loaded, so adding and editing products is turned off to keep them safe. Refresh the page to try again."
+  11. **Page refreshes.** Create, delete and reorder: unchanged. Update: after a confirmed write, refresh only `/products/<stored slug>` and `/products`; delete the code for a product moving between categories. Reads refresh nothing.
+  12. **Must not change:** `getCategoryProducts`; `createCategoryProduct`'s signature, its "add at the end" order and its category check; `deleteCategoryProduct`, and `reorderCategoryProducts` (T-013's); `getUser()` as the first await of every write; T-004's verified behaviors (product ids as row keys, save on blur, Retry, Saving→Saved, focus after delete and reorder, the first-Save banner); every other `ImageUploadField` and `ObjectListEditor` user; the public product keys, and T-025's check that the public HTML has no ids; `settings-actions.ts`, so T-026's security sign-off on that file still holds.
+  - **Accepted until T-010 lands:** on every image list built with `ObjectListEditor`, including the categories on `/admin/products`, typing during an upload can be reverted, and clicking Save categories during an upload silently drops that image.
+  - **How it's verified:** no agent causes a failure on the live database. WARN-3 and the `Map` grouping: code reading plus a scratch harness. WARN-1's orderings, the path box and WARN-2: rows in the owner's checklist, using `ZZ-TEST` records.
+  - **Scope.** **IN T-016:** contract items 1–12 (WARN-1 and the path box; WARN-2; WARN-3's admin alert and the public page's handling of the new result; SEC-INFO-37, both halves; the server-side name and image rule with the visible-character check). **OUT:** to **T-033** (category-title and slug hygiene, the product mapper SEC-INFO-36 and the empty `ProductCard` block, the What We Do save state, the seed panel copy, the `settings-actions.ts` comment wording, the image path placeholder); to **T-010**, re-scoped (the shared upload race on `ObjectListEditor` image lists, with stable row keys); to the **backlog** (SEC-MED-5 / QA F1, DECISIONS 2026-10-04; T-014's name cap and URL allow-list; T-018's raw DB error text; T-013's reorder hardening; T-032's `checkCategoryAttachable` fail-closed message). The trimmed T-016 is about ½ day and must not grow.
+  - **Touches:** `src/app/actions/products-actions.ts`; `src/lib/site-content.ts` (`hasVisibleText`, `CategoryProductPatch`, the `CategoryProductInput` comment); `src/components/admin/CategoryProductsManager.tsx`; `src/components/admin/ImageUploadField.tsx` (the opt-in prop only); `src/app/admin/(dashboard)/products/page.tsx`; `src/app/admin/(dashboard)/products/ProductsClient.tsx`; `src/app/(website)/(marketing)/products/page.tsx` (the new result shape and its comment only). **Docs at close:** this ticket's Files line; DECISIONS; STACK §4 (the new read result and the opt-in prop); DATA_MODEL §3's products row (an update writes only name, description and image); INVENTORY regenerated with `@purpose` on the 3 new exports; SECURITY and QA_REPORT from their owners.
+  - **Re-review triggers** (re-run `/architect-review`): any SQL, migration, table, column, index, database function, trigger or new dependency; a new exported function in a `"use server"` file, or a signature change to a product action other than items 1 and 5; any edit to `settings-actions.ts`, `resolveCategoriesForSave`, `ObjectListEditor` or the category draft/confirmed logic; any change to `ImageUploadField` beyond the opt-in prop; `Object.create(null)` or any class instance passed to a client component or returned from a Server Action; `updateCategoryProduct` writing `sort_order` or `category_slug`; a clean-up delete or an automatic retry in any product write; any visitor-visible change on `/products` beyond item 2, or on `/products/<slug>`; pulling T-033 or T-010 items into T-016.
+  - **Sequence (V7):** `architect-reviewer` ✅ REVISE, doc-only, folded (2026-10-04) → `premortem-planner` ✅ GO WITH ADDITIONS (2026-10-04) → `architect-reviewer` ✅ rulings on the premortem's C1–C6 folded verbatim, no re-review trigger (2026-10-04) → `/build` → `/design-review` (code-level only; the admin is NOT VISUALLY VERIFIED) → `/security-review` (re-binds by sha256 `products-actions.ts`, `site-content.ts`, `admin/(dashboard)/products/page.tsx` and `(website)/(marketing)/products/page.tsx`; re-checks T-026's 7 client invariants on `ProductsClient` and `CategoryProductsManager`; client invariant 1 means `ProductsClient` may import `AllProductsRead` only with `import type`) → `/qa` (static checks plus the production build on :3101, read-only; it writes the owner checklist) → `code-reviewer` → merge. This replaces the V5 sequence further down.
+  **Premortem (`premortem-planner`, 2026-10-04: GO WITH ADDITIONS). These MUST-ADD criteria are binding:**
+  - **Top failure modes,** most likely first:
+    1. A product save puts older text or an older image back over newer edits. One old path survives the queue: the image handler builds `{ ...draft, image }` from a captured `draft`; a reply is copied over newer typing; a save is fired from an effect or updater; or `ProductRow` still sends the whole row. That last one compiles, because a `CategoryProductInput` passes as a `CategoryProductPatch`.
+    2. Around the deploy, the live site runs the old, buggy editor. The first Save unlocks production's old editor (`e8eace1`) until the deploy, and after the deploy old tabs call the old server (Skew Protection on) or fail (off).
+    3. `/products` keeps showing Coming Soon after real products exist. Keeping `new Map(Object.entries(…))` on a Map gives no entries, or `ok: false` gets mapped onto the "no note" branch. Agent checks run against 0 live products, so neither slip shows until the first real product.
+    4. An edit is lost or reverted when a row unmounts mid-save, or after a failure (contract concerns C1 and C2).
+    5. The partial update's unusual branches give the wrong answer. A database error on the step-6 read reads as "Product not found." (staff then add a duplicate), and a `null` field empties the description (C3).
+  1. **The save-order fix (WARN-1) is proven offline before `/qa` signs off.**
+     - **Where the harness lives:** the session scratchpad only. `package.json` and `package-lock.json` stay byte-identical, and only evidence goes into `docs/qa-evidence/T-016/`.
+     - **What it never touches:** `.env.local` is never read, and `@/lib/supabase/*` is never imported.
+     - **Stubs:** the four product actions and `uploadOptimizedImage` are stubs whose replies the harness releases by hand.
+     - **What it renders and checks:** the real `CategoryProductsManager`, checking every payload sent, the draft and the status line.
+     - **The orderings:**
+       - **a.** Name is committed, then Description is typed and committed while that save is in flight. Exactly one follow-up save is sent, carrying only `description`. No keystroke is lost. ▼ and the trash stay disabled throughout, with no render in between where they're enabled. "Saved" appears only after the follow-up.
+       - **b.** The `onChange` captured when an upload started fires during a name save. The follow-up carries only `image`, and the new name survives.
+       - **c.** A reply lands while the user is typing in a field. That field keeps the newer text; untouched fields take the server's (trimmed) value.
+       - **d.** A save returns `ok: false`, then (i) Retry and, separately, (ii) a new commit without Retry. The full difference is sent once in each case. Nothing is sent by a timer, and "Saved" never shows over a failure. A thrown call behaves the same way.
+       - **e.** Commit, then the row unmounts (category switch) and remounts, then the reply lands, then another field is committed. The old value is never sent, and a follow-up committed before the unmount is still sent.
+       - **f.** Two instances share one stub store, standing in for two tabs. A saves the name and B saves the description: both are kept. A reorders and B saves a field: `sort_order` is untouched.
+       - **g.** Retry, or a commit with nothing different: nothing is sent, the error clears, and no "Saved" shows.
+       - **h.** `ProductsClient` rendered with `products: { ok: false }`. That card shows only PRODUCTS_LOAD_FAILED: no picker, no add form, no rows, no "No products…" line. The Categories card stays editable.
+  2. **What a row sends.** Every `updateCategoryProduct` patch has an own key only for each field being sent, a string for every value (never `undefined` or `null`), and never `category_slug`, `sort_order` or `id`. `ProductRow` no longer uses `CategoryProductInput`.
+  3. **No stale state in `ProductRow`.**
+     - No `{ ...draft, … }` built from a captured `draft`.
+     - Every draft update is functional or ref-based and touches only its own field; the image handler sets only `image`.
+     - The draft and confirmed refs are current at every send.
+     - Server Actions are called only from event handlers and from the previous save's completion handler: never during render, in a state updater, or in an effect.
+  4. **After a failure (C1):** a new commit (Tab, Enter, or an upload finishing) goes through the queue like any other, and the error clears once it's sent. Retry does the same. Nothing is sent by a timer. "Saved" never shows while the latest attempt failed.
+  5. **Unmount and remount (C2):** a committed save, including a follow-up committed before the unmount, is always sent and always reaches `onSaved`, with no "is it still mounted" check. While the row is on screen, a draft field the user hasn't changed follows the `product` prop when it changes; a field the user has changed keeps their text.
+  6. **The partial update's other branches**, by code reading:
+     - **Steps 6 and 8:** a returned `error` takes this file's error path; only `data === null` with no error returns PRODUCT_NOT_FOUND.
+     - **Update validation:** `hasVisibleText` runs only on the fields present, before step 6, so an older row with an empty image can still have its description saved.
+     - **Create validation:** `createCategoryProduct` checks name and image after `getUser()` and the slug check, and before `checkCategoryAttachable` or any query.
+     - **Revalidation:** runs only after step 8 returns a row, and only for `categoryPath(<stored slug>)` and `PRODUCTS_PATH`.
+  7. **The `Map`, end to end.**
+     - **Typed read-only:** state is typed `ReadonlyMap<string, readonly CategoryProduct[]>`, so changing it in place fails tsc. Every update builds `new Map(prev)` inside the updater.
+     - **Grep:** the touched files contain none of these on a products map: `Object.entries`, `Object.keys`, `Object.fromEntries`, object spread, `JSON.stringify`, or a bracket lookup. There's no `Object.create(null)` anywhere.
+     - **No client fetch:** no client component imports `getAllCategoryProducts` (T-026 client invariant 1).
+     - **Round trip:** a harness using Next 16.3.6's own compiled React server-to-client serializer (under `node_modules/next/dist/compiled/`) round-trips a `ProductsLoad` whose `byCategory` has the keys `constructor`, `toString` and `t-shirts`, plus a second case with `products: { ok: false }`. Both decode to an equal `Map`.
+  8. **`/products` for visitors.**
+     - **Code reading:** `ok: true` builds sections with `byCategory.get(slug) ?? []`, in the staff's category order; `ok: false` shows the grid plus Coming Soon; the rejection handler keeps `unstable_rethrow`.
+     - **The baseline:** the HTML of `/products`, all 8 `/products/<slug>` pages and `/what-we-do`, captured before `/build` changes any source. It was captured 2026-10-04 from build `FswViKlxkyJ_aN3x-CSSt` (`main` @ `2c77b0c`) on :3101 into the session scratchpad `t-016/baseline-2c77b0c/`: all 200, 0 UUIDs.
+     - **After the build:** the same pages are identical once build ids and asset hashes are normalized, with no catalog write in between, and they have 0 UUID-shaped strings.
+     - **Build output:** the route table still shows `ƒ /products`, `ƒ /products/[category]` and `ƒ /admin/products`, and the build log has no product-read error line.
+  9. **`hasVisibleText`**, run in a small offline harness in both Node and headless Chrome:
+     - **Rejects:** `""`, plain whitespace, NBSP, U+3000, U+200B, U+200D, U+200E, U+202E, U+FEFF, U+00AD, U+2060, U+180E, U+FE0F and U+3164, alone and mixed.
+     - **Accepts:** "Polo"; Bengali with a hasant and a ZWJ conjunct (for example "ক্‍ষ"); Bengali digits; "👕"; a ZWJ emoji family; "A" followed by U+200B.
+     - **Non-strings** return false.
+     - **Repeat calls:** the same input gives the same answer twice in a row, so the module-level regex has no `g` or `y` flag.
+     - **tsc at ES2017:** passes with only the `u` flag, no `v`.
+     - **Recorded as accepted passes:** a lone combining mark (U+0301) and U+2800.
+  10. **The path box (`commitPathOnBlur`)**, checked with a harness of `ImageUploadField` in both modes.
+      - **Prop omitted:** every keystroke calls `onChange` with the raw, untrimmed text, as today. The diff against `main` in that path is only the prop's presence.
+      - **Prop on:**
+        - typing calls nothing;
+        - Tab or Enter calls `onChange(text.trim())` once when `text.trim() !== value`, and Enter followed by blur calls it once in total;
+        - when the trimmed text equals `value`, nothing is called and the box resets to `value`;
+        - the box's text changes only when `value` changes;
+        - the box is read-only, not disabled, during an upload;
+        - a finished upload calls `onChange(url)` at once;
+        - Enter during IME composition doesn't commit.
+  11. **Scope and security sign-offs.**
+      - **Scope:** `git diff main --stat` lists only the Touches files plus docs.
+      - **`site-content.ts`:** changes only by `hasVisibleText`, `CategoryProductPatch` and the `CategoryProductInput` comment.
+      - **Exports:** `products-actions.ts` exports the same 6 functions plus types, and no constant.
+      - **0-byte diffs:** `settings-actions.ts` (T-026 sha256 `2785952a…`), `settings-read.ts` (`cc5c8a2c…`), `business/page.tsx` (`87071736…`), `SettingsForm.tsx`, `category-draft.ts`, `src/components/catalog/*`, `products/[category]/page.tsx`, `media-actions.ts`, `nav.ts`, the middleware, `next.config.ts`, `db/` and `supabase-schema.sql`.
+      - **Re-binds:** `/security-review` re-binds by sha256 the four files whose sign-off T-016 voids: `products-actions.ts` (T-026 `44b47ada…`), `site-content.ts` (T-026 `465f6712…`), `admin/(dashboard)/products/page.tsx` (T-026 `1067bb51…`) and `(website)/(marketing)/products/page.tsx` (T-025 `af42e298…`).
+      - **Client invariants:** it also re-checks T-026's 7 client invariants on `ProductsClient` and `CategoryProductsManager`.
+  12. **Owner checklist:** `/qa` writes "Manual Checklist — T-016 — <date>" from the rows below, quoting the final strings after `/design-review`. Rows 1, 2, 3, 7 and 11, plus T-025 row 4 rerun on this build, block the deploy. A fail in any other row reopens T-016.
+  13. **`/ship`** carries the additions below.
+  - **Owner checklist rows, for `/qa`.**
+    - **Before you start:**
+      - **Build:** the production build of `main` after T-016 merges (it includes T-026), at `http://localhost:3101`. Never use :3001. Close tabs from earlier builds.
+      - **One sitting, in this order:** T-026 rows 1–2 (the first Save), then these rows, then T-025 rows 3–7 (option A), then T-026 rows 3–7. T-004 rows 3–6 count as done if rows 1–3 and 11 here pass.
+      - **Everything writes to the LIVE database.** Keep it short and finish with row 11.
+      - **Staff freeze:** from the first Save until the deploy's live check passes, FAL staff must not add or edit products or categories, because the first Save unlocks the live site's old editor. Plan the deploy for the same day.
+      - **Category:** use Sportswear only if it has no real products.
+      - **Slow rows:** use Chrome DevTools → Network → "3G" for rows marked slow. Count saves as POST requests under Network → Fetch/XHR.
+      - **Don't edit categories while a category image is uploading** (the known T-010 issue).
+      - **Photo:** only row 1 needs one (JPG or WebP, under 400 KB, at most 2400 px).
+    - **The rows:**
+      0. **Set up.** Under Sportswear, add `ZZ-TEST T-016 one (delete me)` and `ZZ-TEST T-016 two (delete me)`, each with the path `/images/client/product-sportswear.webp`.
+      1. **Several edits on one row (slow). Blocks deploy.** Rename "one" to `ZZ-TEST T-016 এক (delete me)` and press Tab. While "Saving…" shows, type `ZZ desc` in Description and press Tab, then replace the image. **Expected:** no character is lost or jumps back; ▼ and the trash stay disabled until the end; "Saved" shows once; after a reload all three changes are stored and show on `/products/sportswear`.
+      2. **The path box. Blocks deploy.**
+         1. In "two", type `/images/client/product-tshirts.webp` and press Tab. Expected: no POST while typing, then exactly one POST and "Saved".
+         2. Add a trailing space, press Enter and click away. Expected: no POST, and the space goes.
+         3. Paste `/images/client/product-sportswear.webp` and press Enter. Expected: one POST, and the stored path is exactly that.
+      3. **Two tabs. Blocks deploy.** In tab A, rename "two". In tab B, without reloading, set "two"'s description. In tab A, press ▲ on "two". In tab B, still without reloading, set "one"'s description. Reload both. **Expected:** "two" is first, with A's name and B's description; "one" has B's description; `/products/sportswear` shows the same order.
+      4. **Failure, then Retry.** Go offline, edit a description, press Tab, go online, click Retry. **Expected:** while offline, red text with Retry, the text stays and there's no "Saved". Retry sends one POST, then "Saved", and the change is stored.
+      5. **A new edit after a failure (C1).** Go offline, change the name, Tab, go online, change the description, Tab without Retry. **Expected:** one POST carrying both changes, then "Saved", and the red text goes.
+      6. **Name and image are required.**
+         1. Clear the name and press Tab. Expected: "A product needs a name…", and the old name is back after a reload.
+         2. Clear the path box and press Tab. Expected: "A product needs an image…", and the old path is back after a reload.
+      7. **Switching category mid-save (slow, C2). Blocks deploy.** Rename "one", Tab, switch the picker to T-Shirts and straight back while "Saving…" shows, wait 10 s, set the description and wait for "Saved", then reload. **Expected:** the name box shows the new name after the wait, and both the name and the description are stored.
+      8. **Switching category clears the add form (WARN-2).** Type a name and path in Add a product, don't add, then switch category and back. **Expected:** the form is empty, and nothing is added.
+      9. **Session expired.** Sign out in tab B, then edit in tab A and press Tab. **Expected:** "Your session expired…" with Retry; the text stays; after signing in again, the old description is stored.
+      10. **Other image fields are unchanged.** Type one character into a category's image path box, then reload without saving. **Expected:** "Unsaved category changes" appears on the first keystroke.
+      11. **Clean up. Blocks deploy.** Delete every ZZ-TEST product, then run the premortem's read-only `ZZ` count command on `/products`, `/products/sportswear` and the live `/what-we-do/sportswear`. **Expected:** Sportswear shows "No products in this category yet.", and every line prints `0`.
+  - **`/ship` additions for this release:**
+    1. **Before pushing:** T-016 rows 1, 2, 3, 7 and 11 and T-025 row 4 are ticked, alongside T-026 rows 1–3 and 7, or the owner waives them in DECISIONS.
+    2. **Staff freeze:** FAL staff haven't touched products since the first Save and won't until the live check passes. Every `/admin` tab, live and local, is closed before the push.
+    3. **Vercel Skew Protection:** record whether it's on. Either way, reload every admin tab after the deploy.
+    4. **Live checks, read-only, on both domains:** `/products` 200, matching the database (Coming Soon while there are 0 products); the 8 `/products/<slug>` pages 200; 0 UUID-shaped strings on `/products` and one category page; `/admin/products` → 307 `/admin/login`.
+    5. **After staff add the first real product:** a read-only check that `/products` shows its section and `/products/<slug>` its card, recorded in LOG.
+  - **Contract notes from the premortem:**
+    - **C4 (doc fix):** T-016 voids four sign-offs, not two. That's folded into MUST-ADD 11 and the Sequence line.
+    - **C5:** "an old tab's full-row payload still works" isn't a real protection. With Skew Protection, old tabs run the old code; without it, their action ids most likely don't resolve. `/ship` additions 2–3 are the real protection.
+    - **C6:** two older AC lines are retired. "Pasting… each still save once" now means on Tab or Enter. "Ends on the most recently chosen image" excludes two overlapping uploads in one row, which T-010 owns.
   - **2026-10-03 notes, from the `/products` run:**
     - **Re-point Files.** Per T-026's `architect-reviewer` ruling, the editor moves from `business/{page,BusinessClient}.tsx` to `src/app/admin/(dashboard)/products/*`.
     - **Add to the AC (T-024 code review):**
@@ -192,7 +372,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
       - **SEC-INFO-37:** `getAllCategoryProducts()` throws for a category slugged `constructor`, because it groups into a plain object. Use `Object.create(null)` or a `Map`; the same goes for `CategoryProductsManager.tsx:87,106`.
       - **SEC-INFO-36:** add a product mapper like `toCategoryCards`, so whole product rows don't reach the catalog components.
       - A title of 255+ characters can save a slug ending in `-`, and the category's next save is then refused (security-review, for `/pm`). **Fixed for saves on 2026-10-04 by T-026's `a6ce5f6`;** the remaining read-time half is in the 2026-10-04 notes below.
-  - **2026-10-04 notes, from T-026's reviews:**
+  - **2026-10-04 notes, from T-026's reviews** (scoped by the contract above: the read-time slug cut, the What We Do text page, the seed panel copy, the comment wording and the image placeholder go to T-033; the upload race goes to T-010; the delete-vs-add race stays in the backlog):
     - **Decided: what visitors see when the product read fails** (DECISIONS 2026-10-04; the owner should confirm). Visitors keep the existing empty state ("Coming Soon"), and the failure is logged on the server. Only the admin fails closed, with a `role="alert"` "couldn't load products" message and no add form.
       - That keeps this ticket's AC bullet on `getCategoryProducts`, and the T-005 QA INFO-1 ruling.
       - It replaces the public half of the 2026-10-03 "WARN-3 scope" note above. If `getAllCategoryProducts` gets an `{ ok }` result, `/products` treats `ok: false` like an empty catalog, plus a server log.
@@ -215,11 +395,11 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - **The empty add-product form (`design-reviewer`):** the image path placeholder (`ImageUploadField.tsx:252`) looks like a real value.
     - **Security:** touching `settings-actions.ts`, `products-actions.ts` or `site-content.ts` voids T-026's sha256 sign-off on those files, so this ticket's `/security-review` re-binds them.
   - **Source:** `docs/QA_REPORT.md` Static Pass — T-004 WARN-1, WARN-2, WARN-3, 2026-09-27 (`docs/MEMORY_BANK.md` T-004 entry: "QA and `/cso` both recommend picking these three (WARN-1/2/3) up as `/pm` fast-follow tickets"). Also a PM source check on 2026-09-28, same race class as WARN-1, for `/qa` to confirm: `ImageUploadField.tsx:249-251` calls `onChange` on every keystroke in its hand-editable path box, and `CategoryProductsManager.tsx:532` wires that `onChange` straight to `persist()`. Typing a path into a product row therefore fires one `updateCategoryProduct` write per keystroke, and those writes aren't serialized.
-  - **Files:** `src/components/admin/CategoryProductsManager.tsx` (`ProductRow.persist()` :409-445 and its `<ImageUploadField>` :532; the `<AddProductForm>` mount :242; the empty-state line :252), `src/app/actions/products-actions.ts` (`getAllCategoryProducts` :125-143), `src/app/admin/(dashboard)/business/page.tsx`, `src/app/admin/(dashboard)/business/BusinessClient.tsx` (pass the load state through). `src/components/admin/ImageUploadField.tsx` is touched only if the chosen fix needs a new prop there (see Notes).
+  - **Files:** `src/components/admin/CategoryProductsManager.tsx` (`ProductRow.persist()` :409-445 and its `<ImageUploadField>` :532; the `<AddProductForm>` mount :242; the empty-state line :252), `src/app/actions/products-actions.ts` (`getAllCategoryProducts` :125-143), `src/app/admin/(dashboard)/business/page.tsx`, `src/app/admin/(dashboard)/business/BusinessClient.tsx` (pass the load state through). `src/components/admin/ImageUploadField.tsx` is touched only if the chosen fix needs a new prop there (see Notes). **2026-10-04: superseded by the contract's Touches list above.** The editor moved to `src/app/admin/(dashboard)/products/*` in T-026, and the line numbers here are pre-T-026.
   - **Flags:** schema-touching: **no** · sensitive: **yes** (`src/app/admin/**`, Server Action module) · UI: **yes**
   - **Acceptance:**
-    - WARN-1: for any interleaving of a Name/Description save and an Image save on one product row, both the stored row and the on-screen preview end on the most recently chosen image and the most recently typed text. There's no silent revert and no "Saved" shown over a stale value. Ignoring stale responses on the client isn't enough on its own: `updateCategoryProduct` overwrites the whole row, so a stale request applied last on the server still wins in the database. A row's saves must not overlap. For example, queue them and build each payload from the latest draft at send time, or block the image control while a save is in flight.
-    - Path box: typing into a product row's path box sends nothing until the edit is committed (on blur or an equivalent), then sends exactly one save. The box never drops or reverts characters mid-typing, and the stored value equals the full committed text. Pasting, and completing an upload, each still save once.
+    - WARN-1: for any interleaving of a Name/Description save and an Image save on one product row, both the stored row and the on-screen preview end on the most recently chosen image and the most recently typed text. There's no silent revert and no "Saved" shown over a stale value. Ignoring stale responses on the client isn't enough on its own: `updateCategoryProduct` overwrites the whole row, so a stale request applied last on the server still wins in the database. A row's saves must not overlap. For example, queue them and build each payload from the latest draft at send time. ~~or block the image control while a save is in flight~~ (struck 2026-10-04: the contract rejected that option). This holds for one upload at a time per row. Two overlapping uploads in one row (a second image picked before the first finishes) belong to T-010, with T-009's race. *(C6, 2026-10-04.)*
+    - Path box: typing into a product row's path box sends nothing until the edit is committed (on blur or an equivalent), then sends exactly one save. The box never drops or reverts characters mid-typing, and the stored value equals the full committed text. ~~Pasting, and completing an upload, each still save once.~~ *(Replaced 2026-10-04, C6:)* A paste saves once, at the next blur (Tab) or Enter. Finishing an upload saves once, straight away.
     - WARN-2: changing the category picker discards any in-progress "Add a product" draft (name, description, image), for example with `key={selected.slug}` on `<AddProductForm>`. After a switch, nothing typed or uploaded for the previous category can be added to the new one.
     - WARN-3: `getAllCategoryProducts` distinguishes a failed read from an empty result, for example `{ ok: true, data } | { ok: false }`. After a failed read the editor never presents a category as empty. "No products in this category yet" doesn't render; a visible `role="alert"` message says products couldn't be loaded and to refresh; and the add form is withheld until a reload succeeds, so a transient read failure can't lead to a duplicate add. That message is fixed copy, not the raw DB error.
     - `getCategoryProducts`, the public category page's read, is unchanged. Its fail-open "Coming Soon" was ruled correct for visitors (`docs/QA_REPORT.md` T-005 Static Pass INFO-1).
@@ -659,12 +839,29 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   - Titles with no Latin letters or digits all slugify to `category`, so a second one is refused (QA T-026 F5). Give them a distinct, readable slug, or explain the refusal in the error.
   - `updateSettings` accepts any key, so "Business" or "business " creates a junk row (QA T-026 F6, within RISKS R1). Allow only the known settings keys.
   - The delete-guard message for several categories reads `"T-Shirts, Sportswear" still has products assigned to it.` (QA T-026 F7). Name them grammatically.
+  - *(Added 2026-10-04, from T-016's `architect-reviewer`.)* `checkCategoryAttachable` reads through `getSettings`, which falls back to the code defaults when the read fails. A failed read therefore refuses the product write with a misleading "hasn't been saved as a category yet". Make it fail closed with its own "couldn't check the category, try again" message.
   Source: QA T-026 Static Pass, 2026-10-04. All Info-level, and all predate T-026.
   Sequence: `/build` → `/security-review` (it touches `settings-actions.ts`) → `/qa` → `code-reviewer` → merge.
+- [ ] **T-033** — Category-title and slug hygiene, catalog narrowing, and admin copy [app:admin][app:site][design][sec]
+  Split out of T-016 on 2026-10-04 by `architect-reviewer` (the V7 ½-day stop); about ½ day. It touches `site-content.ts` and `settings-actions.ts`, so `/security-review` re-checks both (re-binding T-026's sha256 sign-off). Pre-cleared under these rules:
+  - **Category titles (QA T-026 F4).** In `resolveCategoriesForSave`, a title that isn't blank after trimming but fails `hasVisibleText` (added by T-016) refuses the whole save: "Category #n's title has no visible characters, so nothing was saved. Type a title, then save again." It's never treated as a deletion. `blankTitleRows` uses `hasVisibleText`. `normalizeProducts` doesn't change.
+  - **The slug cut.**
+    - A private `MAX_SLUG_LENGTH = 255`, with a comment pointing at `VARCHAR(255)` (migration 0001).
+    - A private `cutSlug(slug, max)` that cuts, then trims trailing dashes.
+    - `slugify` returns `cutSlug(raw, MAX) || "category"`; `dedupeSlug` cuts the base to `MAX - "-N".length`; `isWellFormedSlug` uses the same constant; `resolveCategoriesForSave` drops its own inline cut.
+    - Every slug of 255 characters or fewer must stay exactly as it is. Check that read-only against the live titles.
+  - **SEC-INFO-36.** `toProductCards` and `ProductCardData` (with `id?: never`) go in `src/components/catalog/ProductGrid.tsx`, next to the component, as `toCategoryCards` does. Both public pages narrow products before passing them on. `ProductCard` renders no text block when both name and description are blank. Keys stay as they are.
+  - **The What We Do text page** (`BusinessClient.tsx`) gets an "unsaved" marker, and its editor is read-only while saving, the same pattern `ProductsClient` uses.
+  - **Seed panel copy:** no raw storage keys in any message, and "click Sync again". If `SeedResult` changes shape, `SeedDefaultsPanel` changes in the same commit. What the sync writes doesn't change.
+  - **The comment wording** at `settings-actions.ts:262-266` ("strictly later than the one read (1 ms past its millisecond part)", plus "when the stamp parses"), and **the image path placeholder** at `ImageUploadField.tsx:252`, which looks like a real value in an empty add form.
+  Source: T-016's contract (`architect-reviewer`, 2026-10-04), from T-026's reviews (QA F4, `code-reviewer`, `design-reviewer`, `security-reviewer`).
+  Sequence: `/build` → `/design-review` → `/security-review` → `/qa` → `code-reviewer` → merge. After T-016; then T-010.
 
 ### Dependency Order
 
 **2026-10-03:** the `/products` client request above runs first: T-024, then T-025, then T-026, then T-016. T-021 is folded into T-024. After that, the order below resumes, without T-016, which is done in that run.
+
+**2026-10-04:** T-016 was split under the ½-day stop (DECISIONS 2026-10-04). After the `/products` run, take T-033 and then the re-scoped T-010 first. T-030 (admin phone navigation), T-031 (SEC-INFO-40 grants, a `[db]` HARD STOP) and T-032 are backlog.
 
 **Refreshed 2026-09-28 (fourth `/pm` pass).** The T-005, T-012 and T-004 entries are gone: all three merged, shipped in the 2026-09-28 deploy, and were archived into `docs/MEMORY_BANK.md` §12 (`87e7a09`, `846ac6e`). The earlier "consider landing before T-004" notes on T-010 and T-013 are also superseded. T-004 built a new component with stable row keys, so it doesn't extend `ObjectListEditor`, and its ▲/▼ controls call `reorderCategoryProducts` directly on production. Everything is ranked by live risk to the client now that Sprint 1 is on production. `/system-architect sprint` stops at `/archivist` after the 3rd merge, so items 1–3 are what ship next. Nothing reaches production until the user types "deploy" again.
 
