@@ -123,6 +123,12 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - `npx tsc --noEmit` and `npm run build` stay clean.
   - **Sequence:** `/git Start` → `/lead-dev` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge`
   - **Notes:** Both components are shared across `/admin/business` and `/admin/homepage` — fixing here fixes every current consumer at once, and any future one (e.g. T-004's product editor, if it reuses either component).
+  - **2026-10-04, extended from T-026's `/design-review`** (measured in a synthetic render of `/admin/products` and `/admin/business`):
+    - Small labels ("TITLE", "#n", "CARD IMAGE") measure 2.6:1, and the group label 3.8:1. Both need AA.
+    - Input and picker focus indicators measure about 1.2–1.5:1 and need a visible ring.
+    - Accessible names are missing on 16 fields on `/admin/products` and 3 on `/admin/business`. Row buttons are named only "Move up"/"Remove", and 7 chip-remove buttons have no name.
+    - Add `min-w-0` to the chip input, so the "Process Steps" Add button stops poking out of its card at 360 px.
+    - These components now live on `/admin/products` too (the category cards).
 
 *(T-012–T-014 appended 2026-09-27, third `/pm` pass — fast-follow findings from T-003, which had not yet been built when this Sprint 2 section was first written.)*
 
@@ -185,7 +191,29 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
       - **WARN-3 scope:** after a failed product read, `/products` and `/products/<slug>` show a "couldn't load products" state, not "Coming Soon".
       - **SEC-INFO-37:** `getAllCategoryProducts()` throws for a category slugged `constructor`, because it groups into a plain object. Use `Object.create(null)` or a `Map`; the same goes for `CategoryProductsManager.tsx:87,106`.
       - **SEC-INFO-36:** add a product mapper like `toCategoryCards`, so whole product rows don't reach the catalog components.
-      - A title of 255+ characters can save a slug ending in `-`, and the category's next save is then refused (security-review, for `/pm`).
+      - A title of 255+ characters can save a slug ending in `-`, and the category's next save is then refused (security-review, for `/pm`). **Fixed for saves on 2026-10-04 by T-026's `a6ce5f6`;** the remaining read-time half is in the 2026-10-04 notes below.
+  - **2026-10-04 notes, from T-026's reviews:**
+    - **Decided: what visitors see when the product read fails** (DECISIONS 2026-10-04; the owner should confirm). Visitors keep the existing empty state ("Coming Soon"), and the failure is logged on the server. Only the admin fails closed, with a `role="alert"` "couldn't load products" message and no add form.
+      - That keeps this ticket's AC bullet on `getCategoryProducts`, and the T-005 QA INFO-1 ruling.
+      - It replaces the public half of the 2026-10-03 "WARN-3 scope" note above. If `getAllCategoryProducts` gets an `{ ok }` result, `/products` treats `ok: false` like an empty catalog, plus a server log.
+    - **WARN-3, admin half, still open at T-026:** `/admin/products` shows every category as "No products in this category yet." after a failed read (QA T-026 F2; `products-actions.ts:150-155`). Nothing is lost, because the server-side delete guard re-counts products.
+      - The page loads with `Promise.all`, so a *thrown* read falls to Next's error screen instead of the friendly alert. It still fails closed.
+    - **The upload race, the same class as WARN-1 (`code-reviewer`):** `ImageUploadField` calls the `onChange` it captured when an upload started (`ImageUploadField.tsx:126-128`), and `ObjectListEditor.update` builds the new list from that older `items`.
+      - On `/admin/products`, an upload that finishes after a category save can roll the draft back to the pre-save list. Saved rows lose their new ids, so a second Save treats them as new.
+      - On every image list, typing done during an upload is lost.
+      - Fix it together with WARN-1, with a functional update or a ref to the latest list.
+    - **SEC-INFO-37, current lines:** `products-actions.ts:157-159` and `CategoryProductsManager.tsx:91,110,117,122,134,146`.
+    - **SEC-INFO-36:** narrow the product rows passed to `ProductGrid` at runtime, not just in its type (`ProductGrid.tsx:8`).
+    - **Visible-character check (QA F4):** a name or title made only of a zero-width space, LRM or RLO passes `trim()`. Product names (required by this ticket) should use a visible-character check, and so should category titles (`resolveCategoriesForSave`).
+    - **The delete-vs-add race (QA F1, SEC-MED-5):** a product added while another admin's category delete commits can end up with no category. Fix it if cheap: re-check the category after the insert and undo the insert if it's gone. Otherwise leave it in the backlog with a DECISIONS note. It's recoverable by re-adding the title.
+    - **Read-time slug cut (`code-reviewer`):** `normalizeProducts`' fallback slug for a never-saved category isn't cut at 255. Make the read-time and save-time paths share one cut-and-trim helper. Note that `dedupeSlug`'s `-2` can push a 255-character slug past 255.
+    - **The What We Do text page** (`BusinessClient.tsx`) has no unsaved marker and isn't frozen during a save. Typing during a save ends with "Page text saved." even though the newest keystrokes weren't sent (`code-reviewer`).
+    - **Seed panel copy (`design-reviewer`):** the success and partial-failure messages show raw storage keys (`who_we_are`) and say "Click Save again" beside a "Sync" button.
+      - Show the panel's labels and say "click Sync again".
+      - The partial-failure string lives in `settings-actions.ts:168`; the success string is in `SeedDefaultsPanel.tsx:53`.
+    - **Comment wording (`code-reviewer`, `a6ce5f6`):** in `settings-actions.ts:262-266`, change "at least 1 ms past it" to "strictly later than the one read (1 ms past its millisecond part)", and add "when the stamp parses".
+    - **The empty add-product form (`design-reviewer`):** the image path placeholder (`ImageUploadField.tsx:252`) looks like a real value.
+    - **Security:** touching `settings-actions.ts`, `products-actions.ts` or `site-content.ts` voids T-026's sha256 sign-off on those files, so this ticket's `/security-review` re-binds them.
   - **Source:** `docs/QA_REPORT.md` Static Pass — T-004 WARN-1, WARN-2, WARN-3, 2026-09-27 (`docs/MEMORY_BANK.md` T-004 entry: "QA and `/cso` both recommend picking these three (WARN-1/2/3) up as `/pm` fast-follow tickets"). Also a PM source check on 2026-09-28, same race class as WARN-1, for `/qa` to confirm: `ImageUploadField.tsx:249-251` calls `onChange` on every keystroke in its hand-editable path box, and `CategoryProductsManager.tsx:532` wires that `onChange` straight to `persist()`. Typing a path into a product row therefore fires one `updateCategoryProduct` write per keystroke, and those writes aren't serialized.
   - **Files:** `src/components/admin/CategoryProductsManager.tsx` (`ProductRow.persist()` :409-445 and its `<ImageUploadField>` :532; the `<AddProductForm>` mount :242; the empty-state line :252), `src/app/actions/products-actions.ts` (`getAllCategoryProducts` :125-143), `src/app/admin/(dashboard)/business/page.tsx`, `src/app/admin/(dashboard)/business/BusinessClient.tsx` (pass the load state through). `src/components/admin/ImageUploadField.tsx` is touched only if the chosen fix needs a new prop there (see Notes).
   - **Flags:** schema-touching: **no** · sensitive: **yes** (`src/app/admin/**`, Server Action module) · UI: **yes**
@@ -249,6 +277,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - Layout, sizing, copy and brand hue are otherwise unchanged. `npx tsc --noEmit` and `npm run build` stay clean.
   - **Sequence:** `/git Start` → `/lead-dev` → `/cso review` (className-only diff; required by WORKFLOW §5's literal `src/app/admin/**` trigger) → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Security-sensitive row, UI)
   - **Notes:** Ranked #8, with T-011 straight after it. Kept separate from T-011 for a clean revert: this is one CTA color treatment across public and admin, while T-011 is admin label opacity and focus rings in two shared components. Out of scope: `text-primary` used as plain, non-CTA text on dark backgrounds (e.g. admin kicker labels); `/ui-ux` logs it as its own finding if it fails. This touches the public forms' CTA; §10 is inert, so there's no marketing review.
+  - **2026-10-04 (T-026 `/design-review`):** `SettingsHeader`'s Save button (`text-black` on `bg-primary`, 2.77:1) now also reads "Save categories" on `/admin/products` and "Save page text" on `/admin/business`. It's already in this ticket's file list.
 
 - [x] **T-021** — Give catalog photos on `/what-we-do` and the category pages a meaningful accessible name
   - **Closed 2026-10-03 by T-024** (`9755389`, `49e13ba`).
@@ -434,7 +463,24 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
   Sequence: `premortem-planner` (it touches `next.config.ts`) ✅ → `/build` → `/design-review` → `/security-review` → `/qa` (production-build matrix, read-only) → `code-reviewer` → merge.
   Risk: the URL change, mitigated by the permanent redirect. Slugs stay as they are: `/products/t-shirts`, not the client's "t-shirt".
 
-- [ ] **T-026** — A dedicated admin "Products" page for categories and their products [app:admin][design][sec]
+- [x] **T-026** — A dedicated admin "Products" page for categories and their products [app:admin][design][sec]
+  Done 2026-10-04:
+  - **Commits:**
+    - `8ee80bf`: the contract and premortem folded into the AC;
+    - `e050f85`: the server (one writer per field, the compare-and-swap, `updateSettings` refusing `business`, the seed fix, SEC-MED-15's root cause);
+    - `8d850bd`: the UI (`/admin/products`, the slimmed `/admin/business`, the sidebar item, `saveLabel`, `SettingsLoadError`, `settings-read.ts`);
+    - `a6ce5f6`: stamps always move forward, and long titles give valid slugs (`code-reviewer`'s minor items);
+    - `e201aca`: the `foreground` token on new admin text (design FIX FIRST).
+  - **Reviews:**
+    - `architect-reviewer`: APPROVE. `premortem-planner`: GO WITH ADDITIONS.
+    - `code-reviewer`: SHIP three times (the build, `a6ce5f6`, `e201aca`). Codex: SKIPPED.
+    - `security-reviewer`: CLEARED, with no Critical, High or Medium findings. SEC-INFO-38 and 39 are new; SEC-INFO-40 is filed as T-031. The six server files are sha256-bound at `a6ce5f6` and unchanged by `e201aca`.
+    - `design-reviewer`: FIX FIRST, then SHIP. This used a SYNTHETIC harness: the admin is NOT VISUALLY VERIFIED against the live login.
+    - QA: PASS (offline attacks, wire-level requests, rendered markup, the live admin-gate matrix), plus a static re-check PASS on `e201aca`.
+    - **The owner's SQL HARD STOP: answered 2026-10-04, with all 8 points matching.**
+  - **Owner checklist:** `docs/QA_REPORT.md`, "Manual Checklist — T-026 — 2026-10-04". Rows 1–3 and 7 block deploy. Errata for the older pending checklists are in the same file.
+  - **Accepted visible change** (DECISIONS 2026-10-04): admin headings and the bold "Save categories" mentions use `foreground` (#f5faf5).
+  - **Follow-ups:** T-016's 2026-10-04 notes; T-011, T-020 and T-027 extended; new T-030 (admin phone navigation), T-031 (SEC-INFO-40 grants) and T-032 (QA F5–F7).
   AC:
   - A new admin page, `/admin/products`, appears as "Products" in the admin sidebar. It has two parts:
     - **Categories:** add ("Add category"), rename, change the image and description, reorder, delete;
@@ -477,6 +523,7 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
      - **Write when the row exists:** a conditional update. Pass `row.updated_at` back **exactly as returned**; never parse it, because microseconds would be lost. That's `.update({ value: next, updated_at: new Date().toISOString() }).eq("key","business")` plus `.eq("updated_at", <raw string>)`, or `.is("updated_at", null)` when it's null, then `.select("key")`. 0 rows → SAVE_CONFLICT.
      - **Write when the row is missing:** `insert`. Error code `23505` → SAVE_CONFLICT; any other error → its message.
      - **On a conflict:** fail closed, with no automatic retry.
+     - **Amended 2026-10-04** (`code-reviewer`, `a6ce5f6`): the written stamp is `max(now, read stamp + 1 ms)` instead of plain `new Date()`, so stamps always move forward. The condition still uses the raw string. This is an implementation refinement inside the contract (DECISIONS 2026-10-04). The live table has no `updated_at` trigger (owner SQL, 2026-10-04), so this line is the only thing stopping a repeated stamp.
   4. **`saveCategories`:**
      - `getUser()` is the first statement; no user → SESSION_EXPIRED.
      - Inside `build`, keep every rule: `readStoredCategoryIdentities(stored.products)`, `resolveCategoriesForSave`, `computeRemovedCategories`, and the delete-guard count with "Remove its products first".
@@ -503,6 +550,7 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
       - `pickWhatWeDoText`: "The page text couldn't be read, so nothing was saved. Reload the page and try again."
 
   **Accepted limitation:** two stale tabs of the same page (or two admins) are last-writer-wins on category content. That can revert a rename's title, drop a newer empty category, or bring back a deleted empty one. It can't orphan products, because ids plus the delete guard prevent that. This is the same as every settings editor today.
+  *Correction 2026-10-04 (QA F1, `code-reviewer`):* "can't orphan products" holds through stale tabs. One true race remains: a category delete that commits while another admin adds a product to that category can leave the product with no category. It predates T-026 (SEC-MED-5) and is recoverable, because re-adding the category's title brings the product back. It's tracked in T-016's notes.
 
   **Premortem (`premortem-planner`, 2026-10-03: GO WITH ADDITIONS). These MUST-ADD criteria are binding:**
   - **The compare-and-swap is checked by code reading:**
@@ -534,7 +582,7 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
     - the anonymous probes (plain, `RSC: 1`, prefetch, `.rsc`, a trailing slash, `//admin/products`) each return 307 to `/admin/login` with no `Set-Cookie`;
     - `products/*` and `business/*` don't import from each other.
   - **Before the first Save, read-only:** check that each live category's `slugify(title)` equals its URL slug. **Done on 2026-10-03: all 8 match.**
-  - **Owner SQL check, read-only, before merge: a HARD STOP.** It covers the `site_settings` policies, its triggers and `updated_at::text`. The query was given to the owner on 2026-10-03.
+  - **Owner SQL check, read-only, before merge: a HARD STOP.** It covers the `site_settings` policies, its triggers and `updated_at::text`. The query was given to the owner on 2026-10-03. **Answered 2026-10-04:** the owner ran an expanded query, which added RLS, grants, rules, columns and the primary key, and all 8 of `security-reviewer`'s points match. The evidence is in `docs/SECURITY.md`, "CSO Audit — 2026-10-04 — ticket-review:T-026 (the owner's SQL evidence)".
   - **QA errata:** dated corrections on the pending T-002, T-003, T-012, T-004, T-006 and T-025 rows that send the owner to `/admin/business` for categories, products or the first Save.
   - **The owner's two-tab checklist,** on the production build against the LIVE database, with `ZZ-TEST T-026 (delete me)` records:
     1. the first Save, if still pending, then reload;
@@ -551,7 +599,7 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
 
   **Also folded in:** SEC-MED-15's root cause, from the T-025 security review. `normalizeProducts()` keeps a stored slug only if `isWellFormedSlug()` passes, which closes every slug path at once.
 
-  Sequence: `architect-reviewer` ✅ APPROVE (2026-10-03) → `premortem-planner` ✅ GO WITH ADDITIONS (2026-10-03) → `/build` → `/design-review` (code-level only; the admin is NOT VISUALLY VERIFIED by agents) → `/security-review` → `/qa` → `code-reviewer` → **HARD STOP: the owner's read-only SQL check** → merge.
+  Sequence: `architect-reviewer` ✅ APPROVE (2026-10-03) → `premortem-planner` ✅ GO WITH ADDITIONS (2026-10-03) → `/build` ✅ → `/design-review` ✅ FIX FIRST → SHIP (code-level and a SYNTHETIC harness; the admin is NOT VISUALLY VERIFIED by agents) → `/security-review` ✅ CLEARED → `/qa` ✅ PASS → `code-reviewer` ✅ SHIP → **HARD STOP: the owner's read-only SQL check** ✅ answered 2026-10-04 → merge ✅ (2026-10-04).
   Risk: the shared record. Two admin pages saving one record is exactly the overwrite risk the architect review is for.
 
 After T-026 this run also does **T-016** (above), by the owner's decision on 2026-10-03, because staff are about to use the product editor.
@@ -567,6 +615,10 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
     `design-reviewer` suggests `text-accent`, about 7.7:1. **The `PageHeader` tag is already done:** T-025 (2026-10-03) moved it to `text-accent`, which measures about 9.5:1 on 5 pages.
   - DESIGN.md §2 gains a `scrim` token for the photo-card gradient (Low).
   Source: `design-reviewer`, T-024 review, 2026-10-03.
+  - **2026-10-04, extended to the admin** (T-026 `/design-review`, measured in a synthetic render):
+    - `SettingsHeader`'s `text-primary` page tag is 2.61:1, card titles 2.52:1, the process-step chips are dim too, "Secure Session" is 2.17:1, and the sidebar group labels are 2.03:1.
+    - `SettingsLoadError`'s tag already uses `text-accent`, so the same page's tag changes color between its normal and failed-load states.
+    - The Careers, Reports, Submissions and Media admin pages have hand-written `text-white` h1s, which DESIGN.md §7 bans (the builder's note on T-026's `e201aca`).
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Rank it with T-020 and T-011.
 - [ ] **T-028** — Respect `prefers-reduced-motion` sitewide [app:site][design]
   AC:
@@ -587,6 +639,28 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   - Header and menu links show a `ring-accent` focus ring instead of the browser default.
   Source: `design-reviewer`, T-025 review, 2026-10-03. This is an existing problem, not caused by T-025.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
+- [ ] **T-030** — Give the admin a way to navigate on phones, and mark the current page in the sidebar [app:admin][design]
+  AC:
+  - Below 768 px, the admin has working navigation to every sidebar destination. Today the sidebar is `hidden md:flex` with no menu, so a phone shows the current page and no way to reach the others.
+  - The sidebar marks the current page visually and with `aria-current="page"`.
+  - Keyboard and screen-reader safe, on the same terms as T-029's menu rules: focus stays inside an open menu, Escape closes it, and the toggle has `aria-expanded`.
+  Source: `design-reviewer`, T-026 review, 2026-10-04. This is an existing problem, not caused by T-026.
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Admin-only, so the admin is NOT VISUALLY VERIFIED by agents without a synthetic harness; `/qa` writes an owner checklist row.
+- [ ] **T-031** [db] [sec] — Remove the anon role's unused write grants on `site_settings` (and make every table's grants explicit)
+  AC:
+  - `anon` keeps only SELECT on `site_settings`. INSERT, UPDATE, DELETE and TRUNCATE are revoked; RLS never covers TRUNCATE.
+  - Optionally, `authenticated` loses DELETE and TRUNCATE on `site_settings`, since the app never deletes a settings row.
+  - The other tables that rely on Supabase's default grants get explicit ones, following `products` (migration 0001). `submissions` keeps anon INSERT and never gets anon SELECT.
+  - It's a hand-applied migration in `db/migrations/` (`STATUS: PENDING_USER_APPLY`), reviewed by `architect-reviewer` and `/security-review`, with a HARD STOP until the owner applies it and confirms. `supabase-schema.sql` and DATA_MODEL §3 are updated.
+  Source: SEC-INFO-40, `security-reviewer`, 2026-10-04, from the owner's SQL evidence. Today RLS is the only control stopping anonymous writes; this makes two controls have to fail instead of one. It's not exploitable today and doesn't block deploy.
+  Sequence: `supabase-engineer` → `architect-reviewer` → `/security-review` → owner applies (HARD STOP) → `/qa` (read-only probes) → merge. Coordinate with T-023 (the admin allowlist), which rewrites the same policies.
+- [ ] **T-032** — Small category-save and settings-key edge cases [app:admin]
+  AC:
+  - Titles with no Latin letters or digits all slugify to `category`, so a second one is refused (QA T-026 F5). Give them a distinct, readable slug, or explain the refusal in the error.
+  - `updateSettings` accepts any key, so "Business" or "business " creates a junk row (QA T-026 F6, within RISKS R1). Allow only the known settings keys.
+  - The delete-guard message for several categories reads `"T-Shirts, Sportswear" still has products assigned to it.` (QA T-026 F7). Name them grammatically.
+  Source: QA T-026 Static Pass, 2026-10-04. All Info-level, and all predate T-026.
+  Sequence: `/build` → `/security-review` (it touches `settings-actions.ts`) → `/qa` → `code-reviewer` → merge.
 
 ### Dependency Order
 

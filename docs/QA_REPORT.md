@@ -1877,3 +1877,328 @@ The command for rows 2 and 6. It only reads, and goes on one line:
 - A ❌ in row 1 or 8 goes to the category save path (T-003, T-026).
 
 This checklist doesn't block the merge; it's the dated populated-catalog check the premortem asked for.
+
+## Static Pass — T-026 — 2026-10-04
+**Target:** branch `t-026-admin-products` at `a6ce5f6` (server `e050f85`, UI `8d850bd`, fix `a6ce5f6`). Offline only: no database, no sign-in, no Server Action call. Every Supabase call ran against an in-memory fake.
+
+**Gate:** `npx tsc --noEmit` exits 0 (build info written to the scratchpad). The build wasn't re-run, by instruction. The builder's `a6ce5f6` build passed and lists `ƒ /admin/products`.
+
+| # | Attack | Result |
+|---|---|---|
+| 1 | **The builder's suites, re-run at `a6ce5f6`** | **PASS:** pure 20/20, actions 33/33, all 8 mutants caught |
+| 2 | **Test-harness isolation** | **PASS** |
+| 3 | **Two pages sharing one record:** stale tabs and true races | **PASS** |
+| 4 | **Two Products tabs** (the accepted limitation) | **PASS** for stale tabs. One older race found (F1) |
+| 5 | **Write-path edge cases** | **PASS** |
+| 6 | **Category rules on the server** | **PASS**, plus a checklist hazard (F3) |
+| 7 | **The moved editor and the sync** | **PASS** |
+| 8 | **Large, unicode, RTL and HTML input** | **PASS** |
+| 9 | **The real query library, request by request** | **PASS** |
+| 10 | **Server-rendered admin and public markup** | **PASS** |
+| 11 | **The premortem's code-read list** | **PASS** |
+
+**2. Test-harness isolation.**
+- The code under test loads only the 6 files it touches (`settings-actions`, `products-actions`, `settings-read`, `site-content`, `nav`, `category-draft`) plus 3 stubs.
+- 13 forbidden imports are refused, including `require()` and the real `src/lib/supabase/server.ts`. `fetch` throws, and no Supabase environment variable is set.
+- Three theoretical gaps (direct file paths into `node_modules`, `WebSocket`, `node:http`) aren't used by any loaded module. QA's own wire harness closes them.
+
+**3. Two pages sharing one record.**
+- A stale What We Do tab saving after a category save, and a stale Products tab saving after a text save: neither wipes the other, over 3 rounds each. The fake compares time stamps to the microsecond, as Postgres does.
+- **A true race, in both orders.** Both saves read the same stamp before either writes. Exactly one wins. The other answers "Another save changed these settings…", writes nothing and logs the conflict. Clicking Save again lands both edits.
+- Twenty alternating stale saves from the two pages: each page's last edit is always intact, and every new stamp is later than the one before.
+
+**4. Two Products tabs.**
+- These match the accepted limitation:
+  - a deleted empty category that a stale tab re-saves comes back with a new id;
+  - a stale tab undoes a rename's title, but the address, id and products stay put.
+- **Refused by the delete guard:**
+  - a stale tab that lacks a newer category with a product;
+  - a stale tab saving after a category was deleted and re-added under the same name with a product.
+- A stale product editor can't add, move or reorder products into a deleted category.
+- **Fuzz:** 3 seeds × 400 steps, with tabs up to 14 steps stale.
+  - 476 category saves: 379 saved, 97 refused by the guard.
+  - 290 product adds, 119 moves and 120 deletes.
+  - **0 orphaned products.**
+- Two category saves at the same moment: one is refused with the conflict message, so neither silently overwrites the other.
+- The one exception, a mid-request race, is F1.
+
+**5. Write-path edge cases.**
+- **Another save lands between a save's read and its write** (tested for the text save and for "Sync Content From Code"): the conflict message, nothing written, and the other save's change survives.
+- **An update the database's access rules hide** (0 rows, stamp unchanged): the conflict message, the log shows the stamp didn't move, and no page is refreshed.
+- **No stored record yet:**
+  - the save inserts, never upserts;
+  - the text save and the sync store only the 4 text fields, and the site still shows the 8 default categories;
+  - an insert that reports no row counts as a conflict.
+- **A duplicate-key error (`23505`)** gives the conflict message. A partial sync says "Synced homepage, but not the What We Do page text: …".
+- **A stored value that isn't an object** (null, a list, a string, a number, a boolean): every writer refuses without writing, and both editors turn off. A stored text field of the wrong type turns `/admin/business` editing off.
+- **An empty stamp:** the save matches on "stamp is empty", and the next save matches on the stamp it wrote.
+- **A stamp ahead of the server clock:** the new stamp is the old one plus 1 ms (JavaScript drops the microseconds first), and the match still uses the original string.
+
+**6. Category rules on the server.**
+- **Blank titles:** the editor's block and the server's drop agree for all 12 whitespace kinds tested (9 count as blank for both). Zero-width-space, LRM and RLO titles pass both checks (F4).
+- **Duplicate names on a NEW category** are refused for 7 variants (case, spacing, em dash, punctuation, emoji). The message names `/products/t-shirts`, and nothing is written.
+- Two non-Latin titles both get the address `/products/category`, and the second is refused by name (F5).
+- **Rename, add, delete and reorder in one save:**
+  - existing categories keep their ids and addresses; the new one gets a fresh id and address;
+  - every saved and removed `/products/<slug>` page is refreshed, plus `/admin`, `/what-we-do`, `/products` and `/sitemap.xml`. `/` is not;
+  - the page text is untouched.
+- Deleting a category with products and re-adding its name in the same save is refused, so the old CRIT-1 hole stays closed.
+- With several deletions, only the blocked categories are named.
+- **After the first Save, renaming a category to another's title is accepted** (F3).
+
+**7. The moved editor and the sync.**
+- `updateSettings("business")` returns the session-expired message without a session, and otherwise "This editor has moved". It never touches the database (0 HTTP requests).
+- Near-miss keys such as "Business" never reach the business record (F6).
+- **"Sync Content From Code" with real categories:**
+  - ids, a staff-added category, unknown stored keys and an old-style name list all survive;
+  - only the 4 What We Do text fields reset;
+  - a repeated key in the selection is synced once.
+
+**8. Large, unicode, RTL and HTML input.**
+- **`pickWhatWeDoText`:**
+  - accepts an object with no prototype, frozen lists and 50,000 process steps;
+  - refuses wrapped strings, nested lists, missing fields and numbers;
+  - extra keys such as `__proto__`, `products` and symbols never reach the output.
+- **A ~10,000-character title** gets a valid address of at most 255 characters with no trailing dash, the public page uses it, and the next save is accepted (the `a6ce5f6` fix holds).
+- RTL text (with the U+202E override), Bengali, Arabic, Hebrew and emoji are stored as typed. 200,000 characters of page text are accepted, since the contract sets no cap.
+- HTML in a title is stored as plain text with a valid address. A `javascript:` image URL is stored unfiltered; that's T-014's allow-list.
+
+**9. The real query library, request by request.** The real `@supabase/postgrest-js` 2.112.2 builds exactly the requests the save depends on:
+- **The read:** one `GET` with `select=value,updated_at&key=eq.business`.
+- **The write:** one `PATCH` with `key=eq.business&updated_at=eq.<the stamp exactly as read>&select=key` and `Prefer: return=representation`.
+  - The stamp is percent-encoded (`%2B00%3A00`), with no bare `+` that a URL decoder would read as a space.
+  - The body is only `{value, updated_at}`.
+- **The second Save** matches on the exact string the database returned for the first.
+- **No stored record:** a plain `POST`, never `resolution=merge-duplicates`. A 409/`23505` gives the conflict message.
+- **A 503 on the write isn't retried** (the library retries only reads): one `PATCH`, the error comes back, nothing refreshes.
+- **Delete guard:** `GET products?category_slug=in.(polo-shirts)`.
+- Stamps with no fraction, 1 digit, 6 digits and a future date all match.
+- **The sync:** other pages still bulk-upsert as before. `business` is never in that upsert; it goes through the conditional `PATCH`.
+- **On an HTTP 500:** the editor reads fail closed, and public pages fall back to the defaults. The product-list read fails open (F2).
+
+**10. Server-rendered markup** (react-dom/server, synthetic data).
+- **HTML in titles and descriptions renders as text** in the public card grid, in the product card's alt text, and in the admin title input.
+- **`/admin/products` before the first Save:**
+  - the exact banner wording;
+  - a "Save categories" button;
+  - help text naming `/products/<slug>`;
+  - the product editor pointing to "Save categories at the top of this page";
+  - no "Save Changes" and no "/admin/business".
+- **After the first Save:** no banner, and the product editor unlocks.
+- **A failed load on either page:** `role="alert"`, "Refresh the page to try again.", and no button.
+- **`/admin/business`:** a "Save page text" button, only the 4 fields, and a link to `/admin/products`.
+- **The sync panel** reads "What We Do page text (categories are never touched)".
+
+**11. The premortem's code-read list.**
+- **Public endpoints:**
+  - `settings-actions.ts` gains exactly 2 exports (`saveCategories`, `saveWhatWeDoText`); `products-actions.ts`'s exports are unchanged;
+  - no constants or helpers are exported from either file;
+  - `pickWhatWeDoText` and `settings-read.ts` aren't in `"use server"` files.
+- **Auth:** both new actions call `getUser()` before any table access. `createClient()` comes first, as in every action; it only reads cookies.
+- **The compare-and-swap:**
+  - one read feeds the ids, the guard and the swap;
+  - a read error, a non-object value or an unreadable stamp stops the save;
+  - the match uses the raw string;
+  - `.select("key")` follows the write, and 0 rows gives the conflict message plus a log line with both stamps;
+  - `ok` only after a confirmed row; insert, never upsert;
+  - pages refresh only after a confirmed write.
+- **No other writer of `business`:** `updateSettings` refuses it, and the sync's bulk upsert leaves it out.
+- **Page refreshes:** `saveWhatWeDoText` refreshes only `/admin` and `/what-we-do`, the only page that shows the 4 fields.
+- **Separation:** `products/*` and `business/*` don't import each other.
+- **Wording:** "Save Changes" and "/admin/business" appear only in code comments.
+- **Untouched:**
+  - `next.config.ts` (`agentRules: false`, `logging.serverFunctions: false`);
+  - `db/` and `supabase-schema.sql`, so no new database object.
+- **Other:** the route list shows `ƒ /admin/products`. The page reads products through the existing `getAllCategoryProducts` (a public read since T-004), so no new endpoint.
+
+**Findings:**
+- **F1 — minor, predates T-026.** A product added during another admin's category delete can end up in no category.
+  - Two sequences reproduce it: the delete counts 0 products, the product is added, then the delete commits; or the product's category check passes, the whole delete runs, then the product is inserted.
+  - Window: 1–3 database round trips, with two admins on the same category at the same moment.
+  - Recoverable: re-adding a category with that title brings the product back, and the guard protects it from then on (tested).
+  - The ticket's "can't orphan products" holds for stale tabs only.
+- **F2 — minor, predates T-026, already folded into T-016.** On `/admin/products`, a failed product read shows every category as "No products in this category yet." with no alert. Nothing is lost, because the server-side guard counts real products.
+- **F3 — a doc hazard, fixed by the errata below.** T-003 row 3 and T-012 row 1 rename "Polo Shirts" to "T-Shirts" to see the duplicate-name refusal. After the first Save that rename is accepted and goes live. Their "(or fix a harmless typo)" before the first Save would also move a renamed category's address.
+- **F4 — info.** A title made only of a zero-width space, LRM or RLO passes both blank checks (JavaScript's `trim()` keeps those characters) and saves as an invisible title at `/products/category`.
+- **F5 — info, predates T-026.** Titles with no Latin letters or digits all get `/products/category`, so a second one is refused.
+- **F6 — info, predates T-026.** `updateSettings` writes any key: "Business" or "business " creates a junk row, never the business one. This sits within RISKS R1.
+- **F7 — info, predates T-026.** The guard message for several categories reads `"T-Shirts, Sportswear" still has products assigned to it.`
+
+**Verdict: PASS.** T-026 meets its AC, the architect's contract (items 1–11) and every premortem must-add an agent can check. No defect needs fixing before merge. F1 and F4 go to T-016's notes, F2 is already there, F3 is fixed by the errata below, and F5–F7 go to the backlog (T-032).
+
+**Evidence:** the session scratchpad `t-026-qa/`: `qa-attacks` 35/35, `qa-wire` 12/12, `ssr-escape` 7/7, the loader audits, re-runs of the builder's suites and mutants, and `static-checks.txt`. Per STACK.md §3, these are kept out of the repo.
+
+## Live Pass — T-026 — 2026-10-04
+**Target:** the production build on **:3101**, build ID `pNmmCUz8tfce-2qxnT_iu`, built from `a6ce5f6`. Its server code contains both fix lines. Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Action` header.
+
+| # | Attack | Result |
+|---|---|---|
+| 1 | **Admin gate:** `/admin/products` and `/admin/business` | **PASS** |
+| 2 | **Address variants** | **PASS** |
+| 3 | **Public pages** | **PASS** |
+
+**1. Admin gate.** Each page was tried 15 ways:
+- plain GET; HEAD; `RSC: 1`;
+- 2 prefetch header sets, including segment prefetch; `Purpose`/`Sec-Purpose: prefetch`;
+- `?_rsc=` with `RSC: 1`; `.rsc`, with and without `RSC: 1`;
+- a trailing slash; `//admin/…`; `//admin/…/`;
+- 2 `x-middleware-subrequest` variants; `x-nextjs-data: 1`.
+
+Every one ends in **307 → `/admin/login`**:
+- RSC requests then follow on to `/admin/login?_rsc=…`.
+- The slash forms redirect (308) to the clean address first.
+- No hop sets a cookie, and no response contains admin text (the first redirect bodies are 12–16 bytes).
+
+**2. Address variants.**
+- **307 → `/admin/login`:** `/admin/%70roducts`, `/admin/./products`, `/admin/x/../products`, `/admin/products%2F`, `/admin/products;x`, `/admin%2Fproducts` and `/admin`.
+- **404:** `/ADMIN/PRODUCTS` and `/Admin/products`.
+- **200:** `/admin/login`.
+- 40 probes in all.
+
+**3. Public pages.**
+- `/products` and all 8 `/products/<slug>` pages return 200. `/products/zz-test-t-026-delete-me` returns 404.
+- No "ZZ" on `/what-we-do` or `/products`.
+- No ids on 5 public addresses. No ids exist live until the first Save, so T-025 rows 2 and 6 and T-026 row 1 re-test this.
+
+**Not run** (each needs a login or a write): every admin save, the first Save and the two-tab flows. They're in the owner checklist below.
+
+## Errata — pending owner checklists after T-026 — 2026-10-04
+T-026 moves three things from `/admin/business` to the new **`/admin/products`** page, whose button is **"Save categories"**:
+- the categories;
+- their products;
+- the categories' first Save.
+
+`/admin/business` keeps only the What We Do page text. Its button is now **"Save page text"**, and it saves only those 4 text fields, so it does **not** do the first Save. This file is append-only, so the corrections go here. Anything not listed still stands. **Read this section before running any older checklist above.**
+
+Two changes apply to every checklist:
+- **Before the first Save, change nothing.** Drop every "(or fix a harmless typo)": renaming a category before its first Save changes its web address.
+- **To test the duplicate-name refusal, add a NEW category; don't rename one.** Once the categories have been saved, renaming one to another's title is accepted, because it keeps its own address, and it goes live as a second "T-Shirts" card.
+
+### "Manual Checklist — T-002 — 2026-09-26"
+- **"Where to test":** use **`/admin/products` → "Categories" → any category's "Card image" field**, or `/admin/homepage` → "Facility photo" as before.
+- **"⚠️ Read this before you start…", the bullet "After each of Steps 2–4, click away without pressing Save":** on `/admin/products` that button is **"Save categories"**. Pressing it makes the test photo that category's live card image.
+
+### "Manual Checklist — T-003 — 2026-09-27"
+- **Row 1, "One-time bootstrap save":** open **`/admin/products`**, change nothing, and click **"Save categories"**. It's the same action as T-026's row 1, so do it once. Use the production build named in T-026's checklist, not the `localhost:3000` dev server.
+- **Row 2, "Confirm the bootstrap took":** reload **`/admin/products`**. The same 8 categories show, and the amber "These categories haven't been saved yet" box is gone.
+- **Row 3, "Duplicate-title save is refused":** on `/admin/products`, click **"Add category"**, title it exactly `T-Shirts`, and click **"Save categories"**. Expected: red text naming **`/products/t-shirts`**, and nothing saved.
+  - **Don't rename "Polo Shirts" to "T-Shirts":** after row 1, that save succeeds and goes live.
+  - A production build shows the refusal as red text on the page, not as a dev overlay.
+- **Row 4, "Undo step 3":** reload `/admin/products`; there are still 8 categories. If row 3 was done the old way and saved, rename the category back to "Polo Shirts" and click "Save categories".
+
+### "Manual Checklist — T-012"
+- **"Before you start", the bullet "You can fold in T-003's own outstanding checklist item…":** no longer true. Saving `/admin/business` ("Save page text") doesn't do the first Save. Do it on `/admin/products` with "Save categories" (T-026 row 1).
+- **Row 1, "Collision guard renders in-page, in production":** on **`/admin/products`**, click **"Add category"**, title it exactly `T-Shirts`, and click **"Save categories"**.
+  - Expected: red text directly under the button naming `/products/t-shirts`, and nothing saved. Reload to discard it.
+  - This works before and after the first Save. Renaming an existing category doesn't test this once the first Save is done, because that save succeeds.
+- **Row 2, "`/admin/business` — normal save":** change nothing and click **"Save page text"**. Expected: "Page text saved." and no red text. It no longer counts as T-003's bootstrap Save.
+
+### "Manual Checklist — T-004 — 2026-09-27"
+"Erratum — Manual Checklist — T-004 — 2026-09-28" still stands.
+- **"Where to test":** **`/admin/products`** → the **"Products in Each Category"** card, below the **"Categories"** card. Still use Sportswear. The public page is now **`/products/sportswear`**, and the old `/what-we-do/sportswear` redirects there; read rows 3–6 that way.
+- **Row 0, "The 'not saved yet' note…":** open `/admin/products`. The note now ends "Click **Save categories** at the top of this page (no other changes needed), then come back here."
+  - If every category is already saved, skip this row.
+  - A category that's added but not saved no longer appears in the product editor, so the old fallback doesn't work.
+- **Row 1, "One-time bootstrap Save…":** at the top of `/admin/products`, change nothing and click **"Save categories"**. It's the same as T-026 row 1, so do it once.
+- **Row 2, "Confirm the note is gone, and the editor unlocks":** reload **`/admin/products`**, then open "Products in Each Category" and pick Sportswear.
+- **Row 7, "Delete-guard…":** in the **"Categories"** card, remove Sportswear (✕, "Remove") and click **"Save categories"**.
+  - Expected: red text `Remove its products first: "Sportswear" still has products assigned to it.`
+  - The list keeps the removal and shows "Unsaved category changes".
+  - The product editor still lists Sportswear.
+- **Row 8, "Undo Step 7":** reload **`/admin/products`**.
+- **"Cleanup…", bullet 2** (the throwaway 9th category): remove it on `/admin/products` and click **"Save categories"**.
+
+### "Manual Checklist — T-006 — 2026-09-28"
+- **Row 2, "One admin save":** use any settings page except What We Do and Products, and click **"Save Changes"**. On `/admin/business` the button is now **"Save page text"**, and it isn't the bootstrap Save. That's `/admin/products` → **"Save categories"** (T-026 row 1).
+
+### "Manual Checklist — T-025 — 2026-10-03"
+With T-026 merged; the note at the top already says this for rows 1 and 8.
+- **Row 1, "First Save":** do it only on **`/admin/products`**, with **"Save categories"**. "Save page text" on `/admin/business` doesn't do it. Expected: as written, and the amber "These categories haven't been saved yet" box disappears.
+- **Row 3, "Add the test product.":** on `/admin/products` → "Products in Each Category" → T-Shirts, then Dresses.
+- **Row 7, "Cleanup.":** delete the test products on `/admin/products` → "Products in Each Category".
+- **Row 8, "Optional: the duplicate-name check.":** on `/admin/products`, click "Add category", title it `T-Shirts`, and click **"Save categories"**. Red text names `/products/t-shirts`; then reload.
+
+## Manual Checklist — T-026 — 2026-10-04
+**For the owner.** This takes about 20 minutes, in one sitting. It checks what agents can't:
+- that the new Products page saves against the live database;
+- that the two pages sharing one stored record can't wipe each other.
+
+Agents haven't seen these admin screens against the live login (NOT VISUALLY VERIFIED; `design-reviewer` used a SYNTHETIC harness). **Rows 1–3 and 7 block the deploy.**
+
+### Before the merge (HARD STOP): the read-only SQL check — done 2026-10-04
+The owner ran the expanded read-only query on 2026-10-04, and all 8 conditions matched. `security-reviewer` confirmed each one, and the rows are recorded verbatim in `docs/SECURITY.md`, under "CSO Audit — 2026-10-04 — ticket-review:T-026 (the owner's SQL evidence)":
+- RLS is on. Anon has only a SELECT policy (`using: true`). Signed-in users have one permissive ALL policy (`using: true`, `check: true`).
+- There are no triggers and no rules on `site_settings`.
+- `key` is the primary key, and `updated_at` is a non-null `timestamptz`. The `business` stamp was `2026-08-31 07:10:19.408+00`, so the first Save is still pending.
+
+So both new saves have the database rights they need. If row 1 or 2 still says "Another save changed these settings…" with nobody else saving, follow "Reporting back" below.
+
+### The checklist
+**Where:**
+- **Build:** the production build of the T-026 code: the branch `t-026-admin-products` before the merge, or `main` after it. Run `npm run build && npm start -- -p 3101` and open `http://localhost:3101`. Port 3001 belongs to another project.
+- **Sign in** at `/admin/login`.
+- **Two tabs** in one browser window:
+  - **tab A** on `/admin/business` (What We Do);
+  - **tab B** on `/admin/products` (Products).
+
+**Before you start:**
+- **Every step writes to the LIVE database,** even from localhost.
+- **The public can see the test records while they exist.** The live site (still the old code until the deploy) reads the same database, so the ZZ-TEST category and product appear on https://www.fashionasialtd.com/what-we-do. Keep the sitting short, and end with row 7.
+- **Tell FAL staff not to use the admin until you've finished.** The live site still runs the old What We Do editor, whose Save rewrites the whole record, categories included.
+- **Never click "Sync Content From Code"** on the Dashboard. It rewrites live page text.
+- **Open fresh tabs.** A tab left open from an earlier build can't call the new saves.
+- **The first Save (row 1) is permanent.** It stores each category's hidden id and fixes the 8 addresses (`t-shirts` … `heavy-jersey-products`; all 8 were checked on 2026-10-03). Change nothing before clicking it. If it's already been done (on the live site or in another checklist), skip row 1.
+- **Row 5 needs one photo:** JPG or WebP, under 400 KB, at most 2400 px. It uploads to the live Storage bucket the moment you pick it.
+
+| # | Step | Expected | Pass/Fail |
+|---|---|---|---|
+| 1 | **First Save. Blocks the deploy.** In tab B, if the amber box "These categories haven't been saved yet." shows, change nothing and click **Save categories**. Reload tab B. Run the row-1 command below, then the command in T-025's checklist (rows 2 and 6). | "Categories saved." with no red text. After the reload there's no amber box, and the same 8 categories show in the same order. In **Products in Each Category**, the selected category no longer says "hasn't been saved yet". The row-1 command prints 8 lines starting with `200`. Every line of T-025's command ends in `0`. | |
+| 2 | **A second unchanged Save. Blocks the deploy.** In tab B, change nothing and click **Save categories** again. | "Categories saved." with no red text. This proves the time stamp row 1 wrote can be matched. | |
+| 3 | **A stale What We Do tab can't wipe a category save. Blocks the deploy.** (1) Open tab A at `/admin/business` now, and don't reload it. (2) In tab B, click **Add category**, title it `ZZ-TEST T-026 (delete me)`, and click **Save categories**. (3) In tab A, without reloading, change nothing and click **Save page text**. (4) Reload tab B. | Step 2 says "Categories saved." and step 3 says "Page text saved.". After the reload, tab B still lists `ZZ-TEST T-026 (delete me)`, making 9 categories. | |
+| 4 | **A stale Products tab can't wipe the page text.** (1) In tab A, add ` ZZ` to the end of **Closing Line** and click **Save page text**. (2) In tab B, without reloading, type `ZZ` in the ZZ-TEST category's **Short Description** and click **Save categories**. (3) Reload tab A. | Both saves succeed. After the reload, Closing Line still ends in ` ZZ`. Then remove ` ZZ` and click **Save page text**. | |
+| 5 | **The delete guard.** (1) In tab B, under **Products in Each Category**, pick `ZZ-TEST T-026 (delete me)` and add a product named `ZZ-TEST T-026 product (delete me)` with your photo. (2) In **Categories**, click ✕ (Remove) on the ZZ-TEST category, then **Save categories**. (3) Delete the ZZ-TEST product (trash icon, then confirm), and click **Save categories** again. | After step 2, red text says `Remove its products first: "ZZ-TEST T-026 (delete me)" still has products assigned to it.` The category stays removed in the list, with "Unsaved category changes", and the product editor still shows it with its product. After step 3, "Categories saved.", and ZZ-TEST is gone from both lists. | |
+| 6 | **Session expired.** (1) In tab B, click **Add category** and type `ZZ-TEST T-026 (delete me)`. Don't save. (2) In tab A, click **Sign Out**. (3) In tab B, click **Save categories**. | Red text: "Your session expired. Sign in again and retry." The unsaved row is still there, with "Unsaved category changes". Reload tab B: it goes to the sign-in page. Sign in again; the unsaved row is gone. | |
+| 7 | **Cleanup. Blocks the deploy.** Open `/admin/products` and `/admin/business`, then run the row-7 command. | Exactly the 8 real categories show, in their usual order, with no amber box. Closing Line has no ` ZZ`. The command prints `0`, `0` and then `404`. The live https://www.fashionasialtd.com/what-we-do shows no ZZ-TEST card. | |
+
+The commands are read-only. Each goes on one line.
+
+Row 1:
+
+    for s in t-shirts polo-shirts tank-tops dresses sleepwear leggings sportswear heavy-jersey-products; do curl -s -o /dev/null -w "%{http_code} /products/$s\n" "http://localhost:3101/products/$s"; done
+
+Row 7:
+
+    for p in what-we-do products; do printf '%-12s' "/$p"; curl -s "http://localhost:3101/$p" | grep -o 'ZZ' | wc -l; done; curl -s -o /dev/null -w '/products/zz-test-t-026-delete-me %{http_code}\n' http://localhost:3101/products/zz-test-t-026-delete-me
+
+**Cleanup notes:** the product photo stays in Storage → `media`; removing it is optional. The row-1 first Save stays, as intended.
+
+**Reporting back:**
+- A fail in row 1, 2, 3 or 7 blocks the deploy and reopens T-026.
+- "Another save changed these settings at the same moment" in row 1 or 2, with nobody else saving, means stop. Copy the line starting `writeBusinessFields:` from the `npm start` terminal, and send it to the orchestrator.
+- A fail in rows 4–6 reopens T-026, but doesn't block the deploy on its own.
+- Rows 1–3 and 7 stay listed in `/ship` until they're ticked. Only the owner can waive them, in DECISIONS.
+
+## Static Re-check — T-026 fix `e201aca` — 2026-10-04
+- **(1) Class names and markup only.** `git diff a6ce5f6..e201aca` changes 3 files and 5 lines:
+  - 4 swaps of `text-white` → `text-foreground`: the `SettingsHeader` and `SettingsLoadError` headings, and the two "Save categories" emphases;
+  - one added `<strong className="font-bold">` in the first-Save notice.
+
+  Blank every class name and drop that wrapper, and each file is byte-identical to `a6ce5f6`: no import, prop, handler, state, logic or raw-HTML change. 9 page states were rendered with react-dom/server at both commits. The visible text is identical, and the markup differs only by those class swaps and the one `<strong>`. The notice still reads "Click Save categories once with no other changes. Renaming a category before that changes its web address."
+- **(2) Server files unchanged.** At HEAD, all six files bound by security's sign-off match its sha256 prefixes and are byte-identical to `a6ce5f6`:
+  - `settings-actions.ts` `2785952a83f7616e`
+  - `products-actions.ts` `44b47ada7540a575`
+  - `site-content.ts` `465f6712f28395f5`
+  - `settings-read.ts` `cc5c8a2c06d9acb0`
+  - `products/page.tsx` `1067bb51b8add066`
+  - `business/page.tsx` `87071736c1516fcb`
+- **(3) The 7 client invariants hold for the 3 files:**
+  - Server Action imports are unchanged;
+  - nothing comes from `@/lib/settings-read` or `@/lib/supabase/*`;
+  - errors render only as JSX text (`{error}`, `{reorderError}`, `{message}`);
+  - there's no raw-HTML sink;
+  - the product manager still gets `categories={confirmed}`;
+  - a failed load renders 0 buttons on either page;
+  - `products/*` and `business/*` don't import each other.
+- **(4)** `npx tsc --noEmit` exits 0, and the `ssr-escape` suite passes 7/7 at HEAD.
+- **The Live Pass above still applies:** it ran against build `pNmmCUz8tfce-2qxnT_iu` (`a6ce5f6`), and `e201aca` touches no server or middleware file.
+- **Verdict: PASS.** The evidence is in the session scratchpad, `t-026-qa/e201aca/`.

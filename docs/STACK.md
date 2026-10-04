@@ -45,12 +45,13 @@
 
 | Unit | Path | Purpose |
 |---|---|---|
-| Content defaults + domain types | `src/lib/site-content.ts` | `SITE_SETTINGS` fallbacks, `Product` (= a *category*), `CategoryProduct` (= an *item*), slug and identity helpers (`slugify`, `normalizeProducts`, `resolveCategoriesForSave`, `isWellFormedSlug`, `readStoredCategoryIdentities`) |
+| Content defaults + domain types | `src/lib/site-content.ts` | `SITE_SETTINGS` fallbacks, `Product` (= a *category*), `CategoryProduct` (= an *item*), slug and identity helpers (`slugify`, `normalizeProducts`, `resolveCategoriesForSave`, `isWellFormedSlug`, `readStoredCategoryIdentities`), and the What We Do page-text picker (`WhatWeDoText`, `pickWhatWeDoText`) |
+| Admin editor reads | `src/lib/settings-read.ts` | `readSettingsForEditor`: the admin pages' settings read, which tells "failed" from "empty" so an editor never opens on defaults. It isn't a Server Action file (T-026). |
 | Upload contract | `src/lib/upload-limits.ts` | size, edge and format limits; `sniffImageFormat`; `checkImageSizeAdvisory` |
 | Supabase clients | `src/lib/supabase/{server,client,middleware}.ts` | server, browser and middleware clients; `updateSession` runs the `/admin` gate |
 | Navigation | `src/lib/nav.ts` | `MAIN_NAV` + `NAV_CTA`, used by the header, mobile menu and footer |
-| Server Actions | `src/app/actions/*-actions.ts` | `settings`, `products`, `jobs`, `media`, `form` and `auth`. Every write returns `{ ok, error }` and checks `getUser()` first, except media (T-019) |
-| Admin primitives | `src/components/admin/*` | `SettingsForm` (`SettingsHeader` with an error slot, `SettingsCard`, `ObjectListEditor`), `ImageUploadField`, `CategoryProductsManager` |
+| Server Actions | `src/app/actions/*-actions.ts` | `settings`, `products`, `jobs`, `media`, `form` and `auth`. Every write returns `{ ok, error }` and checks `getUser()` first, except media (T-019). The `business` settings row has one writer per field: `saveCategories` (categories) and `saveWhatWeDoText` (page text), both through a private compare-and-swap writer; `updateSettings` refuses `business` (T-026). |
+| Admin primitives | `src/components/admin/*` | `SettingsForm` (`SettingsHeader` with an error slot and an optional `saveLabel`, `SettingsLoadError`, `SettingsCard`, `ObjectListEditor`), `ImageUploadField`, `CategoryProductsManager` |
 | Public UI | `src/components/{global,sections,ui}/*` | header, footer, preloader, Lenis provider; homepage sections; `PageHeader`, `ScrollReveal`, form inputs |
 
 - **Scan roots:** `src`.

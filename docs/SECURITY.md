@@ -54,6 +54,15 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
   - So any script running on this origin can read an admin's session.
   - That's why an in-origin script sink outranks defacement here.
 
+*Amended 2026-10-04 (T-026 CSO review; appended, rows above left as written):*
+- **Admin surface.** `/admin/products` is a new admin route, behind the same middleware gate (49 anonymous probes, all gated). `src/lib/settings-read.ts` is a server-only editor read; it is not an endpoint.
+- **Server Actions.** There are now 34 public exports: `saveCategories` and `saveWhatWeDoText` are new. Both check the session before any table access.
+- **The shared `site_settings[key='business']` row** has one writer per field.
+  - `saveCategories` writes the categories; `saveWhatWeDoText` and the seed write the 4 text fields.
+  - Writes go through a compare-and-swap on `updated_at` that fails closed. How that behaves under the live `site_settings` RLS, which isn't in the repo, is SEC-INFO-38, pending the owner's SQL check.
+  - `updateSettings` refuses `business`.
+- **Slugs.** `normalizeProducts()` now hands every slug sink only `[a-z0-9-]` slugs, which closes SEC-INFO-19 in code.
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -1060,6 +1069,276 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 
   No sign-in, no Server Action call, no write to the live database, no commit.
 
+### 🔒 CSO Audit — 2026-10-04 — ticket-review:T-026
+
+**Scope:** Dispatched by `/system-architect` per `docs/WORKFLOW.md` §3. **T-026** ("A dedicated admin Products page for categories and their products") touches `settings-actions.ts`, `products-actions.ts` and `site-content.ts`, adds a new server read module, and changes the admin UI.
+- **The diff under review:** `git diff main...t-026-admin-products` at HEAD `a6ce5f6`. It touches 15 files (+1020/−271) across four commits:
+  - `8ee80bf`, the ticket docs;
+  - `e050f85`, the server contract;
+  - `8d850bd`, the admin UI;
+  - `a6ce5f6`, code-review fixes (forward stamps, trimmed long slugs).
+- **History:** started 2026-10-03 on `8d850bd`, interrupted by an API usage limit, finished 2026-10-04 on `a6ce5f6`. Every check below was re-run on `a6ce5f6`.
+- **The contract:** T-026's Acceptance, the binding `architect-reviewer` contract (items 1–11) and the premortem's MUST-ADDs (`docs/ROADMAP.md`), plus `docs/DECISIONS.md`, 2026-10-03, "T-026 save contract".
+- **Independently confirmed untouched:** `src/middleware.ts`, `src/lib/supabase/`, `next.config.ts`, `db/`, `supabase-schema.sql`, `package.json`, `package-lock.json` and `.env.example`.
+
+**Method.**
+- **Static:** full reads of every server file this ticket touches, both editor clients and the middleware gate:
+  - the branch versions of `settings-actions.ts` and `settings-read.ts`, the two admin loaders, `ProductsClient`, `BusinessClient` and `category-draft.ts`;
+  - the diffs of `products-actions.ts`, `site-content.ts`, `SettingsForm.tsx`, `CategoryProductsManager.tsx`, `SeedDefaultsPanel.tsx` and `layout.tsx`.
+- **Library behavior, from installed source:**
+  - postgrest-js 2.112.2's `eq` and `is` append through `URLSearchParams`. Built offline against a `.invalid` host and never sent, the swap URL keeps the microsecond stamp exact (`+` becomes `%2B`), with `Prefer: return=representation`.
+  - V8's `Date.parse` was checked on every stamp shape the code can meet.
+- **Offline execution:**
+  - **The builder's harness, reviewed first:** `hooks.mjs` refuses every real Supabase or Next module and makes `fetch` throw, and the fake is in-memory. Its suites passed (pure 20/20, actions 33/33), and all 8 current mutants were caught. `m8-slug-revert` is only valid when run through `SITE_CONTENT_PATH`, where it gives 2 + 1 failures.
+  - **This office's own 17 adversarial tests** on the same harness, all passing (session scratchpad `cso-t026/cso.test.mjs`).
+- **Live, read-only:** GET and HEAD with no cookie, against `:3101` only. It serves build `pNmmCUz8tfce-2qxnT_iu`, written 3 minutes before the `a6ce5f6` commit. It still matches `a6ce5f6`:
+  - both of that commit's changes are in its server chunks;
+  - no source file is newer than it;
+  - the tree equals `a6ce5f6`.
+- **Not done:** no sign-in, no Server Action call, no write, no build, no server started or stopped, nothing on `:3001`. `.env*` was never read.
+- **Typecheck:** `npx tsc --noEmit --incremental false` exited 0.
+
+**1. Public endpoints: ✅ exactly two new, each checking the session first.**
+- **Export lists, main → branch.** `settings-actions.ts` goes from 12 to 14 (`+saveCategories`, `+saveWhatWeDoText`). `auth` (2), `form` (3), `jobs` (4), `media` (5) and `products` (6) are identical. That's 34 public Server Action exports in all, up from 32.
+- **Not exported:**
+  - `writeBusinessFields`, `requireUser` and `isPlainObject`;
+  - `SAVE_CONFLICT`, `BUSINESS_MOVED`, `BUSINESS_UNREADABLE` and `SESSION_EXPIRED`;
+  - `products-actions.ts`'s `categoryNotSavedYet` and `attachabilityError`.
+
+  `pickWhatWeDoText` lives in `site-content.ts`, which is not a `"use server"` file.
+- **`getUser()` comes first, with no table access before it.**
+  - `saveCategories` (`settings-actions.ts:378`), `saveWhatWeDoText` (`:452`) and `seedSettingsFromDefaults` (`:120`) go through `requireUser`.
+  - `updateSettings` refuses `business` with BUSINESS_MOVED at `:77`, after its own `getUser()` and before any read.
+  - **Tested:** anonymous calls to all four return SESSION_EXPIRED with zero table operations and no revalidation. An authenticated `updateSettings("business", …)` returns BUSINESS_MOVED, also with zero table operations.
+- **`src/lib/settings-read.ts` is not an endpoint.**
+  - It has no `"use server"`, and its only importers are the two admin server pages.
+  - It reads only the public `site_settings` row.
+  - It imports `next/headers` through `@/lib/supabase/server`, so importing it from a client component fails the build. That indirect import is the only guard: there's no `server-only` package. Add `import "server-only"` if a refactor ever drops it.
+
+**2. The compare-and-swap (`writeBusinessFields`, `settings-actions.ts:275-362`): ✅ every premortem item holds.**
+- **One read feeds everything.** A single raw read (`value, updated_at`, `.maybeSingle()`) supplies the merge base, the category ids, the delete guard and the swap. Tested: exactly one `site_settings` read before the update.
+- **Bad states fail closed, writing nothing:**
+  - a read error returns its message;
+  - an existing row whose `value` isn't a plain object, or whose stamp is neither a string nor null, returns BUSINESS_UNREADABLE (the builder's added stop);
+  - a refusal from `build` writes nothing.
+- **The write condition:** `.eq("key","business")` plus `.eq("updated_at", <raw string>)`, or `.is("updated_at", null)`, then `.select("key")`. Tested: the filter carries the stamp byte-for-byte, microseconds included.
+- **Conflicts are reported, never retried:**
+  - 0 changed rows → SAVE_CONFLICT, plus a `console.error` with the read, written and current stamps (`:343`);
+  - a missing row is inserted, never upserted. `23505` → SAVE_CONFLICT, and an empty insert result → SAVE_CONFLICT;
+  - there's no automatic retry, and both callers return `{ok, error}` without throwing (the one theoretical exception is in item 3).
+- **`ok: true` follows only a returned changed row.** Both actions revalidate only after that. Tested: no revalidation on any failure.
+
+**How RLS affects the swap.** The live `site_settings` policies aren't in the repo; `supabase-schema.sql` shows only an `anon` SELECT (`TO anon`). The owner's read-only SQL check is the pre-merge HARD STOP.
+- **Postgres's documented rules for `UPDATE … WHERE … RETURNING` as `authenticated`:**
+  - the existing row must pass the UPDATE policies' USING and, because WHERE and RETURNING read columns, the SELECT policies' USING. A row that fails either is silently skipped;
+  - the new row must pass UPDATE WITH CHECK and, for RETURNING, SELECT USING. Postgres adds both as checks that raise an error rather than drop the row;
+  - on the insert path, the new row must pass INSERT WITH CHECK and SELECT USING the same way, and the unique violation fires whatever RLS hides.
+- **So the swap is safe under every policy shape.**
+  - A policy can only turn a save into SAVE_CONFLICT (row skipped) or an RLS error (new row refused).
+  - It can never report success without a write, or write without the stamp condition, because RLS only narrows the WHERE.
+  - A row hidden from `authenticated` by the SELECT policy would make the editor load defaults. But every save would then hit `23505` → SAVE_CONFLICT, so it can't overwrite; insert-not-upsert carries that.
+- **For it to work, the owner's results must show all of the following** (SEC-INFO-38):
+  1. RLS is enabled on `public.site_settings`.
+  2. PERMISSIVE policies give `authenticated` SELECT and UPDATE with USING true (at least for `key = 'business'`) and WITH CHECK true, plus INSERT WITH CHECK (needed only if the row is ever missing). No RESTRICTIVE policy is one that `authenticated` fails on the business row. `FOR ALL TO authenticated USING (true) WITH CHECK (true)` satisfies all of this.
+  3. `anon` has SELECT only: no INSERT, UPDATE, DELETE or ALL policy applies to `anon` or `public`.
+  4. `authenticated` has the SELECT, INSERT and UPDATE grants on the table.
+  5. No trigger returns NULL on UPDATE or rewrites `value`. A trigger setting `updated_at := now()` is fine.
+  6. The table has no rules: `select rulename from pg_rules where tablename = 'site_settings'` returns 0 rows. **This query isn't in the premortem's list; recommend the owner add it.**
+  7. `updated_at` is `timestamp with time zone NOT NULL`, and `updated_at::text` for `business` is an ordinary current timestamp (not `infinity`, not a year past 9999).
+  8. `key` is the primary key.
+- **If any of these differs,** saves fail closed. The server log tells the cases apart: a current stamp equal to the read stamp means the row was blocked, not conflicted. The fix is a reviewed migration, never a policy widened by hand (see §7 item 10).
+- **What the swap doesn't cover:** it guards `site_settings` only. A product inserted into a category being deleted, between the delete guard's count and the swap, can still be orphaned. That's SEC-MED-5's accepted window, no wider and no narrower.
+
+**3. `a6ce5f6`'s forward stamp (`settings-actions.ts:305-306`): ✅ it can't weaken the swap or the fail-closed paths.**
+- **The filter is unchanged.** It still uses the raw read string; `Date` only computes the value written. Tested:
+  - for microsecond, future and Postgres-text stamps, the written stamp is strictly later and the filter stays raw;
+  - `infinity`, `-infinity`, garbage and an unsigned 6-digit year fall back to `Date.now()`, which was the pre-fix behavior, without throwing;
+  - 50 chained saves never repeat a stamp.
+
+  So stored stamps now strictly increase. That closes the same-millisecond ABA case, which this office had judged negligible.
+- 🟢 **SEC-INFO-39 (new; Info). Two edges, neither reachable from a `timestamptz` column.**
+  - **A theoretical throw.** `toISOString()` throws `RangeError` only for a stamp that parses to exactly the maximum JS time (`+275760-09-13T00:00:00.000Z`).
+    - Postgres never emits that signed form, and its unsigned 6-digit year parses to NaN.
+    - Even then, it throws before any write. Tested: nothing written, no revalidation.
+    - The admin would see the generic "Save failed" text rather than a returned message.
+  - **An offset-less stamp parses as local time.** That matters only if `updated_at` were `timestamp without time zone`, on a server east of UTC (the owner's dev machine is UTC+6), with a stored stamp ahead of that server's clock. Even then, the stamp falls back to `now()`, the pre-fix behavior. Item 7 of the owner's check confirms the column type.
+- **The slug trim** (`site-content.ts:588`) is `slugify(title).slice(0, 255).replace(/-+$/, "")`.
+  - Tested on 452 long titles: always well-formed, at most 255 characters, never empty.
+  - This closes the T-025 entry's `/pm` note: a 255+ character title used to block its own next save.
+  - The collision check still runs after the trim.
+
+**4. Integrity: ✅ one writer per field, and every identity rule kept.**
+- **`saveCategories` keeps every rule:** `readStoredCategoryIdentities` on the same read, `resolveCategoriesForSave`, `computeRemovedCategories`, and the delete guard ("Remove its products first"). Tested:
+  - forged slugs are ignored;
+  - extra keys on a category are dropped: stored objects hold exactly `id, title, slug, description, image`;
+  - stored text fields are carried through untouched;
+  - the delete guard, duplicate ids, a non-array and a `Set` each refuse the save, writing nothing;
+  - a `"__proto__"` key arriving over the wire is an own key after JSON parsing, so it can't carry an inherited `id`. Even a real prototype `id` counts as a claim, and a duplicate claim refuses the whole save.
+- **`saveWhatWeDoText` can't write `products` or extra keys.** `pickWhatWeDoText` (`site-content.ts:682`) builds a new object from the 4 own properties only. Tested:
+  - smuggled `products`, `id`, `slug`, extra keys and a `__proto__` key never reach storage;
+  - unknown stored keys are carried through;
+  - a Map, a `String` object, a Set, a sparse array, an inherited field or a missing field each refuse the whole save, with nothing written.
+- **The seed can't write `business.products`.**
+  - `business` goes through `writeBusinessFields` with only the 4 text fields.
+  - Prototype-named keys (`constructor`, `__proto__`, `toString`) select nothing and touch no table.
+  - A failed read of the other rows now stops the sync instead of dropping their stored-only fields.
+  - Tested: stored categories and their ids survive a sync byte-for-byte.
+- **SEC-MED-15 and SEC-INFO-19 are closed at the root.** `normalizeProducts()` (`site-content.ts:451`) now keeps a stored slug only if `isWellFormedSlug()` passes.
+  - Tested on 22 hostile stored values and a 2,000-case fuzz: every slug it returns matches `^[a-z0-9]+(-[a-z0-9]+)*$`.
+  - That's what every downstream slug sink now receives: card and section links, the canonical URL, revalidation, the sitemap and the attachability fallback.
+  - A well-formed stored slug still wins after a rename.
+  - SEC-INFO-19 is **closed in code, pending merge**.
+
+**5. The admin gate: ✅ 49 anonymous probes against `:3101`, all clean.**
+- **Gated.** Every form that resolves to an admin page answers 307 to a relative `/admin/login`, with no `Set-Cookie` and no editor content:
+  - the premortem's set: plain, `RSC: 1`, prefetch, `?_rsc`, segment prefetch, `.rsc` and `.segments/_tree.segment.rsc`;
+  - `/admin/business` in the same forms;
+  - path tricks: `/admin/%70roducts`, `%2F`, `%3B`, `%00`, `%09`, `;x`, `./`, `x/../`, `/admin/login/../products`, `/admin/login/%2e%2e/products`, `/admin/loginx/../products`, `(dashboard)` raw and encoded, and `/index`;
+  - bypass headers: `x-middleware-subrequest` in three forms, `x-nextjs-data`, `x-matched-path`, `x-invoke-path`, `x-middleware-prefetch`, `Purpose: prefetch`, and a spoofed `X-Forwarded-Host`.
+- **Normalized first.** A trailing slash, `//`, `/\` and `/admin//products` take a 308 to `/admin/products`, then the 307, as the builder saw.
+- **No route (404).** `/%61dmin/…`, uppercase forms, `/admin/login%2F..%2Fproducts`, and the image-suffix paths the middleware matcher skips. No admin route has a dynamic segment, so that matcher exclusion can't reach a page.
+- **The data route.** `/_next/data/<id>/admin/products.json` answers 307 with `x-nextjs-redirect: /admin/login` and an empty body.
+- **Route list.** The builder's build shows `ƒ /admin/products`, and the app-paths manifest lists it.
+- **Unchanged design.** No admin layout or page re-checks the session, so the middleware is the only page-render gate. The data itself stays gated by RLS and by the actions' own session checks. Anyone who got past the gate would see only public rows on these pages.
+
+**6. Client side and leaks: ✅**
+- **The new editors fail closed.** Without a successful read, `ProductsClient` and the slimmed `BusinessClient` show a `role="alert"` message and no Save button.
+- **No new sink.**
+  - Every error renders as JSX text.
+  - The diff adds no raw-HTML sink, `process.env`, `NEXT_PUBLIC_*`, client Supabase import or debug print.
+  - The one new `"use client"` file is `ProductsClient.tsx`.
+- **No forbidden imports.** `products/*` and `business/*` don't import each other, and no client component imports `settings-read` or `@/lib/supabase/*`.
+- **The draft stays out of the product manager.** `CategoryProductsManager` receives `confirmed`, never `draft`.
+- **Nothing leaks into the bundle.** `.next/static` (48 files) has 0 hits for key shapes, the `stack.json` `secretPatterns`, the Supabase client, `writeBusinessFields`, `readSettingsForEditor`, the message constants or table access. The two new actions appear only as `createServerReference` stubs. The diff has 0 secret-pattern hits.
+- **Not touched by T-026:** the product read on `/admin/products` (`getAllCategoryProducts`) still shows empty lists when it fails. That's T-016's fail-open class, and it can't cause loss: the delete guard re-reads `products` server-side. Carried to T-016.
+- **T-025 carry-over, checked.** Post-review commit `c8d4d85`'s card change is exactly the pre-cleared ``href={`${base}/${encodeURIComponent(category.slug)}`}``.
+
+**7. As another user.**
+- **Anonymous vs admin — PASS.**
+  - Live: the 49 gate probes above.
+  - Offline, on the real action code: anonymous calls to all four business writers return SESSION_EXPIRED before any table access.
+  - Server Actions were not called live (owner's law).
+- **A second authenticated user — N/A.** There's one role (any signed-in account is an admin, R1 / SEC-HIGH-2), so user B can do everything user A can.
+- **RLS for `authenticated`, and the swap under it — not testable without a session.** That is the owner's SQL check (the HARD STOP; item 2's list) and the owner's two-tab checklist.
+
+**Standing items:**
+- **SEC-HIGH-2:** unchanged; sign-ups were reported still ON. For the structural fix: T-026 adds 2 session-checked endpoints (34 public exports in all), and `seedSettingsFromDefaults` moves from an inline `getUser()` to `settings-actions.ts`'s `requireUser`.
+- **SEC-MED-15:** both fixes are now in code. (b) is merged with T-025, and (a) arrives with T-026. **Production stays exposed** until a deploy of a `main` containing them.
+- **Dependencies:** unchanged; the package files are untouched (SEC-INFO-31 as of 2026-10-03).
+- **Carried to T-016:**
+  - SEC-INFO-37 (`products-actions.ts:157-159`; `CategoryProductsManager.tsx:91,110,117,122,134,146`);
+  - SEC-INFO-36 (`ProductGrid.tsx:8`);
+  - the fail-open product read (`products-actions.ts:150-155`);
+  - and, for context, T-014's image-scheme gap (SEC-MED-7/13), which product images share.
+
+**Overall verdict this pass:** ✅ **T-026 cleared, conditional on the pre-merge HARD STOP**: the owner's read-only SQL results must match item 2's list.
+- No 🔴, 🟠 or 🟡 finding.
+- Two new 🟢: SEC-INFO-38 (the swap under RLS, and what the owner's results must show) and SEC-INFO-39 (the forward stamp's edges).
+- Closed in code, pending merge: SEC-INFO-19, SEC-MED-15's root cause, and the T-025 note about long-title slugs.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** T-026 may proceed to `/qa` → `code-reviewer` → **the owner's SQL check (HARD STOP)** → merge. Conditions:
+- **The owner's SQL results must match item 2's list (1–8).** Anything else comes back to `/cso` before merge: a narrower `authenticated` predicate, any `anon` write, a trigger that cancels updates or rewrites `value`, a rule, or an `updated_at` that isn't `timestamptz`. Never widen a policy by hand.
+- **Server files are bound by sha256 at `a6ce5f6`:**
+  - `settings-actions.ts` `2785952a83f7616e…`
+  - `products-actions.ts` `44b47ada7540a575…`
+  - `site-content.ts` `465f6712f28395f5…`
+  - `settings-read.ts` `cc5c8a2c06d9acb0…`
+  - `admin/(dashboard)/products/page.tsx` `1067bb51b8add066…`
+  - `admin/(dashboard)/business/page.tsx` `87071736c1516fcb…`
+- **Client files are bound by invariants, not hashes.** `ProductsClient`, `BusinessClient`, `category-draft`, `CategoryProductsManager`, `SettingsForm`, `SeedDefaultsPanel` and `layout.tsx` may change for design if they still:
+  1. import no Server Action beyond those they already import;
+  2. import nothing from `@/lib/settings-read` or `@/lib/supabase/*`;
+  3. render errors only as JSX text;
+  4. add no raw-HTML sink;
+  5. give `CategoryProductsManager` `confirmed`, never `draft`;
+  6. show no Save without a successful load;
+  7. keep `products/*` and `business/*` from importing each other.
+
+**Pre-deploy position:**
+- A `main` holding T-026 at these hashes adds no sensitive surface beyond this pass.
+- It isn't held for SEC-HIGH-2, which predates it.
+- `/ship` follows the premortem's release steps, including the live check that `/admin/products` answers 307 to `/admin/login`.
+- Deploying still needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md` (this entry, plus its §3, §5 and §7 rows). Left uncommitted, for the orchestrator.
+- Made only GET and HEAD requests, with no cookie, to `:3101`.
+- Ran offline tests in the session scratchpad.
+- No sign-in, no Server Action call, no write to the live database, no build, no server started or stopped.
+
+### 🔒 CSO Audit — 2026-10-04 — ticket-review:T-026 (the owner's SQL evidence)
+
+**Scope:** The owner ran the expanded read-only SQL check on 2026-10-04. It's the pre-merge HARD STOP.
+- The orchestrator relayed the result rows. They're recorded here verbatim and checked against the 8 points in the T-026 entry, item 2.
+- This office touched no database.
+
+**The owner's result rows (verbatim):**
+
+| kind | detail |
+|---|---|
+| rls | enabled=true forced=false |
+| policy | Allow public read on site_settings \| PERMISSIVE \| SELECT \| anon \| using: true \| check: - |
+| policy | Allow authenticated full access to site_settings \| PERMISSIVE \| ALL \| authenticated \| using: true \| check: true |
+| grants | anon \| select=true insert=true update=true delete=true |
+| grants | authenticated \| select=true insert=true update=true delete=true |
+| column | key \| character varying(100) \| not null=true |
+| column | value \| jsonb \| not null=true |
+| column | updated_at \| timestamp with time zone \| not null=true |
+| primary key | key |
+| business updated_at | 2026-08-31 07:10:19.408+00 |
+
+No `trigger` and no `rule` rows came back. The query covered non-internal `pg_trigger` rows and `pg_rules`.
+
+**Point by point: ✅ all 8 match.**
+1. **RLS is enabled: match.**
+   - `forced=false` exempts only the table's owner. The results don't show the owner; it's expected to be `postgres`, because the table was created in the SQL editor.
+   - If the query is ever re-run, add `relowner::regrole`.
+2. **Permissive policies give `authenticated` SELECT, UPDATE and INSERT, with USING true, WITH CHECK true and nothing restrictive: match.** There's one PERMISSIVE `ALL` policy with `using: true` and `check: true`, and both policies are permissive.
+3. **`anon` can only SELECT: match at the policy level.**
+   - The only `anon` policy is SELECT, and the `ALL` policy is `TO authenticated`, not `public`.
+   - `anon` still holds Supabase's default write grants, but RLS denies them. Without an `anon` INSERT policy, an insert raises an error. Without `anon` UPDATE or DELETE policies, those commands affect zero rows.
+   - So RLS is the only barrier here; see SEC-INFO-40.
+4. **`authenticated` has the SELECT, INSERT and UPDATE grants: match** (it has DELETE too).
+5. **No trigger cancels updates or rewrites `value`: match.** There are no triggers at all.
+   - So `updated_at` stores exactly what the app writes.
+   - `a6ce5f6`'s forward stamp (SEC-INFO-39) is therefore the live guarantee against a repeated stamp (ABA). The orchestrator's reading is right.
+6. **No rules: match.**
+7. **`updated_at` is `timestamptz NOT NULL` and holds an ordinary current value: match** (`2026-08-31 07:10:19.408+00`).
+   - The value has millisecond precision, from the previous app writer. PostgREST returns it as `2026-08-31T07:10:19.408+00:00`, which parses, so the next save writes a strictly later stamp.
+   - Both of SEC-INFO-39's edges are unreachable: the column is `timestamptz`, and the value is nowhere near the maximum JS time.
+   - The date also shows the row hasn't been written since 2026-08-31. The first category save under the id system is still pending, as T-026's checklist expects.
+8. **`key` is the primary key: match.**
+   - `value` is `jsonb NOT NULL` too, so the code's null-value branch can't occur. BUSINESS_UNREADABLE still covers a value that isn't an object.
+
+**What follows:**
+- **The swap works as built under the live policies.**
+  - The conditional UPDATE … RETURNING passes USING, WITH CHECK and the SELECT check through the `ALL … true/true` policy.
+  - The insert path passes as well, and its `23505` comes from the primary key.
+  - SEC-INFO-38 is satisfied: **from the security side, the HARD STOP is met.**
+- **SEC-HIGH-2's premise is now evidenced for this table, not just assumed.** Any authenticated identity has full write access to `site_settings` by policy. That changes neither its rating nor its open status.
+
+🟢 **SEC-INFO-40 (new; hardening; not exploitable today).** `anon` holds INSERT, UPDATE and DELETE grants on `site_settings` (Supabase defaults), and RLS alone denies them.
+- **The risk:** if RLS were ever disabled on the table, or a permissive write policy were added `TO public`, anyone holding the anon key could write the site's content directly. Revoking the grants means two independent controls would have to fail.
+- **Recommendation: a separate `[db]` ticket, not T-026.** A hand-applied migration (`PENDING_USER_APPLY`), reviewed by `architect-reviewer` and `/cso`, then applied by the owner. It should:
+  - revoke everything but SELECT from `anon` on `site_settings`. That includes TRUNCATE, REFERENCES and TRIGGER, which the query didn't list. RLS never applies to TRUNCATE, though PostgREST can't issue one;
+  - optionally drop DELETE and TRUNCATE from `authenticated`, since the app never deletes a settings row;
+  - extend the same explicit grants to the other implicitly granted tables (SEC-INFO-10's follow-up), with one caution: `submissions` needs `anon` INSERT and must not get SELECT.
+
+  This follows the `products` precedent (migration 0001).
+- **It doesn't block** T-026 or deploy.
+
+**The coming design round** is className-only: `text-white` → `text-foreground` in `ProductsClient.tsx`, `SettingsForm.tsx` and `CategoryProductsManager.tsx`, plus possibly bolding a phrase in `ProductsClient`'s copy.
+- That's within the 7 client invariants of the T-026 sign-off, so it needs no `/cso` re-review.
+- `/qa static` confirms the diff is className and copy only, and that the six bound server hashes are unchanged.
+
+**Verdict on the evidence: ✅ all 8 points match.**
+- From the security side, T-026's pre-merge HARD STOP is satisfied.
+- One new 🟢, SEC-INFO-40, goes to a separate `[db]` ticket.
+- The T-026 clearance and its conditions are otherwise unchanged.
+
+**Actions taken:** this append and three §5 rows, left uncommitted. No database access, no request, no build.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -1114,6 +1393,15 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 | SEC-INFO-31 — status update, 2026-10-03 (T-025 CSO entry) | Same lockfile-only ticket | Open. 16 advisories now (0 critical, 12 high, 2 moderate, 2 low), with the lockfile byte-identical to T-006's (`6a026457…`), so it's advisory-feed growth only, led by `braces` `GHSA-vfj7-8cjw-p6xm` via `tailwindcss` and `eslint-config-next`. All build or lint toolchain; none reachable at runtime |
 | SEC-MED-15 — status update, 2026-10-03 (T-025 re-check of `f1bd94d`) | Fix (b) shipped in `f1bd94d`: `categoryPath()` encodes the slug | ✅ **The sitemap sink is closed in code, pending merge.** Verified offline (the planted payload leaves no markup) and live (18/18 sitemap URLs unchanged). Bound to `nav.ts` sha256 `507e5c62…`. **Production is still exposed** until a user-typed deploy of a `main` containing `f1bd94d`. The root cause stays open as SEC-INFO-19, for T-026 |
 | SEC-INFO-19 — status update, 2026-10-03 (T-025 re-check) | Recommend `/pm` add it as an explicit T-026 AC bullet (`normalizeProducts()` keeps a stored slug only if `isWellFormedSlug()` passes), with `/cso review` | Open. Informational again: with fix (b) in, every remaining sink (card `href`s, section links, canonical) is React- or RSC-escaped and prefix-confined, verified with 16 hostile slugs. No change is required in `CategoryCardGrid` |
+| SEC-INFO-38 — `writeBusinessFields`' compare-and-swap is RLS-safe under any policy shape: RLS can only turn a save into SAVE_CONFLICT or an error, never into a write without the stamp condition or a success without a write. It works only if the owner's SQL results show the 8 items in the 2026-10-04 T-026 entry, item 2 | Owner action: the read-only SQL check (the pre-merge HARD STOP). Recommend adding the `pg_rules` query to it | Open until the owner's results are recorded. A mismatch comes back to `/cso`. Never widen a policy by hand |
+| SEC-INFO-39 — `a6ce5f6`'s forward stamp has two edges: `toISOString()` throws only at the maximum JS time (unreachable from `timestamptz`, and nothing is written), and an offset-less stamp parses as local time (matters only if the column isn't `timestamptz`) | No ticket. Item 7 of the owner's SQL check covers the column type | Closed as informational |
+| SEC-INFO-19 — status update, 2026-10-04 (T-026 CSO entry) | Fixed by T-026: `normalizeProducts()` keeps a stored slug only if `isWellFormedSlug()` passes (`site-content.ts:451`) | ✅ Closed in code, pending merge. Verified with 22 hostile values and a 2,000-case fuzz. Bound to `site-content.ts` sha256 `465f6712…` |
+| SEC-MED-15 — status update, 2026-10-04 (T-026 CSO entry) | Root cause (a) arrives with T-026; (b) is already on `main` (T-025) | ✅ Both fixes in code, pending merge of T-026. Production stays exposed until a user-typed deploy of a `main` containing them |
+| SEC-INFO-36 / SEC-INFO-37 — status update, 2026-10-04 (T-026 CSO entry) | T-026 didn't change these lines. Recommend folding both into T-016 (the product editor): SEC-INFO-37 at `products-actions.ts:157-159` and `CategoryProductsManager.tsx:91,110,117,122,134,146`; SEC-INFO-36 at `ProductGrid.tsx:8` | Open. 🟢 |
+| SEC-HIGH-2 — structural-fix scope note, 2026-10-04 (T-026 CSO entry) | For the role-scoping ticket | T-026 adds `saveCategories` and `saveWhatWeDoText` (34 public Server Action exports in all), and moves `seedSettingsFromDefaults` from an inline `getUser()` to `settings-actions.ts`'s `requireUser` |
+| SEC-INFO-38 — status update, 2026-10-04 (the owner's SQL evidence) | The owner's read-only SQL check, recorded verbatim in the T-026 evidence entry | ✅ Closed. All 8 points match, so the compare-and-swap works under the live policies. From the security side, T-026's pre-merge HARD STOP is satisfied |
+| SEC-INFO-39 — status update, 2026-10-04 (the owner's SQL evidence) | No trigger, and `updated_at` is `timestamptz NOT NULL` (current value `2026-08-31 07:10:19.408+00`) | Closed as informational, now confirmed. Both edges are unreachable, and with no `now()` trigger, the app's forward stamp is the live guarantee against a repeated stamp |
+| SEC-INFO-40 — `anon` holds INSERT/UPDATE/DELETE grants on `site_settings` (Supabase defaults), and RLS alone denies them | Not yet filed. Recommend a separate `[db]` ticket: a hand-applied migration that revokes all but SELECT from `anon` (TRUNCATE included), optionally drops DELETE/TRUNCATE from `authenticated`, and extends explicit grants to the other implicit tables per SEC-INFO-10, taking care that `submissions` keeps `anon` INSERT and gets no SELECT. `architect-reviewer` + `/cso`; the owner applies | Open. 🟢 Hardening; not exploitable today; doesn't block T-026 or deploy |
 
 ## 6. Secrets log
 
@@ -1153,3 +1441,11 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
      1. The owner fixes the slug in the Supabase SQL editor, per the hand-applied-SQL rule.
      2. Supabase session cookies here are readable by script. So if an admin may have opened the sitemap since the slug was planted, treat that admin's session as stolen: rotate their password and revoke their sessions.
      3. Review Authentication → Users.
+10. **Every category or What We Do save fails with "Another save changed these settings…" (SAVE_CONFLICT), or with a row-level-security error (SEC-INFO-38, 2026-10-04).**
+   - **Where to look:** the server log line `writeBusinessFields: the compare-and-swap changed 0 rows`.
+     - If `currentStamp` equals `readStamp`, no other save happened: a policy, trigger or rule on `site_settings` blocked the row.
+     - If they differ, a real concurrent save got there first. Click Save again.
+   - **Response:**
+     1. Never widen a `site_settings` policy by hand, and never switch the writer to upsert.
+     2. Rerun the owner's read-only SQL check, and compare it with the 8 items in the T-026 entry.
+     3. Any fix is a reviewed migration, with `/cso review`.

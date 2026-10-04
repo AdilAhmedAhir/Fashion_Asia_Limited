@@ -10,7 +10,7 @@
 
 | Table | Key columns | Notes |
 |---|---|---|
-| `site_settings` | `key` PK, `value` JSONB, `updated_at` | One row per page key: `homepage`, `who_we_are`, `business`, `who_we_work_with`, `sustainability`, `contact`, `general`. Code defaults in `src/lib/site-content.ts` are layered underneath: `{...defaults, ...stored}`. |
+| `site_settings` | `key` varchar(100) PK, `value` JSONB NOT NULL, `updated_at` timestamptz NOT NULL (read live 2026-10-04) | One row per page key: `homepage`, `who_we_are`, `business`, `who_we_work_with`, `sustainability`, `contact`, `general`. Code defaults in `src/lib/site-content.ts` are layered underneath: `{...defaults, ...stored}`. Since T-026, `business.updated_at` is also the compare-and-swap stamp for that row's two admin pages. No trigger sets it, so the app writes it. |
 | ↳ `business.value.products[]` | `title`, `description`, `image`, **`slug`**, **`id`** | **Categories.** They're JSONB elements, not rows. `slug` is frozen at the first save; `id` is a hidden, server-issued identity. |
 | `products` | `id` uuid PK, `category_slug`, `name`, `description`, `image`, `sort_order`, timestamps | **Items within a category.** Composite index `(category_slug, sort_order)`. **No FK:** attachment is enforced by the app (`checkCategoryAttachable`). |
 | `jobs` | `id`, `title`, `department`, `vacancy`, `location`, `employment_type`, `responsibilities`, `educational_requirements`, `experience_requirements`, `additional_requirements`, `workplace`, `salary`, `compensation`, `published_at`, `deadline`, `is_active`, `created_at` | Career postings. |
@@ -35,7 +35,7 @@ jobs · reports · leaders · media_assets · submissions   — independent, no 
 
 | Table | `anon` (the public site) | `authenticated` (= admin; see RISKS R1) | Server-side check |
 |---|---|---|---|
-| `site_settings` | SELECT | writes (the live policy isn't in the file) | `updateSettings`: `getUser()`, then the category identity, collision and delete guards |
+| `site_settings` | SELECT: policy "Allow public read on site_settings", permissive, `using: true` | ALL: policy "Allow authenticated full access to site_settings", permissive, `using: true`, `check: true`. Read live 2026-10-04 (owner SQL); there are no triggers or rules. Both roles also hold every table grant, the Supabase default (SEC-INFO-40, T-031). | **`business` (T-026), one writer per field:** `saveCategories` writes only `products` (the category identity, collision and delete guards run inside it); `saveWhatWeDoText` writes only the 4 page-text fields. Both call `getUser()` first, then a private compare-and-swap on `updated_at`, failing closed. **Other keys:** `updateSettings` (`getUser()`; it refuses `business`). `seedSettingsFromDefaults` never writes `business.products`. |
 | `products` | SELECT | ALL (explicit `GRANT` + policy) | all 4 writes: `getUser()`, plus `checkCategoryAttachable` on create and update |
 | `jobs` | SELECT `WHERE is_active` | ALL | `create`, `update` and `deleteJob`: `getUser()` (T-015) |
 | `reports` | SELECT `WHERE published` | writes (the live policy isn't in the file) | report CRUD and `uploadFile`: `getUser()` (T-015) |
