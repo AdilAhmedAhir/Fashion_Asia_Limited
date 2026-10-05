@@ -1,0 +1,93 @@
+KILLED   M1  queue owner: a product's queue dies with its row (row-owned queue)
+          2 failing check(s); e.g. ui [production] e: e1: on return the row shows the committed values, not the old ones
+KILLED   M1b  queue owner: queues not held in a ref (a new Map every render)
+          5 failing check(s); e.g. ui [production] a: a commit while a save is in flight sends nothing yet
+KILLED   M2  refs: the follow-up is worked out at commit time, not at send time
+          2 failing check(s); e.g. ui [production] a: exactly one follow-up, carrying only description
+KILLED   M3  refs: the image handler rebuilds the row from a captured draft ({ ...draft, image })
+          3 failing check(s); e.g. ui [production] b: the follow-up carries only image
+KILLED   M4  strings-only: a null/number field is turned into "" instead of ignored
+          4 failing check(s); e.g. server: update: null fields (never turned into "") -> NOTHING_TO_SAVE
+KILLED   M5  partial-update keys (server): the update writes category_slug and sort_order too
+          3 failing check(s); e.g. server: update: writes only the strings taken, plus updated_at
+KILLED   M5b  partial-update keys (client): every save sends all three fields
+          6 failing check(s); e.g. ui [production] a: Tab commits the name: one save carrying only name
+KILLED   M5c  partial-update keys (client): the row sends category_slug and sort_order
+          3 failing check(s); e.g. ui [production] a: Tab commits the name: one save carrying only name
+products read threw: TypeError: byCategory[row.category_slug].push is not a function
+    at groupByCategory (<repo>/src/app/actions/products-actions.ts:132:48)
+    at Object.getAllCategoryProducts (<repo>/src/app/actions/products-actions.ts:178:40)
+    at async run (file://<scratchpad>/t-016-qa/harness-r2/server/products-actions.test.mjs:373:19)
+    at async file://<scratchpad>/t-016-qa/harness-r2/mutations/run-mutations.mjs:191:22
+products read threw: TypeError: byCategory[row.category_slug].push is not a function
+    at groupByCategory (<repo>/src/app/actions/products-actions.ts:132:48)
+    at Object.getAllCategoryProducts (<repo>/src/app/actions/products-actions.ts:178:40)
+    at async run (file://<scratchpad>/t-016-qa/harness-r2/serializer/map-roundtrip.test.mjs:133:22)
+    at async file://<scratchpad>/t-016-qa/harness-r2/mutations/run-mutations.mjs:191:22
+KILLED   M6  the Map (server): grouped into a plain object again
+          14 failing check(s); e.g. server: read: ok with a Map
+KILLED   M6b  the Map (server): an Object.create(null) grouping
+          10 failing check(s); e.g. server: server suite threw: r.byCategory.get is not a function
+KILLED   M6c  the Map (/products): new Map(Object.entries(...)) kept on a Map
+          2 failing check(s); e.g. server: /products: sections in the staff's category order, 'constructor' included, undisplayed hidden
+KILLED   M6d  the Map (/products): ok:false mapped onto the no-note branch
+          4 failing check(s); e.g. server: /products ok:false: grid plus Coming Soon, no sections
+KILLED   M7a  commitPathOnBlur: ProductRow stops setting it
+          7 failing check(s); e.g. ui [production] pathbox: path box: no save while typing a path
+KILLED   M7b  commitPathOnBlur: ImageUploadField ignores the prop
+          19 failing check(s); e.g. ui [production] uploadfield: on: the path box gains the read-only cue classes, and nothing else
+KILLED   M7c  commitPathOnBlur: a finished upload no longer replaces typed text
+          4 failing check(s); e.g. ui [production] uploadfield: on: a finished upload calls onChange(url) at once and replaces the typed text
+KILLED   M7d  commitPathOnBlur: Enter commits during IME composition
+          2 failing check(s); e.g. ui [production] uploadfield: on: Enter during IME composition doesn't commit
+KILLED   M8  WARN-2: the add form isn't keyed by category
+          3 failing check(s); e.g. ui [production] warn2: WARN-2: switching category clears the add form
+KILLED   M9  hasVisibleText: no Default_Ignorable_Code_Point
+          9 failing check(s); e.g. visible: rejects VS16 U+FE0F
+KILLED   M9b  hasVisibleText: a g flag (stateful test())
+          16 failing check(s); e.g. visible: accepts Bengali with a hasant and a ZWJ conjunct
+KILLED   M10  no timers: an automatic retry after a failure
+          4 failing check(s); e.g. ui [production] d: (i) nothing is sent by a timer (2.6 s later)
+KILLED   M11  no is-mounted check: a follow-up dropped while its row is off screen
+          2 failing check(s); e.g. ui [production] e: e2: with the row off screen, the reply still sends the follow-up
+KILLED   M12  the draft doesn't follow the product (no reply normalization)
+          4 failing check(s); e.g. ui [production] c: a reply landing mid-typing: the untouched field takes the server's trimmed value
+KILLED   M13  the waiting follow-up is never sent
+          5 failing check(s); e.g. ui [production] a: exactly one follow-up, carrying only description
+KILLED   M14  "Saved" shows over a failure (both guards reverted)
+          2 failing check(s); e.g. ui [production] d: (i) never Saved over a failure
+KILLED   M14b  "Saved" set by a failed save (queue half only)
+          3 failing check(s); e.g. ui [production] g: g1: ...the error clears, and no Saved shows
+KILLED   M15  starting a send doesn't clear the error
+          3 failing check(s); e.g. ui [production] d: (i) starting the send clears the error
+KILLED   M16  up, down and delete aren't locked while a save is pending
+          3 failing check(s); e.g. ui [production] a: while saving: Saving…, and down and delete are disabled
+KILLED   M17  Name and Description disabled during a save (the old behavior)
+          5 failing check(s); e.g. ui [production] a: Tab moved focus to Description
+KILLED   M18  server: the category check runs on the client's slug
+          4 failing check(s); e.g. server: update: category check runs on the stored slug, not the client's
+KILLED   M19  server: a step-6 read error reads as "not found"
+          1 failing check(s); e.g. server: update: step-6 read error -> that error, not Product not found.
+KILLED   M20  server: validation after the database read
+          6 failing check(s); e.g. server: update: zero-width-space name is refused before any database read
+KILLED   M21  server: the read swallows Next's control-flow signals
+          3 failing check(s); e.g. server: read: Next's control-flow signal passes straight through
+KILLED   M22  server: create checks the name only after checkCategoryAttachable
+          4 failing check(s); e.g. server: create: invisible name is refused before checkCategoryAttachable or any query
+KILLED   M23  ProductsClient: a failed product read still renders the editor
+          3 failing check(s); e.g. ui [production] h: h: the products card shows only the fixed alert
+KILLED   R-A  path box: typed text restored to the value no longer follows a new value
+          3 failing check(s); e.g. ui [production] uploadfield: on (R-A): text typed and restored to the value follows a new value
+KILLED   R-B  settle: a waiting commit with nothing to send no longer clears the failure's error
+          1 failing check(s); e.g. ui [production] g: g4 (R-B): the failure lands with nothing left to send: no error, no Saved, no send
+KILLED   D1  design: the save error line back to text-[13px]
+          1 failing check(s); e.g. ui [production] design: design: each uses text-sm, none text-[13px]
+KILLED   D2  design: the busy cue applied with the prop off (className no longer main's)
+          2 failing check(s); e.g. ui [production] uploadfield: omitted: the path box's className is byte-identical to main's
+KILLED   D3  design: Saving… during a delete
+          1 failing check(s); e.g. ui [production] regressions: delete: one call, and the row says Deleting… with its controls locked
+KILLED   M24  canAdd: back to trim().length (invisible names pass)
+          3 failing check(s); e.g. ui [production] canadd: canAdd: an invisible name keeps Add product disabled
+
+mutations: 40/40 killed
+exit=0

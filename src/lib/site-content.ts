@@ -355,11 +355,11 @@ export type CategoryProduct = {
     updated_at: string;
 };
 
-// Create/update payload shape for a CategoryProduct row — never sends id,
+// Create payload shape for a CategoryProduct row — never sends id,
 // created_at, or updated_at, which are DB-generated (gen_random_uuid() /
 // now() defaults on public.products). Reusing the read-shaped
 // CategoryProduct type directly for writes would let a caller pass a
-// client-picked id or timestamp that the insert/update never actually uses
+// client-picked id or timestamp that the insert never actually uses
 // (docs/QA_REPORT.md T-001 Static Pass WARN-3; docs/ROADMAP.md T-003).
 //
 // `sort_order` is optional here (unlike the required field on CategoryProduct
@@ -368,11 +368,34 @@ export type CategoryProduct = {
 // max + 1 server-side whenever it's missing/non-finite, landing the new
 // product at the end of its category's list, not the front
 // (docs/ROADMAP.md T-004, folded 2026-09-27; docs/QA_REPORT.md T-003 Static
-// Pass first-pass INFO-1). An update that means to keep a product's existing
-// position still passes its current sort_order through unchanged.
+// Pass first-pass INFO-1). Only a create takes this shape since T-016: an
+// edit sends a CategoryProductPatch (below), which can't carry the category
+// or the order.
 export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at" | "sort_order"> & {
     sort_order?: number;
 };
+
+/**
+ * @purpose The fields one product edit may change (name, description, image): a partial update that never carries the category, the order or the id.
+ * updateCategoryProduct (products-actions.ts) writes only the fields present.
+ */
+export type CategoryProductPatch = Partial<Pick<CategoryProduct, "name" | "description" | "image">>;
+
+// One character that is none of: whitespace; an invisible formatting
+// character (Default_Ignorable_Code_Point: zero-width spaces and joiners,
+// direction marks, the soft hyphen, the BOM, U+3164 and the variation
+// selectors); or a control, format, private-use or unassigned code point
+// (\p{C}). No "g" or "y" flag, so test() keeps no state between calls.
+const VISIBLE_CHARACTER = /[^\s\p{Default_Ignorable_Code_Point}\p{C}]/u;
+
+/**
+ * @purpose Whether a value is a string with at least one visible character, so a product name or image made only of spaces or invisible characters counts as blank.
+ * The server's rule for a product's name and image (products-actions.ts). The
+ * add-product form mirrors it so its button matches what the server accepts.
+ */
+export function hasVisibleText(value: unknown): boolean {
+    return typeof value === "string" && VISIBLE_CHARACTER.test(value);
+}
 
 // Category slug: lowercase, every run of non-alphanumeric characters
 // collapsed to a single "-", leading/trailing "-" trimmed. A title with no

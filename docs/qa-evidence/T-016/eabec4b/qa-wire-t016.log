@@ -1,0 +1,19 @@
+(node:31068) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file://<repo>/src/app/actions/products-actions.ts is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to <repo>/package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+✔ U1 a partial update on the wire: GET the stored slug, check the category, PATCH only the given fields (8.489917ms)
+✔ U2 two tabs on the wire: different fields both stick, and an edit never undoes a reorder (2.211917ms)
+✔ U3 deleted between the read and the write: PATCH matches nothing -> Product not found., nothing refreshed (0.634375ms)
+✔ U4 a failed step-6 read returns its error, never 'Product not found.' (staff won't add a duplicate) (0.185041ms)
+✔ U5 no filter injection through the id: it is percent-encoded into one id filter (0.278833ms)
+✔ U6 the grouped read on the wire: one ordered GET, a Map with prototype-named slugs; a 500 is { ok: false } plus a log (0.469209ms)
+✔ U7 create on the wire: invalid name or image sends nothing at all; a valid add lands at max + 1 (0.81275ms)
+ℹ tests 7
+ℹ suites 0
+ℹ pass 7
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 184.721542

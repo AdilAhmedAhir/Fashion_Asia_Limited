@@ -2202,3 +2202,218 @@ Row 7:
 - **(4)** `npx tsc --noEmit` exits 0, and the `ssr-escape` suite passes 7/7 at HEAD.
 - **The Live Pass above still applies:** it ran against build `pNmmCUz8tfce-2qxnT_iu` (`a6ce5f6`), and `e201aca` touches no server or middleware file.
 - **Verdict: PASS.** The evidence is in the session scratchpad, `t-026-qa/e201aca/`.
+
+## Static Pass — T-016 — 2026-10-05
+**Target:** branch `t-016-product-editor` at `eabec4b`, against `main` `2c77b0c`.
+- `44cdfb2` changes the server and both pages.
+- `eabec4b` adds one save queue per product and `commitPathOnBlur`.
+
+Offline only: no database, no sign-in, no Server Action call.
+
+**Gate:** `npx tsc --noEmit` exits 0. The build wasn't re-run, by instruction.
+- The builder's `eabec4b` build log is clean: it compiled, the route table lists `ƒ /admin/products`, `ƒ /products` and `ƒ /products/[category]`, and there's no product-read error line.
+- The build served on :3101 (`so_zCLXv2DgfyR_H5Maaz`) contains the T-016 code.
+
+| # | Attack | Result |
+|---|---|---|
+| 1 | **The builder's suites, re-run** (`run-all.mjs`) | **PASS:** server 117/117, Map round trip 14/14, `hasVisibleText` 111/111, UI 249/249, mutations 35/35 caught |
+| 2 | **Harness isolation** | **PASS** |
+| 3 | **QA's UI attacks beyond orderings a–h** | **PASS:** 68/68 |
+| 4 | **The real query library, request by request** | **PASS:** 7/7 |
+| 5 | **The `Map` round trip with slugs named like built-in properties** | **PASS:** 16/16 |
+| 6 | **`hasVisibleText`: 37 more inputs, in Node and Chrome** | **PASS:** 37/37 |
+| 7 | **MUST-ADD 7 greps** | **PASS** |
+| 8 | **MUST-ADD 11: scope and unchanged files** | **PASS** |
+| 9 | **T-026's 7 client invariants on the touched client files** | **PASS** |
+
+**1. The builder's suites.** The UI suite ran in production React, then in development React under StrictMode, with the `hasVisibleText` table repeated in Chrome. All 35 mutants are real one-behavior reverts, and each one was caught.
+
+**2. Harness isolation.**
+- **How it ran:** on a byte-identical copy of the harness (`diff -rq` clean apart from `out/`), so the builder's `out/` stays as evidence.
+- **The guard:** loaded into every Node process through `NODE_OPTIONS=--import`. It refuses and logs `fetch`, `WebSocket`, `http`/`https`, `net`, `tls`, `dgram` and any read of a `.env` file. 6 Node processes ran guarded, with 0 attempts.
+- **Chrome:** a monitor polled the harness's own Chrome every 0.2 s and saw 0 internet sockets across 255 processes. Chrome runs on a debugging pipe (no TCP port), every hostname resolves to nothing, background networking is off, and http(s)/ws(s) URLs are blocked. Its pages are `file://` only, and `process.env` there holds only `NODE_ENV`.
+- **The loader** refuses `@/lib/supabase/*` and `@supabase/*`.
+
+**3. QA's UI attacks.** These use the real `CategoryProductsManager` and `ImageUploadField` on Next's own React, with stubbed actions released by hand, in production and then in development under StrictMode.
+- **q1:** three commits during one save that's still in flight. Exactly one follow-up goes out, with the latest name and the description: 2 saves in all.
+- **q2:** a name changed and then changed back mid-save. One follow-up restores the original. Committing the same text again mid-save adds nothing.
+- **q3:** an upload finishes during a name save, while unsaved typing sits in Description. The follow-up carries only the image. The typing stays on screen and goes out as one more save only on blur. All three edits are stored.
+- **q4:** deleting a product whose last save failed is allowed, because nothing is pending. It asks once, and the failed save is never re-sent (checked 2.6 s later).
+- **q7:** a path made only of a zero-width space sends one save and gets `PRODUCT_IMAGE_REQUIRED` with Retry. Nothing is stored. Retry re-sends once, and there's no loop. A real path then saves and clears the error.
+- **q9:** a name made only of invisible characters keeps Add disabled. A product added in this session edits under its own new id, sending only the description.
+- **Whole run, both modes:** every patch's own keys were strings among name, description and image only; no action was called from a timer; 0 network attempts; 0 page errors or React warnings.
+
+**4. The real query library.** The real `@supabase/postgrest-js` 2.112.2 talked to an in-memory PostgREST.
+- **U1, a partial update:**
+  - It reads `products?select=category_slug&id=eq.<id>`, then the business settings, then sends `PATCH products?id=eq.<id>&select=*` with `Prefer: return=representation`. The body is exactly `{name, updated_at}`, trimmed.
+  - A payload that also carried `category_slug`, `sort_order`, `id` and `created_at` changed nothing else, and the id filter comes from the argument.
+  - Only `/products/sportswear` and `/products` are refreshed.
+- **U2, two tabs:** a name from one tab and a description from the other both stick. After a reorder, an edit leaves `sort_order` alone.
+- **U3:** a product deleted between the read and the write. The `PATCH` matches nothing, the answer is "Product not found.", and nothing is refreshed.
+- **U4:** a 500 on the step-6 read returns its own error, never "Product not found.".
+- **U5:** an id of `x&category_slug=eq.t-shirts` stays one percent-encoded id filter. No second filter gets injected.
+- **U6, the grouped read:** one `GET` ordered `category_slug.asc,sort_order.asc`; a `Map` whose keys include `__proto__` and `constructor`, with `Object.prototype` untouched; a 500 gives `{ ok: false }` plus a server log line.
+- **U7, create:** an invisible name, an invisible image, a number name or a null image sends no request at all; a valid add posts the trimmed fields at max + 1.
+
+**5. The `Map` round trip.** Next 16.3.6's own compiled `react-server-dom-turbopack` round-trips a `ProductsLoad` whose keys are `__proto__`, `constructor`, `hasOwnProperty`, `t-shirts` and `valueOf`. It survives both as a client prop and as a return value, and after the trip `get("__proto__")` returns its 2 products. The null-prototype negative control still fails, as it should.
+
+**6. `hasVisibleText`.** Each input was called twice and gave the same answer in Node and in Chrome.
+- **Refused:** the Hangul fillers (U+115F, U+1160, U+FFA0), the combining grapheme joiner and the Arabic letter mark; Mongolian variation selectors, invisible math operators, deprecated format characters and interlinear annotation characters; tag characters, musical and hieroglyph format characters, and private-use characters, including U+F8FF; a lone surrogate, noncharacters, C0 controls, NEL and the Ogham space mark.
+- **Accepted:** a lone U+0301 or U+20E3, U+2800, U+FFFC and U+FFFD; a keycap, a flag, an emoji with a skin tone; Hangul, Thai, Devanagari and Bengali text; a letter wrapped in no-break spaces or after zero-width spaces; a path with spaces inside it.
+
+**7. MUST-ADD 7.** No `Object.entries`, `Object.keys`, `Object.fromEntries` or `JSON.stringify` appears in the 7 touched files. No products map is read with brackets or spread; the only `...prev` matches are a row's own typing state. Every `.get` on a products map has `?? []` or an explicit check. There's no `Object.create(null)` anywhere in `src`. The state is typed `ReadonlyMap<string, readonly CategoryProduct[]>`, and every update builds `new Map(prev)` inside its updater. No client component imports `getAllCategoryProducts` or `getCategoryProducts`, and `ProductsClient` takes `AllProductsRead` through `import type` only.
+
+**8. MUST-ADD 11.**
+- **Scope:** `git diff main --stat` lists exactly the 7 Touches files plus `DECISIONS.md` and `ROADMAP.md`.
+- **Unchanged files** (0-byte diff against `main`): `settings-actions.ts` (still `2785952a…`), `settings-read.ts` (`cc5c8a2c…`), `business/page.tsx` (`87071736…`), `SettingsForm.tsx`, `category-draft.ts`, `src/components/catalog/*`, `products/[category]/page.tsx`, `media-actions.ts`, `nav.ts`, the middleware, `src/lib/supabase/*`, `next.config.ts`, `db/`, `supabase-schema.sql`, `package.json` and `package-lock.json`.
+- **`site-content.ts`** changes only by `hasVisibleText`, `CategoryProductPatch` and the `CategoryProductInput` comment. **`products-actions.ts`** exports the same 6 async functions plus 3 types, and no constant.
+- **For security's re-bind, the HEAD sha256 prefixes are:** `products-actions.ts` `6899ea96444a7ea6`, `site-content.ts` `2ae9d3f1782777ff`, `admin/(dashboard)/products/page.tsx` `969a00dea762e782`, `(website)/(marketing)/products/page.tsx` `0aec2d4179e84a61`.
+
+**9. Client invariants.** The 3 touched client files are `ProductsClient`, `CategoryProductsManager` and `ImageUploadField`. The only new import is the type-only `AllProductsRead`. Nothing comes from `settings-read` or `supabase`. Errors render only as JSX text, and there's no raw-HTML sink. The product editor still gets `confirmed`. A failed category load still returns before any Save button. `products/*` and `business/*` don't import each other.
+
+**Code reading** (contract items 1–12; MUST-ADD 3 and 6).
+- **`updateCategoryProduct` runs in this order:** `getUser()`; "Missing product id."; only own string fields are taken, trimmed; `NOTHING_TO_SAVE` if none; `hasVisibleText` on the fields present, before any read; the stored slug is read (an error returns its message, and no row returns "Product not found."); the category check runs on the stored slug; the taken fields plus `updated_at` are written with `.select().maybeSingle()` (no row returns "Product not found."); only `/products/<stored slug>` and `/products` are refreshed.
+- **`createCategoryProduct`** validates the name and image after `getUser()` and the slug check, before any read.
+- **`getAllCategoryProducts`** never rejects except with Next's own signals (`unstable_rethrow`).
+- **Saves** go out only from a commit or Retry handler, or from the previous save's completion. There's no "is it still mounted" check. The only timer is the display-only "Saved" flash, and nothing retries on its own.
+
+**Findings** (all info; no critical, major or minor defect):
+- **I1 — info, predates T-016.** `createCategoryProduct(null)` or `(undefined)` throws a `TypeError` instead of returning `{ ok: false }`, so a crafted call gets Next's generic error. The editor always sends an object. Contract item 12 freezes this function's signature, so it goes to the backlog, with T-018.
+- **I2 — info.** `hasVisibleText` edges, each consistent with the contract's definition: U+F8FF, which Apple devices show as a logo, is refused; a lone U+FFFC, U+20E3 or U+0301 is accepted.
+- **I3 — info.** Leaving `/admin/products` while "Saving…" shows still sends the queued save, by design, but nobody sees how it ends, so staff should wait for "Saved". Backlog option: a leave-page prompt while saves are pending.
+- **I4 — info.** The race between a category delete and a product add (QA T-026 F1) is unchanged and stays in the backlog (DECISIONS 2026-10-04). A product left with no category now also can't be edited: it gets 'Category "<slug>" does not exist.'. That's harmless.
+
+**Verdict: PASS.** T-016 meets contract items 1–12 and premortem MUST-ADDs 1–11 on every check an agent can run.
+
+**Evidence:** the result logs are copied into `docs/qa-evidence/T-016/`. The harnesses and scripts stay in the session scratchpad (`t-016/harness/`, `t-016-qa/`), per STACK.md §3.
+
+## Live Pass — T-016 — 2026-10-05
+**Target:** the production build on **:3101**, build ID `so_zCLXv2DgfyR_H5Maaz` (`eabec4b`). Its served code contains the T-016 strings and checks. Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST.
+
+| # | Attack | Result |
+|---|---|---|
+| 1 | **MUST-ADD 8: the public HTML against the before-build baseline** | **PASS** |
+| 2 | **The admin gate** | **PASS** |
+| 3 | **Public pages** | **PASS** |
+
+**1. MUST-ADD 8.** 10 pages: `/products`, the 8 `/products/<slug>` pages and `/what-we-do`.
+- **When:** captured at 2026-10-05T07:00:51Z, and compared with the baseline captured at 2026-10-04T06:48:30Z from build `FswViKlxkyJ_aN3x-CSSt` (`main` `2c77b0c`).
+- **Result:** every page is 200, and every byte size equals the baseline's. The only raw difference is the build id, once per page; no asset file name changed. Once the build id is normalized, all 10 pages are identical, with 0 UUID-shaped strings.
+
+**2. The admin gate.** The same 40-probe matrix as T-026, on `/admin/products` and `/admin/business`: plain GET, HEAD, `RSC: 1`, 2 prefetch header sets, `Purpose`/`Sec-Purpose: prefetch`, `?_rsc=`, `.rsc` with and without `RSC: 1`, a trailing slash, `//`, 2 `x-middleware-subrequest` variants, `x-nextjs-data`, and encoded and dot-segment path variants. 37 end in **307 → `/admin/login`**; the 2 case-changed paths return 404; `/admin/login` returns 200. No hop sets a cookie, and no response contains admin text, T-016's product strings included.
+
+**3. Public pages.**
+- **200:** `/`, `/products`, `/what-we-do`, `/who-we-are`, `/global-partner`, `/sustainability`, `/career`, `/contact`, `/sitemap.xml` and `/robots.txt`.
+- **404:** `/products/no-such-slug`.
+- **308:** `/what-we-do/t-shirts` and `/what-we-do/sportswear` redirect to `/products/<slug>`.
+- **0 ids** on `/` and `/sitemap.xml`.
+
+**Not run** (each needs a login or a write): every product save, the orderings on a live session, and the first Save. They're in the owner checklist below.
+
+## Errata — pending owner checklists after T-016 — 2026-10-05
+T-016 changes how a product row on `/admin/products` saves:
+- **Name and Description** still save when you leave the box (Tab or a click away).
+- **The image path box** now saves only on Tab, Enter or a click away, never on each keystroke. An upload still saves the moment it finishes.
+- **Edits made while a save is running** go out together as one follow-up, so "Saved" can show once for several edits.
+- **While a product shows "Saving…"**, its ▲, ▼ and trash are greyed out. While it's being deleted, it shows "Deleting…".
+- **Add product** stays greyed out until the name and the image each have a visible character, and the server refuses a blank one either way.
+
+Anything not listed still stands.
+
+### "Manual Checklist — T-004 — 2026-09-27"
+"Erratum — Manual Checklist — T-004 — 2026-09-28" and the 2026-10-04 errata still stand.
+- **Rows 3–6 count as done once T-016 rows 1–3 and 11 pass**, per T-016's premortem. If you run them anyway:
+  - **Row 4, "Edit that product's name, description, and image":** the path box saves on Tab, Enter or a click away, not while you type. "Saved" may show once for several quick edits.
+  - **Rows 5 and 6** (reorder, delete): wait for the product's "Saving…" to clear; its ▲, ▼ and trash are greyed out until then.
+  - The public page is `/products/sportswear`.
+
+### "Manual Checklist — T-025 — 2026-10-03"
+- **Order:** run rows 3–7 (option A) after T-016's checklist, in the same sitting, on the build of `main` after T-016 merges.
+- **Row 3, "Add the test product.":** Add product stays greyed out until the name and the image each have a visible character.
+- **Row 4, "`/products` with a product.":** re-run it on the T-016 build. It now **blocks the deploy** (T-016's acceptance criteria).
+- **Row 7, "Cleanup.":** wait for a product's "Saving…" to clear; until then its trash is greyed out.
+
+### "Manual Checklist — T-026 — 2026-10-04"
+- **"Where", Build:** use the production build of `main` after T-016 merges (it includes T-026), at `http://localhost:3101`.
+- **Order, in one sitting:** (1) rows 1–2 here (the first Save); (2) T-016's checklist; (3) T-025 rows 3–7; (4) rows 3–7 here.
+- **Row 5, "The delete guard.", step 3:** the product's trash is greyed out while it shows "Saving…". Wait for that to clear.
+
+## Manual Checklist — T-016 — 2026-10-05
+**For the owner.** This takes about 30 minutes, in one sitting. It checks what agents can't: the product editor saving against the live database, including on a slow connection and with two tabs. Agents haven't seen these screens behind the live login (NOT VISUALLY VERIFIED; `design-reviewer` used a SYNTHETIC harness).
+
+**Rows 1, 2, 3, 7 and 11 block the deploy, and so does T-025 row 4 rerun on this build.**
+
+**Wording:** the quoted messages are final after `/design-review` (2026-10-05).
+
+**Where:**
+- **Build:** the production build of `main` after T-016 merges (it includes T-026). Run `npm run build && npm start -- -p 3101` and open `http://localhost:3101`. Never use :3001, and close every tab left open from an earlier build.
+- **Sign in** at `/admin/login`.
+- **Tabs:** tab A is your first tab. Rows 3 and 9 also use tab B. Both are on `/admin/products`, with **Sportswear** picked under **Products in Each Category** → Category.
+
+**One sitting, in this order:**
+1. T-026 rows 1–2 (the first Save);
+2. this checklist, rows 0–11;
+3. T-025 rows 3–7 (option A);
+4. T-026 rows 3–7.
+
+T-004 rows 3–6 count as done if rows 1–3 and 11 here pass.
+
+**Before you start:**
+- **Everything writes to the LIVE database,** even from localhost. Keep it short, and finish with row 11.
+- **The public sees the ZZ-TEST products while they exist,** because the live site reads the same database.
+- **Staff freeze.** From the first Save until the deploy's live check passes, FAL staff must not add or edit products or categories. The first Save unlocks the live site's old product editor, which runs until the deploy. Plan the deploy for the same day.
+- **Category:** use Sportswear only if it has no real products. Otherwise pick an empty category, and read "Sportswear" as that one throughout.
+- **Slow rows** (1 and 7): in Chrome DevTools → Network, set throttling to **3G** (or "Slow 3G" in older Chrome). Set it back to **No throttling** afterwards.
+- **Counting saves:** each save is one **POST** to `products` under Network → **Fetch/XHR**. To see what a save sent, click it → **Payload**.
+- **Don't edit categories while a category image is uploading.** That's the known T-010 issue.
+- **Never click "Sync Content From Code."**
+- **Photo:** only row 1 needs one: JPG or WebP, under 400 KB, at most 2400 px. It uploads to the live Storage bucket as soon as you pick it.
+
+| # | Step | Expected | Pass/Fail |
+|---|---|---|---|
+| 0 | **Set up.** Under Sportswear, add `ZZ-TEST T-016 one (delete me)`, then `ZZ-TEST T-016 two (delete me)`. For each, type `/images/client/product-sportswear.webp` into the path box under "Product image", then click **Add product**. | Both appear in the list, "one" first. Add product stays greyed out until both a name and an image are filled in. | |
+| 1 | **Several edits on one row (slow). Blocks the deploy.** Set 3G. On "one", select the Name text, type `ZZ-TEST T-016 এক (delete me)` and press Tab. While "Saving…" shows, type `ZZ desc` in Description and press Tab. Then click **Replace image** and pick your photo. Wait until neither "Saving…" nor "Uploading…" shows. Set No throttling, then reload. | No character is lost or jumps back while you type. While "Saving…" shows, "one"'s ▲, ▼ and trash are greyed out. "Saved" never shows at the same time as "Saving…". "Saved" shows **once at the end, or twice** if the photo finished uploading after the text save had landed; ▼ and the trash can light up briefly between the two. Both are a pass. After the reload, "one" has the Bengali name, `ZZ desc` and the new photo, and `/products/sportswear` shows the same. | |
+| 2 | **The path box. Blocks the deploy.** On "two": (1) click in the path box, select all its text (Cmd+A), type `/images/client/product-tshirts.webp` and press Tab. (2) Click back in the path box, put the cursor at the end, type one space, press Enter, then click elsewhere. (3) Select all the text in the path box, paste `/images/client/product-sportswear.webp` and press Enter. | (1) No POST while typing, then exactly one POST and "Saved". (2) No POST, and the space disappears. (3) Exactly one POST. After a reload, the path box shows exactly `/images/client/product-sportswear.webp`. | |
+| 3 | **Two tabs. Blocks the deploy.** Open tab B on `/admin/products` → Sportswear. (1) In tab A, rename "two" to `ZZ-TEST T-016 two A (delete me)`, press Tab and wait for "Saved". (2) In tab B, without reloading, type `ZZ desc B` in "two"'s Description and press Tab. (3) In tab A, click ▲ on "two". (4) In tab B, still without reloading, type `ZZ desc B1` in "one"'s Description and press Tab. Reload both tabs. | "two" is first in both tabs, with tab A's name and `ZZ desc B`. "one" has `ZZ desc B1`. `/products/sportswear` shows the same order. After step 2, tab B's "two" may already show tab A's name; that's expected. | |
+| 4 | **A failure, then Retry.** In Network, set **Offline**. Change "one"'s Description to `ZZ offline 4` and press Tab. Set No throttling, then click **Retry**. | While offline: red text "Something went wrong. Check your connection and try again." with Retry. The text stays, and there's no "Saved". Retry sends one POST, then "Saved". After a reload, the description is `ZZ offline 4`. | |
+| 5 | **A new edit after a failure.** Set Offline. Change "one"'s Name to `ZZ-TEST T-016 one 5 (delete me)` and press Tab. Set No throttling. Without clicking Retry, change its Description to `ZZ desc 5` and press Tab. | Exactly one POST, and its Payload has both the new name and `ZZ desc 5`. Then "Saved", and the red text goes. After a reload, both are stored. | |
+| 6 | **The name and the image are required.** (1) On "two", clear the Name box completely, press Tab, then reload. (2) On "two", clear the path box completely, press Tab, then reload. | (1) Red text "A product needs a name. Type one in, then try again." with Retry. After the reload, the old name is back. (2) Red text "A product needs an image. Upload one or paste its path, then try again." with Retry. After the reload, the old path is back. | |
+| 7 | **Switching category mid-save (slow). Blocks the deploy.** Set 3G. Change "one"'s Name to `ZZ-TEST T-016 one 7 (delete me)` and press Tab. While "Saving…" shows, switch the Category picker to T-Shirts and straight back to Sportswear. Wait 10 seconds. Change "one"'s Description to `ZZ desc 7`, press Tab and wait for "Saved". Set No throttling, then reload. | After the 10-second wait, the Name box shows `ZZ-TEST T-016 one 7 (delete me)`. After the reload, the name and `ZZ desc 7` are both stored. | |
+| 8 | **Switching category clears the add form.** In **Add a product**, type the name `ZZ-TEST T-016 three (delete me)` and the path `/images/client/product-sportswear.webp`, but don't add. Switch the picker to T-Shirts, then back to Sportswear. | The Add a product form is empty, and nothing was added in either category. | |
+| 9 | **Session expired.** In tab B, click **Sign Out**. In tab A, change "one"'s Description to `ZZ desc 9` and press Tab. Then sign in again and reload tab A. | Tab A shows red text "Your session expired. Sign in again and retry." with Retry, and the text stays. After signing in and reloading, "one" still has `ZZ desc 7`, not `ZZ desc 9`. | |
+| 10 | **Other image fields are unchanged.** In the **Categories** card, click into any category's image path box and type one character. Then reload without saving; don't click Save categories. | "Unsaved category changes" appears on the first keystroke. After the reload, that category's path is unchanged. | |
+| 11 | **Cleanup. Blocks the deploy.** Delete every ZZ-TEST product: wait for its "Saving…" to clear, then trash, then confirm (the row shows "Deleting…" while it goes). Then run the row-11 command below. | Sportswear shows "No products in this category yet. Add the first one above." Every line of the command ends in `0`. | |
+
+**The row-11 command.** It only reads, and goes on one line. It covers `/products`, `/products/sportswear` and the live `/what-we-do/sportswear`; use whichever live domain you normally use:
+
+    for p in products products/sportswear; do printf '%-30s' "/$p"; curl -s "http://localhost:3101/$p" | grep -o 'ZZ' | wc -l; done; printf '%-30s' "live /what-we-do/sportswear"; curl -sL "https://www.fashionasialtd.com/what-we-do/sportswear" | grep -o 'ZZ' | wc -l
+
+**Not in this checklist:** two states need a failed database read or a crafted call, so they were verified offline instead (ordering h and the server suite):
+- the products-load alert: "The products couldn't be loaded, so adding and editing products is turned off to keep them safe. Refresh the page to try again.";
+- "There was nothing to save." It should never appear in this checklist. If it does, note the row. (Its rewording is in T-033.)
+
+**Cleanup notes:** row 1's photo stays in Storage → `media`; removing it is optional. The first Save stays, as intended.
+
+**Reporting back:**
+- A fail in row 1, 2, 3, 7 or 11, or in T-025 row 4 on this build, blocks the deploy and reopens T-016.
+- A fail in any other row reopens T-016, but doesn't block the deploy on its own.
+- `/ship` lists rows 1, 2, 3, 7 and 11 and T-025 row 4, alongside T-026 rows 1–3 and 7, until they're ticked. Only the owner can waive them, in DECISIONS.
+
+## Static Re-check — T-016 fix `09702d0` — 2026-10-05
+- **(1) Class names, copy and one display label only.** `git diff eabec4b..09702d0` touches 2 files, +9/−8:
+  - 3 error lines go from `text-[13px]` to `text-sm`;
+  - the row header gains `flex-wrap gap-y-1`;
+  - the notice has its new sentence;
+  - the status label reads `{deleting ? "Deleting…" : "Saving…"}`, on the existing delete flag;
+  - the path box's class string adds the two `read-only:` variants only when `commitPathOnBlur` is set.
+
+  With the class names, the notice copy and that label blanked, both files are identical at both commits: no change to save logic, payloads, handlers, state changes or imports. With `commitPathOnBlur` off, the path box's class string is byte-identical to `main`'s. With it on, it adds exactly `read-only:cursor-wait read-only:opacity-50`.
+- **(2) The 4 server files bound at `eabec4b` are unchanged** (0-byte diff since then): `products-actions.ts` `6899ea96444a7ea6`, `site-content.ts` `2ae9d3f1782777ff`, `admin/(dashboard)/products/page.tsx` `969a00dea762e782`, `(website)/(marketing)/products/page.tsx` `0aec2d4179e84a61`.
+- **(3) Security's 5 client rules still hold** on `ProductsClient`, `CategoryProductsManager` and `ImageUploadField`:
+  1. T-026's 7 invariants: action imports as on `main`, plus the type-only `AllProductsRead`; no `settings-read`, `supabase` or raw-HTML sink; errors render as JSX text; the product editor gets `confirmed`; a failed load returns before any Save button; nothing crosses between `products/*` and `business/*`.
+  2. The only `updateCategoryProduct` call sends `changedFields(queue)`.
+  3. The 2 effects (refocus, and the display-only "Saved" timer) call no action.
+  4. Only `ProductRow` sets `commitPathOnBlur`. `ImageUploadField` changed by its class line alone, so the upload path is untouched.
+  5. The products map is read only through `Map.get`.
+- **(4) Re-runs at HEAD:** a byte-identical copy of the builder's harness, under the network and `.env` guard, ran server 117/117, Map 14/14, visible text 111/111 and UI 269/269. Mutations: 40/40 caught; a first attempt stopped on a harness clean-up race (`ENOTEMPTY` deleting Chrome's profile folder), not a failed check, and the rerun was clean. QA's UI attacks q1–q9: 68/68 in production and in development under StrictMode. The guard saw 0 network or `.env` attempts, and the monitor saw 0 internet sockets. `npx tsc --noEmit` exits 0, and the builder's build log is clean, with the same 3 routes.
+- **Verdict: PASS.** The evidence is in `docs/qa-evidence/T-016/09702d0/`.

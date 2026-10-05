@@ -1,0 +1,11 @@
+products.html                            raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_dresses.html                    raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_heavy-jersey-products.html      raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_leggings.html                   raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_polo-shirts.html                raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_sleepwear.html                  raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_sportswear.html                 raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_t-shirts.html                   raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+products_tank-tops.html                  raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+what-we-do.html                          raw differs | normalized IDENTICAL | build-id hits a/b 1/1 | asset names changed 0 | UUIDs 0
+ALL NORMALIZED IDENTICAL: True

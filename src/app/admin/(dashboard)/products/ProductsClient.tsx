@@ -1,22 +1,28 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { Check, Info } from "lucide-react";
+import { Check, Info, TriangleAlert } from "lucide-react";
 import { saveCategories } from "@/app/actions/settings-actions";
+import type { AllProductsRead } from "@/app/actions/products-actions";
 import { ObjectListEditor, SettingsCard, SettingsHeader, SettingsLoadError } from "@/components/admin/SettingsForm";
 import { CategoryProductsManager } from "@/components/admin/CategoryProductsManager";
-import type { CategoryProduct, Product } from "@/lib/site-content";
+import type { Product } from "@/lib/site-content";
 import { blankTitleMessage, blankTitleRows, categoriesDiffer, needsFirstSave } from "./category-draft";
 
 /**
  * @purpose What /admin/products hands its editor: the categories and products it loaded, or a failed load that must not be edited.
+ * `products` can fail on its own (T-016): the categories stay editable, and
+ * only the products card turns off.
  */
 export type ProductsLoad =
-    | { ok: true; categories: Product[]; productsByCategory: Record<string, CategoryProduct[]> }
+    | { ok: true; categories: Product[]; products: AllProductsRead }
     | { ok: false };
 
 const LOAD_FAILED =
     "The saved categories couldn't be loaded, so editing is turned off to keep them safe. Refresh the page to try again.";
+
+const PRODUCTS_LOAD_FAILED =
+    "The products couldn't be loaded, so adding and editing products is turned off to keep them safe. Refresh the page to try again.";
 
 const SAVE_THREW =
     "Something went wrong saving the categories. Check your connection, then click Save categories again.";
@@ -159,13 +165,24 @@ export default function ProductsClient({ load }: { load: ProductsLoad }) {
             </SettingsCard>
 
             <SettingsCard title="Products in Each Category">
-                <div className="flex flex-col gap-6">
-                    <p className="text-sm leading-relaxed text-white/70">
-                        These are the individual items inside each category, shown on its own page (for example, every
-                        T-shirt style on /products/t-shirts) and on /products. They aren&apos;t the category cards above.
+                {initial.products.ok ? (
+                    <div className="flex flex-col gap-6">
+                        <p className="text-sm leading-relaxed text-white/70">
+                            These are the individual items inside each category, shown on its own page (for example, every
+                            T-shirt style on /products/t-shirts) and on /products. They aren&apos;t the category cards above.
+                        </p>
+                        <CategoryProductsManager categories={confirmed} initialProductsByCategory={initial.products.byCategory} />
+                    </div>
+                ) : (
+                    // Fail closed (T-016): no picker, no add form and no rows,
+                    // so a failed read can't pass for an empty category and
+                    // lead staff to add a product twice. Fixed copy, never the
+                    // database error. Read once, so only a refresh retries.
+                    <p role="alert" className="flex items-start gap-2 text-sm leading-relaxed text-red-400">
+                        <TriangleAlert size={15} className="mt-0.5 flex-none" aria-hidden="true" />
+                        {PRODUCTS_LOAD_FAILED}
                     </p>
-                    <CategoryProductsManager categories={confirmed} initialProductsByCategory={initial.productsByCategory} />
-                </div>
+                )}
             </SettingsCard>
         </div>
     );

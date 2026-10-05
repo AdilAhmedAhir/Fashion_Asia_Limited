@@ -22,15 +22,22 @@ import {
  * a round trip; uploadOptimizedImage repeats every one of them, because these
  * are trivially bypassable. Images are never re-encoded — an unoptimised file is
  * refused with a pointer to TinyPNG, which is the agreed workflow.
+ *
+ * `commitPathOnBlur` (opt-in, T-016) makes the path box keep typed text to
+ * itself and call `onChange` once, on blur or Enter, instead of on every
+ * keystroke. Only a product row sets it, because each of its changes is an
+ * immediate save. Without it, the path box behaves exactly as before.
  */
 export function ImageUploadField({
     label,
     value,
     onChange,
+    commitPathOnBlur = false,
 }: {
     label: string;
     value: string;
     onChange: (url: string) => void;
+    commitPathOnBlur?: boolean;
 }) {
     const inputId = useId();
     const inputRef = useRef<HTMLInputElement>(null);
@@ -38,6 +45,36 @@ export function ImageUploadField({
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [warning, setWarning] = useState<string | null>(null);
+
+    // commitPathOnBlur only: the path box's own text. `pathTyped` says the
+    // user has typed since the text last matched `value`. Until they do, the
+    // text follows `value` whenever `value` changes; after, their text stays
+    // until blur or Enter commits it. `pathValue` is the `value` the box last
+    // saw, so the text changes only when `value` does.
+    const [pathText, setPathText] = useState(value);
+    const [pathTyped, setPathTyped] = useState(false);
+    const [pathValue, setPathValue] = useState(value);
+    if (commitPathOnBlur && value !== pathValue) {
+        setPathValue(value);
+        if (!pathTyped || pathText === pathValue) {
+            setPathText(value);
+            setPathTyped(false);
+        }
+    }
+
+    // Blur or Enter: one onChange with the trimmed text, if it differs from
+    // `value`. If it doesn't, nothing is called and the box shows `value`.
+    const commitPath = () => {
+        if (!pathTyped) return;
+        setPathTyped(false);
+        const next = pathText.trim();
+        if (next === value) {
+            setPathText(value);
+            return;
+        }
+        setPathText(next);
+        onChange(next);
+    };
 
     const extList = ALLOWED_EXTENSIONS.join(", ");
 
@@ -125,6 +162,12 @@ export function ImageUploadField({
             body.set("file", file);
             const result = await uploadOptimizedImage(body);
             if (result.ok) {
+                // commitPathOnBlur: a finished upload always replaces any
+                // typed text with the new path.
+                if (commitPathOnBlur) {
+                    setPathText(result.url);
+                    setPathTyped(false);
+                }
                 onChange(result.url);
                 setWarning(advisory);
             } else {
@@ -244,14 +287,35 @@ export function ImageUploadField({
                 </p>
             )}
 
-            {/* Kept editable: the built-in photographs are repo paths, not uploads. */}
+            {/* Kept editable: the built-in photographs are repo paths, not uploads.
+                With commitPathOnBlur it commits on blur or Enter (not while an
+                IME is composing), and it's read-only, not disabled, during an
+                upload, so it keeps focus and its text. */}
             <input
                 type="text"
-                value={value}
-                onChange={e => onChange(e.target.value)}
+                value={commitPathOnBlur ? pathText : value}
+                onChange={e => {
+                    if (commitPathOnBlur) {
+                        setPathText(e.target.value);
+                        setPathTyped(true);
+                    } else {
+                        onChange(e.target.value);
+                    }
+                }}
+                onBlur={commitPathOnBlur ? commitPath : undefined}
+                onKeyDown={
+                    commitPathOnBlur
+                        ? e => {
+                              if (e.key !== "Enter" || e.nativeEvent.isComposing || e.keyCode === 229) return;
+                              e.preventDefault();
+                              commitPath();
+                          }
+                        : undefined
+                }
+                readOnly={commitPathOnBlur && busy}
                 placeholder="/images/client/product-tshirts.webp"
                 aria-label={`${label} — path`}
-                className="rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-[11px] text-white/60 focus:border-primary/50 focus:outline-none"
+                className={`rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-[11px] text-white/60 focus:border-primary/50 focus:outline-none${commitPathOnBlur ? " read-only:cursor-wait read-only:opacity-50" : ""}`}
             />
         </div>
     );

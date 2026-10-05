@@ -1,0 +1,22 @@
+1. action imports, main vs HEAD:
+   src/app/admin/(dashboard)/products/ProductsClient.tsx
+      main: import { saveCategories } from "@/app/actions/settings-actions"
+      HEAD: import { saveCategories } from "@/app/actions/settings-actions"
+import type { AllProductsRead } from "@/app/actions/products-actions"
+   src/components/admin/CategoryProductsManager.tsx
+      main: import { createCategoryProduct, deleteCategoryProduct, reorderCategoryProducts, updateCategoryProduct, } from "@/app/actions/products-actions"
+      HEAD: import { createCategoryProduct, deleteCategoryProduct, reorderCategoryProducts, updateCategoryProduct, } from "@/app/actions/products-actions"
+   src/components/admin/ImageUploadField.tsx
+      main: import { uploadOptimizedImage } from "@/app/actions/media-actions"
+      HEAD: import { uploadOptimizedImage } from "@/app/actions/media-actions"
+2. settings-read / supabase imports:
+   none
+4. raw-HTML sinks:
+   none
+5. manager fed:
+174:                        <CategoryProductsManager categories={confirmed} initialProductsByCategory={initial.products.byCategory} />
+6. failed category load returns before any Save button:
+53:    if (!initial.ok) {
+54:        return <SettingsLoadError tag="Page Settings" title="Products" message={LOAD_FAILED} />;
+7. cross imports products/* <-> business/*:
+   none

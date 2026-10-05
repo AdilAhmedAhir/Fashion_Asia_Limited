@@ -1,0 +1,5 @@
+null -> THROWS TypeError: Cannot read properties of null (reading 'category_slug')
+undefined -> THROWS TypeError: Cannot read properties of undefined (reading 'category_slug')
+"x" -> {"ok":false,"error":"Missing category."}
+5 -> {"ok":false,"error":"Missing category."}
+{} -> {"ok":false,"error":"Missing category."}
