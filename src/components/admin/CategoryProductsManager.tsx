@@ -399,8 +399,9 @@ export function CategoryProductsManager({
                 <Zap size={16} className="mt-0.5 flex-none text-accent" aria-hidden="true" />
                 <span>
                     <strong className="font-bold text-accent">Products save automatically.</strong> The moment you
-                    add, edit, reorder, or delete one below, it&apos;s live on the public site — there&apos;s no Save
-                    button down here. That&apos;s different from the categories above, which only take effect
+                    add, reorder or delete a product below, or click away from a field you&apos;ve edited,
+                    it&apos;s live on the public site — there&apos;s no Save button down here. That&apos;s
+                    different from the categories above, which only take effect
                     once you click <strong className="font-bold text-foreground">Save categories</strong>.
                 </span>
             </div>
@@ -572,7 +573,7 @@ function AddProductForm({ categorySlug, onCreated }: { categorySlug: string; onC
                 </div>
 
                 {error && (
-                    <p role="alert" className="flex items-start gap-2 text-[13px] leading-relaxed text-red-400">
+                    <p role="alert" className="flex items-start gap-2 text-sm leading-relaxed text-red-400">
                         <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden="true" />
                         {error}
                     </p>
@@ -671,7 +672,7 @@ function ProductRow({
 
     return (
         <div className="rounded-xl border border-white/10 bg-black/40 p-4">
-            <div className="mb-3 flex items-center justify-between gap-2">
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 gap-y-1">
                 <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">
                     Product {index + 1} of {total}
                 </span>
@@ -687,7 +688,7 @@ function ProductRow({
                         {controlsLocked && (
                             <span className="flex items-center gap-1 text-white/50">
                                 <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-                                Saving…
+                                {deleting ? "Deleting…" : "Saving…"}
                             </span>
                         )}
                         {/* Only once nothing is waiting and the latest attempt
@@ -780,7 +781,7 @@ function ProductRow({
                 commit, sends everything committed that the server doesn't
                 have yet. */}
             {saveError && (
-                <p role="alert" className="mt-3 flex items-start gap-2 text-[13px] leading-relaxed text-red-400">
+                <p role="alert" className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-red-400">
                     <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden="true" />
                     <span>
                         {saveError}{" "}
@@ -797,7 +798,7 @@ function ProductRow({
 
             {/* A failed delete: the trash button tries again. */}
             {deleteError && (
-                <p role="alert" className="mt-3 flex items-start gap-2 text-[13px] leading-relaxed text-red-400">
+                <p role="alert" className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-red-400">
                     <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden="true" />
                     {deleteError}
                 </p>

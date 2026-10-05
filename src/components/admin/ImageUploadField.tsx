@@ -315,7 +315,7 @@ export function ImageUploadField({
                 readOnly={commitPathOnBlur && busy}
                 placeholder="/images/client/product-tshirts.webp"
                 aria-label={`${label} — path`}
-                className="rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-[11px] text-white/60 focus:border-primary/50 focus:outline-none"
+                className={`rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-[11px] text-white/60 focus:border-primary/50 focus:outline-none${commitPathOnBlur ? " read-only:cursor-wait read-only:opacity-50" : ""}`}
             />
         </div>
     );
