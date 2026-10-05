@@ -1,0 +1,71 @@
+PASS  [production] q1  q1: three commits during one in-flight save send nothing more yet
+PASS  [production] q1  q1: exactly one follow-up with the latest name and the description
+PASS  [production] q1  q1: stored and shown: Q1-b / Q1-desc, Saved, 2 saves in all
+PASS  [production] q2  q2a: reverting mid-save sends one follow-up that restores the original
+PASS  [production] q2  q2a: the original name is stored and shown
+PASS  [production] q2  q2b: committing the same text again mid-save adds no follow-up
+PASS  [production] q2  q2b: Saved
+PASS  [production] q3  q3: the upload finishing mid-save queues, sends nothing yet
+PASS  [production] q3  q3: the follow-up carries only the image (uncommitted typing never sent)
+PASS  [production] q3  q3: the description still shows the typing in progress
+PASS  [production] q3  q3: committing the description during the follow-up only queues it
+PASS  [production] q3  q3: then exactly one more save, carrying the description
+PASS  [production] q3  q3: all three stored and shown, Saved
+PASS  [production] q4  q4: after a failure the delete control is enabled (nothing pending)
+PASS  [production] q4  q4: delete asks once
+PASS  [production] q4  q4: the row is gone
+PASS  [production] q4  q4: the failed save is never re-sent (2.6 s later)
+PASS  [production] q4  q4: the product is gone from the store
+PASS  [production] q7  q7: Enter commits the invisible path once
+PASS  [production] q7  q7: the server's IMAGE_REQUIRED shows with Retry, no Saved
+PASS  [production] q7  q7: nothing stored
+PASS  [production] q7  q7: Retry re-sends the same image once
+PASS  [production] q7  q7: no loop: still 2 sends after 2.6 s
+PASS  [production] q7  q7: a real path then saves once and clears the error
+PASS  [production] q7  q7: Saved, no alert
+PASS  [production] q9  q9: the add form starts empty and disabled
+PASS  [production] q9  q9: an invisible-only name keeps Add disabled
+PASS  [production] q9  q9: a visible name enables Add
+PASS  [production] q9  q9: editing the new product sends its own id and only the description
+PASS  [production] q9  q9: stored
+PASS  [production] whole run  every patch: own string keys among name/description/image only
+PASS  [production] whole run  no action called from a timer
+PASS  [production] whole run  no network request attempted
+PASS  [production] whole run  no page error or React warning
+PASS  [development+StrictMode] q1  q1: three commits during one in-flight save send nothing more yet
+PASS  [development+StrictMode] q1  q1: exactly one follow-up with the latest name and the description
+PASS  [development+StrictMode] q1  q1: stored and shown: Q1-b / Q1-desc, Saved, 2 saves in all
+PASS  [development+StrictMode] q2  q2a: reverting mid-save sends one follow-up that restores the original
+PASS  [development+StrictMode] q2  q2a: the original name is stored and shown
+PASS  [development+StrictMode] q2  q2b: committing the same text again mid-save adds no follow-up
+PASS  [development+StrictMode] q2  q2b: Saved
+PASS  [development+StrictMode] q3  q3: the upload finishing mid-save queues, sends nothing yet
+PASS  [development+StrictMode] q3  q3: the follow-up carries only the image (uncommitted typing never sent)
+PASS  [development+StrictMode] q3  q3: the description still shows the typing in progress
+PASS  [development+StrictMode] q3  q3: committing the description during the follow-up only queues it
+PASS  [development+StrictMode] q3  q3: then exactly one more save, carrying the description
+PASS  [development+StrictMode] q3  q3: all three stored and shown, Saved
+PASS  [development+StrictMode] q4  q4: after a failure the delete control is enabled (nothing pending)
+PASS  [development+StrictMode] q4  q4: delete asks once
+PASS  [development+StrictMode] q4  q4: the row is gone
+PASS  [development+StrictMode] q4  q4: the failed save is never re-sent (2.6 s later)
+PASS  [development+StrictMode] q4  q4: the product is gone from the store
+PASS  [development+StrictMode] q7  q7: Enter commits the invisible path once
+PASS  [development+StrictMode] q7  q7: the server's IMAGE_REQUIRED shows with Retry, no Saved
+PASS  [development+StrictMode] q7  q7: nothing stored
+PASS  [development+StrictMode] q7  q7: Retry re-sends the same image once
+PASS  [development+StrictMode] q7  q7: no loop: still 2 sends after 2.6 s
+PASS  [development+StrictMode] q7  q7: a real path then saves once and clears the error
+PASS  [development+StrictMode] q7  q7: Saved, no alert
+PASS  [development+StrictMode] q9  q9: the add form starts empty and disabled
+PASS  [development+StrictMode] q9  q9: an invisible-only name keeps Add disabled
+PASS  [development+StrictMode] q9  q9: a visible name enables Add
+PASS  [development+StrictMode] q9  q9: editing the new product sends its own id and only the description
+PASS  [development+StrictMode] q9  q9: stored
+PASS  [development+StrictMode] whole run  every patch: own string keys among name/description/image only
+PASS  [development+StrictMode] whole run  no action called from a timer
+PASS  [development+StrictMode] whole run  no network request attempted
+PASS  [development+StrictMode] whole run  no page error or React warning
+
+qa-ui: 68/68 passed, 0 failed
+exit=0

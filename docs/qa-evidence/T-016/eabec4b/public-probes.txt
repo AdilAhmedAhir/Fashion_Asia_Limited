@@ -1,0 +1,14 @@
+/                            200
+/products                    200
+/what-we-do                  200
+/who-we-are                  200
+/global-partner              200
+/sustainability              200
+/career                      200
+/contact                     200
+/sitemap.xml                 200
+/robots.txt                  200
+/products/no-such-slug       404
+/what-we-do/t-shirts         308 -> http://localhost:3101/products/t-shirts
+/what-we-do/sportswear       308 -> http://localhost:3101/products/sportswear
+UUIDs on /, /sitemap.xml     0

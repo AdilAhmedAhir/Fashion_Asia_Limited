@@ -1,0 +1,4 @@
+main literal : "rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-[11px] text-white/60 focus:border-primary/50 focus:outline-none"
+prop off     : BYTE-IDENTICAL to main
+prop on      : "rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-[11px] text-white/60 focus:border-primary/50 focus:outline-none read-only:cursor-wait read-only:opacity-50"
+other className changes in ImageUploadField vs main: 21 -> 21

@@ -1,0 +1,13 @@
+== (2) the 4 bound server files at HEAD 09702d0
+   6899ea96444a7ea6  src/app/actions/products-actions.ts  (diff vs eabec4b: none)
+   2ae9d3f1782777ff  src/lib/site-content.ts  (diff vs eabec4b: none)
+   969a00dea762e782  src/app/admin/(dashboard)/products/page.tsx  (diff vs eabec4b: none)
+   0aec2d4179e84a61  src/app/(website)/(marketing)/products/page.tsx  (diff vs eabec4b: none)
+
+== (1) only 2 files changed since eabec4b:
+   src/components/admin/CategoryProductsManager.tsx
+   src/components/admin/ImageUploadField.tsx
+
+== (1) diff minus className strings, the notice copy and the status label:
+   SAME  src/components/admin/CategoryProductsManager.tsx  (8bf7f3d12db828d1 / 8bf7f3d12db828d1)
+   SAME  src/components/admin/ImageUploadField.tsx  (bbc89ad2583bc628 / bbc89ad2583bc628)

@@ -1,0 +1,39 @@
+PASS  Hangul choseong filler U+115F: expected false, node false/false, chrome false/false
+PASS  Hangul jungseong filler U+1160: expected false, node false/false, chrome false/false
+PASS  halfwidth Hangul filler U+FFA0: expected false, node false/false, chrome false/false
+PASS  combining grapheme joiner U+034F: expected false, node false/false, chrome false/false
+PASS  Arabic letter mark U+061C: expected false, node false/false, chrome false/false
+PASS  Mongolian free variation selectors: expected false, node false/false, chrome false/false
+PASS  invisible math operators U+2061-2064: expected false, node false/false, chrome false/false
+PASS  deprecated format chars U+206A/U+206F: expected false, node false/false, chrome false/false
+PASS  interlinear annotation U+FFF9-FFFB: expected false, node false/false, chrome false/false
+PASS  language tag U+E0001: expected false, node false/false, chrome false/false
+PASS  tag A + cancel tag: expected false, node false/false, chrome false/false
+PASS  musical format U+1D173/U+1D17A: expected false, node false/false, chrome false/false
+PASS  Egyptian hieroglyph joiner U+13430: expected false, node false/false, chrome false/false
+PASS  private use U+E000: expected false, node false/false, chrome false/false
+PASS  private use U+F8FF (the Apple logo on Apple devices): expected false, node false/false, chrome false/false  (accepted: shows as a logo on Apple devices only)
+PASS  lone surrogate U+D800: expected false, node false/false, chrome false/false
+PASS  noncharacter U+FDD0: expected false, node false/false, chrome false/false
+PASS  noncharacter U+10FFFF: expected false, node false/false, chrome false/false
+PASS  C0 controls + DEL: expected false, node false/false, chrome false/false
+PASS  NEL U+0085: expected false, node false/false, chrome false/false
+PASS  Ogham space mark U+1680: expected false, node false/false, chrome false/false  (accepted: a space separator (Zs))
+PASS  ideographic space + ZWSP + soft hyphen: expected false, node false/false, chrome false/false
+PASS  lone combining acute U+0301: expected true, node true/true, chrome true/true  (accepted pass (contract))
+PASS  lone combining keycap U+20E3: expected true, node true/true, chrome true/true  (accepted pass, like U+0301)
+PASS  Braille blank U+2800: expected true, node true/true, chrome true/true  (accepted pass (contract))
+PASS  keycap 1: expected true, node true/true, chrome true/true
+PASS  flag of Bangladesh (regional indicators): expected true, node true/true, chrome true/true
+PASS  thumbs up + skin tone: expected true, node true/true, chrome true/true
+PASS  Hangul syllable: expected true, node true/true, chrome true/true
+PASS  Thai: expected true, node true/true, chrome true/true
+PASS  Devanagari conjunct: expected true, node true/true, chrome true/true
+PASS  Bengali product name: expected true, node true/true, chrome true/true
+PASS  object replacement U+FFFC: expected true, node true/true, chrome true/true  (accepted: renders as a box)
+PASS  replacement character U+FFFD: expected true, node true/true, chrome true/true
+PASS  NBSP-wrapped letter: expected true, node true/true, chrome true/true
+PASS  ZWSPs then a letter: expected true, node true/true, chrome true/true
+PASS  a path with spaces inside: expected true, node true/true, chrome true/true
+
+qa-visible: 37/37 passed (Node and Chrome, each twice), 0 failed

@@ -1,0 +1,18 @@
+PASS  the compiled serializer is Next's own, version 16.3.6
+PASS  the real read returns ok:true with a Map
+PASS  as a client prop: the serializer reports no error
+PASS  as a client prop: it decodes
+PASS  as a client prop: the element's type resolves to the client module
+PASS  as a client prop: byCategory arrives as a Map
+PASS  QA: equal Map, prototype-named keys in order
+PASS  as a client prop: the keys
+PASS  QA: get('__proto__') is its 2-product list after the trip
+PASS  QA: get('hasOwnProperty') and get('valueOf') are product lists
+PASS  QA: the decoded Map's prototype is untouched
+PASS  as a client prop: the rest of the load is unchanged
+PASS  ok:false as a client prop: no error, decodes equal
+PASS  as a return value: equal Map
+PASS  as a return value: { ok: false } decodes equal
+PASS  negative control: an Object.create(null) grouping is refused (the harness can fail)
+
+QA serializer: prototype-named slugs, Map round trip through next@16.3.6's compiled react-server-dom-turbopack: 16/16 passed, 0 failed

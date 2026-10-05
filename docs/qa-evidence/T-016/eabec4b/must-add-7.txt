@@ -1,0 +1,39 @@
+== MUST-ADD 7 grep on the touched files
+-- Object.entries/keys/fromEntries/JSON.stringify:
+ugrep: warning: src/app/actions/products-actions.ts src/components/admin/CategoryProductsManager.tsx src/app/admin/(dashboard)/products/page.tsx src/app/admin/(dashboard)/products/ProductsClient.tsx src/app/(website)/(marketing)/products/page.tsx src/components/admin/ImageUploadField.tsx src/lib/site-content.ts: No such file or directory
+   none
+-- Object.create(null) anywhere in src:
+   none
+-- bracket lookups / spreads on the products maps (byCategory, productsByCategory, initialProductsByCategory, grouped):
+ugrep: warning: src/app/actions/products-actions.ts src/components/admin/CategoryProductsManager.tsx src/app/admin/(dashboard)/products/page.tsx src/app/admin/(dashboard)/products/ProductsClient.tsx src/app/(website)/(marketing)/products/page.tsx src/components/admin/ImageUploadField.tsx src/lib/site-content.ts: No such file or directory
+   none
+-- every Map update builds a new Map inside its updater:
+206:        setProductsByCategory(prev => {
+214:        setProductsByCategory(prev => {
+340:        setProductsByCategory(prev => {
+373:            setProductsByCategory(prev => new Map(prev).set(slug, swapProducts(prev.get(slug) ?? [], movedProductId, otherProductId)));
+-- the state and prop types:
+29:type ProductsByCategory = ReadonlyMap<string, readonly CategoryProduct[]>;
+127:    initialProductsByCategory: ReadonlyMap<string, CategoryProduct[]>;
+129:    const [productsByCategory, setProductsByCategory] = useState<ProductsByCategory>(initialProductsByCategory);
+-- no client component imports getAllCategoryProducts (value import):
+   none
+-- ProductsClient imports AllProductsRead only as a type:
+6:import type { AllProductsRead } from "@/app/actions/products-actions";
+18:    | { ok: true; categories: Product[]; products: AllProductsRead }
+== MUST-ADD 7 grep on the 7 touched files
+-- Object.entries/keys/fromEntries, JSON.stringify:
+   none
+-- bracket lookups or spreads on a products map (byCategory, productsByCategory, initialProductsByCategory, grouped, prev):
+src/components/admin/CategoryProductsManager.tsx:635:    const handleTyping = (field: "name" | "description", text: string) => setTyping(prev => ({ ...prev, [field]: text }));
+src/components/admin/CategoryProductsManager.tsx:642:        setTyping(prev => ({ ...prev, [field]: null }));
+-- every .get on a products map has a ?? [] fallback:
+src/app/actions/products-actions.ts:168:        const list = byCategory.get(row.category_slug);
+src/components/admin/CategoryProductsManager.tsx:189:    const products = selectedSlug ? productsByCategory.get(selectedSlug) ?? [] : [];
+src/components/admin/CategoryProductsManager.tsx:208:            next.set(product.category_slug, [...(prev.get(product.category_slug) ?? []), product]);
+src/components/admin/CategoryProductsManager.tsx:215:            const list = prev.get(product.category_slug);
+src/components/admin/CategoryProductsManager.tsx:330:        const list = productsByCategory.get(categorySlug) ?? [];
+src/components/admin/CategoryProductsManager.tsx:342:            next.set(categorySlug, (prev.get(categorySlug) ?? []).filter(p => p.id !== id));
+src/components/admin/CategoryProductsManager.tsx:356:        const list = productsByCategory.get(slug) ?? [];
+src/components/admin/CategoryProductsManager.tsx:373:            setProductsByCategory(prev => new Map(prev).set(slug, swapProducts(prev.get(slug) ?? [], movedProductId, otherProductId)));
+src/app/(website)/(marketing)/products/page.tsx:76:              .map(({ title, slug }) => ({ title, slug, products: productRead.byCategory.get(slug) ?? [] }))

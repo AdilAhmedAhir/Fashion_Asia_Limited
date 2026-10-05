@@ -1,0 +1,90 @@
+== MUST-ADD 11 scope: git diff main --stat (HEAD eabec4b, main 2c77b0c)
+ docs/DECISIONS.md                                  |   4 +
+ docs/ROADMAP.md                                    | 207 ++++++++-
+ src/app/(website)/(marketing)/products/page.tsx    |  65 ++-
+ src/app/actions/products-actions.ts                | 176 +++++---
+ .../admin/(dashboard)/products/ProductsClient.tsx  |  35 +-
+ src/app/admin/(dashboard)/products/page.tsx        |   9 +-
+ src/components/admin/CategoryProductsManager.tsx   | 476 ++++++++++++++++-----
+ src/components/admin/ImageUploadField.tsx          |  70 ++-
+ src/lib/site-content.ts                            |  31 +-
+ 9 files changed, 845 insertions(+), 228 deletions(-)
+
+-- files outside the Touches list + docs:
+   none
+
+-- 0-byte diffs against main:
+   same  src/app/actions/settings-actions.ts
+   same  src/lib/settings-read.ts
+   same  src/app/admin/(dashboard)/business/page.tsx
+   same  src/components/admin/SettingsForm.tsx
+   same  src/app/admin/(dashboard)/products/category-draft.ts
+   same  src/components/catalog
+   same  src/app/(website)/(marketing)/products/[category]/page.tsx
+   same  src/app/actions/media-actions.ts
+   same  src/lib/nav.ts
+   same  src/middleware.ts
+   same  src/lib/supabase
+   same  next.config.ts
+   same  db
+   same  supabase-schema.sql
+   same  package.json
+   same  package-lock.json
+
+-- T-026-bound sha256 (HEAD):
+   2785952a83f7616e  src/app/actions/settings-actions.ts
+   cc5c8a2c06d9acb0  src/lib/settings-read.ts
+   87071736c1516fcb  src/app/admin/(dashboard)/business/page.tsx
+
+-- the four sign-offs T-016 voids (now changed, for /security-review to re-bind):
+   main 44b47ada7540a575 -> HEAD 6899ea96444a7ea6  src/app/actions/products-actions.ts
+   main 465f6712f28395f5 -> HEAD 2ae9d3f1782777ff  src/lib/site-content.ts
+   main 1067bb51b8add066 -> HEAD 969a00dea762e782  src/app/admin/(dashboard)/products/page.tsx
+   main af42e29862093b8d -> HEAD 0aec2d4179e84a61  src/app/(website)/(marketing)/products/page.tsx
+
+-- products-actions.ts exports:
+   33:export type ProductActionResult =
+   37:export type ProductVoidResult = { ok: true } | { ok: false; error: string };
+   46:export type AllProductsRead = { ok: true; byCategory: Map<string, CategoryProduct[]> } | { ok: false };
+   180:export async function getCategoryProducts(categorySlug: string): Promise<CategoryProduct[]> {
+   208:export async function getAllCategoryProducts(): Promise<AllProductsRead> {
+   233:export async function createCategoryProduct(input: CategoryProductInput): Promise<ProductActionResult> {
+   285:export async function updateCategoryProduct(id: string, patch: CategoryProductPatch): Promise<ProductActionResult> {
+   335:export async function deleteCategoryProduct(id: string): Promise<ProductVoidResult> {
+   362:export async function reorderCategoryProducts(categorySlug: string, orderedIds: string[]): Promise<ProductVoidResult> {
+
+-- site-content.ts: every changed line
+   -// Create/update payload shape for a CategoryProduct row — never sends id,
+   +// Create payload shape for a CategoryProduct row — never sends id,
+   -// client-picked id or timestamp that the insert/update never actually uses
+   +// client-picked id or timestamp that the insert never actually uses
+   -// Pass first-pass INFO-1). An update that means to keep a product's existing
+   -// position still passes its current sort_order through unchanged.
+   +// Pass first-pass INFO-1). Only a create takes this shape since T-016: an
+   +// edit sends a CategoryProductPatch (below), which can't carry the category
+   +// or the order.
+   +/**
+   + * @purpose The fields one product edit may change (name, description, image): a partial update that never carries the category, the order or the id.
+   + * updateCategoryProduct (products-actions.ts) writes only the fields present.
+   + */
+   +export type CategoryProductPatch = Partial<Pick<CategoryProduct, "name" | "description" | "image">>;
+   +
+   +// One character that is none of: whitespace; an invisible formatting
+   +// character (Default_Ignorable_Code_Point: zero-width spaces and joiners,
+   +// direction marks, the soft hyphen, the BOM, U+3164 and the variation
+   +// selectors); or a control, format, private-use or unassigned code point
+   +// (\p{C}). No "g" or "y" flag, so test() keeps no state between calls.
+   +const VISIBLE_CHARACTER = /[^\s\p{Default_Ignorable_Code_Point}\p{C}]/u;
+   +
+   +/**
+   + * @purpose Whether a value is a string with at least one visible character, so a product name or image made only of spaces or invisible characters counts as blank.
+   + * The server's rule for a product's name and image (products-actions.ts). The
+   + * add-product form mirrors it so its button matches what the server accepts.
+   + */
+   +export function hasVisibleText(value: unknown): boolean {
+   +    return typeof value === "string" && VISIBLE_CHARACTER.test(value);
+   +}
+   +
+
+-- working tree clean except docs?
+    M docs/ROADMAP.md

@@ -1,0 +1,9 @@
+products read threw: TypeError: byCategory[row.category_slug].push is not a function
+products read threw: TypeError: byCategory[row.category_slug].push is not a function
+Error: ENOTEMPTY, Directory not empty: <scratchpad>/t-016-qa/harness-r2/out/chrome-profile-AuSxI6 '<scratchpad>/t-016-qa/harness-r2/out/chrome-profile-AuSxI6'
+OK    server (fake Supabase): server: products-actions + /products + /admin/products: 117/117 passed, 0 failed
+OK    serializer (Map round trip): serializer: Map round trip through next@16.3.6's compiled react-server-dom-turbopack: 14/14 passed, 0 failed
+OK    hasVisibleText (Node): hasVisibleText (Node): 111/111 passed, 0 failed
+OK    UI (Chrome, prod + dev/StrictMode): ui: 269/269 passed, 0 failed
+FAIL  mutations: (no summary line)
+exit=1

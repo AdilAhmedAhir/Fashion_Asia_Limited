@@ -1,0 +1,31 @@
+Rule 1 (T-026 invariants):
+  1. action imports vs main:
+     same  src/app/admin/(dashboard)/products/ProductsClient.tsx
+     same  src/components/admin/CategoryProductsManager.tsx
+     same  src/components/admin/ImageUploadField.tsx
+     type-only extra: 1 in ProductsClient
+  2. settings-read/supabase imports: 0
+  3. errors as JSX text:
+     src/components/admin/CategoryProductsManager.tsx:469:                            {reorderError}
+     src/components/admin/CategoryProductsManager.tsx:578:                        {error}
+     src/components/admin/CategoryProductsManager.tsx:787:                        {saveError}{" "}
+     src/components/admin/CategoryProductsManager.tsx:803:                    {deleteError}
+     src/components/admin/ImageUploadField.tsx:268:                    {error}
+  4. raw-HTML sinks: 0
+  5. manager fed confirmed: 1
+  6. failed load returns before Save: 1
+  7. products/* <-> business/* imports: 0
+Rule 2 (payloads only from changedFields):
+   84:function changedFields(queue: SaveQueue): CategoryProductPatch {
+   251:        const patch = changedFields(queue);
+   265:            result = await updateCategoryProduct(id, patch);
+Rule 3 (no timer/effect/render calls an action): effect and timer bodies:
+   src/components/admin/CategoryProductsManager.tsx:196:    useEffect(() => {
+   src/components/admin/CategoryProductsManager.tsx:817:    useEffect(() => {
+   src/components/admin/CategoryProductsManager.tsx:824:        const timer = setTimeout(() => setExpired(saved), remaining);
+Rule 4 (commitPathOnBlur opt-in; upload path unchanged since eabec4b):
+   set only by:  src/components/admin/CategoryProductsManager.tsx:624:    // typing (ImageUploadField's commitPathOnBlur). Nothing here is sent:
+ src/components/admin/CategoryProductsManager.tsx:742:                    commitPathOnBlur
+   ImageUploadField lines changed eabec4b..09702d0: 2
+Rule 5 (products map only through Map.get):
+   no bracket lookup, Object.* or JSON.stringify on a products map

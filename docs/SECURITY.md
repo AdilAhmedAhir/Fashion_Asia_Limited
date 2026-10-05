@@ -63,6 +63,17 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
   - `updateSettings` refuses `business`.
 - **Slugs.** `normalizeProducts()` now hands every slug sink only `[a-z0-9-]` slugs, which closes SEC-INFO-19 in code.
 
+*Amended 2026-10-05 (T-016 CSO review; appended, rows above left as written):*
+- **Product writes.** `updateCategoryProduct` is now a partial update.
+  - It writes only the name, description and image the caller sends, and only own properties holding strings.
+  - It never writes `category_slug` or `sort_order`.
+  - Its category check runs on the stored slug.
+- **The product rule.** On both create and update, the server requires a name and an image with a visible character (`hasVisibleText`).
+- **The product read** (`getAllCategoryProducts`) returns `{ ok: true, byCategory: Map } | { ok: false }`, and `ok: false` carries no error text.
+  - Visitors see a failed read as an empty catalog (Coming Soon), logged on the server.
+  - `/admin/products` fails closed.
+  - Every per-category lookup, on the server and in the editor, goes through a `Map`.
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -1339,6 +1350,176 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 
 **Actions taken:** this append and three §5 rows, left uncommitted. No database access, no request, no build.
 
+### 🔒 CSO Audit — 2026-10-05 — ticket-review:T-016
+
+**Scope:** Dispatched by `/system-architect`. **T-016** ("Fix the product editor's ordinary-use data bugs before staff start using it") touches the product Server Actions, `site-content.ts`, both `products/page.tsx` files, the product editor and `ImageUploadField`.
+- **The diff under review:** `git diff main...t-016-product-editor` at HEAD `eabec4b`. It touches 9 files (+845/−228) across three commits:
+  - `afb7997`, the contract docs;
+  - `44cdfb2`, the partial update, the read that can fail, and the Map;
+  - `eabec4b`, one save queue per product, and the opt-in `commitPathOnBlur`.
+- **The contract:** items 1–12, amended C1–C6, and the premortem's MUST-ADDs (`docs/ROADMAP.md`), plus the four 2026-10-04 rows in `docs/DECISIONS.md`.
+- **This office's scope:** MUST-ADD 11 and the dispatch's items (1)–(7).
+
+**Method.**
+- **Static:** full reads of
+  - the branch's `products-actions.ts`;
+  - the diffs of `site-content.ts`, both page files, `ProductsClient.tsx` and `ImageUploadField.tsx`;
+  - `CategoryProductsManager.tsx`'s queue, payload builders, effects, timers and render sinks.
+- **The builder's harness (`scratchpad/t-016/harness/`), reviewed first, then run:**
+  - **Isolation:** the loader refuses `@/lib/supabase/*` and `@supabase/*`, and no `.env` is read. Chrome runs headless over `--remote-debugging-pipe`: no port, every host mapped to NOTFOUND, every http(s)/ws(s) URL blocked, a throwaway profile. Mutations are swapped in memory; nothing is written to the repo.
+  - **Results:** server 117/117, serializer 14/14, `hasVisibleText` 111/111, UI 249/249 (production, and development under StrictMode), and 35/35 mutations caught. No Chrome process was left over, and the repo was untouched.
+  - The only working-tree change during the run was a one-line `docs/ROADMAP.md` clarification by another agent. The harness never references `docs/`, and this office didn't touch it.
+- **This office's own 9 adversarial tests** on the reviewed T-026 harness, all passing (session scratchpad `cso-t016/cso.test.mjs`). That fake returns an array from `update().maybeSingle()`, so the tests emulate the real one-row-or-null.
+- **Live, read-only:** GET and HEAD with no cookie, against `:3101` only. It serves build `so_zCLXv2DgfyR_H5Maaz`, written 14 s before the `eabec4b` commit. It still matches `eabec4b`:
+  - no source file is newer than it, and the tree equals `eabec4b`;
+  - `eabec4b`'s client markers are in `.next/static`: the path box's `isComposing`/`229` guard and the `hasVisibleText` regex.
+- **Not done:** no sign-in, no Server Action call, no write, no build, no server started or stopped, nothing on `:3001`. `.env*` was never read.
+- **Typecheck:** `npx tsc --noEmit --incremental false` exited 0.
+
+**1. Re-binds by sha256: ✅ all four match the builder's report.**
+
+| File | Before | `eabec4b` |
+|---|---|---|
+| `src/app/actions/products-actions.ts` | T-026 `44b47ada…` | `6899ea96444a7ea6…` |
+| `src/lib/site-content.ts` | T-026 `465f6712…` | `2ae9d3f1782777ff…` |
+| `src/app/admin/(dashboard)/products/page.tsx` | T-026 `1067bb51…` | `969a00dea762e782…` |
+| `src/app/(website)/(marketing)/products/page.tsx` | T-025 `af42e298…` | `0aec2d4179e84a61…` |
+
+- `site-content.ts` changes only by `CategoryProductPatch` (`:382`), `hasVisibleText` with its private regex (`:389-398`), and the `CategoryProductInput` comment.
+- `normalizeProducts`' slug gate (`:474`) and `resolveCategoriesForSave` are unchanged.
+
+**2. The 0-byte list: ✅ byte-identical to `main`.**
+- **Every listed path:** `settings-actions.ts`, `settings-read.ts`, `business/page.tsx`, `SettingsForm.tsx`, `category-draft.ts`, `src/components/catalog/*`, `products/[category]/page.tsx`, `media-actions.ts`, `nav.ts`, `src/middleware.ts`, `src/lib/supabase/`, `next.config.ts`, `db/`, `supabase-schema.sql`, `package.json` and `package-lock.json`.
+- **T-026's three hash-bound files keep their hashes,** so T-026's server sign-off on them still holds: `settings-actions.ts` `2785952a83f7616e…`, `settings-read.ts` `cc5c8a2c06d9acb0…`, `business/page.tsx` `87071736c1516fcb…`.
+
+**3. Endpoints: ✅ unchanged.**
+- **Exports:** `products-actions.ts` exports the same 6 functions plus types. The only new export is the type `AllProductsRead`.
+- **Private:** the new constants (`SESSION_EXPIRED`, `PRODUCT_NOT_FOUND`, `PRODUCT_NAME_REQUIRED`, `PRODUCT_IMAGE_REQUIRED`, `NOTHING_TO_SAVE`, `PATCH_FIELDS`) and the new helpers (`takePatchFields`, `productFieldsError`, `groupByCategory`).
+- **The other `"use server"` modules are unchanged,** so there are still 34 public exports, as at T-026.
+- **`getUser()` is still the first await of every write.** Tested: anonymous calls to all four writes return SESSION_EXPIRED with zero table operations.
+
+**4. The partial update (`updateCategoryProduct`, `products-actions.ts:285-331`): ✅ every step, in the contract's order.**
+- **Session first.** `getUser()` is the first await (`:287`), and an empty id gives "Missing product id."
+- **Only real fields are taken.** `takePatchFields` (`:142-151`) takes `name`, `description` and `image` only as own properties holding strings, trimmed.
+  - Ignored, never turned into "": `null`, numbers, objects, inherited values, a Map, an array, and any other key (`category_slug`, `sort_order`, `id`, `created_at`, a `"__proto__"` key).
+  - If nothing usable is left, it returns NOTHING_TO_SAVE.
+  - Tested, with zero table operations in each case.
+- **Validation runs before any read** (`:298-299`): `hasVisibleText` on whichever of name and image is present.
+  - Tested: blank, whitespace, ZWSP/LRM, BOM and U+3164 are refused with zero table operations.
+  - A row with an empty image can still have its description saved.
+- **The category check runs on the stored slug** (`:305-316`), read by id with `.maybeSingle()`. Tested both ways: a client-sent attachable `category_slug` can't rescue a stored slug that isn't attachable, and a client-sent unknown one changes nothing.
+- **The write** (`:318-323`) is only the taken fields plus `updated_at`. Tested: for a name edit, the update's keys are exactly `name` and `updated_at`, and the stored `category_slug` and `sort_order` are untouched.
+- **A read or write error is never "not found".**
+  - A read error (`:311`) and a write error (`:325`) return their own messages.
+  - Only `data === null` gives PRODUCT_NOT_FOUND (`:312`, `:327`).
+  - Tested, including a row deleted between the read and the update.
+- **Revalidation runs only after a returned row** (`:329`), and only for `/products/<stored slug>` and `/products`. Tested: none on any failure.
+
+**5. The read (`getAllCategoryProducts`, `:208-231`): ✅**
+- **Its answers:** `{ ok: true, byCategory: Map }` (`groupByCategory`, `:165-173`) or `{ ok: false }`.
+  - A database error is logged and answers `ok: false`.
+  - A throw goes to `unstable_rethrow` first, then is logged and answers `ok: false`.
+  - `ok: false` carries no error text, and `Object.create(null)` appears nowhere in `src`.
+- **Tested:**
+  - `constructor` and `__proto__` work as ordinary Map keys.
+  - A database error answers exactly `{ ok: false }`, with none of its text.
+  - A Next control-flow signal is rethrown untouched.
+- **The serializer:** the builder's harness round-trips the Map, with keys `constructor`, `toString` and `t-shirts`, through Next 16.3.6's own compiled serializer, both as a client prop and as an action's return value.
+- **The public page** (`(website)/(marketing)/products/page.tsx:54-83`):
+  - `ok: true` builds sections with `byCategory.get(slug) ?? []`;
+  - `ok: false` shows the category grid plus Coming Soon (DECISIONS 2026-10-04);
+  - the `.catch` keeps `unstable_rethrow`, and `Object.entries` is gone.
+- **The admin page** passes the result through.
+  - A failed product read shows only `PRODUCTS_LOAD_FAILED`, in a `role="alert"`, as fixed copy: no picker, no add form, no rows.
+  - A failed category read still turns the whole page off.
+
+**6. The server-side visible-text rule (`hasVisibleText`): ✅**
+- **On create,** the check runs after `getUser()` and the slug check, before any read (`:243-245`). `sanitizeInput` turns a non-string into "", which fails. Tested: an invisible name, a whitespace image, a null name and a numeric image are each refused with zero table operations.
+- **The regex** is one character class, with no quantifier and no `g` or `y` flag. So it runs in linear time (no ReDoS) and keeps no state between calls. Tested on the premortem's rejects and accepts.
+- **The add form's check** in the browser only mirrors the rule; the server decides.
+
+**7. T-026's 7 client invariants, on `ProductsClient` and `CategoryProductsManager`: ✅ all hold.**
+1. **No new Server Action import.**
+   - `ProductsClient` imports `saveCategories`, plus `import type { AllProductsRead }` (`:6`), which is erased at build time.
+   - `CategoryProductsManager` imports the same 4 product actions as `main`.
+   - The client bundle ships no reference to `getAllCategoryProducts` or `getCategoryProducts`, so the browser never fetches products directly.
+2. **No `@/lib/settings-read` or `@/lib/supabase/*` import** in either file.
+3. **Errors render only as JSX text,** in `role="alert"`.
+4. **No raw-HTML sink.**
+5. **The product manager gets the confirmed list:** `categories={confirmed}`.
+6. **Both fail closed:** no editor and no Save without a successful category read (`ProductsClient.tsx:53`), and no product manager without a successful product read (`:168`).
+7. **No imports between `products/*` and `business/*`.**
+
+**Also checked in `CategoryProductsManager.tsx`:**
+- **Every products-map lookup** is `.get(slug) ?? []`, and every update builds `new Map(prev)` (`:189`, `:205-221`). There's no bracket lookup, `Object.entries` or `JSON.stringify` on a products map. That closes SEC-INFO-37's browser half.
+- **A save's payload comes only from `changedFields`** (`:84-90`): an own key for each changed field among name, description and image, always a string, never `category_slug`, `sort_order` or `id`.
+- **`updateCategoryProduct` is called only from the queue's `send`/`runSave`** (`:250-270`).
+  - The one timer (`:823`) only hides "Saved".
+  - The two effects only move focus or run that timer.
+  - There's no automatic retry.
+
+**`ImageUploadField.tsx`: ✅ only the opt-in `commitPathOnBlur` prop.**
+- The upload path is unchanged: the client checks, then `uploadOptimizedImage`, whose server-side checks live in `media-actions.ts`, which is byte-identical.
+- With the prop off, the path box calls `onChange` on every keystroke, exactly as before. Only a product row turns it on.
+- The admin preview's `<img src={value}>` predates this ticket (SEC-MED-7/13's class, T-014).
+
+**8. The admin gate and leaks: ✅**
+- **49 anonymous probes** against `:3101`, the T-026 set: 40 gave 307 → `/admin/login`, 7 had no route (404), the data route gave `x-nextjs-redirect: /admin/login`, and the login page gave 200. No `Set-Cookie`, and no editor content.
+- **`.next/static`** (48 files) has 0 hits for:
+  - key shapes, and the `stack.json` `secretPatterns`;
+  - the Supabase client, and the read actions' references;
+  - the private product messages and helpers, and `products` table access.
+- **Public pages:** `/products`, all 8 `/products/<slug>` pages and `/what-we-do`, as HTML and as `?_rsc`, give 20 responses, all 200, with 0 UUID-shaped and 0 JWT-shaped strings. `/products` shows Coming Soon (0 live products).
+- **The diff:** 0 secret-pattern hits.
+
+**9. As another user.**
+- **Anonymous vs admin — PASS.** Live: the 49 probes. Offline, on the real action code: anonymous calls to all four product writes return SESSION_EXPIRED before any table access.
+- **A second authenticated user — N/A.** There's one role (R1 / SEC-HIGH-2).
+- **Cross-tab writes by the same role:** the partial update now confines each write to the fields it carries. Two tabs editing different fields keep both edits, and a reorder survives an edit (the builder's UI ordering f).
+
+**Status changes:**
+- **SEC-INFO-37: closed in code, both halves, pending merge.** The server groups products into a Map (`products-actions.ts:165-173`), and the editor and the public page look them up through Maps.
+- **SEC-INFO-20: closed in code, pending merge.** `updateCategoryProduct` never writes `category_slug`, so an edit can no longer move a product to another category.
+- **SEC-MED-11: halved.** The update no longer accepts `sort_order`. Only `createCategoryProduct` still takes a caller's finite value (T-014).
+- **SEC-MED-8: extended, as planned (T-018).** `updateCategoryProduct`'s new read-error and write-error branches (`:311`, `:325`) return raw database text to authenticated callers. Nothing is reachable before `getUser()`.
+- **SEC-MED-5: unchanged,** deferred by DECISIONS 2026-10-04. A product added during a category delete can be orphaned; it's recoverable.
+- **SEC-INFO-36: moved from T-016 to T-033,** by the 2026-10-04 split.
+
+**Carry-overs:**
+- **T-014**, now unblocked, since the path box no longer saves on every keystroke: SEC-MED-7/13 (the image URL allow-list), SEC-MED-11 (create's `sort_order`) and SEC-INFO-15 (the 255-character name cap).
+- **T-033:** SEC-INFO-36 (the product mapper), and category-title hygiene, including a visible-character check in `resolveCategoriesForSave`.
+- **T-018:** SEC-MED-8's raw database text, including the two new branches above.
+- **T-010:** the `ObjectListEditor` upload race. It's an integrity issue, not a security one.
+- **Backlog:** SEC-MED-5.
+- **Still separate:** SEC-INFO-40 (the `[db]` grants hardening) and SEC-HIGH-2.
+
+**Overall verdict this pass:** ✅ **T-016 cleared.**
+- No 🔴, 🟠 or 🟡 finding, and no new 🟢.
+- Closed in code, pending merge: SEC-INFO-37 and SEC-INFO-20.
+- SEC-MED-11 is narrowed.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** T-016 may proceed to `/qa` → `code-reviewer` → merge. Conditions:
+- **Server files are bound by sha256 at `eabec4b`:** the four re-binds in item 1. The T-026 bindings on `settings-actions.ts`, `settings-read.ts` and `business/page.tsx` stand. If a bound file changes before merge, the clearance lapses for that file until `/cso` re-reviews it.
+- **Client files are bound by invariants, not hashes.** `ProductsClient`, `CategoryProductsManager` and `ImageUploadField` may change for design if they still:
+  1. keep T-026's 7 client invariants;
+  2. build every save payload only from `changedFields`: own string `name`, `description` and `image`, nothing else;
+  3. have no timer, effect or render path that calls a Server Action;
+  4. keep `commitPathOnBlur` opt-in, with the upload path unchanged;
+  5. look up the products map only through `Map.get`.
+- **Contract triggers:** any of the contract's re-review triggers (`docs/ROADMAP.md` T-016) also comes back to `/cso`.
+
+**Pre-deploy position:**
+- A `main` holding T-016 at these hashes adds no sensitive surface beyond this pass.
+- `/ship` follows the premortem's release steps: the staff freeze, the tab reloads, recording Skew Protection, and the live checks, including `/admin/products` → 307.
+- Deploying still needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md` (this entry, plus its §3 and §5 rows). Left uncommitted, for the orchestrator.
+- Made only GET and HEAD requests, with no cookie, to `:3101`.
+- Ran offline tests in the session scratchpad.
+- No sign-in, no Server Action call, no write to the live database, no build, no server started or stopped.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -1402,6 +1583,11 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-38 — status update, 2026-10-04 (the owner's SQL evidence) | The owner's read-only SQL check, recorded verbatim in the T-026 evidence entry | ✅ Closed. All 8 points match, so the compare-and-swap works under the live policies. From the security side, T-026's pre-merge HARD STOP is satisfied |
 | SEC-INFO-39 — status update, 2026-10-04 (the owner's SQL evidence) | No trigger, and `updated_at` is `timestamptz NOT NULL` (current value `2026-08-31 07:10:19.408+00`) | Closed as informational, now confirmed. Both edges are unreachable, and with no `now()` trigger, the app's forward stamp is the live guarantee against a repeated stamp |
 | SEC-INFO-40 — `anon` holds INSERT/UPDATE/DELETE grants on `site_settings` (Supabase defaults), and RLS alone denies them | Not yet filed. Recommend a separate `[db]` ticket: a hand-applied migration that revokes all but SELECT from `anon` (TRUNCATE included), optionally drops DELETE/TRUNCATE from `authenticated`, and extends explicit grants to the other implicit tables per SEC-INFO-10, taking care that `submissions` keeps `anon` INSERT and gets no SELECT. `architect-reviewer` + `/cso`; the owner applies | Open. 🟢 Hardening; not exploitable today; doesn't block T-026 or deploy |
+| SEC-INFO-37 — status update, 2026-10-05 (T-016 CSO entry) | Fixed by T-016: the server groups products into a Map (`products-actions.ts:165-173`), and the editor's state and the public page look up through `Map.get` | ✅ Closed in code, both halves, pending merge. Tested with `constructor` and `__proto__` keys, and the builder's harness round-trips the Map through Next's own serializer |
+| SEC-INFO-20 — status update, 2026-10-05 (T-016 CSO entry) | T-016's partial update never writes `category_slug` | ✅ Closed in code, pending merge. An edit can no longer move a product to another category |
+| SEC-MED-11 — status update, 2026-10-05 (T-016 CSO entry) | `updateCategoryProduct` no longer writes `sort_order`. `createCategoryProduct` still takes a caller's finite value | Open, halved. The rest stays in **T-014**, which is now unblocked because the path box saves on blur |
+| SEC-MED-8 — status update, 2026-10-05 (T-016 CSO entry) | **T-018** | Open, extended as planned. `updateCategoryProduct`'s read-error and write-error branches (`:311`, `:325`) return raw database text, to authenticated callers only |
+| SEC-INFO-36 — status update, 2026-10-05 (T-016 CSO entry) | Moved from T-016 to **T-033** (DECISIONS 2026-10-04, the T-016 split) | Open. 🟢 |
 
 ## 6. Secrets log
 
