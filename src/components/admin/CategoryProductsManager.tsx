@@ -9,14 +9,95 @@ import {
     reorderCategoryProducts,
     updateCategoryProduct,
 } from "@/app/actions/products-actions";
-import type { CategoryProduct, CategoryProductInput, Product } from "@/lib/site-content";
+import {
+    hasVisibleText,
+    type CategoryProduct,
+    type CategoryProductInput,
+    type CategoryProductPatch,
+    type Product,
+} from "@/lib/site-content";
 
 const GENERIC_ERROR = "Something went wrong. Check your connection and try again.";
+
+// How long "Saved" stays up after a save lands (T-004's /ui-ux pass). Display
+// only: nothing in the save queue below uses a timer.
+const SAVED_VISIBLE_MS = 2000;
 
 // Each category's products, keyed by category slug. A Map, never a plain
 // object (T-016, SEC-INFO-37): a category slugged "constructor" is just
 // another key. Read-only, so every change builds a new Map.
 type ProductsByCategory = ReadonlyMap<string, readonly CategoryProduct[]>;
+
+// The fields a product row edits, and the only ones its saves ever send.
+const EDITABLE_FIELDS = ["name", "description", "image"] as const;
+type EditableField = (typeof EDITABLE_FIELDS)[number];
+type EditableFields = Record<EditableField, string>;
+
+type SaveResult = Awaited<ReturnType<typeof updateCategoryProduct>>;
+
+/**
+ * One product's save queue (T-016, WARN-1). CategoryProductsManager keeps one
+ * per product, keyed by product id, in a ref, so it belongs to the product,
+ * not to the row on screen: a row that unmounts (a category switch) and
+ * mounts again finds the same queue, with any save still in flight or
+ * waiting.
+ * - At most one save is in flight. A commit made meanwhile sets `waiting`,
+ *   and exactly one follow-up is sent when that save settles.
+ * - What a save sends is worked out when it's sent: every field whose
+ *   committed value differs from the confirmed one. If nothing differs,
+ *   nothing is sent.
+ * - A failure keeps everything committed, so the next save (Retry, or any
+ *   new commit) carries the failed fields too. Nothing is ever sent by a
+ *   timer or on its own.
+ */
+type SaveQueue = {
+    /** What the server last confirmed. */
+    confirmed: EditableFields;
+    /** The confirmed values plus the user's own committed edits. */
+    committed: EditableFields;
+    inFlight: boolean;
+    waiting: boolean;
+    /** The latest attempt's error, until a send starts or a commit or Retry finds nothing to send. */
+    error: string | null;
+    /** Set when the queue drains after a success: a new object for each one. */
+    saved: { at: number } | null;
+};
+
+/** A snapshot of one product's queue, published as state, so its row shows it wherever it mounts. */
+type SaveView = {
+    committed: EditableFields;
+    /** A save is in flight or waiting. */
+    pending: boolean;
+    error: string | null;
+    saved: { at: number } | null;
+};
+
+const editableFieldsOf = (product: CategoryProduct): EditableFields => ({
+    name: product.name,
+    description: product.description,
+    image: product.image,
+});
+
+// What a save sends: an own key for each field whose committed value differs
+// from the confirmed one, always a string, and nothing else (never
+// category_slug, sort_order or id).
+function changedFields(queue: SaveQueue): CategoryProductPatch {
+    const patch: CategoryProductPatch = {};
+    for (const field of EDITABLE_FIELDS) {
+        if (queue.committed[field] !== queue.confirmed[field]) patch[field] = queue.committed[field];
+    }
+    return patch;
+}
+
+// The list with two products' places swapped, found by id, and each
+// product's sort_order renumbered to its place, as a reorder stores it.
+function swapProducts(list: readonly CategoryProduct[], idA: string, idB: string): CategoryProduct[] {
+    const swapped = [...list];
+    const a = swapped.findIndex(p => p.id === idA);
+    const b = swapped.findIndex(p => p.id === idB);
+    if (a !== -1 && b !== -1) [swapped[a], swapped[b]] = [swapped[b], swapped[a]];
+    return swapped.map((p, i) => ({ ...p, sort_order: i }));
+}
 
 /**
  * The product editor on `/admin/products`, below the category editor (T-026;
@@ -33,6 +114,10 @@ type ProductsByCategory = ReadonlyMap<string, readonly CategoryProduct[]>;
  * `categories` is the page's last server-confirmed category list, never its
  * unsaved draft (T-026 contract, item 9), so a category only appears here, or
  * disappears, once a categories save has succeeded.
+ *
+ * Product edits go through one save queue per product, held here rather than
+ * in its row (T-016; see SaveQueue), and each save sends only the fields that
+ * changed.
  */
 export function CategoryProductsManager({
     categories,
@@ -56,6 +141,14 @@ export function CategoryProductsManager({
     const controlRefs = useRef(new Map<string, { up?: HTMLButtonElement | null; down?: HTMLButtonElement | null; delete?: HTMLButtonElement | null }>());
     const selectRef = useRef<HTMLSelectElement>(null);
     const [pendingFocus, setPendingFocus] = useState<{ productId: string; direction: "up" | "down" } | null>(null);
+
+    // The save queues, one per product id (see SaveQueue). Never rendered
+    // directly: every change is published to `saveViews`. The functions
+    // below reach the queues only through this ref and the products only
+    // through state updaters, so an older copy of one of them (the onChange an
+    // upload captured when it started) acts exactly like the current one.
+    const queues = useRef(new Map<string, SaveQueue>()).current;
+    const [saveViews, setSaveViews] = useState<ReadonlyMap<string, SaveView>>(() => new Map());
 
     const registerControlRef = (productId: string, kind: "up" | "down" | "delete", el: HTMLButtonElement | null) => {
         const entry = controlRefs.current.get(productId) ?? {};
@@ -127,6 +220,112 @@ export function CategoryProductsManager({
         });
     };
 
+    const publish = (id: string, queue: SaveQueue) => {
+        const view: SaveView = {
+            committed: { ...queue.committed },
+            pending: queue.inFlight || queue.waiting,
+            error: queue.error,
+            saved: queue.saved,
+        };
+        setSaveViews(prev => new Map(prev).set(id, view));
+    };
+
+    // Created at the product's first commit, from the product as this tab
+    // has it. Until then nothing in this tab can have changed its name,
+    // description or image: only a save does that.
+    const queueFor = (product: CategoryProduct): SaveQueue => {
+        let queue = queues.get(product.id);
+        if (!queue) {
+            const fields = editableFieldsOf(product);
+            queue = { confirmed: fields, committed: { ...fields }, inFlight: false, waiting: false, error: null, saved: null };
+            queues.set(product.id, queue);
+        }
+        return queue;
+    };
+
+    // Sends one save, built now from the queue. Only ever called from a
+    // commit or Retry (event handlers) and from the previous save's
+    // completion: never during render, in a state updater or in an effect.
+    // Returns false, sending nothing, when nothing differs.
+    const send = (id: string, queue: SaveQueue): boolean => {
+        const patch = changedFields(queue);
+        if (patch.name === undefined && patch.description === undefined && patch.image === undefined) return false;
+        const sent = { ...queue.committed };
+        queue.inFlight = true;
+        queue.waiting = false;
+        queue.error = null;
+        queue.saved = null;
+        void runSave(id, queue, patch, sent);
+        return true;
+    };
+
+    const runSave = async (id: string, queue: SaveQueue, patch: CategoryProductPatch, sent: EditableFields) => {
+        let result: SaveResult;
+        try {
+            result = await updateCategoryProduct(id, patch);
+        } catch {
+            result = { ok: false, error: GENERIC_ERROR };
+        }
+        settle(id, queue, sent, result);
+    };
+
+    // Runs for every save, whether or not its row is on screen: there's no
+    // "still mounted" check anywhere in the save path, so a committed save
+    // always reaches handleSaved.
+    const settle = (id: string, queue: SaveQueue, sent: EditableFields, result: SaveResult) => {
+        queue.inFlight = false;
+        if (result.ok) {
+            const confirmed = editableFieldsOf(result.product);
+            for (const field of EDITABLE_FIELDS) {
+                // Not committed again since this save was sent: take the
+                // server's value (trimmed, or another tab's edit).
+                if (queue.committed[field] === sent[field]) queue.committed[field] = confirmed[field];
+            }
+            queue.confirmed = confirmed;
+            queue.error = null;
+            handleSaved(result.product);
+        } else {
+            queue.error = result.error;
+        }
+
+        if (queue.waiting) {
+            queue.waiting = false;
+            // The one follow-up for what was committed meanwhile. It carries
+            // every field that still differs, failed ones included.
+            if (send(id, queue)) {
+                publish(id, queue);
+                return;
+            }
+            // That commit left nothing different from the server, so the
+            // row matches it and a failure's error clears.
+            queue.error = null;
+        }
+        queue.saved = result.ok ? { at: Date.now() } : null;
+        publish(id, queue);
+    };
+
+    // A commit or Retry. While a save is in flight it only asks for the
+    // follow-up; otherwise it sends now. When nothing differs from the
+    // server, nothing is sent and a failure's error clears, because the row
+    // then matches the server.
+    const requestSave = (id: string, queue: SaveQueue) => {
+        if (queue.inFlight) queue.waiting = true;
+        else if (!send(id, queue)) queue.error = null;
+        publish(id, queue);
+    };
+
+    // Name or Description on blur, the path box on blur or Enter, and an
+    // upload finishing: the only ways a value reaches a product's queue.
+    // Typing the same text back isn't a change, so it commits nothing.
+    const commitField = (product: CategoryProduct, field: EditableField, value: string) => {
+        const queue = queueFor(product);
+        if (queue.committed[field] === value) return;
+        queue.committed[field] = value;
+        requestSave(product.id, queue);
+    };
+
+    const retrySave = (product: CategoryProduct) => requestSave(product.id, queueFor(product));
+
     const handleDeleted = (categorySlug: string, id: string) => {
         const list = productsByCategory.get(categorySlug) ?? [];
         const index = list.findIndex(p => p.id === id);
@@ -153,23 +352,27 @@ export function CategoryProductsManager({
 
     const moveProduct = async (index: number, delta: number) => {
         if (!selectedSlug) return;
-        const list = productsByCategory.get(selectedSlug) ?? [];
+        const slug = selectedSlug;
+        const list = productsByCategory.get(slug) ?? [];
         const target = index + delta;
         if (target < 0 || target >= list.length) return;
 
         const movedProductId = list[index].id;
+        const otherProductId = list[target].id;
         const direction: "up" | "down" = delta < 0 ? "up" : "down";
 
-        const swapped = [...list];
-        [swapped[index], swapped[target]] = [swapped[target], swapped[index]];
-        // Keep each row's own sort_order field in sync with its new position
-        // immediately — not just the array order — so a subsequent edit on
-        // any of these rows (ProductRow always sends its product's current
-        // sort_order back unchanged) doesn't silently undo this reorder.
-        const renumbered = swapped.map((p, i) => ({ ...p, sort_order: i }));
+        // The order sent to the server, front to back. The list on screen is
+        // rebuilt inside each updater from the current state instead, so a
+        // product save that lands during the reorder is never overwritten by
+        // this click's older copy. Each row's sort_order follows its new
+        // place, matching what the server stores; a product save never sends
+        // sort_order (T-016), so an edit can't undo a reorder either way.
+        const orderedIds = swapProducts(list, movedProductId, otherProductId).map(p => p.id);
+        // Swapping the same two products again puts them back.
+        const swapOnScreen = () =>
+            setProductsByCategory(prev => new Map(prev).set(slug, swapProducts(prev.get(slug) ?? [], movedProductId, otherProductId)));
 
-        const previous = list;
-        setProductsByCategory(prev => new Map(prev).set(selectedSlug, renumbered));
+        swapOnScreen();
         setReorderBusy(true);
         setReorderError(null);
         // Claim the moved row's own control for refocus once this settles —
@@ -177,14 +380,14 @@ export function CategoryProductsManager({
         // it never races the disabled attribute this same click just set.
         setPendingFocus({ productId: movedProductId, direction });
         try {
-            const result = await reorderCategoryProducts(selectedSlug, renumbered.map(p => p.id));
+            const result = await reorderCategoryProducts(slug, orderedIds);
             if (!result.ok) {
                 setReorderError(result.error);
-                setProductsByCategory(prev => new Map(prev).set(selectedSlug, previous));
+                swapOnScreen();
             }
         } catch {
             setReorderError(GENERIC_ERROR);
-            setProductsByCategory(prev => new Map(prev).set(selectedSlug, previous));
+            swapOnScreen();
         } finally {
             setReorderBusy(false);
         }
@@ -254,7 +457,10 @@ export function CategoryProductsManager({
                 </div>
             ) : (
                 <>
-                    <AddProductForm categorySlug={selected.slug} onCreated={handleCreated} />
+                    {/* Keyed by category (WARN-2): switching category throws
+                        away a half-filled form, so nothing typed or uploaded
+                        for one category can be added to another. */}
+                    <AddProductForm key={selected.slug} categorySlug={selected.slug} onCreated={handleCreated} />
 
                     {reorderError && (
                         <p role="alert" className="flex items-start gap-2 text-sm leading-relaxed text-red-400">
@@ -271,11 +477,13 @@ export function CategoryProductsManager({
                                 <ProductRow
                                     key={product.id}
                                     product={product}
+                                    saveView={saveViews.get(product.id)}
                                     index={i}
                                     total={products.length}
                                     reorderBusy={reorderBusy}
                                     onMove={delta => moveProduct(i, delta)}
-                                    onSaved={handleSaved}
+                                    onCommit={commitField}
+                                    onRetry={retrySave}
                                     onDeleted={id => handleDeleted(selected.slug, id)}
                                     registerControlRef={(kind, el) => registerControlRef(product.id, kind, el)}
                                 />
@@ -295,7 +503,9 @@ function AddProductForm({ categorySlug, onCreated }: { categorySlug: string; onC
     const [busy, setBusy] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const canAdd = name.trim().length > 0 && image.trim().length > 0 && !busy;
+    // Mirrors the server's rule (T-016): a name and an image with a visible
+    // character each. The server decides; this only keeps the button honest.
+    const canAdd = hasVisibleText(name) && hasVisibleText(image) && !busy;
 
     const handleAdd = async () => {
         if (!canAdd) return;
@@ -384,103 +594,80 @@ function AddProductForm({ categorySlug, onCreated }: { categorySlug: string; onC
 
 function ProductRow({
     product,
+    saveView,
     index,
     total,
     reorderBusy,
     onMove,
-    onSaved,
+    onCommit,
+    onRetry,
     onDeleted,
     registerControlRef,
 }: {
     product: CategoryProduct;
+    saveView: SaveView | undefined;
     index: number;
     total: number;
     reorderBusy: boolean;
     onMove: (delta: number) => void;
-    onSaved: (product: CategoryProduct) => void;
+    onCommit: (product: CategoryProduct, field: EditableField, value: string) => void;
+    onRetry: (product: CategoryProduct) => void;
     onDeleted: (id: string) => void;
     registerControlRef: (kind: "up" | "down" | "delete", el: HTMLButtonElement | null) => void;
 }) {
-    // Only the fields this row's own inputs can change. `sort_order` and
-    // `category_slug` are always read fresh from the `product` prop at save
-    // time instead (below) — never cached in local state — so a reorder
-    // driven by a sibling row's up/down click (which updates this row's
-    // `product` prop, not its `draft`) can never be silently overwritten by
-    // this row saving a stale order the next time someone edits its name.
-    const [draft, setDraft] = useState({ name: product.name, description: product.description, image: product.image });
-    const [busy, setBusy] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    // Auto-dismissing "Saved" confirmation (docs/ROADMAP.md T-004 /ui-ux
-    // pass) — the only prior signal a save succeeded was the busy spinner
-    // disappearing, which a non-technical editor who isn't watching closely
-    // can easily miss entirely.
-    const [justSaved, setJustSaved] = useState(false);
-    const savedTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+    // The draft: the product's committed values (its save queue's, or the
+    // product's own before its first commit), with the user's uncommitted
+    // typing in Name and Description laid over them. A field with no typing
+    // follows the product as its saves land; a field being typed in keeps
+    // the user's text until blur commits it. The path box keeps its own
+    // typing (ImageUploadField's commitPathOnBlur). Nothing here is sent:
+    // only the manager's queue sends, and only what was committed.
+    const committed = saveView?.committed ?? editableFieldsOf(product);
+    const [typing, setTyping] = useState<{ name: string | null; description: string | null }>({ name: null, description: null });
+    const [deleting, setDeleting] = useState(false);
+    const [deleteError, setDeleteError] = useState<string | null>(null);
 
-    useEffect(() => () => {
-        if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
-    }, []);
+    // The product's save state, wherever this row mounts.
+    const pending = saveView?.pending ?? false;
+    const saveError = saveView?.error ?? null;
+    const savedVisible = useSavedFlash(saveView?.saved ?? null);
 
-    const persist = async (overrides: Partial<{ name: string; description: string; image: string }> = {}) => {
-        const next = { ...draft, ...overrides };
-        setDraft(next);
-        setBusy(true);
-        setError(null);
-        try {
-            const input: CategoryProductInput = {
-                category_slug: product.category_slug,
-                name: next.name,
-                description: next.description,
-                image: next.image,
-                sort_order: product.sort_order,
-            };
-            const result = await updateCategoryProduct(product.id, input);
-            if (result.ok) {
-                setDraft({ name: result.product.name, description: result.product.description, image: result.product.image });
-                onSaved(result.product);
-                setJustSaved(true);
-                if (savedTimeoutRef.current) clearTimeout(savedTimeoutRef.current);
-                savedTimeoutRef.current = setTimeout(() => setJustSaved(false), 2000);
-            } else {
-                // Deliberately does NOT reset `draft` back to `product`'s
-                // last-confirmed values here (docs/ROADMAP.md T-004 /ui-ux
-                // pass — the prior behaviour did, and threw away whatever
-                // the editor had just typed the moment a save failed, with
-                // only a small error line as the only trace anything went
-                // wrong). The failed value stays on screen, still editable,
-                // and the Retry action below re-sends exactly what's showing
-                // — no server-contract change, this is client-only.
-                setError(result.error);
-            }
-        } catch {
-            setError(GENERIC_ERROR);
-        } finally {
-            setBusy(false);
-        }
+    const handleTyping = (field: "name" | "description", text: string) => setTyping(prev => ({ ...prev, [field]: text }));
+
+    // Blur (Tab or a click away) hands the typed text to the queue, which
+    // treats it as a commit only if it differs from what's committed.
+    const commitTyping = (field: "name" | "description") => {
+        const text = typing[field];
+        if (text === null) return;
+        setTyping(prev => ({ ...prev, [field]: null }));
+        onCommit(product, field, text);
     };
 
     const handleDelete = async () => {
         if (!confirm(`Delete "${product.name || "this product"}"? This can't be undone.`)) return;
-        setBusy(true);
-        setError(null);
+        setDeleting(true);
+        setDeleteError(null);
         try {
             const result = await deleteCategoryProduct(product.id);
             if (result.ok) {
                 onDeleted(product.id);
             } else {
-                setError(result.error);
+                setDeleteError(result.error);
             }
         } catch {
-            setError(GENERIC_ERROR);
+            setDeleteError(GENERIC_ERROR);
         } finally {
-            setBusy(false);
+            setDeleting(false);
         }
     };
 
-    // Falls back to a generic noun rather than an empty aria-label — a
-    // product can be edited down to a blank name (no server-side non-empty
-    // check on this field) without leaving its row's controls unlabelled.
+    // Falls back to a generic noun rather than an empty aria-label — a row
+    // stored before T-016's name rule can still have a blank name, and it
+    // mustn't leave its row's controls unlabelled.
     const productLabel = product.name.trim() || "this product";
+
+    // Up, down and delete wait for this product's saves, in flight or waiting.
+    const controlsLocked = pending || deleting;
 
     return (
         <div className="rounded-xl border border-white/10 bg-black/40 p-4">
@@ -497,13 +684,15 @@ function ProductRow({
                         not the 3:1 UI-component floor; /50 is the same shade already
                         used for every other muted label in this file. */}
                     <div role="status" aria-live="polite" className="flex items-center gap-1 text-[11px] font-bold">
-                        {busy && (
+                        {controlsLocked && (
                             <span className="flex items-center gap-1 text-white/50">
                                 <Loader2 size={14} className="animate-spin" aria-hidden="true" />
                                 Saving…
                             </span>
                         )}
-                        {!busy && justSaved && (
+                        {/* Only once nothing is waiting and the latest attempt
+                            succeeded: never over a failure. */}
+                        {!controlsLocked && !saveError && savedVisible && (
                             <span className="flex items-center gap-1 text-accent">
                                 <Check size={14} aria-hidden="true" />
                                 Saved
@@ -514,7 +703,7 @@ function ProductRow({
                         type="button"
                         ref={el => registerControlRef("up", el)}
                         onClick={() => onMove(-1)}
-                        disabled={index === 0 || reorderBusy || busy}
+                        disabled={index === 0 || reorderBusy || controlsLocked}
                         aria-label={`Move ${productLabel} up`}
                         className="rounded-md p-1.5 text-white/40 transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-20 disabled:hover:text-white/40"
                     >
@@ -524,7 +713,7 @@ function ProductRow({
                         type="button"
                         ref={el => registerControlRef("down", el)}
                         onClick={() => onMove(1)}
-                        disabled={index === total - 1 || reorderBusy || busy}
+                        disabled={index === total - 1 || reorderBusy || controlsLocked}
                         aria-label={`Move ${productLabel} down`}
                         className="rounded-md p-1.5 text-white/40 transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-20 disabled:hover:text-white/40"
                     >
@@ -534,7 +723,7 @@ function ProductRow({
                         type="button"
                         ref={el => registerControlRef("delete", el)}
                         onClick={handleDelete}
-                        disabled={busy}
+                        disabled={controlsLocked}
                         aria-label={`Delete ${productLabel}`}
                         className="rounded-md p-1.5 text-red-400 transition-colors hover:text-red-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-40"
                     >
@@ -544,8 +733,17 @@ function ProductRow({
             </div>
 
             <div className="flex flex-col gap-3">
-                <ImageUploadField label="Product image" value={draft.image} onChange={url => void persist({ image: url })} />
+                {/* The path box commits on blur or Enter, not per keystroke;
+                    an upload commits as soon as it finishes. */}
+                <ImageUploadField
+                    label="Product image"
+                    value={committed.image}
+                    commitPathOnBlur
+                    onChange={url => onCommit(product, "image", url)}
+                />
 
+                {/* Editable while a save is in flight, so nothing typed after
+                    tabbing out mid-save is dropped. Only a delete locks them. */}
                 <div className="flex flex-col gap-1.5">
                     <label htmlFor={`product-name-${product.id}`} className="text-[11px] font-bold uppercase tracking-widest text-white/50">
                         Name
@@ -553,10 +751,10 @@ function ProductRow({
                     <input
                         id={`product-name-${product.id}`}
                         type="text"
-                        value={draft.name}
-                        disabled={busy}
-                        onChange={e => setDraft(d => ({ ...d, name: e.target.value }))}
-                        onBlur={() => { if (draft.name !== product.name) void persist(); }}
+                        value={typing.name ?? committed.name}
+                        disabled={deleting}
+                        onChange={e => handleTyping("name", e.target.value)}
+                        onBlur={() => commitTyping("name")}
                         className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
                     />
                 </div>
@@ -568,23 +766,27 @@ function ProductRow({
                     <textarea
                         id={`product-description-${product.id}`}
                         rows={2}
-                        value={draft.description}
-                        disabled={busy}
-                        onChange={e => setDraft(d => ({ ...d, description: e.target.value }))}
-                        onBlur={() => { if (draft.description !== product.description) void persist(); }}
+                        value={typing.description ?? committed.description}
+                        disabled={deleting}
+                        onChange={e => handleTyping("description", e.target.value)}
+                        onBlur={() => commitTyping("description")}
                         className="resize-none rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
                     />
                 </div>
             </div>
 
-            {error && (
+            {/* A failed save keeps the draft on screen, still editable
+                (docs/ROADMAP.md T-004 /ui-ux pass). Retry, like any new
+                commit, sends everything committed that the server doesn't
+                have yet. */}
+            {saveError && (
                 <p role="alert" className="mt-3 flex items-start gap-2 text-[13px] leading-relaxed text-red-400">
                     <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden="true" />
                     <span>
-                        {error}{" "}
+                        {saveError}{" "}
                         <button
                             type="button"
-                            onClick={() => void persist()}
+                            onClick={() => onRetry(product)}
                             className="font-bold text-red-300 underline underline-offset-2 transition-colors hover:text-red-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                         >
                             Retry
@@ -592,6 +794,34 @@ function ProductRow({
                     </span>
                 </p>
             )}
+
+            {/* A failed delete: the trash button tries again. */}
+            {deleteError && (
+                <p role="alert" className="mt-3 flex items-start gap-2 text-[13px] leading-relaxed text-red-400">
+                    <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden="true" />
+                    {deleteError}
+                </p>
+            )}
         </div>
     );
+}
+
+// Whether "Saved" is up: for SAVED_VISIBLE_MS after the save landed, wherever
+// the row is mounted in that time (T-004's /ui-ux pass: it confirms briefly,
+// then goes). Display only: this timer never sends or changes anything else.
+function useSavedFlash(saved: { at: number } | null): boolean {
+    const [expired, setExpired] = useState<{ at: number } | null>(() =>
+        saved && Date.now() - saved.at >= SAVED_VISIBLE_MS ? saved : null,
+    );
+    useEffect(() => {
+        if (!saved) return;
+        const remaining = saved.at + SAVED_VISIBLE_MS - Date.now();
+        if (remaining <= 0) {
+            setExpired(saved);
+            return;
+        }
+        const timer = setTimeout(() => setExpired(saved), remaining);
+        return () => clearTimeout(timer);
+    }, [saved]);
+    return saved !== null && expired !== saved;
 }
