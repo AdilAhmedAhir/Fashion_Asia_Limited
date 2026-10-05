@@ -17,13 +17,16 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { unstable_rethrow } from "next/navigation";
 import { getSettings } from "@/app/actions/settings-actions";
 import {
+    hasVisibleText,
     normalizeProducts,
     readStoredCategoryIdentities,
     isWellFormedSlug,
     type CategoryProduct,
     type CategoryProductInput,
+    type CategoryProductPatch,
 } from "@/lib/site-content";
 import { PRODUCTS_PATH, categoryPath } from "@/lib/nav";
 
@@ -32,6 +35,26 @@ export type ProductActionResult =
     | { ok: false; error: string };
 
 export type ProductVoidResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * @purpose Every product grouped by category, or a failed read that an editor must not mistake for an empty catalog.
+ * A Map, never a plain object: a category slugged "constructor" is just
+ * another key, and React passes a Map to a client component intact (it
+ * refuses a null-prototype object). `ok: false` carries no error text,
+ * like EditorSettingsRead (settings-read.ts); the read has logged it.
+ */
+export type AllProductsRead = { ok: true; byCategory: Map<string, CategoryProduct[]> } | { ok: false };
+
+// The answers these actions give (T-016). Not exported: a "use server" file
+// exports only its async functions, because every export is an endpoint.
+const SESSION_EXPIRED = "Your session expired. Sign in again and retry.";
+const PRODUCT_NOT_FOUND = "Product not found.";
+const PRODUCT_NAME_REQUIRED = "A product needs a name. Type one in, then try again.";
+const PRODUCT_IMAGE_REQUIRED = "A product needs an image. Upload one or paste its path, then try again.";
+const NOTHING_TO_SAVE = "There was nothing to save.";
+
+// The only fields an edit can write (T-016, partial update).
+const PATCH_FIELDS = ["name", "description", "image"] as const;
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
 
@@ -111,6 +134,44 @@ function sanitizeInput(input: CategoryProductInput) {
     };
 }
 
+// What an edit may write: name, description and image, each only when it's
+// an own property holding a string, trimmed the way sanitizeInput trims.
+// Everything else in the payload is ignored: category_slug, sort_order, id,
+// any other key, and a field that's null, a number or an object, which is
+// never turned into "".
+function takePatchFields(patch: unknown): CategoryProductPatch {
+    const taken: CategoryProductPatch = {};
+    if (typeof patch !== "object" || patch === null) return taken;
+    for (const field of PATCH_FIELDS) {
+        if (!Object.prototype.hasOwnProperty.call(patch, field)) continue;
+        const value: unknown = (patch as Record<string, unknown>)[field];
+        if (typeof value === "string") taken[field] = value.trim();
+    }
+    return taken;
+}
+
+// The domain rule for a product (T-016): its name and its image each need a
+// visible character. Checked only for the fields given, so an edit that
+// doesn't touch the image can still save an older row whose image is empty.
+// The description stays optional.
+function productFieldsError(fields: CategoryProductPatch): string | null {
+    if (fields.name !== undefined && !hasVisibleText(fields.name)) return PRODUCT_NAME_REQUIRED;
+    if (fields.image !== undefined && !hasVisibleText(fields.image)) return PRODUCT_IMAGE_REQUIRED;
+    return null;
+}
+
+// Rows grouped by category_slug in query order, so each category's list keeps
+// the query's sort_order order. A Map, never a plain object (AllProductsRead).
+function groupByCategory(rows: CategoryProduct[]): Map<string, CategoryProduct[]> {
+    const byCategory = new Map<string, CategoryProduct[]>();
+    for (const row of rows) {
+        const list = byCategory.get(row.category_slug);
+        if (list) list.push(row);
+        else byCategory.set(row.category_slug, [row]);
+    }
+    return byCategory;
+}
+
 // A given category's products, in staff-set order — the composite index on
 // (category_slug, sort_order) from 0001_products-within-category.sql serves
 // this query directly. No auth check: this is a plain read, gated by the
@@ -135,44 +196,56 @@ export async function getCategoryProducts(categorySlug: string): Promise<Categor
 }
 
 // Every product across every category, grouped by category_slug and ordered
-// exactly like getCategoryProducts — one query for the whole admin page
-// (src/app/admin/(dashboard)/products/page.tsx since T-026; T-004 put it on
-// /admin/business) instead of one round trip per category. Same "no auth
-// check, anon-readable" shape as
+// exactly like getCategoryProducts — one query for /admin/products (T-026;
+// T-004 put it on /admin/business) and the /products overview instead of one
+// round trip per category. Same "no auth check, anon-readable" shape as
 // getCategoryProducts above; a category with zero products simply has no key
-// in the returned record rather than an empty array entry.
-export async function getAllCategoryProducts(): Promise<Record<string, CategoryProduct[]>> {
-    const supabase = await createClient();
-    const { data, error } = await supabase
-        .from("products")
-        .select("*")
-        .order("category_slug", { ascending: true })
-        .order("sort_order", { ascending: true });
+// in the Map rather than an empty list.
+//
+// It never rejects, except with Next's own control-flow signals (T-016): a
+// failed read, a database error or a throw, is logged here and answered with
+// { ok: false }, so /admin/products can tell it apart from an empty catalog.
+export async function getAllCategoryProducts(): Promise<AllProductsRead> {
+    try {
+        const supabase = await createClient();
+        const { data, error } = await supabase
+            .from("products")
+            .select("*")
+            .order("category_slug", { ascending: true })
+            .order("sort_order", { ascending: true });
 
-    if (error) {
-        console.error("products read error:", error);
-        return {};
-    }
+        if (error) {
+            console.error("products read error:", error);
+            return { ok: false };
+        }
 
-    const grouped: Record<string, CategoryProduct[]> = {};
-    for (const row of (data ?? []) as CategoryProduct[]) {
-        (grouped[row.category_slug] ??= []).push(row);
+        return { ok: true, byCategory: groupByCategory((data ?? []) as CategoryProduct[]) };
+    } catch (error) {
+        // Next's own control-flow signals (cookies() marking the route as
+        // rendered per request) must pass straight through, as in
+        // settings-read.ts.
+        unstable_rethrow(error);
+        console.error("products read threw:", error);
+        return { ok: false };
     }
-    return grouped;
 }
 
 export async function createCategoryProduct(input: CategoryProductInput): Promise<ProductActionResult> {
     const supabase = await createClient();
     const user = await requireUser(supabase);
-    if (!user) return { ok: false, error: "Your session expired. Sign in again and retry." };
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
 
     const categorySlug = input.category_slug?.trim();
     if (!categorySlug) return { ok: false, error: "Missing category." };
 
+    // Before any read (T-016). sanitizeInput turns a non-string name or image
+    // into "", which fails here.
+    const sanitized = sanitizeInput(input);
+    const invalid = productFieldsError({ name: sanitized.name, image: sanitized.image });
+    if (invalid) return { ok: false, error: invalid };
+
     const attachability = await checkCategoryAttachable(categorySlug);
     if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, categorySlug) };
-
-    const sanitized = sanitizeInput(input);
 
     // A newly added product with no explicit order lands at the end of the
     // category's list, not the front (docs/ROADMAP.md T-004, folded
@@ -205,50 +278,55 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
     return { ok: true, product: data as CategoryProduct };
 }
 
-export async function updateCategoryProduct(id: string, input: CategoryProductInput): Promise<ProductActionResult> {
+// A partial update (T-016): it writes only the name, description and image
+// fields present in `patch`, so two tabs editing different fields of one
+// product both keep their edit. It never writes category_slug or sort_order,
+// so an edit can't move a product or undo a reorder.
+export async function updateCategoryProduct(id: string, patch: CategoryProductPatch): Promise<ProductActionResult> {
     const supabase = await createClient();
     const user = await requireUser(supabase);
-    if (!user) return { ok: false, error: "Your session expired. Sign in again and retry." };
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
 
     if (!id) return { ok: false, error: "Missing product id." };
 
-    const categorySlug = input.category_slug?.trim();
-    if (!categorySlug) return { ok: false, error: "Missing category." };
+    const fields = takePatchFields(patch);
+    if (fields.name === undefined && fields.description === undefined && fields.image === undefined) {
+        return { ok: false, error: NOTHING_TO_SAVE };
+    }
 
-    const attachability = await checkCategoryAttachable(categorySlug);
-    if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, categorySlug) };
+    // Before any database read.
+    const invalid = productFieldsError(fields);
+    if (invalid) return { ok: false, error: invalid };
 
-    // Read the row's category before the update so a product moved to a
-    // different category (not exposed by T-004's planned UI, but the type
-    // allows it) revalidates the page it left, not just the one it landed on.
-    // Doubles as an explicit not-found check, rather than letting a missing
-    // id surface as a raw "JSON object requested, multiple (or no) rows
-    // returned" error from the .single() call below.
-    const { data: before } = await supabase
+    // The category comes from the stored row, never from the caller, and the
+    // category check below runs on it. A read error is reported as an error,
+    // not as "not found", so staff don't add a duplicate of a product that's
+    // still there.
+    const { data: stored, error: readError } = await supabase
         .from("products")
         .select("category_slug")
         .eq("id", id)
         .maybeSingle();
 
-    if (!before) return { ok: false, error: "Product not found." };
+    if (readError) return { ok: false, error: readError.message };
+    if (!stored) return { ok: false, error: PRODUCT_NOT_FOUND };
+
+    const categorySlug = stored.category_slug as string;
+    const attachability = await checkCategoryAttachable(categorySlug);
+    if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, categorySlug) };
 
     const { data, error } = await supabase
         .from("products")
-        .update({
-            category_slug: categorySlug,
-            ...sanitizeInput(input),
-            updated_at: new Date().toISOString(),
-        })
+        .update({ ...fields, updated_at: new Date().toISOString() })
         .eq("id", id)
         .select()
-        .single();
+        .maybeSingle();
 
     if (error) return { ok: false, error: error.message };
+    // Deleted (by another tab) between the read and the update.
+    if (!data) return { ok: false, error: PRODUCT_NOT_FOUND };
 
-    const previousSlug = before?.category_slug as string | undefined;
-    if (previousSlug && previousSlug !== categorySlug) revalidateCategory(previousSlug);
     revalidateCategory(categorySlug);
-
     return { ok: true, product: data as CategoryProduct };
 }
 
@@ -257,7 +335,7 @@ export async function updateCategoryProduct(id: string, input: CategoryProductIn
 export async function deleteCategoryProduct(id: string): Promise<ProductVoidResult> {
     const supabase = await createClient();
     const user = await requireUser(supabase);
-    if (!user) return { ok: false, error: "Your session expired. Sign in again and retry." };
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
 
     if (!id) return { ok: false, error: "Missing product id." };
 
@@ -269,7 +347,7 @@ export async function deleteCategoryProduct(id: string): Promise<ProductVoidResu
         .maybeSingle();
 
     if (error) return { ok: false, error: error.message };
-    if (!data) return { ok: false, error: "Product not found." };
+    if (!data) return { ok: false, error: PRODUCT_NOT_FOUND };
 
     revalidateCategory(data.category_slug as string);
 
@@ -284,7 +362,7 @@ export async function deleteCategoryProduct(id: string): Promise<ProductVoidResu
 export async function reorderCategoryProducts(categorySlug: string, orderedIds: string[]): Promise<ProductVoidResult> {
     const supabase = await createClient();
     const user = await requireUser(supabase);
-    if (!user) return { ok: false, error: "Your session expired. Sign in again and retry." };
+    if (!user) return { ok: false, error: SESSION_EXPIRED };
 
     const slug = categorySlug?.trim();
     if (!slug) return { ok: false, error: "Missing category." };

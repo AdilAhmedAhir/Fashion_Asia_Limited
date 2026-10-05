@@ -13,15 +13,18 @@ import ProductsClient, { type ProductsLoad } from "./ProductsClient";
 export default async function AdminProductsPage() {
     // Two independent reads in parallel: the categories from
     // site_settings.business, and every product in one query, grouped by
-    // category (T-004).
-    const [business, productsByCategory] = await Promise.all([
+    // category (T-004). Neither rejects: each answers { ok: false } when its
+    // read fails (T-016), so a failure never lands on Next's error page.
+    const [business, products] = await Promise.all([
         readSettingsForEditor("business"),
         getAllCategoryProducts(),
     ]);
 
     // Stored rows may still hold the old string list; the editor needs objects.
+    // A failed category read turns the whole page off. A failed product read
+    // turns off only the products, in ProductsClient.
     const load: ProductsLoad = business.ok
-        ? { ok: true, categories: normalizeProducts(business.value.products), productsByCategory }
+        ? { ok: true, categories: normalizeProducts(business.value.products), products }
         : { ok: false };
 
     return <ProductsClient load={load} />;

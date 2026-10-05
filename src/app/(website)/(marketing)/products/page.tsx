@@ -6,8 +6,8 @@ import ScrollReveal from "@/components/ui/ScrollReveal";
 import CategoryCardGrid, { toCategoryCards } from "@/components/catalog/CategoryCardGrid";
 import ProductGrid from "@/components/catalog/ProductGrid";
 import { getSettings } from "@/app/actions/settings-actions";
-import { getAllCategoryProducts } from "@/app/actions/products-actions";
-import { normalizeProducts, type CategoryProduct } from "@/lib/site-content";
+import { getAllCategoryProducts, type AllProductsRead } from "@/app/actions/products-actions";
+import { normalizeProducts } from "@/lib/site-content";
 import { PRODUCTS_PATH, categoryPath } from "@/lib/nav";
 import type { Metadata } from "next";
 
@@ -35,61 +35,52 @@ export const metadata: Metadata = {
 // products-actions.ts cover it after every category or product write.
 export const revalidate = 60;
 
-// How the product read ended. getAllCategoryProducts() logs a database error
-// itself and returns {}, which looks exactly like an empty catalog, so that
-// case does show the Coming Soon note. Only a read that throws is kept apart
-// as { ok: false }: the category grid still shows, with no note claiming the
-// catalog is empty.
-type ProductRead = { ok: true; bySlug: Map<string, CategoryProduct[]> } | { ok: false };
+// How the product read ended: getAllCategoryProducts()'s own answer (T-016).
+// It logs its own failures, a database error or a read that threw, and
+// answers { ok: false }; the rejection handler below gives the same answer
+// for anything that still escapes it. Visitors see { ok: false } exactly like
+// an empty catalog: the category grid plus the Coming Soon note, which is how
+// a database error has always looked here (DECISIONS 2026-10-04). Only
+// /admin/products fails closed on it.
+type ProductRead = AllProductsRead;
 
 /** @purpose The /products overview: every category as a photo card, then a section of products for each category that has any. */
 export default async function ProductsPage() {
     // Two independent reads in parallel: the category list, and every product
     // in one query, grouped by category. A failed product read must not take
-    // the category grid down with it, so it's caught and logged here.
+    // the category grid down with it.
     const [business, productRead] = await Promise.all([
         getSettings("business"),
-        getAllCategoryProducts().then(
-            // Own keys only: the grouped record is a plain object, so a
-            // category slugged "constructor" must not resolve to
-            // Object.prototype's member of that name. The parameter is typed
-            // on purpose, so a change to getAllCategoryProducts()'s return
-            // shape fails to compile here instead of misreading products.
-            (grouped: Record<string, CategoryProduct[]>): ProductRead => ({
-                ok: true,
-                bySlug: new Map(Object.entries(grouped)),
-            }),
-            (error: unknown): ProductRead => {
-                // Next's own control-flow signals pass straight through: at
-                // build time, cookies() throws one to mark this route as
-                // rendered per request. Swallowing it would log a false
-                // failure and could let the page prerender without products.
-                unstable_rethrow(error);
-                console.error("/products: product read failed:", error);
-                return { ok: false };
-            },
-        ),
+        getAllCategoryProducts().catch((error: unknown): ProductRead => {
+            // Next's own control-flow signals pass straight through: at
+            // build time, cookies() throws one to mark this route as
+            // rendered per request. Swallowing it would log a false
+            // failure and could let the page prerender without products.
+            unstable_rethrow(error);
+            console.error("/products: product read failed:", error);
+            return { ok: false };
+        }),
     ]);
 
     // Narrowed to the fields a card renders, so a category's internal id
     // (docs/TECH_STACK.md decision (d)) never reaches a prop, a key or the
     // page's serialized payload. Everything below reads only title and slug.
     const categories = toCategoryCards(normalizeProducts(business.products));
-    const productsBySlug = productRead.ok ? productRead.bySlug : null;
 
     // In the staff's category order, never the query's alphabetical slug
     // order. Products whose category isn't displayed are never shown, and a
-    // category with no products gets no empty section.
-    const sections = productsBySlug
+    // category with no products gets no empty section. The grouping is a Map,
+    // so a category slugged "constructor" is just another key.
+    const sections = productRead.ok
         ? categories
-              .map(({ title, slug }) => ({ title, slug, products: productsBySlug.get(slug) ?? [] }))
+              .map(({ title, slug }) => ({ title, slug, products: productRead.byCategory.get(slug) ?? [] }))
               .filter((section) => section.products.length > 0)
         : [];
 
-    // Only when the read didn't throw and no displayed category has a product
-    // yet (the live catalog on 2026-10-03; also a logged database error, see
-    // ProductRead). There are no placeholder products.
-    const showComingSoon = productsBySlug !== null && sections.length === 0;
+    // When no displayed category has a product yet (the live catalog on
+    // 2026-10-03), or the read failed (see ProductRead). There are no
+    // placeholder products.
+    const showComingSoon = sections.length === 0;
 
     return (
         <div className="flex flex-col bg-background">

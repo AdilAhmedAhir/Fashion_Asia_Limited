@@ -13,6 +13,11 @@ import type { CategoryProduct, CategoryProductInput, Product } from "@/lib/site-
 
 const GENERIC_ERROR = "Something went wrong. Check your connection and try again.";
 
+// Each category's products, keyed by category slug. A Map, never a plain
+// object (T-016, SEC-INFO-37): a category slugged "constructor" is just
+// another key. Read-only, so every change builds a new Map.
+type ProductsByCategory = ReadonlyMap<string, readonly CategoryProduct[]>;
+
 /**
  * The product editor on `/admin/products`, below the category editor (T-026;
  * T-004 put it on `/admin/business`). Deliberately a *separate* save model
@@ -34,9 +39,9 @@ export function CategoryProductsManager({
     initialProductsByCategory,
 }: {
     categories: Product[];
-    initialProductsByCategory: Record<string, CategoryProduct[]>;
+    initialProductsByCategory: ReadonlyMap<string, CategoryProduct[]>;
 }) {
-    const [productsByCategory, setProductsByCategory] = useState(initialProductsByCategory);
+    const [productsByCategory, setProductsByCategory] = useState<ProductsByCategory>(initialProductsByCategory);
     const [selectedSlug, setSelectedSlug] = useState<string>(() => categories.find(c => c.slug)?.slug ?? "");
     const [reorderBusy, setReorderBusy] = useState(false);
     const [reorderError, setReorderError] = useState<string | null>(null);
@@ -88,7 +93,7 @@ export function CategoryProductsManager({
     // here, proactively, means staff see the "not saved yet" message the
     // moment they select such a category, not only after a failed add.
     const bootstrapped = Boolean(selected?.id);
-    const products = selectedSlug ? productsByCategory[selectedSlug] ?? [] : [];
+    const products = selectedSlug ? productsByCategory.get(selectedSlug) ?? [] : [];
 
     // Waits for a reorder to actually settle (reorderBusy back to false)
     // before trying to refocus — every row's up/down buttons are disabled
@@ -105,21 +110,25 @@ export function CategoryProductsManager({
     }, [pendingFocus, reorderBusy]);
 
     const handleCreated = (product: CategoryProduct) => {
-        setProductsByCategory(prev => ({
-            ...prev,
-            [product.category_slug]: [...(prev[product.category_slug] ?? []), product],
-        }));
+        setProductsByCategory(prev => {
+            const next = new Map(prev);
+            next.set(product.category_slug, [...(prev.get(product.category_slug) ?? []), product]);
+            return next;
+        });
     };
 
     const handleSaved = (product: CategoryProduct) => {
-        setProductsByCategory(prev => ({
-            ...prev,
-            [product.category_slug]: (prev[product.category_slug] ?? []).map(p => (p.id === product.id ? product : p)),
-        }));
+        setProductsByCategory(prev => {
+            const list = prev.get(product.category_slug);
+            if (!list) return prev;
+            const next = new Map(prev);
+            next.set(product.category_slug, list.map(p => (p.id === product.id ? product : p)));
+            return next;
+        });
     };
 
     const handleDeleted = (categorySlug: string, id: string) => {
-        const list = productsByCategory[categorySlug] ?? [];
+        const list = productsByCategory.get(categorySlug) ?? [];
         const index = list.findIndex(p => p.id === id);
         // The row after the deleted one slides into its position, so
         // focusing that row's own Delete button keeps a keyboard user
@@ -129,10 +138,11 @@ export function CategoryProductsManager({
         // row, there's no row left — fall back to the category picker.
         const neighborId = index === -1 ? null : list[index + 1]?.id ?? list[index - 1]?.id ?? null;
 
-        setProductsByCategory(prev => ({
-            ...prev,
-            [categorySlug]: (prev[categorySlug] ?? []).filter(p => p.id !== id),
-        }));
+        setProductsByCategory(prev => {
+            const next = new Map(prev);
+            next.set(categorySlug, (prev.get(categorySlug) ?? []).filter(p => p.id !== id));
+            return next;
+        });
 
         if (neighborId) {
             focusRowControl(neighborId, "delete");
@@ -143,7 +153,7 @@ export function CategoryProductsManager({
 
     const moveProduct = async (index: number, delta: number) => {
         if (!selectedSlug) return;
-        const list = productsByCategory[selectedSlug] ?? [];
+        const list = productsByCategory.get(selectedSlug) ?? [];
         const target = index + delta;
         if (target < 0 || target >= list.length) return;
 
@@ -159,7 +169,7 @@ export function CategoryProductsManager({
         const renumbered = swapped.map((p, i) => ({ ...p, sort_order: i }));
 
         const previous = list;
-        setProductsByCategory(prev => ({ ...prev, [selectedSlug]: renumbered }));
+        setProductsByCategory(prev => new Map(prev).set(selectedSlug, renumbered));
         setReorderBusy(true);
         setReorderError(null);
         // Claim the moved row's own control for refocus once this settles —
@@ -170,11 +180,11 @@ export function CategoryProductsManager({
             const result = await reorderCategoryProducts(selectedSlug, renumbered.map(p => p.id));
             if (!result.ok) {
                 setReorderError(result.error);
-                setProductsByCategory(prev => ({ ...prev, [selectedSlug]: previous }));
+                setProductsByCategory(prev => new Map(prev).set(selectedSlug, previous));
             }
         } catch {
             setReorderError(GENERIC_ERROR);
-            setProductsByCategory(prev => ({ ...prev, [selectedSlug]: previous }));
+            setProductsByCategory(prev => new Map(prev).set(selectedSlug, previous));
         } finally {
             setReorderBusy(false);
         }
