@@ -138,7 +138,10 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
 
 *(T-012–T-014 appended 2026-09-27, third `/pm` pass — fast-follow findings from T-003, which had not yet been built when this Sprint 2 section was first written.)*
 
-- [ ] **T-013** — Harden `reorderCategoryProducts`: validate input completeness, batch the write, revalidate on failure
+- [x] **T-013** — Harden `reorderCategoryProducts`: validate input completeness, batch the write, revalidate on failure
+  Done 2026-10-06 in **Wave 2b**, commit `48fc3d7`. There's an exact-set check before any write; only rows that move are written, each filtered by id and category and confirmed; a failure puts the written rows back (REORDER_STALE / FAILED / PARTIAL); pages refresh after any write attempt; there's no upsert or insert.
+  - **Reviews** (lean protocol): `code-reviewer`, with light QA: SHIP. `security-reviewer`: CLEARED, re-bound `products-actions.ts`, narrowed SEC-INFO-16 to the accepted residual, and filed SEC-INFO-45.
+  - **Tests:** T-013 100/100 and 59/59 mutants; the T-016 harness passes, with the UI at 319/319.
   **Built in Wave 2b under the Wave 2 contract** (`architect-reviewer`, 2026-10-06): see T-018, item 9. There's no upsert and no database function: exact-set validation, writes only for changed rows, put-backs on failure. Where this ticket's AC below differs ("single batched write"), the contract wins.
   - **Source:** `docs/QA_REPORT.md` T-003 Static Pass WARN-2, 2026-09-27 (re-checked and still open in the re-run pass); `docs/SECURITY.md` SEC-INFO-16, 2026-09-27 (T-003 CSO entry) — same function, complementary gaps: QA flagged the missing input-completeness check and the missing revalidate-on-failure call; CSO flagged the missing transaction
   - **Files:** `src/app/actions/products-actions.ts` (`reorderCategoryProducts`)
@@ -541,7 +544,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - INVENTORY, regenerated with `@purpose` on `actionFailure`, `logActionError` and `isAllowedImageUrl`.
   - **Sequence:**
     - **Wave 2a (about 3.5 hours):** `/build` ✅ → wording (folded into `code-reviewer` under the lean protocol) ✅ → `/security-review` ✅ CLEARED → `/qa` ✅ PASS → `code-reviewer` ✅ FIX FIRST → fixed → merge ✅ (2026-10-06).
-    - **Wave 2b (about 1.5 hours):** `/build` → `/security-review` → `/qa` → `code-reviewer` → merge.
+    - **Wave 2b (about 1.5 hours):** `/build` ✅ → `/security-review` ✅ CLEARED → `/qa` (folded into `code-reviewer`'s light QA, under the lean protocol) → `code-reviewer` ✅ SHIP → merge ✅ (2026-10-06).
   - **Re-review triggers:**
     - **Schema and dependencies:** any SQL, migration, table, column, index, constraint, RPC, database function or trigger; any new dependency, including `server-only`.
     - **Reorder:** an upsert or insert in reorder, or any write other than create that can make a product row; a reorder write without both the id and category filters; dropping the exact-set check.
@@ -584,6 +587,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   5. **The name cap:** a trimmed name over 255 code points is refused on create and update, before any read. 255 Bengali characters, 255 ASCII characters, and 127 emoji plus one letter are all accepted. No lone surrogate can reach the database, and names of 255 code points or fewer pass unchanged.
   6. **`sort_order` on create:** a caller's value is ignored, a failed max-order read returns `actionFailure("read", …)` and inserts nothing, and an omitted value still lands at max + 1.
   7. **Reorder (T-013, Wave 2b),** with a fake database that interleaves concurrent edits.
+     *(Amended 2026-10-06, `code-reviewer` Y3: an empty list or a non-array answers "Nothing to reorder.", per contract item 9.3 and item 11, not REORDER_STALE. The contract wins.)*
      - **Order:** the checks run in item 9's order.
      - **REORDER_STALE, nothing written,** for a missing id, an extra id, an id from another category, a duplicate, an empty list, a non-array, or non-string entries.
      - **No upsert or insert:** none on the reorder path.
@@ -1287,6 +1291,10 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **Order:** signed out still answers SESSION_EXPIRED first. Wave 2a's harness `args-known-gaps-final.json` is the spec; it records 12 known-gap cases that must flip.
   Source: SEC-MED-16 (Medium; security Wave 2a), from Wave 2a's premortem MUST-ADD 10, which DECISIONS 2026-10-06 narrowed to the product writes.
   Sequence: `/build` → `/security-review` → `code-reviewer` → merge. Backlog.
+
+**Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
+- **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
+- **`code-reviewer` Y1, test only:** assert that the reorder's refresh comes after its last write. Today's `return await` is correct, but a "clean-up" that drops the `await` would pass the current suite.
 
 ### Dependency Order
 
