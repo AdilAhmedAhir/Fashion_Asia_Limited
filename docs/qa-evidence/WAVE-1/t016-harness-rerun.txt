@@ -1,0 +1,11 @@
+Wave 1 QA, 2026-10-06: T-016's harness (MUST-ADD 8), re-run by QA from a byte-identical copy of wave-1/t016-rerun (diff -rq clean apart from out/), under the guard.
+Its changes against T-016's own harness (t-016/harness), 2 files: the NOTHING_TO_SAVE wording (one expectation and the UI fake's reply); the category read's name in 4 checks (readSettingsForEditor instead of getSettings, in the two order checks and the two "refused before the category read" checks) plus a readSettingsForEditor stub; and one plumbing stub, an identity toProductCards on the stubbed ProductGrid module (the real mapper is tested by the Wave 1 render suite and QA's qa-render). The mutations folder is unchanged: the same 40 mutants as at 09702d0, all anchors matched.
+label=t016-run-all start=2026-10-06T04:39:39Z end=2026-10-06T04:41:27Z exit=0
+guarded node processes=6, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 418 polls; distinct pids: 322)
+
+OK    server (fake Supabase): server: products-actions + /products + /admin/products: 117/117 passed, 0 failed
+OK    serializer (Map round trip): serializer: Map round trip through next@16.3.6's compiled react-server-dom-turbopack: 14/14 passed, 0 failed
+OK    hasVisibleText (Node): hasVisibleText (Node): 111/111 passed, 0 failed
+OK    UI (Chrome, prod + dev/StrictMode): ui: 269/269 passed, 0 failed
+OK    mutations: mutations: 40/40 killed

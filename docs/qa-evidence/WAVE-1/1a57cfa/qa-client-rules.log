@@ -1,0 +1,6 @@
+qa-client-rules: T-026's client rules on the touched client files
+  PASS  imports, sinks, directives, the fail-closed load: 22/22
+        - BusinessClient: imports added vs main: ["lucide-react {Check, Info}"]
+        - SeedDefaultsPanel: imports added vs main: []
+        - category-draft: imports added vs main: ["@/lib/site-content {hasVisibleText, type Product}"]
+qa-client-rules: T-026's client rules on the touched client files: 22/22 passed, 0 failed

@@ -1,0 +1,6 @@
+qa-render: the mapper, the card markup, the no-leak payload (MUST-ADD 9)
+  PASS  1. toProductCards: reads only name, description and image; new 3-key objects, same order and count, values untouched: 6/6
+  PASS  2. ProductGrid/ProductCard markup, main vs branch, 13 name kinds x 13 description kinds: 647/647
+        - 50 combinations identical to main, 119 changed exactly by the visible-character rule
+  PASS  3. the REAL /products and /products/[category] pages through Next's compiled flight server: no marker of an unrendered field in either payload: 25/25
+qa-render: the mapper, the card markup, the no-leak payload (MUST-ADD 9): 678/678 passed, 0 failed

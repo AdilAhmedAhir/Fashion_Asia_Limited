@@ -1,0 +1,9 @@
+qa-slugs         1731565/1731565 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 1
+qa-settings      140/140 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 1
+qa-attachable    344/344 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 2
+qa-sync          1888/1888 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 1
+qa-render        678/678 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 3
+qa-scope         144/144 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 3
+qa-client-rules  22/22 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 1
+qa-ui            58/58 passed, 0 failed | guarded node processes=1, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 29
+qa-mutants       39/39 killed | guarded node processes=40, refused network/.env attempts=0 internet sockets seen in the process tree=0; distinct pids: 197

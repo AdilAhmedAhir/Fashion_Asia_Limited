@@ -1,0 +1,12 @@
+qa-scope: string inventory and scope (MUST-ADDs 12, 13)
+  PASS  string inventory: main -> commit 1 and main -> HEAD change by exactly the reviewed list, in every touched file: 66/66
+        - each added string is a contract item (NOTHING_TO_SAVE, the invisible-title and non-Latin refusals, CATEGORY_CHECK_FAILED, UNKNOWN_SETTINGS_KEY and its six keys, the delete guard's join and plural, the Sync sentences, the What We Do marker and its two sr-only legends, the placeholder) or code that builds one
+  PASS  the frozen messages are byte-identical to main, by name (MUST-ADD 12): 19/19
+        - products-actions.ts: changed ["NOTHING_TO_SAVE"], new ["CATEGORY_CHECK_FAILED"], removed []
+        - settings-actions.ts: changed [], new ["UNKNOWN_SETTINGS_KEY","SEED_CONFLICT"], removed []
+        - site-content.ts: changed [], new ["invisibleTitleMessage","needsLatinMessage"], removed []
+  PASS  scope (MUST-ADD 13): only the 11 files under src/, nothing else beyond 2 docs; the unchanged list is untouched; hashes; exports; commit names: 62/62
+        - working tree: M docs/DATA_MODEL.md,  M docs/DECISIONS.md,  M docs/LOG.md,  M docs/QA_REPORT.md,  M docs/ROADMAP.md,  M docs/SECURITY.md,  M docs/STACK.md, ?? docs/qa-evidence/WAVE-1/ (docs the orchestrator and reviewers are writing, not code)
+        - HEAD sha256 for security's re-bind: lib/site-content.ts eeab383b515b10fa; app/actions/products-actions.ts bf86b1dfac9d20ee; app/actions/settings-actions.ts 4de7d6a482792281; app/products/page.tsx 238f87491891667b; app/products/[category]/page.tsx bc243115a2583eba
+  PASS  the fix round (032c8fa..1a57cfa): exactly the reported changes, and the strings change by exactly the placeholder and the digit wording: 39/39
+qa-scope: string inventory and scope (MUST-ADDs 12, 13): 186/186 passed, 0 failed

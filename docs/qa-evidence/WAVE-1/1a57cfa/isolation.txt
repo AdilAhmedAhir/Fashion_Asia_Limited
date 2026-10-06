@@ -1,0 +1,15 @@
+Wave 1 QA, 2026-10-06, fix round 1a57cfa: harness isolation (path-free).
+run                  exit   guarded  attempts  sockets  processes seen (by kind)
+fix-wave1-run-all    0      12       0         0        Chrome 131, an exiting process (ps shows its name in parentheses) 1, node 12, short-lived (git/shasum/grep) 14
+fix-t016-run-all     0      6        0         0        Chrome 311, GoogleUpdater (Chrome's own updater) 2, an exiting process (ps shows its name in parentheses) 2, node 5, profiles (macOS, started by Chrome) 1, short-lived (git/shasum/grep) 9
+fix-tsc-head         0      1        0         0        node 1
+qa-slugs             0      1        0         0        node 1, short-lived (git/shasum/grep) 1
+qa-settings          0      1        0         0        node 1
+qa-attachable        0      1        0         0        node 1
+qa-sync              0      1        0         0        node 1, short-lived (git/shasum/grep) 1
+qa-render            0      1        0         0        node 1, short-lived (git/shasum/grep) 3
+qa-scope             0      1        0         0        node 1, short-lived (git/shasum/grep) 5
+qa-client-rules      0      1        0         0        node 1
+qa-ui                0      1        0         0        Chrome 26, node 1, short-lived (git/shasum/grep) 2
+qa-images            0      1        0         0        node 1
+qa-mutants           0      46       0         0        Chrome 131, node 46, short-lived (git/shasum/grep) 41

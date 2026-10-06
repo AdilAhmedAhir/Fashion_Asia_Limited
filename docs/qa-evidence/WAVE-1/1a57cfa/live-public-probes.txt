@@ -1,0 +1,26 @@
+/                            200 set-cookie=0
+/products                    200 set-cookie=0
+/what-we-do                  200 set-cookie=0
+/who-we-are                  200 set-cookie=0
+/global-partner              200 set-cookie=0
+/sustainability              200 set-cookie=0
+/life-at-fashion-asia        200 set-cookie=0
+/career                      200 set-cookie=0
+/contact                     200 set-cookie=0
+/grievance                   200 set-cookie=0
+/sitemap.xml                 200 set-cookie=0
+/robots.txt                  200 set-cookie=0
+/products/no-such-slug       404 set-cookie=0
+/products/T-SHIRTS           404 set-cookie=0
+/products/category           404 set-cookie=0
+/products/constructor        404 set-cookie=0
+/products/__proto__          404 set-cookie=0
+/what-we-do/t-shirts         308 -> /products/t-shirts -> 200 set-cookie=0
+/what-we-do/polo-shirts      308 -> /products/polo-shirts -> 200 set-cookie=0
+/what-we-do/tank-tops        308 -> /products/tank-tops -> 200 set-cookie=0
+/what-we-do/dresses          308 -> /products/dresses -> 200 set-cookie=0
+/what-we-do/sleepwear        308 -> /products/sleepwear -> 200 set-cookie=0
+/what-we-do/leggings         308 -> /products/leggings -> 200 set-cookie=0
+/what-we-do/sportswear       308 -> /products/sportswear -> 200 set-cookie=0
+/what-we-do/heavy-jersey-products 308 -> /products/heavy-jersey-products -> 200 set-cookie=0
+UUID-shaped strings on / and /sitemap.xml: 0

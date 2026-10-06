@@ -1,0 +1,4 @@
+/products (RSC: 1)               307 -> /products?_rsc                           200 text/x-component       bytes=26802  UUIDs=0 row-fields=0 JWT-shaped=0 set-cookie=0
+/products/t-shirts (RSC: 1)      307 -> /products/t-shirts?_rsc                  200 text/x-component       bytes=19255  UUIDs=0 row-fields=0 JWT-shaped=0 set-cookie=0
+/products/heavy-jersey-products (RSC: 1) 307 -> /products/heavy-jersey-products?_rsc     200 text/x-component       bytes=19372  UUIDs=0 row-fields=0 JWT-shaped=0 set-cookie=0
+/what-we-do (RSC: 1)             307 -> /what-we-do?_rsc                         200 text/x-component       bytes=35240  UUIDs=0 row-fields=0 JWT-shaped=0 set-cookie=0

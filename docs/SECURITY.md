@@ -74,6 +74,19 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
   - `/admin/products` fails closed.
   - Every per-category lookup, on the server and in the editor, goes through a `Map`.
 
+*Amended 2026-10-06 (Wave 1 CSO review, T-033 + T-032; appended, rows above left as written):*
+- **Settings writes.** `updateSettings` now writes only six rows: `homepage`, `who_we_are`, `who_we_work_with`, `sustainability`, `contact` and `general`. They're matched exactly against a hand-written private `Set`.
+  - The check runs after `getUser()` and after `business`'s BUSINESS_MOVED, and before any table access.
+  - It limits which rows a signed-in account can write, not who can write them (SEC-HIGH-2 stands).
+- **Product writes.** The category check (`checkCategoryAttachable`) reads through `readSettingsForEditor` and fails closed. A failed read refuses the write with fixed copy (CATEGORY_CHECK_FAILED), never database text.
+- **The public catalog.** Product rows are narrowed to `name`, `description` and `image` (`toProductCards`) before any component prop. So no row id, category slug, order or timestamp reaches the page payload, in production or in development (SEC-INFO-36).
+- **Slugs.** Read time and save time share one 255-character cut, and the alphabet is unchanged.
+  - Every slug that reaches a URL, a link or the sitemap matches `^[a-z0-9]+(-[a-z0-9]+)*$` and is at most 255 characters.
+  - A new category whose title has no `a-z` or `0-9` is refused, and a title with no visible character refuses the whole save.
+- **Endpoints.** There are still 34 public Server Action exports.
+  - 24 of their ids appear in the client bundle: the writes client components import, the three public forms and login.
+  - The other 10, every read included, appear in none.
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -1520,6 +1533,317 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 - Ran offline tests in the session scratchpad.
 - No sign-in, no Server Action call, no write to the live database, no build, no server started or stopped.
 
+### 🔒 CSO Audit — 2026-10-06 — ticket-review:Wave 1 (T-033 + T-032)
+
+**Scope:** Dispatched by `/system-architect` (the 2026-10-06 autonomous run, Wave 1). It covers two tickets under one binding contract: **T-033** (category-title and slug hygiene, catalog narrowing, admin copy) and **T-032** (category-save and settings-key edge cases).
+- **The diff under review:** `git diff main...wave-1-catalog-hygiene` at HEAD `032c8fa`, merge base `95f7ea1` (= `main`). It touches 11 files under `src/` (+285/−90) across three commits:
+  - `010939f`, the contract and premortem (docs only);
+  - `2aab4d5`, T-033: contract items 1, 2 and 7–11 (11 files, +223/−84);
+  - `032c8fa`, T-032: items 3–6 (3 files, +62/−6).
+- **The contract:** the Wave 1 binding contract (items 1–13) and the premortem's MUST-ADDs 1–13 at the top of T-033 (`docs/ROADMAP.md`), plus `docs/DECISIONS.md`, 2026-10-06, "Wave 1 contract".
+- **Commit names:** all three commits are authored `happierbangladesh`, each with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+
+**Method.**
+- **Static:** full reads of the files the contract touches.
+  - **On the server:** the branch's `settings-actions.ts` (the allowlist, the Sync result, the delete guard) and `products-actions.ts`, plus `settings-read.ts`, which is unchanged.
+  - **Shared and public:** the slug and save functions in `site-content.ts`, both public pages, `ProductGrid.tsx` and `ProductCard.tsx`.
+  - **Admin clients:** `BusinessClient.tsx`, `SeedDefaultsPanel.tsx` and `category-draft.ts`, plus the diff of `ImageUploadField.tsx`.
+- **Compiled artifacts, read-only:** the server-reference manifest, the server chunks and `.next/static` (48 files) of the build that `:3101` serves.
+- **The builder's harness (`scratchpad/wave-1/harness/`), reviewed first, then run from a private copy.** The copy keeps its outputs, and any concurrent run, untouched.
+  - **Isolation:**
+    - The loader refuses `@/lib/supabase/*` and `@supabase/*`, and mutations and `main`'s copies are swapped in memory.
+    - Every `git` call is read-only, every write lands in the harness folder, and no `.env` is read.
+    - Chrome runs headless over `--remote-debugging-pipe` (no port), with every host mapped to NOTFOUND and every http(s)/ws(s) URL blocked and counted.
+  - **Results (`--stage final`):** 729/729 checks (slug 58, categories 91, sync 57, render 55, types 9, scope 74, UI 175, settings keys 76, attachable 134) and 65/65 mutants killed.
+    - Each kill is a named failing assertion, not a crash.
+    - The repo stayed clean, and no Chrome process was left.
+  - **A first run from the copy failed only in the slug suite.** It reads the baseline capture by a relative path; once that was linked, everything passed. The mutations were re-run too, because a crashing suite would count every mutant it checks as killed.
+- **This office's own 38 adversarial tests** on the reviewed loader and fake database, all passing. Seven in-memory one-rule reverts of the security rules were all caught (session scratchpad `cso-wave1/harness/cso/`).
+- **Live, read-only:** GET and HEAD with no cookie, against `:3101` only. It serves build `uJ6gQNfbIFf9rjlZy1uyU`:
+  - `.next/BUILD_ID` was written at 10:25:19, 22 s after the `032c8fa` commit. No source file is newer, and the tree equals `032c8fa`.
+  - The server process started at 10:29:50 from the repo. All 20 live page bodies carry that build id, and none carries `main`'s.
+  - `032c8fa`'s client markers are in `.next/static` and its server strings are in the server chunks. The old NOTHING_TO_SAVE wording is in neither.
+- **Not done:** no sign-in, no Server Action call against the live database, no write, no build, no server started or stopped, nothing on `:3001`. `.env*` was never read.
+- **Typecheck:** `npx tsc --noEmit --incremental false` exited 0.
+
+**1. Re-binds by sha256: ✅ all five match the builder's report.** Each `main`-side hash is the sign-off this wave voids.
+
+| File | Before (`main` `95f7ea1`) | `032c8fa` |
+|---|---|---|
+| `src/lib/site-content.ts` | T-016 `2ae9d3f1782777ff…` | `0f346ee1a57fea1a…` |
+| `src/app/actions/settings-actions.ts` | T-026 `2785952a83f7616e…` | `4de7d6a482792281…` |
+| `src/app/actions/products-actions.ts` | T-016 `6899ea96444a7ea6…` | `bf86b1dfac9d20ee…` |
+| `src/app/(website)/(marketing)/products/page.tsx` | T-016 `0aec2d4179e84a61…` | `238f87491891667b…` |
+| `src/app/(website)/(marketing)/products/[category]/page.tsx` | T-025 `aa3846155de3215c…` | `bc243115a2583eba…` |
+
+- **`site-content.ts` changes only by:**
+  - the private `MAX_SLUG_LENGTH`, `slugBody` and `cutSlug` (`:403-421`);
+  - `slugify` (`:427`), `dedupeSlug`'s fit (`:438-445`) and `isWellFormedSlug`'s named limit (`:515`);
+  - the two private messages (`:534`, `:542`) and `resolveCategoriesForSave`'s two refusals (`:610`, `:654`).
+
+  It still has no imports.
+- **`settings-actions.ts`** changes only by:
+  - the allowlist (`:57`, `:91`);
+  - the Sync result (`:121-131`, `:148-196`);
+  - `quotedList` and the delete guard's wording (`:399-402`, `:449-455`);
+  - the comment block above `writeBusinessFields`.
+
+  **Byte-identical to `main`:** `writeBusinessFields`, `saveWhatWeDoText`, `requireUser`, `isPlainObject` and `getSettings`, comments included. So are SAVE_CONFLICT, BUSINESS_MOVED, BUSINESS_UNREADABLE, SESSION_EXPIRED and Sync's key filter.
+- **`products-actions.ts`** changes only by:
+  - the import swap (`:21`);
+  - NOTHING_TO_SAVE and CATEGORY_CHECK_FAILED (`:54-55`);
+  - the `unchecked` reason (`:76`, `:87`) and the read (`:113-115`).
+
+  Create, update, delete and reorder are untouched.
+- **The two pages** change only by the `toProductCards` call (`page.tsx:151`, `[category]/page.tsx:88`) and its import.
+
+**2. The unchanged list: ✅ byte-identical to `main`.**
+- **Still signed off, with the same hash:**
+  - T-026: `settings-read.ts` `cc5c8a2c06d9acb0…` and `business/page.tsx` `87071736c1516fcb…`;
+  - T-016: the admin `products/page.tsx` `969a00dea762e782…`;
+  - T-025: `nav.ts` `507e5c62c5f6347f…`, `sitemap.ts` `105e10253fdd12fb…` and `next.config.ts` `a44a56d9f997bb13…`.
+- **Also 0-byte:**
+  - the admin clients: `ProductsClient.tsx`, `CategoryProductsManager.tsx`, `SettingsForm.tsx`, and the six settings clients (and every other importer of `settings-actions.ts`);
+  - the public grid `CategoryCardGrid.tsx`, and `media-actions.ts`;
+  - the gate and data layer: `src/middleware.ts`, `src/lib/supabase/`, `db/` and `supabase-schema.sql`;
+  - `package.json`, `package-lock.json` (`6a026457…`, T-006's) and `.env.example`.
+- **Only the contract's 11 files changed under `src/`.** The contract's "Touches (10 source files)" lists 11: the list is right and the count is a typo.
+- **The final build's route list** is byte-identical to `main`'s, so there's no new route.
+
+**3. Endpoints: ✅ unchanged, and the new import adds none.**
+- **The export lines are byte-identical** in both action files, and every `"use server"` module exports what `main` does: 34 public Server Actions. No constant is exported.
+  - The only signature change is the private `SeedResult`: a failure now also carries `seeded`. The contract allows that.
+- **`readSettingsForEditor` is not an endpoint, as the build itself shows.** The compiled `server-reference-manifest.json` lists exactly 34 action ids, all exports of the six `"use server"` files. Neither `readSettingsForEditor` nor `checkCategoryAttachable` is among them.
+  - `settings-read.ts` has no `"use server"`. Its importers are the two admin server pages and `products-actions.ts`.
+  - `ProductsClient` and `CategoryProductsManager` import `products-actions.ts`, but they get server-reference stubs.
+  - `.next/static` has 0 hits for `readSettingsForEditor`, `checkCategoryAttachable` or `site_settings`, and none for the Supabase client, REST paths or any private server message.
+  - The `next/headers` chain is still `settings-read.ts`'s only guard against a client import (T-026 item 1), and it holds.
+- **What an attacker can find in the bundle:**
+  - 24 action ids appear in `.next/static`: every write a client component imports, the three public forms and `loginAction`.
+  - The other 10 appear nowhere, including every read (`getAllCategoryProducts`, `getCategoryProducts`, `getSettings`, …).
+  - Wave 1 changes no client component's action imports, so this set is the same as `main`'s.
+
+**4. The `updateSettings` allowlist (`settings-actions.ts:57`, `:72-115`): ✅ every point in the dispatch holds.**
+- **Exactly six hand-written keys.** It's a private `new Set([...])` of the six literals, and the compiled chunk carries the same literal.
+  - It isn't derived from `SITE_SETTINGS`. Today it equals `SITE_SETTINGS`' 7 keys minus `business`, and a new default key can't widen it.
+- **The order:**
+  1. `getUser()` is the first await (`:79-82`).
+  2. `business` gets BUSINESS_MOVED, word for word (`:88`).
+  3. The allowlist (`:91`).
+  4. The unchanged upsert.
+
+  No table is read before the allowlist.
+- **Exact match:** `typeof key === "string"` and `Set.prototype.has`. There's no trimming, case folding or coercion, and no prototype lookup.
+- **Tested on the real code:**
+  - **Anonymous:** 69 keys (the six, `business` and every refused key below) all return SESSION_EXPIRED, with 0 table operations and 0 revalidations.
+  - **Signed in, refused with UNKNOWN_SETTINGS_KEY and 0 table operations:** 62 keys:
+    - case and padding variants (`Business`, `business `, `homepage\n`, NUL, ZWSP, NBSP);
+    - lookalikes (Cyrillic `е`, full-width, combining marks);
+    - prototype names (`__proto__`, `constructor`, `toString`, `hasOwnProperty`, `__defineGetter__`);
+    - paths and lists (`who_we_are/../general`, `homepage,general`);
+    - non-strings: `null`, numbers, `NaN`, booleans, `[]`, `["homepage"]`, `new String("homepage")`, objects with `toString` or `valueOf`, a `Symbol`, a BigInt, a Map, a Set, a Date and a function.
+  - **Allowed:** each of the six writes exactly one `site_settings` upsert of that key, and nothing else.
+  - **Mutants caught:** trimming with coercion, and a removed check.
+- **The message** is a fixed string that names no key and no table.
+- **The call sites:** 6 calls in 5 unchanged client files, each with an allowed key. Sync doesn't go through `updateSettings`, and its key filter is byte-identical.
+
+**5. `checkCategoryAttachable` fails closed (`products-actions.ts:112-131`): ✅**
+- **It's reached only after the session check.** All three callers (create, update and reorder) call `requireUser` first.
+  - Tested: anonymous calls return SESSION_EXPIRED with 0 table operations, and the new read never runs (one `createClient`).
+- **A failed read refuses the write with fixed copy.** Tested on all three callers. Each returns CATEGORY_CHECK_FAILED, with 0 product writes, 0 revalidations, and none of the injected database text (`message`, `details`, `hint`) in the result. The failures were:
+  - a read error, a read that throws, and a "multiple rows" error;
+  - the read's own `createClient` throwing (only the second call);
+  - a stored `value` that's `null`, an array, a string, a number or a boolean.
+- **Next's own signals pass through.** A `DynamicServerError` or a redirect signal thrown by the read is rethrown as-is, and nothing is written.
+- **Every other answer is unchanged.** 132 create and reorder answers are identical to `main`'s, writes included.
+  - They span 6 stored states and 11 slugs: `__proto__`, `constructor`, `toString` and `hasOwnProperty`, plus planted `<script>…` and upper-case stored slugs.
+  - "Not saved yet" and "does not exist" are byte-identical.
+  - A planted malformed slug is never attachable.
+- **The order of checks is unchanged.** An invisible name, and a patch with nothing editable (the new NOTHING_TO_SAVE wording), are refused before any `site_settings` read.
+- **`settings-read.ts`** is byte-identical (`cc5c8a2c…`). It logs a failed read on the server and returns `{ ok: false }` with no text.
+
+**6. Slug rules: ✅ closed.**
+- **No client slug is read.** `resolveCategoriesForSave` reads only `title`, `description`, `image` and `id` from each item.
+  - Tested with a counting getter on `slug`, own and inherited, on existing, new and unknown-id rows: 0 reads.
+  - Slugs come only from the stored id or the title.
+- **`isWellFormedSlug`'s pattern is unchanged.**
+  - The regex literal is textually identical to `main`'s, and the limit is the private `MAX_SLUG_LENGTH = 255`.
+  - It answers as `main` does on 20,000 random strings (lengths 0–599).
+  - The length check still runs before the regex, so the regex never sees more than 255 characters.
+- **The 255 cut:** `slugify` is `cutSlug(slugBody(title), 255) || "category"`.
+  - **Tested on 30,000 titles over a hostile alphabet:** ASCII punctuation, control characters, the Kelvin and Ohm signs, dotted `İ`, `ſ`, `ß`, `ﬁ`, full-width letters, Cyrillic, Greek, Bengali, Arabic, Hebrew, emoji, ZWJ, RTL override, BOM, U+3164, the soft hyphen, combining marks and tag characters.
+    - Every output matches `^[a-z0-9]+(-[a-z0-9]+)*$` and is at most 255 characters.
+    - Each one is identical to `main`'s whenever `main`'s is at most 255 characters.
+    - All 6,499 over-long slugs from `main` come out cut at 255 and trimmed.
+  - **Tested on 37 boundary shapes:** 250 to 260 characters, a dash at the cut, and 1,000,000 characters.
+  - **The builder's suite adds** 12,138 titles against `main`, plus the simulated first Save of the 8 live titles.
+  - **`dedupeSlug` fits `-N` inside 255:** 300 copies of one long title give 300 distinct, well-formed slugs.
+- **No new character set reaches URLs or the sitemap.**
+  - Across the fuzz, every output character is in `[a-z0-9-]`.
+  - `normalizeProducts` now cuts read-time slugs too. So every slug reaching a link, the canonical URL, revalidation or the sitemap is fully well-formed, length included.
+  - `categoryPath()` still encodes (`nav.ts` is unchanged).
+  - Live: the sitemap lists the same 18 URLs as the 2026-10-06 baseline, including the same 8 category addresses. Only the per-request `<lastmod>` differs.
+- **No ReDoS.** After the first replace, the new code only ever sees single dashes. `slugify` on a 1.1M-character adversarial title takes 1.1 ms, and 10,000 `isWellFormedSlug` calls take 10.9 ms.
+- **The two new refusals keep the identity rules:**
+  - an existing category renamed to Bengali keeps its frozen slug;
+  - a forged, unstored id doesn't bypass the non-Latin refusal, because it counts as a new category;
+  - an invisible title refuses the whole save, naming its 1-based row, and is never read as a delete;
+  - a category titled "Category" still saves;
+  - a markup title saves with a `[a-z0-9-]` slug only.
+
+  The refusals echo only the caller's own title or a row number, which `ProductsClient` renders as JSX text in its `role="alert"`.
+- **`MAX_SLUG_LENGTH`, `slugBody` and `cutSlug` stay private.** `package.json` and the lockfile are byte-identical, so there's no slug library.
+
+**7. The product mapper (SEC-INFO-36): ✅ closed in code.**
+- **`toProductCards`** (`ProductGrid.tsx:12-14`) builds new objects with exactly the own keys `name`, `description` and `image`, in the same count and order.
+  - Tested with sentinels in `id`, `category_slug`, `sort_order`, both timestamps and an unknown column: none survives.
+- **The types:** `ProductCardData` (`ProductCard.tsx:12`) is `Pick<…> & { id?: never }`, and both components take it. The builder's tsc guard shows that whole rows, or either page without the call, are type errors.
+- **Both public pages narrow before any prop** (`page.tsx:151`, `[category]/page.tsx:88`). On `/products`, `sections[].products` holds whole rows only inside the server function, for `.length` and the narrowing call.
+- **Neither component has `"use client"`,** and only the two public server pages import them. React keys stay `${name}-${i}`.
+- **No ids or row fields in the flight data:**
+  - **This office's render:** both real pages, rendered with sentinel rows through Next 16.3.6's own compiled `react-server-dom-turbopack`, in production and in development.
+    - Neither payload carries any sentinel: no row id, category slug, order, timestamp, unknown column or category id.
+    - `main`'s `/products` in development does carry them, which is the positive control.
+    - A mutant that passes whole rows is caught.
+  - **Live:** `/products`, all 8 `/products/<slug>` pages and `/what-we-do`, as HTML and as flight data (`text/x-component`), give 20 responses.
+    - All are 200, with no `Set-Cookie`.
+    - They hold 0 UUID-shaped strings, 0 JWT-shaped strings, and no `category_slug`, `sort_order`, `created_at` or `updated_at`.
+    - The live catalog has 0 products, so the offline render is the real proof.
+  - **Against the baseline:** once the build id is normalized, the 10 HTML pages are byte-identical to the 2026-10-06 capture from `main` `95f7ea1`.
+- **`ProductCard`'s visible-text rule** (`hasVisibleText`, a single-class regex that runs in linear time) only decides whether a heading, a paragraph or the text block renders. It can't add markup.
+
+**8. T-026's 7 client invariants, on `BusinessClient`, `SeedDefaultsPanel` and `category-draft`: ✅ all hold.**
+1. **No new Server Action import.**
+   - `BusinessClient` imports `saveWhatWeDoText` and `SeedDefaultsPanel` imports `seedSettingsFromDefaults`, as on `main`.
+   - `category-draft.ts` imports no action. Its one new import is `hasVisibleText` from `site-content.ts`, which itself has no imports.
+2. **No `@/lib/settings-read` or `@/lib/supabase/*` import** in any of the three.
+3. **Errors render only as JSX text:**
+   - `BusinessClient`'s go through `SettingsHeader`'s `role="alert"` slot (`SettingsForm.tsx` is unchanged);
+   - `SeedDefaultsPanel` renders `{result.message}` in a `role="alert"` or `role="status"` paragraph.
+4. **No raw-HTML sink in any of the 11 changed files:** no `dangerouslySetInnerHTML`, `innerHTML`, `srcdoc`, `eval` or `javascript:`. The diff adds no `process.env`, no `NEXT_PUBLIC_*` and no debug print.
+5. **`CategoryProductsManager` still gets `confirmed`:** `ProductsClient` is byte-identical.
+6. **No Save without a successful load.**
+   - When the load fails, `BusinessClient` returns `SettingsLoadError` before `SettingsHeader` (`:53-55`). The builder's UI suite covers it (m7).
+   - `SeedDefaultsPanel` has no load, as on `main`, and its mount (`(dashboard)/page.tsx`) is unchanged.
+7. **No imports between `products/*` and `business/*`:** `textDiffers` lives in `BusinessClient.tsx`.
+
+- **Also checked:**
+  - **`BusinessClient`'s new state is client-only.** The saved snapshot is what was sent, and a `<fieldset disabled>` freezes input during a save. It adds no call, timer or effect.
+  - **`SeedDefaultsPanel` shows no raw key.** It maps `seeded` keys to labels through `Object.prototype.hasOwnProperty`, with no `?? key` fallback.
+  - **`ImageUploadField.tsx`** changes only its `placeholder` attribute.
+
+**9. The admin gate: ✅ 83 anonymous probes against `:3101`, all clean.**
+- **Gated: 70 answer 307 to a relative `/admin/login`,** with no `Set-Cookie` and no editor content. The content marker now also covers the What We Do editor, Sync, `Save Changes` and `Submissions`. The 70 are:
+  - **T-026's set, on both `/admin/products` and `/admin/business`:** plain, `RSC: 1`, prefetch, `?_rsc`, segment prefetch, `.rsc` and `.segments/_tree.segment.rsc`;
+  - **path tricks:** `%70`, `%2F`, `%3B`, `%00`, `%09`, `;x`, `./`, `x/../`, `login/../`, `login/%2e%2e/`, `loginx/../`, `(dashboard)` raw and encoded, `/index`, and `/admin/PRODUCTS` (the gate catches it before routing);
+  - **9 bypass headers, on both pages:** `x-middleware-subrequest` in 3 forms, `x-nextjs-data`, `x-matched-path`, `x-invoke-path`, `x-middleware-prefetch`, `Purpose: prefetch` and a spoofed `X-Forwarded-Host`;
+  - **all 10 other admin routes,** plain and with `RSC: 1`.
+- **Normalized first:** 5 probes (a trailing slash, a leading `//`, `/\`, and `//` inside the path) take a 308 to the clean path, then the 307.
+- **No route (404):** 5 probes (`/%61dmin/…`, `/ADMIN/…`, `login%2F..%2F`, and the image-suffix paths the matcher skips).
+- **The data routes** for both pages answer 307 with `x-nextjs-redirect: /admin/login` and an empty body.
+- **The login page** gives 200. With `RSC: 1`, it gives Next's own on-origin `?_rsc` cache-busting 307.
+
+**10. As another user.**
+- **Anonymous vs admin — PASS.**
+  - Live: the 83 gate probes.
+  - Offline, on the real code, these return SESSION_EXPIRED before any table access:
+    - anonymous `updateSettings` calls, on 69 keys;
+    - the three product writes that run the category check;
+    - Sync.
+- **A public visitor vs a product row's internals — PASS.** Item 7: no row field reaches the payload, in production or in development.
+- **A second authenticated user — N/A.** There's one role (R1 / SEC-HIGH-2). The allowlist limits which rows any account can write, not who.
+- **RLS:** this wave changes no SQL, table, policy or grant. The 2026-10-04 SQL evidence (SEC-INFO-38) still describes `site_settings`.
+
+**11. Dependencies:** the package files are byte-identical, so Wave 1 changes nothing here.
+- **The audit:** a read-only `npm audit --omit=dev` (advisory feed as of 2026-10-06) flags 17 packages: 0 critical, 13 high, 3 moderate, 1 low. On 2026-10-03 it was 16, on the same lockfile.
+- **What changed:**
+  - `source-map-js` 1.2.1 is new: high, `GHSA-68fv-2mgg-jv7q`, via `postcss`, at build time;
+  - `postcss-selector-parser` moved from low to moderate: `GHSA-rj75-hqrm-r3gf`, via Tailwind, at build time;
+  - `flatted` has a second advisory, lint-only.
+- **None is reachable at runtime.** `next`, `react`, `react-dom` and `@supabase/*` have none. It stays SEC-INFO-31's lockfile-only ticket.
+- **Secrets:** the diff has 0 secret-pattern hits (the `stack.json` patterns plus a JWT shape, the docs commit included), and so do the client-reachable globs.
+
+**Status changes:**
+- **SEC-INFO-36: closed in code, pending merge.** The mapper and `id?: never` (item 7).
+- **SEC-INFO-19 / SEC-MED-15: strengthened.** Read-time slugs are now cut at 255 too, so every slug that reaches a URL sink passes `isWellFormedSlug` in full.
+- **The T-016 carry-overs to T-033 are done:** SEC-INFO-36, the visible-character check in `resolveCategoriesForSave`, and the NOTHING_TO_SAVE wording. T-032's fail-closed category check is done too.
+- **SEC-MED-8: unchanged.** Wave 1 adds no raw-text branch. Sync's business failure still carries `writeBusinessFields`' reason, now inside a sentence, to authenticated callers only (T-018).
+- **SEC-INFO-31: updated** (item 11).
+
+**Carry-overs:**
+- **T-018 (Wave 2):** SEC-MED-8, plus the premortem's K4: re-baseline T-018's byte-for-byte list on Wave 1's strings.
+- **T-014 (Wave 2):** SEC-MED-7/13, and the rest of SEC-MED-11. The mapper copies `image` verbatim, so the URL allow-list is still T-014's.
+- **Still separate:**
+  - SEC-HIGH-2: Supabase sign-ups were still reported ON on 2026-10-06;
+  - SEC-INFO-40 (T-031);
+  - SEC-MED-5.
+- **The guardrail stands:** `settings-read.ts` now has a third importer. If a refactor ever drops its `next/headers` chain, add `import "server-only"`.
+
+**Overall verdict this pass:** ✅ **Wave 1 (T-033 + T-032) cleared.**
+- No 🔴, 🟠 or 🟡 finding, and no new 🟢.
+- Closed in code, pending merge: SEC-INFO-36.
+- Both changes narrow a surface: which settings rows a session can write, and product writes when the category read fails.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** Wave 1 may proceed to `/qa` → `code-reviewer` → merge. Conditions:
+- **Server files are bound by sha256 at `1a57cfa`:** the five re-binds in item 1, except that `site-content.ts` is now `eeab383b515b10fa…` (see the re-bind note at the end of this entry). The other four are unchanged since `032c8fa`.
+  - The T-026, T-016 and T-025 bindings in item 2 stand.
+  - If a bound file changes before merge, the clearance lapses for that file until `/cso` re-reviews it.
+- **Client files are bound by invariants, not hashes.** `BusinessClient`, `SeedDefaultsPanel` and `category-draft` must keep T-026's 7 client invariants.
+- **The catalog components** (`ProductGrid.tsx` `407c3a38…` and `ProductCard.tsx` `7c2f81e9…` at review) may change for design if they still:
+  1. have no `"use client"`, and are imported only by server components;
+  2. type their product prop as `ProductCardData` (`id?: never`);
+  3. keep `toProductCards` building new objects of exactly `name`, `description` and `image`;
+  4. are fed only through `toProductCards` on both public pages, with keys that hold no row id.
+- **Contract triggers:** any of Wave 1's re-review triggers (`docs/ROADMAP.md` T-033) also comes back to `/cso`.
+
+**Pre-deploy position:**
+- A `main` holding Wave 1 at these hashes adds no sensitive surface beyond this pass.
+- It isn't held for SEC-HIGH-2, which predates it; that row's own standing is unchanged.
+- `/ship` follows the premortem's additions:
+  - check the sitemap against the baseline before the push;
+  - check both domains after it;
+  - check again after the first Save, and record it in LOG.
+- Deploying still needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md` (this entry, plus its §3, §5 and §7 rows). Left uncommitted, for the orchestrator.
+- Made only GET and HEAD requests, with no cookie, to `:3101`.
+- Ran offline tests in the session scratchpad, plus one read-only `npm audit`.
+- No sign-in, no Server Action call, no write to the live database, no build, no server started or stopped.
+
+**Re-bind, 2026-10-06: fix commit `1a57cfa`.** This is Wave 1's fix round, after this entry cleared `032c8fa`. The same method was re-run on the new tree.
+- **The commit:** 3 files, +16/−6, authored `happierbangladesh` with one `Co-Authored-By: Claude Opus 5.5` line.
+  - **`site-content.ts`:** a private `defaultCategoryImage(title)` (`:327`) puts an own-key check (`Object.prototype.hasOwnProperty.call`) on the three default-image lookups (`:484`, `:496`, `:620`). The non-Latin refusal now says "a digit from 0 to 9".
+  - **`category-draft.ts`:** the header comment only. Its 217 code tokens are identical.
+  - **`ImageUploadField.tsx`:** the `placeholder` string only ("Or paste an image path"). Its imports are still `main`'s.
+- **Re-bound:** `site-content.ts` `0f346ee1a57fea1a…` → `eeab383b515b10fa…`, matching the builder's report.
+- **Unchanged since `032c8fa`:**
+  - the other four re-binds: `settings-actions.ts` `4de7d6a4…`, `products-actions.ts` `bf86b1df…`, `products/page.tsx` `238f8749…` and `[category]/page.tsx` `bc243115…`;
+  - every binding in item 2;
+  - both catalog components (`407c3a38…`, `7c2f81e9…`), `BusinessClient` and `SeedDefaultsPanel`.
+- **The guard: ✅ it closes the prototype-key case and changes no real title's image.**
+  - **Closed:** all 12 `Object.prototype` names, plain and padded, get the fallback image (a string) on all five read and save paths. `main` gave each one a function or `Object.prototype`, which is the positive control.
+  - **No real title changes.** Against `032c8fa`, the 25,145 title-and-path results for every other title are identical, and the refusal differs only in its new wording. Every mapped title keeps its own photograph, and `PRODUCT_IMAGES` is unchanged.
+  - **A stored image still wins:** the lookup only fills a blank.
+  - **In the build:** the compiled server chunks carry the guard, and no bare `PRODUCT_IMAGES[title]` lookup is left in `src` or the build.
+- 🟢 **SEC-INFO-41 (new; Low, availability only; pre-existing, closed in code by `1a57cfa`).** Before the guard, a category with no image of its own took a function or `Object.prototype` as its default image when titled `constructor`, `toString`, `__proto__` or another `Object.prototype` name.
+  - **React can't serialize either value.** Rendered offline through Next's compiled serializer, the real `/products` page and the real `/admin/products` page both fail on such a category.
+    - So the editor that could fix it goes down with the public page, and only the owner's SQL edit recovers it.
+    - `saveCategories`' own result isn't serializable either.
+  - **Who could trigger it:** any signed-in account, through the ordinary editor, by mistake or on purpose (R1 / SEC-HIGH-2).
+  - **Production is exposed.** The bare lookups date from `ecf6cf6` (2026-08-24) and are live in production (`e8eace1`), whose read layer returns `Object`, `toString` or `Object.prototype` for these titles. It stays exposed until a user-typed deploy of a `main` containing `1a57cfa`.
+- **Client invariants: ✅** `category-draft.ts` and `ImageUploadField.tsx` keep T-026's 7 client invariants, and T-016's for the upload field: no new import, no new sink, and the upload path and `commitPathOnBlur` are unchanged.
+- **Re-run on `1a57cfa`, all passing:**
+  - the builder's harness: 782/782 checks and 67/67 mutants, including the two new guard mutants;
+  - this office's 48 tests (10 of them new, on the guard), with all 9 in-memory reverts caught;
+  - `npx tsc --noEmit --incremental false`, which exits 0.
+- **Live, read-only, on build `i-z7vzG9mnRlAskgJA5jF`:** it was written 2 min 18 s before the commit, from a tree that matches `1a57cfa`, with no file newer than it. The server process started after it, and every live body carries its id.
+  - **The gate:** the 83 probes are clean, as in item 9.
+  - **The public pages:** the 20 bodies and the sitemap answer 200, with 0 UUID-shaped strings and 0 row fields, and the HTML is identical to the baseline.
+  - **The client bundle:** 0 hits for every server-only name and secret pattern, with 34 actions (24 discoverable, as in item 3).
+- **Verdict: ✅ still cleared, at `1a57cfa`.** The sign-off above is updated to this hash.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -1588,6 +1912,11 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-MED-11 — status update, 2026-10-05 (T-016 CSO entry) | `updateCategoryProduct` no longer writes `sort_order`. `createCategoryProduct` still takes a caller's finite value | Open, halved. The rest stays in **T-014**, which is now unblocked because the path box saves on blur |
 | SEC-MED-8 — status update, 2026-10-05 (T-016 CSO entry) | **T-018** | Open, extended as planned. `updateCategoryProduct`'s read-error and write-error branches (`:311`, `:325`) return raw database text, to authenticated callers only |
 | SEC-INFO-36 — status update, 2026-10-05 (T-016 CSO entry) | Moved from T-016 to **T-033** (DECISIONS 2026-10-04, the T-016 split) | Open. 🟢 |
+| SEC-INFO-36 — status update, 2026-10-06 (Wave 1 CSO entry) | Fixed by T-033: `toProductCards` and `ProductCardData` (`id?: never`) in `src/components/catalog/`. Both public pages narrow before any prop | ✅ Closed in code, pending merge. Verified by the builder's tsc guard, by this office's flight render of both real pages in production and development with sentinel rows (`main` in development as the positive control), and live (0 UUIDs; there are 0 live products). Bound to the catalog-component invariants in the Wave 1 sign-off |
+| SEC-INFO-19 / SEC-MED-15 — status update, 2026-10-06 (Wave 1 CSO entry) | T-033's shared 255 cut (`site-content.ts:403-445`) | Strengthened in code, pending merge. Read-time slugs are now cut at 255 too, so every slug that reaches a URL sink passes `isWellFormedSlug` in full; a 30,000-title fuzz kept the output alphabet within `[a-z0-9-]`. Production stays exposed to SEC-MED-15 until a user-typed deploy of a `main` containing T-025 and T-026 |
+| SEC-INFO-31 — status update, 2026-10-06 (Wave 1 CSO entry) | Same lockfile-only ticket | Open. 17 packages are flagged now (0 critical, 13 high, 3 moderate, 1 low), on the same lockfile (`6a026457…`), so it's advisory-feed growth only. `source-map-js` is new (high, via `postcss`, at build time), and `postcss-selector-parser` moved from low to moderate. All are build or lint toolchain; `next`, `react` and `@supabase/*` have none |
+| SEC-HIGH-2 — structural-fix scope note, 2026-10-06 (Wave 1 CSO entry) | For the role-scoping ticket (T-023) | `updateSettings` now writes only six hand-written keys, checked after `getUser()`: a limit on which rows, not on who. There are still 34 public Server Action exports. 24 of their ids can be found in the client bundle, and none of those 24 is a read |
+| SEC-INFO-41 — before the fix, a category titled with an `Object.prototype` name (`constructor`, `toString`, `__proto__`, …), with no image of its own, took a function or `Object.prototype` as its default image, which React can't serialize. `/products` and `/admin/products` both fail to render, so only a SQL edit recovers it. Any signed-in account could cause it through the ordinary editor. Pre-existing since `ecf6cf6` (2026-08-24) and live in production (`e8eace1`) | Fixed by `1a57cfa` (T-033's fix round): the private `defaultCategoryImage` checks own keys (`site-content.ts:327`) | ✅ Closed in code, pending merge. 🟢 Low, availability only. Verified offline: all 12 `Object.prototype` names get the fallback on every read and save path, both pages render, and no real title's image changes. Production stays exposed until a user-typed deploy of a `main` containing `1a57cfa` |
 
 ## 6. Secrets log
 
@@ -1635,3 +1964,11 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
      1. Never widen a `site_settings` policy by hand, and never switch the writer to upsert.
      2. Rerun the owner's read-only SQL check, and compare it with the 8 items in the T-026 entry.
      3. Any fix is a reviewed migration, with `/cso review`.
+11. **Every product add, edit or reorder fails with "the category couldn't be checked" (CATEGORY_CHECK_FAILED, Wave 1, 2026-10-06).** The category check now refuses a write whenever it can't read `site_settings.business`.
+   - **Where to look:** the server log lines `readSettingsForEditor("business"): the read failed.`, `…: the read threw.` and `…: the stored value is not an object.`
+     - **A failed or thrown read** is a network, session or policy problem on `site_settings`.
+     - **"Not an object"** means the row was edited directly, because no app path writes that shape. Treat it as item 6 (an unknown identity) or item 1 (a known admin's credential compromised).
+   - **Response:**
+     1. Never bypass the check, and never point it back at `getSettings`, whose fallback to the code defaults is what this replaced.
+     2. Never widen a `site_settings` policy by hand. Rerun the owner's read-only SQL check and compare it with the 8 items in the T-026 entry.
+     3. If the value isn't an object, the owner fixes it in the Supabase SQL editor, per the hand-applied-SQL rule.
