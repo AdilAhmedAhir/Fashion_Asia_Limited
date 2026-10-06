@@ -1,0 +1,12 @@
+qa-attachable: the fail-closed category check (MUST-ADD 7)
+  PASS  create: every world, branch vs main: 128/128
+        - main answered: "\"Sportswear\" hasn't been saved as a category yet. Open /admin/products and click Save categories once (no other changes needed), then try again."
+        - main answered: "Category \"no-such-category\" does not exist."
+  PASS  update: every world, branch vs main: 61/61
+        - main answered: "\"Sportswear\" hasn't been saved as a category yet. Open /admin/products and click Save categories once (no other changes needed), then try again."
+  PASS  reorder: every world, branch vs main: 128/128
+        - main answered: "\"Sportswear\" hasn't been saved as a category yet. Open /admin/products and click Save categories once (no other changes needed), then try again."
+        - main answered: "Category \"no-such-category\" does not exist."
+  PASS  Next's own signals pass straight through (not swallowed as a failed read): 18/18
+  PASS  the order of checks in create, update and reorder is unchanged; the read goes only through readSettingsForEditor: 9/9
+qa-attachable: the fail-closed category check (MUST-ADD 7): 344/344 passed, 0 failed

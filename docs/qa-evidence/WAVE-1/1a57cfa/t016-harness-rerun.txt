@@ -1,0 +1,10 @@
+Wave 1 QA, 2026-10-06: T-016's harness copy (wave-1/t016-rerun, unchanged since the first pass) at 1a57cfa, re-run by QA from its byte-identical copy, under the guard.
+label=fix-t016-run-all start=2026-10-06T05:35:31Z end=2026-10-06T05:37:17Z exit=0
+guarded node processes=6, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 417 polls; distinct pids: 330)
+
+OK    server (fake Supabase): server: products-actions + /products + /admin/products: 117/117 passed, 0 failed
+OK    serializer (Map round trip): serializer: Map round trip through next@16.3.6's compiled react-server-dom-turbopack: 14/14 passed, 0 failed
+OK    hasVisibleText (Node): hasVisibleText (Node): 111/111 passed, 0 failed
+OK    UI (Chrome, prod + dev/StrictMode): ui: 269/269 passed, 0 failed
+OK    mutations: mutations: 40/40 killed

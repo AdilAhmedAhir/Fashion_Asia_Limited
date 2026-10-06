@@ -1,0 +1,8 @@
+qa-images: the own-key default image (fix round 1a57cfa)
+  PASS  A. every real title's default image is byte-identical to 032c8fa's, read time and save time: 7/7
+        - 282380 titles in all; 0 of them are prototype names (section B)
+        - live titles' default images: T-Shirts→product-tshirts.webp, Polo Shirts→box12-copy.webp, Tank Tops→product-tanktops.webp, Dresses→product-dresses.webp, Sleepwear→product-sleepwear.webp, Leggings→box10-copy.webp, Sportswear→product-sportswear.webp, Heavy Jersey Products→4-copy.webp
+  PASS  B. titles named like Object.prototype's 12 own properties: a string fallback image, plain serializable results (032c8fa is the positive control): 266/266
+        - 032c8fa gave "constructor", "__proto__" and "toString" the images: function, Object.prototype, function; 1a57cfa gives each "/images/client/4-copy.webp"
+  PASS  C. the real saveCategories on QA's fake database: plain data stored and returned for prototype-name titles: 9/9
+qa-images: the own-key default image (fix round 1a57cfa): 282/282 passed, 0 failed

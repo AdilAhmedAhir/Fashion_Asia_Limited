@@ -856,7 +856,9 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   - It's a hand-applied migration in `db/migrations/` (`STATUS: PENDING_USER_APPLY`), reviewed by `architect-reviewer` and `/security-review`, with a HARD STOP until the owner applies it and confirms. `supabase-schema.sql` and DATA_MODEL §3 are updated.
   Source: SEC-INFO-40, `security-reviewer`, 2026-10-04, from the owner's SQL evidence. Today RLS is the only control stopping anonymous writes; this makes two controls have to fail instead of one. It's not exploitable today and doesn't block deploy.
   Sequence: `supabase-engineer` → `architect-reviewer` → `/security-review` → owner applies (HARD STOP) → `/qa` (read-only probes) → merge. Coordinate with T-023 (the admin allowlist), which rewrites the same policies.
-- [ ] **T-032** — Small category-save and settings-key edge cases [app:admin]
+- [x] **T-032** — Small category-save and settings-key edge cases [app:admin]
+  Done 2026-10-06 in **Wave 1** (commit `032c8fa`; reviews and evidence under T-033's done note).
+  **Built in Wave 1 with T-033 under one binding contract** (`architect-reviewer`, 2026-10-06): see T-033, items 3–6. Where this ticket's AC below differs, the contract wins.
   AC:
   - Titles with no Latin letters or digits all slugify to `category`, so a second one is refused (QA T-026 F5). Give them a distinct, readable slug, or explain the refusal in the error.
   - `updateSettings` accepts any key, so "Business" or "business " creates a junk row (QA T-026 F6, within RISKS R1). Allow only the known settings keys.
@@ -864,7 +866,167 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   - *(Added 2026-10-04, from T-016's `architect-reviewer`.)* `checkCategoryAttachable` reads through `getSettings`, which falls back to the code defaults when the read fails. A failed read therefore refuses the product write with a misleading "hasn't been saved as a category yet". Make it fail closed with its own "couldn't check the category, try again" message.
   Source: QA T-026 Static Pass, 2026-10-04. All Info-level, and all predate T-026.
   Sequence: `/build` → `/security-review` (it touches `settings-actions.ts`) → `/qa` → `code-reviewer` → merge.
-- [ ] **T-033** — Category-title and slug hygiene, catalog narrowing, and admin copy [app:admin][app:site][design][sec]
+- [x] **T-033** — Category-title and slug hygiene, catalog narrowing, and admin copy [app:admin][app:site][design][sec]
+  Done 2026-10-06, in **Wave 1** with T-032:
+  - **Commits:** `010939f` (the contract and premortem folded in), `2aab4d5` (T-033), `032c8fa` (T-032), `1a57cfa` (the fix round: placeholder, digit wording, an own-key `PRODUCT_IMAGES` guard).
+  - **Reviews:**
+    - `architect-reviewer`: APPROVE. `premortem-planner`: GO WITH ADDITIONS (K1–K3 were settled by the contract).
+    - `code-reviewer`: SHIP. Its 20 own mutants were killed. It found a latent bug: a category titled "constructor" got a function as its default image. That's fixed in `1a57cfa`.
+    - `security-reviewer`: CLEARED. It re-bound the five touched files, and `site-content.ts` is re-bound again at `1a57cfa`. SEC-INFO-36 is closed in code.
+    - `design-reviewer`: FIX FIRST (the placeholder clipped at 360), then fixed. This used a SYNTHETIC harness: the admin is NOT VISUALLY VERIFIED against the live login.
+    - QA: PASS. MUST-ADD 2's 11 public captures are identical to the before-build baseline, with the same 8 category addresses.
+  - **Tests** (scratchpad harness, evidence in `docs/qa-evidence/WAVE-1/`): 782 checks and 67/67 mutations; T-016's harness re-run is green.
+  - **Accepted visible changes:** DECISIONS 2026-10-06 (Wave 1).
+  **Wave 1 binding contract, covering T-033 and T-032** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim, so no second `/architect-review` is needed). It needs no schema change, no new dependency and no new database object, so there's no HARD STOP. Where the older rules below conflict with this contract, the contract wins.
+  - **Scope guard:** code only. Every file on the unchanged list stays byte-identical. No new exported function in any `"use server"` file. Every message is a non-exported constant (or a private function that builds it); `/design-review` may tune the wording, but the names, the files they live in and when they show are binding.
+  1. **The slug cut** (T-033, `site-content.ts`).
+     - A private `MAX_SLUG_LENGTH = 255`, with a comment saying it mirrors `products.category_slug VARCHAR(255)` (migration 0001). It's a schema limit, not a policy number.
+     - A private `slugBody(title)`: today's mapping (lowercase, every run outside `a-z0-9` becomes `-`, outer dashes trimmed), with no fallback and no cut.
+     - A private `cutSlug(slug, max)`: `slice(0, max)`, then trim trailing dashes.
+     - `slugify(title)` becomes `cutSlug(slugBody(title), MAX_SLUG_LENGTH) || "category"`.
+     - `dedupeSlug`: for each `n` from 2 up, the candidate is ``${cutSlug(slug, MAX_SLUG_LENGTH - `-${n}`.length)}-${n}``. The first one not already taken wins.
+     - `isWellFormedSlug` uses `MAX_SLUG_LENGTH`; its pattern doesn't change.
+     - `resolveCategoriesForSave` drops its inline `.slice(0, 255).replace(/-+$/, "")` and calls `slugify`.
+     - **The effect:** every slug that today comes out at 255 characters or fewer stays exactly the same. Only today's over-long read-time slugs change, and they become valid. The builder re-checks the live titles read-only. The character mapping itself doesn't change: no transliteration, no accent stripping.
+  2. **Invisible category titles** (T-033, QA F4), in `resolveCategoriesForSave`.
+     - A title that's blank after trimming is still skipped, which deletes the category (T-026's rule, unchanged).
+     - A title that isn't blank but fails `hasVisibleText` refuses the whole save: "Category #n's title has no visible characters, so nothing was saved. Type a title, then save again." `n` is the row's 1-based position in the list sent, which is the editor's #n. This applies to existing and new categories, and it's never treated as a deletion.
+     - `blankTitleRows` in `category-draft.ts` flags a row whose title fails `hasVisibleText`, so the editor blocks Save first with its existing message. Update that file's header comment: it now imports one function from `site-content.ts`, which itself has no imports.
+     - `normalizeProducts` doesn't change.
+  3. **A new category needs a letter or a number** (T-032, QA F5), in `resolveCategoriesForSave`.
+     - A new category (no matching stored id) whose `slugBody(title)` is empty refuses the whole save: `"<title>" needs at least one letter from A to Z or a number in its title, because its web address is made from them. Add one (the rest of the title can stay), then save again.`
+       *(Amended 2026-10-06 in `1a57cfa`: "or a number" became "or a digit from 0 to 9", because Bengali digits don't count; DECISIONS 2026-10-06.)*
+     - This check runs after item 2's, so an invisible title gets item 2's message.
+     - An existing category, matched by id, keeps its frozen slug whatever its title says, even if that slug is already `category`. So no URL changes, and renaming an existing category to a non-Latin title still saves.
+     - At read time, `normalizeProducts` keeps the `category` fallback (and `-N`) for categories that have never been saved.
+  4. **`updateSettings` accepts only six keys** (T-032, QA F6), in `settings-actions.ts`.
+     - A private `UPDATABLE_SETTINGS_KEYS = new Set(["homepage", "who_we_are", "who_we_work_with", "sustainability", "contact", "general"])`, written out by hand, never derived from `SITE_SETTINGS`.
+     - Check order: (1) `getUser()` stays the first await (SESSION_EXPIRED). (2) `"business"` still gets BUSINESS_MOVED, unchanged and checked before the allowlist, so an old What We Do tab still gets the "moved" message. (3) A key that isn't a string, or isn't in the set by exact match (no trimming, no case folding), returns UNKNOWN_SETTINGS_KEY: "Nothing was saved, because these settings aren't recognized. Reload the page and try again." (4) Then the existing upsert, unchanged.
+     - No caller changes. `seedSettingsFromDefaults` doesn't go through `updateSettings`. Page refreshes don't change. This limits which settings rows a signed-in account can write, not who can write them; RISKS R1 stands.
+  5. **The delete-guard message for several categories** (T-032, QA F7).
+     - One blocked category keeps today's message exactly: `Remove its products first: "T-Shirts" still has products assigned to it.`
+     - Two or more quote each title separately, with commas and a final "and": `Remove their products first: "T-Shirts" and "Sportswear" still have products assigned to them.`, or `"T-Shirts", "Polo Shirts" and "Sportswear"`.
+     - The list join is a private helper in `settings-actions.ts`. The rest of the guard (the id comparison, the product count, the refusal) doesn't change.
+  6. **`checkCategoryAttachable` fails closed** (T-032, `products-actions.ts`).
+     - It reads through `readSettingsForEditor("business")`, reused as it is. That file is server-only and not a `"use server"` module, so importing it here adds no public endpoint. Don't write a second read.
+     - On `ok: false`, a new reason `{ attachable: false; reason: "unchecked" }` returns CATEGORY_CHECK_FAILED: "Nothing was saved, because the category couldn't be checked. Try again in a moment."
+     - On `ok: true`, `value.products` goes through today's logic, unchanged. `products-actions.ts` stops importing `getSettings`.
+     - These don't change: `getSettings` itself; `settings-read.ts`, byte for byte; the attachable rule; the "not saved yet" and "does not exist" answers and their wording; and the order of checks in create, update and reorder.
+  7. **NOTHING_TO_SAVE** (T-033): the string becomes "Nothing was saved. Reload the page, then try again."
+  8. **Narrowing products for the public pages** (T-033, SEC-INFO-36).
+     - **The type:** `ProductCardData = Pick<CategoryProduct, "name" | "description" | "image"> & { id?: never }`, defined once in `ProductCard.tsx`; `ProductGrid.tsx` imports it with `import type`.
+     - **The mapper:** `toProductCards(rows: readonly CategoryProduct[]): ProductCardData[]`, in `ProductGrid.tsx`, builds new objects with exactly those 3 fields.
+     - Both components take `ProductCardData`, so passing a whole product row is a type error. Both public pages call `toProductCards` first. React keys stay `${name}-${i}`.
+     - **`ProductCard`:** a name or description counts as blank if it fails `hasVisibleText`. The heading and the image's alt text use the name only if it passes. If both are blank, the `p-5` text block doesn't render.
+  9. **The What We Do text page** (T-033, `BusinessClient.tsx`).
+     - It keeps a last-saved copy of the text: the loaded text, replaced by what was sent when a save succeeds.
+     - While the 4 fields differ from it (process steps compared one by one), the existing status area shows: "Unsaved page text changes. They aren't on the site until you click Save page text."
+     - The editor is read-only while a save is in flight (`<fieldset disabled>`, as in `ProductsClient`). "Page text saved." shows only when nothing differs.
+     - T-026's client rules still hold, and `business/page.tsx` doesn't change.
+  10. **The sync panel's messages** (T-033).
+      - `SeedResult` becomes `{ ok: true; seeded: string[] } | { ok: false; error: string; seeded: string[] }`. `seeded` lists the keys synced before a failure, or `[]` if none were. Its one consumer, `SeedDefaultsPanel`, changes in the same commit.
+      - No message from the server contains a storage key. A failure on the What We Do page text is a full sentence: a SAVE_CONFLICT becomes SEED_CONFLICT: "The What We Do page text wasn't synced, because another save changed it at the same moment. Click Sync again."; any other reason becomes `The What We Do page text wasn't synced: <reason>`. `writeBusinessFields` and SAVE_CONFLICT don't change.
+      - The panel names pages only by their labels: "Synced <labels>." on success; "Synced <labels>. <error>" when some pages synced first; otherwise just `<error>`.
+      - What the sync writes doesn't change: the same rows, values, order and page refreshes.
+  11. **The comment and the placeholder** (T-033).
+      - `settings-actions.ts:262-266` gets `code-reviewer`'s comment wording. It's a comment-only change.
+      - The placeholder at `ImageUploadField.tsx:316` changes to text that can't be mistaken for a real path; `/design-review` picks the wording. That changes the empty state of every image field, and nothing else in the file changes.
+  12. **Must not change:** the slug alphabet; every stored slug; every new slug that's 255 characters or fewer today; T-026's save contract (`writeBusinessFields` and its compare-and-swap, SAVE_CONFLICT, BUSINESS_MOVED, `saveCategories`' identity rules, its delete guard apart from item 5's wording, `saveWhatWeDoText` and `pickWhatWeDoText`); `getSettings`; what the sync writes; `normalizeProducts`, apart from the cut; `getUser()` as every write's first await.
+  13. **Commits and checks.**
+      - Commit T-033 first, then T-032 (item 3 uses item 1's `slugBody`). Each commit must typecheck and build on its own.
+      - No agent saves or syncs anything. The slug, title and category-check rules are verified by code reading plus scratch scripts against the pure functions in `site-content.ts`, which has no imports. The What We Do and sync messages are verified by code reading or a synthetic render. Never run "Sync Content From Code".
+  - **Touches** (11 source files; corrected 2026-10-06, QA I6):
+    - `site-content.ts` (voids T-016's sign-off `2ae9d3f1…`), `settings-actions.ts` (voids T-026's `2785952a…`), `products-actions.ts` (voids T-016's `6899ea96…`);
+    - `(website)/(marketing)/products/page.tsx` (voids T-016's `0aec2d41…`) and `products/[category]/page.tsx` (voids T-025's `aa384615…`);
+    - `src/components/catalog/ProductGrid.tsx` and `ProductCard.tsx` (no hash sign-off);
+    - `admin/(dashboard)/products/category-draft.ts`, `business/BusinessClient.tsx` and `SeedDefaultsPanel.tsx` (`/security-review` re-checks T-026's client rules on them);
+    - `src/components/admin/ImageUploadField.tsx` (the placeholder only).
+  - **Unchanged** (byte-identical, by hash where signed off): `settings-read.ts` `cc5c8a2c…` and `business/page.tsx` `87071736…` (T-026), the admin `products/page.tsx` `969a00de…` (T-016), and `nav.ts`, `sitemap.ts` and `next.config.ts` (T-025) all stay signed off. Also unchanged: `ProductsClient.tsx`, `CategoryProductsManager.tsx`, `SettingsForm.tsx`, `CategoryCardGrid.tsx`, the six settings clients, `middleware.ts`, `src/lib/supabase/*`, `db/`, `supabase-schema.sql`, `package.json` and `package-lock.json`.
+  - **Docs at close:** ROADMAP; DECISIONS; DATA_MODEL §3 and STACK §4 (the six-key allowlist); INVENTORY regenerated, with `@purpose` on `toProductCards` and `ProductCardData`; SECURITY and QA_REPORT from their owners.
+  - **Sequence:** `/build` ✅ (T-033, then T-032) → `/design-review` ✅ FIX FIRST → fixed → `/security-review` ✅ CLEARED (re-signs the five files above; re-checks three client files) → `/qa` ✅ PASS (read-only; production build on :3101) → `code-reviewer` ✅ SHIP → merge ✅ (2026-10-06). About ½ day plus one review stage; it must not grow.
+  - **Re-review triggers** (re-run `/architect-review`): any SQL, migration, table, column, index, RPC, trigger or new dependency, including any slug or transliteration library; any change to the slug alphabet or `isWellFormedSlug`'s pattern; any change to a stored slug, or to a new slug that's 255 characters or fewer today; any change to item 12's T-026 save-contract parts or to `getSettings`; an edit to any file on the unchanged list; a new export in a `"use server"` file, or a signature change to any exported action other than `SeedResult`'s shape; an allowlist other than the six keys, or one derived from `SITE_SETTINGS`; any change to what the sync writes; `normalizeProducts` dropping or hiding categories; `ImageUploadField` changes beyond the placeholder text; pulling in items from Waves 2–5 (T-014, T-018, T-013, T-010); the wave growing past ½ day.
+  **Wave 1 premortem (`premortem-planner`, 2026-10-06: GO WITH ADDITIONS). These MUST-ADDs are binding.** The premortem ran in parallel with the contract. Its must-settle points K1–K3 are already settled by contract items 3, 4 and 6, so it needs no second `/architect-review`. Where a MUST-ADD below assumed a different answer, it's restated to fit the contract.
+  - **Top failure modes,** most likely first:
+    1. The first Save (staff, after the deploy) locks in different category addresses, because `slugify` changed for an ordinary title, or a non-ASCII slug fails `isWellFormedSlug` and blocks every later category save.
+    2. Products show wrongly, or a category page crashes, once real products exist. `toProductCards` drops a field, the blank-text rule hides real text, or `ProductGrid` gains `"use client"`. Agents see 0 live products, so this has to be caught offline.
+    3. The settings-key allowlist breaks an editor: a typo, `general` missing, the check placed before BUSINESS_MOVED, or reuse in Sync.
+    4. The fail-closed category check blocks or mislabels every product write, by over-validating legitimate states (no row, a legacy string list, categories without ids).
+    5. A wording-only change alters a save path. Sync rewrites `business` whole (T-026's old live bug); a throw escapes the What We Do save; `processSteps` is compared by reference; or shared strings change.
+  1. **The slug functions are compared old against new, offline.**
+     - **Setup:** a harness in the scratchpad loads `main` @ `95f7ea1`'s `site-content.ts` (via `git show`) next to the branch's copy, with id generation stubbed.
+     - **`slugify`:** byte-identical for every title whose `main` output is non-empty and at most 255 characters. Test it on the 8 live titles and the 8 defaults; at least 10,000 generated titles mixing ASCII, punctuation runs, digits, Bengali, emoji, combining marks and invisible characters; and every length from 250 to 260, plus 500. A `main` output over 255 must come out cut at 255 with trailing dashes removed.
+     - **Valid shape:** every new output matches `^[a-z0-9]+(-[a-z0-9]+)*$` and is at most 255 characters, and `isWellFormedSlug` answers exactly as `main` does.
+     - **`normalizeProducts`:** identical for every list whose slugs are all at most 255. This includes duplicate titles (`-2`, `-3`), string lists, object lists, mixed lists and malformed stored slugs.
+     - **`resolveCategoriesForSave`:** identical results, with ids masked, for every list that doesn't hit the two new refusals. Name-clash messages are included.
+  2. **The 8 live addresses survive the first Save.**
+     - **Baseline:** captured 2026-10-06 before `/build`, from build `Cc0bmCDVMakGcv-X7ur5m` (`main` `95f7ea1`) on :3101, into the scratchpad `wave-1/baseline-95f7ea1/`. It holds `/what-we-do`, `/products`, the 8 `/products/<slug>` pages and `/sitemap.xml`. All were 200 with 0 UUIDs, and the slugs were `t-shirts`, `polo-shirts`, `tank-tops`, `dresses`, `sleepwear`, `leggings`, `sportswear` and `heavy-jersey-products`.
+     - **Simulated first Save:** offline, the branch's `resolveCategoriesForSave(<the 8 as the editor sends them>, new Map())` returns `ok: true` with the same 8 slugs in the same order. Repeat it with `SITE_SETTINGS.business.products`, and with the 8 as a legacy list of plain strings.
+     - **After the build:** the same pages and the sitemap are identical once the build id is normalized, with 0 UUIDs. If staff change live titles in between, rerun the simulation on a fresh read-only capture.
+  3. **The slug rules stay closed.** `isWellFormedSlug`'s pattern doesn't change, and `MAX_SLUG_LENGTH` and `cutSlug` stay private. `resolveCategoriesForSave` still never reads a slug sent by the client. A name clash at save time is still refused, never given a `-2`. `package.json` and the lockfile are byte-identical.
+  4. **Category titles with no visible characters (T-033).**
+     - **Refused:** a title that's not blank after trimming but fails `hasVisibleText` refuses the whole save with item 2's message. Test U+200B, U+200E, U+202E, U+FEFF, U+3164, U+00AD and mixes of them.
+     - **Row numbers:** "#n" is the 1-based position in the submitted list, counting blank rows.
+     - **Unchanged:** a title that's blank after trimming is still treated as removed, and "T-Shirts" followed by a U+200B still saves with `main`'s slug.
+     - **Client mirror:** `blankTitleRows` flags invisible-only titles; `hasVisibleText` is the only new import in `category-draft.ts`.
+  5. **Titles with no Latin letters or digits (T-032, settled by contract item 3).**
+     - A new category whose `slugBody(title)` is empty is refused with item 3's message. That's tested on `slugBody`, never by checking `slug === "category"`, so a category literally titled "Category" still saves.
+     - An existing category keeps its frozen slug and still saves under a non-Latin rename.
+     - Every name-clash message for Latin titles is byte-identical to `main`'s.
+  6. **The `updateSettings` key allowlist (T-032, settled by contract item 4)**, checked with a fake database.
+     - **Order:** `getUser()` comes first, then `business` gets the unchanged BUSINESS_MOVED message, then the hand-written six-key set.
+     - **Allowed keys:** `homepage`, `who_we_are`, `who_we_work_with`, `sustainability`, `contact` and `general`, matched exactly. Each gets the same database write and page refreshes as on `main`.
+     - **Refused, with no table access:** "Business", "business ", "general ", "constructor", "__proto__", "toString", an empty string, a number and `null`.
+     - **Call sites:** every `updateSettings("…")` call in `src` uses an allowed key (6 calls in 5 client files).
+     - **Sync:** `seedSettingsFromDefaults`' key filter is byte-identical.
+  7. **The fail-closed category check (T-032, settled by contract item 6)**, checked with a fake database.
+     - **How it reads:** through `readSettingsForEditor("business")`, imported only, with `settings-read.ts` byte-identical (`cc5c8a2c…`).
+     - **Answers:**
+       - a stored id with a well-formed slug: allowed;
+       - no row, a legacy string list, or categories without ids: today's "hasn't been saved as a category yet…", byte-identical;
+       - an unknown slug: "does not exist", byte-identical;
+       - a read error, a throw (after `unstable_rethrow`), or a stored value that isn't an object: CATEGORY_CHECK_FAILED, with no database text.
+     - **Callers:** create, update and reorder each return that message and write nothing.
+  8. **T-016 still holds.**
+     - Re-run T-016's harness from the scratchpad. That covers the server, serializer, `hasVisibleText`, the UI in production and StrictMode, and the mutation suite.
+     - Only the NOTHING_TO_SAVE wording and the stub for the category read may change in expectations. The mutation suite still catches everything it caught at `09702d0`.
+     - If the scratchpad has gone, rebuild the server and UI suites.
+     - `CategoryProductsManager.tsx` and `ProductsClient.tsx` have 0-byte diffs.
+  9. **The product mapper (SEC-INFO-36).**
+     - **Mapping:** `toProductCards` copies `{ name, description, image }` exactly, with the same count and order; nothing is trimmed or filtered.
+     - **Types:** `ProductGrid` and `ProductCard` take `ProductCardData` (`id?: never`), so tsc rejects un-narrowed rows on both pages. Neither file gains `"use client"`.
+     - **Server render, old against new:** render `main`'s and the branch's `ProductGrid` server-side with sample products: a Bengali name, a long unbroken word, an empty description, name plus description, and 9 products in one grid. Markup is identical for every product with a name or a description; a product with both blank loses only its text block.
+     - **No leaks:** a render of `/products` and `/products/<slug>` with sample products, through Next's compiled serializer, has 0 UUIDs and no `category_slug`, `sort_order`, `created_at` or `updated_at`.
+  10. **The What We Do page (T-033)**, checked in a synthetic harness on `BusinessClient`.
+      - **The marker:** "Unsaved" shows exactly while the 4 fields differ from the last saved snapshot. `processSteps` is compared deeply and in order. The marker clears after a successful save, and the saved snapshot is the one that was sent.
+      - **During a save:** every input and ChipList button is disabled by a `<fieldset disabled>`. Never use a `<form>`: ChipList's buttons have no `type`.
+      - **On a refusal, SAVE_CONFLICT or a throw:** the draft and the marker stay, the editor unfreezes and the error shows. A throw is caught inside the save and never reaches an error boundary.
+      - **Imports:** no new Server Action, and the comparison helper lives in `business/` or `src/lib`, never imported from `products/*` (T-026 invariant 7).
+  11. **Sync (T-033)**, checked with a fake database.
+      - **Same writes:** for every combination of the 7 keys, the rows written and the value `writeBusinessFields` builds are identical to `main`'s.
+      - **No raw keys:** no message shows a raw storage key. The server returns `seeded` keys and the panel maps them to its labels, with no `?? key` fallback that could show a raw key.
+      - **Wording:** the partial-failure and conflict messages say "click Sync again". SAVE_CONFLICT's wording for the two save actions doesn't change. If `SeedResult` changes shape, `SeedDefaultsPanel` changes in the same commit. No agent runs Sync.
+  12. **Only the intended wording changes.**
+      - **Byte-identical to `main`:** SESSION_EXPIRED, PRODUCT_NOT_FOUND, PRODUCT_NAME_REQUIRED, PRODUCT_IMAGE_REQUIRED, the "not saved yet" text, "does not exist", BUSINESS_MOVED, BUSINESS_UNREADABLE, SAVE_CONFLICT, every Latin name-clash message, and the one-category delete guard.
+      - **Changed only:** NOTHING_TO_SAVE, the multi-category guard, the invisible-title refusal, the non-Latin refusal, CATEGORY_CHECK_FAILED, UNKNOWN_SETTINGS_KEY, the Sync messages and the image placeholder.
+      - The `writeBusinessFields` change touches only comment lines, and the only change in `ImageUploadField.tsx` is the `placeholder` attribute.
+  13. **Scope and security sign-offs.**
+      - **0-byte diffs:** `settings-read.ts`, `business/page.tsx`, `SettingsForm.tsx`, `media-actions.ts`, `nav.ts`, `sitemap.ts`, the middleware, `next.config.ts`, `db/` and `supabase-schema.sql`.
+      - **Exports:** the server-action files export the same functions as `main`, and no constants.
+      - **Re-binds:** `/security-review` re-binds by sha256 every touched file that carries a hash: `site-content.ts`, `products-actions.ts` and both `products/page.tsx` files (T-016), `settings-actions.ts` (T-026), and `products/[category]/page.tsx` (T-025 `aa384615…`). It also re-checks T-026's client rules on `BusinessClient`, `SeedDefaultsPanel` and `category-draft`.
+      - **Docs:** INVENTORY gets `@purpose` lines for `toProductCards` and `ProductCardData`. Evidence goes in `docs/qa-evidence/WAVE-1/`, with local paths scrubbed.
+  - **Optional owner rows** (evidence only; the owner waived checklists on 2026-10-06):
+    - **O1:** Contact & General: Save Changes with no change. Expected: no red text.
+    - **O2:** What We Do: add a letter and watch the marker and the freeze, then undo and save.
+    - **O3:** Products: add two Bengali-titled categories and save. Expected: the explanation, and nothing saved.
+    - **O4:** After the first Save, the 8 category pages keep their addresses.
+  - **`/ship` additions:**
+    1. **Before the push:** MUST-ADD 2's evidence exists, and `main`'s sitemap lists the same 8 category addresses as the baseline.
+    2. **After the deploy, read-only on both domains:** the sitemap's category addresses match the baseline, each `/products/<slug>` returns 200, and one `/what-we-do/<slug>` gives one 308, then 200.
+    3. **After the first Save:** run item 2 again once a read-only check shows the categories have ids, and record it in LOG. Any moved address reopens Wave 1.
+  - **Notes from the premortem for later waves:**
+    - **K4:** re-baseline T-018's (Wave 2) "byte-for-byte unchanged" list on Wave 1's strings, so it doesn't revert them.
+    - **K8:** the new placeholder appears in every `ImageUploadField` across the admin. Log it in DECISIONS as an accepted admin-only visible change.
+    - **K9:** through `slugify`, the length cut also changes `normalizeProducts`' read-time slug for titles over 255 characters. None are live, and it's intended: read time and save time then agree.
   Split out of T-016 on 2026-10-04 by `architect-reviewer` (the V7 ½-day stop); about ½ day. It touches `site-content.ts` and `settings-actions.ts`, so `/security-review` re-checks both (re-binding T-026's sha256 sign-off). Pre-cleared under these rules:
   - **Category titles (QA T-026 F4).** In `resolveCategoriesForSave`, a title that isn't blank after trimming but fails `hasVisibleText` (added by T-016) refuses the whole save: "Category #n's title has no visible characters, so nothing was saved. Type a title, then save again." It's never treated as a deletion. `blankTitleRows` uses `hasVisibleText`. `normalizeProducts` doesn't change.
   - **The slug cut.**
@@ -902,6 +1064,19 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **T-031**, the grants hardening: a hand-applied migration. It may be prepared on its own branch, never merged with `STATUS: PENDING_USER_APPLY`, because that blocks `/ship`.
   - **Supabase sign-ups:** still ON on 2026-10-06, read live (`disable_signup: false`). Only the owner can turn them off in the dashboard.
 - **Deploy:** one `/ship` at the end, under the owner's "deploy". An earlier deploy, attempted on 2026-10-06 because of SEC-HIGH-1's live exposure, was refused by the session's permission check, since the owner sequenced it after the tickets. The manual checklist rows count as waived by the owner's instruction, recorded in DECISIONS at deploy time.
+
+**Follow-ups found in Wave 1 (2026-10-06)**, for the backlog. None blocks the run.
+- **QA I2:** a title containing U+202E can scramble the refusal messages that quote it, and `main`'s name-clash messages already do this. Wrap quoted titles in FSI/PDI (U+2068/U+2069). Admin-only.
+- **QA I3:** `/career` (1) and `/life-at-fashion-asia` (17) render public row UUIDs (job and media ids). They come from anon-readable tables, so it's not a leak, but it's outside T-025's catalog "0 UUIDs" rule. Look at it with T-019 (Wave 3).
+- **`code-reviewer`:** the two delete-guard strings in `settings-actions.ts` are inline. Move them into a private builder the next time the file opens (Wave 2a does).
+- **`design-reviewer`, extending T-011:**
+  - the Sync result's live region appears only when there's a result; keep it always present;
+  - the What We Do checkbox needs `shrink-0`;
+  - `ImageUploadField` uses `text-[10px]`/`text-[11px]`;
+  - the frozen editors don't look frozen.
+- **`design-reviewer`, extending T-027:** the Sync panel's `text-white` heading and `text-primary` code text, and the dashboard's `text-white` h1.
+- **`design-reviewer`, DESIGN.md §2:** add a `warning` token for the amber advisory color (13.7:1), alongside T-027's `scrim`.
+- **`security-reviewer`:** `settings-read.ts` now has three importers. If its `next/headers` chain is ever removed, add `import "server-only"`.
 
 ### Dependency Order
 

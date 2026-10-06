@@ -1,0 +1,14 @@
+qa-sync: seedSettingsFromDefaults, main vs branch (MUST-ADD 11)
+  PASS  every subset of the 7 keys (x3 orders, plus junk keys): the same queries, values, final rows and page refreshes as main: 1728/1728
+        - 384 key lists compared
+  PASS  every failure point: main's writes exactly, then the new answer (seeded, a full sentence, no raw key from the code's own text): 151/151
+        - the business read fails: main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: business read failed"
+        - the business value isn't an object: main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: The saved What We Do settings couldn't be read, so nothing was saved. Reload the page and try agai
+        - the business stamp isn't a string: main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: The saved What We Do settings couldn't be read, so nothing was saved. Reload the page and try again
+        - the compare-and-swap loses (0 rows): main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: Another save changed these settings at the same moment, so nothing was saved. Click Save again."
+        - the business update errors: main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: update failed"
+        - no business row and the insert races (23505): main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: Another save changed these settings at the same moment, so nothing was saved. Click Save
+        - no business row and the insert errors: main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: insert failed"
+        - no business row and the insert reports no row: main said "Synced homepage, who_we_are, who_we_work_with, sustainability, contact, general, but not the What We Do page text: Another save changed these settings at the same moment, so nothing was saved. Click Sav
+  PASS  the code: writeBusinessFields unchanged but for comments; SAVE_CONFLICT unchanged; the panel maps keys to labels only: 9/9
+qa-sync: seedSettingsFromDefaults, main vs branch (MUST-ADD 11): 1888/1888 passed, 0 failed

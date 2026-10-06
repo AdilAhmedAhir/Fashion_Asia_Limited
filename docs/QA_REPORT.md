@@ -2417,3 +2417,212 @@ T-004 rows 3–6 count as done if rows 1–3 and 11 here pass.
   5. The products map is read only through `Map.get`.
 - **(4) Re-runs at HEAD:** a byte-identical copy of the builder's harness, under the network and `.env` guard, ran server 117/117, Map 14/14, visible text 111/111 and UI 269/269. Mutations: 40/40 caught; a first attempt stopped on a harness clean-up race (`ENOTEMPTY` deleting Chrome's profile folder), not a failed check, and the rerun was clean. QA's UI attacks q1–q9: 68/68 in production and in development under StrictMode. The guard saw 0 network or `.env` attempts, and the monitor saw 0 internet sockets. `npx tsc --noEmit` exits 0, and the builder's build log is clean, with the same 3 routes.
 - **Verdict: PASS.** The evidence is in `docs/qa-evidence/T-016/09702d0/`.
+
+## Static Pass — Wave 1 (T-033, T-032) — 2026-10-06
+**Target:** branch `wave-1-catalog-hygiene` at `032c8fa` (T-032), on top of `2aab4d5` (T-033), compared with `main` `95f7ea1`. The contract and premortem are in `010939f`.
+
+Offline only: no database, no sign-in, no Server Action call, no Sync.
+
+**Gate:**
+- `npx tsc --noEmit` exits 0 at HEAD. The tsbuildinfo went to the scratchpad, not the repo.
+- Commit 1's exact tree (`git archive 2aab4d5`) also exits 0: 786 files.
+- A negative control on that copy works: passing un-narrowed rows to `ProductGrid` fails with TS2322 on `id`.
+- The builder's three build logs are clean. Each finished TypeScript and generated 27/27 pages, and the route table matches `main`'s.
+
+| # | Attack | Result |
+|---|---|---|
+| 1 | **Harness isolation** | **PASS** |
+| 2 | **The builder's Wave 1 suites, re-run** (`--stage final`) | **PASS:** 729/729, mutations 65/65 killed |
+| 3 | **T-016's harness, re-run** (MUST-ADD 8) | **PASS:** server 117/117, Map 14/14, `hasVisibleText` 111/111, UI 269/269, mutations 40/40 killed |
+| 4 | **Slugs, old against new** (MUST-ADDs 1, 3) | **PASS** |
+| 5 | **The first Save, through the real `saveCategories`** (MUST-ADD 2, offline) | **PASS** |
+| 6 | **Invisible and non-Latin titles, plus the editor's mirror** (MUST-ADDs 4, 5) | **PASS** |
+| 7 | **The six-key allowlist and its order; the delete guard** (MUST-ADD 6, item 5) | **PASS:** 140/140 |
+| 8 | **The fail-closed category check** (MUST-ADD 7) | **PASS:** 344/344 |
+| 9 | **The mapper and the no-leak flight** (MUST-ADD 9) | **PASS:** 678/678 |
+| 10 | **What We Do marker and freeze; the Sync panel** (MUST-ADDs 10, 11) | **PASS:** 58/58 |
+| 11 | **Sync: the same writes, the new messages** (MUST-ADD 11) | **PASS:** 1,888/1,888 |
+| 12 | **The string inventory, byte for byte, and scope** (MUST-ADDs 12, 13) | **PASS:** 144/144 |
+| 13 | **T-026's client rules on the 3 touched client files** | **PASS:** 22/22 |
+| 14 | **QA's own mutation check on attacks 4–13** | **PASS:** 39/39 killed |
+
+**1. Harness isolation.**
+- **The guard:** a Node preload via `NODE_OPTIONS=--import`. It refuses and logs fetch, WebSocket, http/https, net, tls, dgram, and any `.env` read, open or stat.
+  - Positive control: 5 of 5 attempts refused. The targets were 127.0.0.1:9 and a dummy `.env.control` file.
+- **The process-tree monitor:** it checks every child process of a run every 0.2 s for internet sockets, loopback included.
+  - Positive control: it caught a test UDP socket on 127.0.0.1.
+- **Results across all 13 guarded runs:** 0 refused attempts and 0 sockets.
+- **Chrome:** it runs on `--remote-debugging-pipe`, so no TCP port is opened, with `--host-resolver-rules=MAP * ~NOTFOUND`. Its pages are `file://` only, and every http(s)/ws(s) URL is blocked and counted: 0.
+- **Harness copies:** both were byte-identical copies (`diff -rq` clean apart from `out/`), so the builder's `out/` stays untouched.
+
+**3. T-016's harness copy.** It differs from `t-016/harness` in 2 files:
+- the NOTHING_TO_SAVE wording;
+- the category read's name in 4 checks, plus a `readSettingsForEditor` stub;
+- one plumbing stub: an identity `toProductCards` on the stubbed `ProductGrid`. It weakens no expectation, and the real mapper is tested in rows 9 and 14.
+
+The mutations folder is unchanged.
+
+**4. Slugs, old against new.**
+- **`slugify` on 282,302 titles:** every BMP code point (alone, inside Latin text, and repeated), astral samples, case edges, every length from 1 to 300 plus 500, 1,000 and 10,000, and 60,000 generated titles.
+  - 281,976 titles are byte-identical to `main`.
+  - 326 over-long titles come out cut at 255 with the trailing dashes trimmed.
+  - Every output is well-formed.
+- **`isWellFormedSlug`:** the same answer as `main` on more than 40,000 probes.
+- **`normalizeProducts`:** identical on 7,891 random lists. On the 109 lists where `main` produced an over-long slug, only the slug is cut. The dedupe stays unique and within 255, up to 120 duplicates.
+- **`resolveCategoriesForSave`:** identical to `main`, ids masked, on every random save that doesn't hit a new refusal: 6,207 at HEAD and 8,221 at commit 1.
+- **The rules stay closed:**
+  - A Proxy that throws on `.slug` proves an incoming slug is never read.
+  - Name clashes are refused, never given `-2`.
+  - The exports are unchanged.
+  - The pattern is unchanged.
+  - `package.json` and the lockfile have 0-byte diffs.
+
+**5. The first Save.**
+- **Setup:** the 8 live titles from the before-build capture, stored three ways: without ids or slugs, with read-time slugs, and as a plain string list.
+- **Result:** the real `saveCategories` gives the same 8 slugs in the same order, identical to `main`.
+  - It makes one compare-and-swap update on the exact stored stamp, and other fields ride through.
+  - It refreshes all 8 category pages and the sitemap.
+- **A second save:** the slugs stay frozen under a Bengali rename and a Latin rename. Making an existing title invisible is refused, with no write.
+- **The code defaults** (no stored row) give the same slugs as `main`.
+
+**6. Invisible and non-Latin titles.**
+- **Invisible titles are refused:** U+200B, U+200E, U+202E, U+3164, U+00AD, U+2060, U+180E, U+115F, U+034F, a tag character, U+FE0F, and mixes. This holds for new categories, existing ones and legacy strings.
+  - `#n` counts blank rows, junk and holes.
+  - U+FEFF alone trims to blank, so it's a delete, as on `main`.
+- **Non-Latin titles:**
+  - A new non-Latin title is refused by name, on the first one.
+  - "Category" still saves.
+  - An existing category keeps its frozen slug, even when that slug is already `category`.
+  - An invisible title gets item 2's message, not item 3's.
+- **The editor's mirror:** `blankTitleRows` flags exactly the rows the server would delete or refuse, across 3,000 drafts.
+
+**7. The allowlist and the delete guard.**
+- **Check order:** `getUser()` comes first, then BUSINESS_MOVED (byte-identical to `main`), then the six keys.
+- **Refused, with no table access:** 47 keys. They include "Business", "business ", "general ", a Cyrillic look-alike, a fullwidth key, `__proto__`, `constructor`, `toString`, "", numbers, `null`, objects, arrays, a String object and a Symbol.
+- **The six allowed keys:** the same queries, failure answers and page refreshes as `main`.
+- **The source:** the `Set` is a hand-written literal, in the contract's order. Sync's key filter is byte-identical.
+- **Call sites:** 6 calls in 5 files, all using allowed keys.
+- **Control:** given "Business", `main` wrote a junk row.
+- **The delete guard:**
+  - One blocked category reads byte-for-byte as before.
+  - Two to four are each quoted, with commas and a final "and", in stored order.
+  - A blocked save writes nothing.
+
+**8. The fail-closed check.**
+- **Setup:** the real, unchanged `settings-read.ts` and Next's real `unstable_rethrow`, through 17 stored states, for create, update and reorder.
+- **Failures:** a read error, a throw, or a stored value that's an array, string, number, `null` or `true` gives CATEGORY_CHECK_FAILED. Nothing is written, and no database text reaches the answer.
+- **Everything else** is byte-identical to `main`, query for query.
+- **Next's signals:** DynamicServerError, `redirect()` and `notFound()` are rethrown as themselves.
+
+**9. The mapper and the payload.**
+- **`toProductCards`** reads only `name`, `description` and `image`. A row that throws on any other key, or on being listed, never trips. The results are new 3-key objects, in the same order and count.
+- **The card markup:** a 13 × 13 matrix of name and description kinds.
+  - 50 combinations are identical to `main`.
+  - 119 change exactly by the visible-character rule.
+- **The flight render:** the REAL `/products` and `/products/[category]` pages through Next's compiled flight server, in production and development.
+  - Marker values went in every unrendered field: product id, category id, `category_slug`, `sort_order`, both timestamps, and an extra column.
+  - 0 of them reached either payload.
+  - Positive control: `main` leaks them in development.
+- **Static checks:** neither component is `"use client"`.
+
+**10. The What We Do page and the Sync panel.** These run on the real components, in production and in development under StrictMode.
+- A double-click on Save or Sync sends one call.
+- During a save, every field, chip button, Enter and Tab is inert, and there's no `<form>`.
+- After SAVE_CONFLICT, reverting clears the marker.
+- A trailing space counts as a change, and removing it doesn't.
+- Removing every step, then re-adding them in the same order, clears the marker.
+- After a successful save, undoing an edit doesn't bring back "Page text saved.".
+- Leaving mid-save raises no error or warning.
+- Markup in an error shows as text.
+- No action is called from a timer, and no network request is made.
+
+**11. Sync.**
+- **Every subset:** all 128 subsets of the 7 keys, in 3 orders and with junk keys, give the same queries, rows and page refreshes as `main`.
+- **Every failure point** (10 of them) keeps `main`'s writes.
+  - The answers carry `seeded` and the full sentences.
+  - A conflict says "Click Sync again".
+  - The code's own messages name no storage key.
+- **`writeBusinessFields`** is identical to `main` once comments are removed.
+- **The panel's `syncedSentence`:** labels only, and unknown or prototype keys are dropped.
+
+**12. Strings and scope.**
+- **The string inventory:** every literal, template and JSX text in the 11 files changes by exactly the reviewed list, both at commit 1 and at HEAD. The new What We Do marker text and its two sr-only legends are included.
+- **Frozen messages:** SESSION_EXPIRED (both files), PRODUCT_NOT_FOUND, PRODUCT_NAME_REQUIRED, PRODUCT_IMAGE_REQUIRED, the "not saved yet" text, "does not exist", SAVE_CONFLICT, BUSINESS_MOVED, BUSINESS_UNREADABLE and every name clash are byte-identical. The only changed constant is NOTHING_TO_SAVE.
+- **`ImageUploadField.tsx`:** 1 changed line, the placeholder.
+- **What each commit touches:** `main..032c8fa` covers exactly the 11 files plus DECISIONS and ROADMAP. Commit 1 touches the 11 files; commit 2 touches 3.
+- **0-byte diffs:** the 20 unchanged files plus `src/lib/supabase/` and `db/`, so there's no migration.
+- **Still signed off:** `settings-read` `cc5c8a2c…`, `business/page.tsx` `87071736…`, the admin `products/page.tsx` `969a00de…`.
+- **Exports:** the "use server" files export the same async functions as `main`, and no constant.
+- **`next.config.ts`** keeps `agentRules: false` and `serverFunctions: false`.
+- **Commit names:** all three commits are authored and committed as happierbangladesh, with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+
+**Findings** (all info; nothing blocks):
+- **I1 — commit 1's build log was taken before the commit.** It was built at 09:57 and committed at 10:17. QA type-checked the exact `2aab4d5` tree and it's clean, but didn't rebuild it, because the build is off-limits. This only matters for bisecting; the served build is `032c8fa`'s.
+- **I2 — a reversing control character can scramble the non-Latin refusal message.** The message quotes the raw title. A title with a right-to-left override (U+202E) inside visible text can make the rest of the message display reversed. `main`'s name-clash messages already do this. It's admin-only, self-inflicted, and nothing is saved. Optional backlog nit: wrap quoted titles in U+2068/U+2069.
+- **I3 — UUID-shaped ids on two pages outside Wave 1.** `/career` carries 1 and `/life-at-fashion-asia` carries 17: job and media row ids, in public, anonymously readable tables. No Wave 1 file touches those pages, and T-025's 0-UUID rule covers the catalog pages. For security's awareness only.
+- **I4 — Chrome started two outside processes in the harness's tree:** its own GoogleUpdater (twice, during T-016's re-run) and macOS `profiles`. Neither is harness code, and neither held a socket.
+- **I5 — a tooling trap for Wave 2.** `git show <rev>:<path>` exits 0 with empty output for a *missing* path containing `[`. QA's loader hit it and switched to `git cat-file blob`. The builder's harness only reads existing paths, so it's unaffected, but Wave 2's old-against-new harnesses should know.
+- **I6 — a doc nit.** The contract says "Touches (10 source files)", but its list, and the diff, have 11.
+
+**Evidence:** the result logs go to `docs/qa-evidence/WAVE-1/`. The harnesses and scripts stay in the session scratchpad, per STACK.md §3.
+
+## Live Pass — Wave 1 — 2026-10-06
+**Target:** the `prod` preview on **:3101**, which serves BUILD_ID `uJ6gQNfbIFf9rjlZy1uyU` (`032c8fa`).
+- The served HTML carries that id, and so does `.next/BUILD_ID`.
+- `next-server` started at 10:29:50 from the repo, after the 10:25 build.
+- The build's chunks hold Wave 1's strings, and the old "There was nothing to save." is gone.
+
+Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Action` header.
+
+| # | Attack | Result |
+|---|---|---|
+| 1 | **MUST-ADD 2: the 11 captures against the before-build baseline** | **PASS** |
+| 2 | **The admin gate** (40 probes) | **PASS** |
+| 3 | **Public pages and legacy redirects** | **PASS** |
+| 4 | **RSC payloads** | **PASS** |
+
+**1. MUST-ADD 2.** `/what-we-do`, `/products`, the 8 `/products/<slug>` pages and `/sitemap.xml`.
+- **When:** captured at 04:38:17Z and again at 05:10:35Z. Compared with the baseline captured at 03:42:20Z from build `Cc0bmCDVMakGcv-X7ur5m`.
+- **Result:** every page is 200, and every byte size equals the baseline's.
+- **What differs raw:** the build id, once per page, and the sitemap's 18 `<lastmod>` request-time stamps, which were masked.
+- **Once normalized:** all 11 are identical, with the same 17 asset references and 0 UUIDs.
+- **The sitemap:** the same 18 paths in the same order, including the same 8 category addresses.
+- **Why the offline checks matter:** with 0 live products, the new product cards don't render on the live site yet. Rows 9 and 14 of the Static Pass cover them.
+
+**2. The admin gate.** `/admin/products` and `/admin/business`, using T-026's 40-probe matrix with Wave 1's strings added as markers.
+- 37 probes end in **307 → `/admin/login`**, some through 308 hops first.
+- The 2 case-changed paths return 404.
+- `/admin/login` returns 200.
+- No hop sets a cookie, and no body contains admin text.
+
+**3. Public pages.**
+- **200:** `/`, `/products`, `/what-we-do`, `/who-we-are`, `/global-partner`, `/sustainability`, `/life-at-fashion-asia`, `/career`, `/contact`, `/grievance`, `/sitemap.xml` and `/robots.txt`.
+- **404:** `/products/no-such-slug`, `/products/T-SHIRTS` and `/products/category`.
+- **308:** all 8 `/what-we-do/<slug>` addresses redirect to `/products/<slug>`, which returns 200.
+- **No cookies** anywhere, and 0 UUIDs on `/` and `/sitemap.xml`.
+
+**4. RSC payloads.** `/products`, `/products/t-shirts`, `/products/heavy-jersey-products` and `/what-we-do`, each 307 → `?_rsc` → 200 `text/x-component`. They carry 0 UUIDs, 0 row-field names and 0 JWT-shaped strings.
+
+**Not run** (each needs a login or a write): the live first Save, admin saves, and Sync. Owner rows O1–O4 are optional, since the owner waived checklists.
+
+## Static Re-check — Wave 1 fix `1a57cfa` — 2026-10-06
+- **(1) Exactly the reported changes.** `032c8fa..1a57cfa` touches 3 files, +16/−6.
+  - `site-content.ts` rebuilds byte for byte from `032c8fa`'s with three edits: the private own-key `defaultCategoryImage`, the 3 `PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK` lookups routed through it, and "or a number" → "or a digit from 0 to 9".
+  - `ImageUploadField.tsx` changes one line, the placeholder. `category-draft.ts` changes only its header comment.
+  - The string inventory changes by exactly the placeholder and the digit wording. Imports are unchanged, and no plain `PRODUCT_IMAGES[…]` lookup is left in `src`.
+- **(2) Real titles keep their images.** 282,380 titles were tested: QA's corpus; the 8 mapped keys with padded, case and zero-width variants; the 8 live titles; the code defaults. They read (in 5 stored shapes) and save (new, and existing by id) exactly as at `032c8fa`.
+- **(3) Prototype names now get a string image.** All 12 `Object.prototype` names, plain and padded, read and save with the fallback image as a string.
+  - Every result is plain data: it survives a JSON round trip, `structuredClone` and Next's flight serializer.
+  - Positive control: at `032c8fa`, "constructor" and "toString" got a function and "__proto__" got `Object.prototype`, and 72 of 72 of those save results failed to serialize. The bug predates Wave 1 (SEC-INFO-41).
+- **(4) Scope.** The unchanged list, `src/lib/supabase/` and `db/` are still 0-byte. Security re-bound `site-content.ts` at `eeab383b515b10fa`.
+- **(5) Re-runs at HEAD, under the guard:**
+  - the builder's harness: 782/782, mutations 67/67;
+  - T-016's harness copy: 511/511, mutations 40/40;
+  - `npx tsc --noEmit`: exits 0;
+  - QA's attacks, plus the new `qa-images` (282/282): all pass;
+  - QA's mutation check: 45/45.
+- **Live on :3101** (`i-z7vzG9mnRlAskgJA5jF`):
+  - MUST-ADD 2: all 11 pages are identical to the baseline once normalized, with 0 UUIDs and the same 8 category addresses;
+  - the admin gate is 40/40 clean;
+  - `/products/constructor` and `/products/__proto__` return 404.
+- **Verdict: PASS.** Evidence: `docs/qa-evidence/WAVE-1/1a57cfa/`.

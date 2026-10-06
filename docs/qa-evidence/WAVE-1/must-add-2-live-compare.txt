@@ -1,0 +1,24 @@
+Capture 1: 2026-10-06T04:38:17Z (curl GET, no cookies) from :3101, build uJ6gQNfbIFf9rjlZy1uyU (032c8fa), against the baseline captured 2026-10-06T03:42:20Z from build Cc0bmCDVMakGcv-X7ur5m (main 95f7ea1).
+what-we-do.html                      bytes base=69345 now=69345 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products.html                        bytes base=53242 now=53242 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_t-shirts.html               bytes base=38158 now=38158 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_polo-shirts.html            bytes base=38212 now=38212 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_tank-tops.html              bytes base=38176 now=38176 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_dresses.html                bytes base=38140 now=38140 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_sleepwear.html              bytes base=38176 now=38176 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_leggings.html               bytes base=38158 now=38158 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_sportswear.html             bytes base=38194 now=38194 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+products_heavy-jersey-products.html  bytes base=38392 now=38392 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (17)
+sitemap.xml: <lastmod> masked (base 18, now 18); every other byte compared
+sitemap.xml                          bytes base=3126 now=3126 | build id base=0x now=0x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (0)
+
+sitemap <loc> paths: base 18, now 18, identical list (order included): YES
+category addresses now: /products/t-shirts /products/polo-shirts /products/tank-tops /products/dresses /products/sleepwear /products/leggings /products/sportswear /products/heavy-jersey-products
+category addresses identical to the baseline: YES (8)
+ALL 11 identical after normalizing the build id: YES; UUID-shaped strings across the 11 captures: 0
+
+Capture 2 (re-check at the end of the pass): 2026-10-06T05:10:35Z
+sitemap <loc> paths: base 18, now 18, identical list (order included): YES
+category addresses now: /products/t-shirts /products/polo-shirts /products/tank-tops /products/dresses /products/sleepwear /products/leggings /products/sportswear /products/heavy-jersey-products
+category addresses identical to the baseline: YES (8)
+ALL 11 identical after normalizing the build id: YES; UUID-shaped strings across the 11 captures: 0

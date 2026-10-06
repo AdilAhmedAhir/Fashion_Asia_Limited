@@ -1,0 +1,5 @@
+Wave 1 QA, 2026-10-06: the type gate, run by QA (npx tsc --noEmit, buildinfo written to the scratchpad, never the repo).
+HEAD (032c8fa, the repo itself): start=2026-10-06T04:55:00Z end=2026-10-06T04:55:02Z exit=0 ; output: (none)
+Commit 1 (2aab4d5, its exact tree from git archive, the project's node_modules linked): start=2026-10-06T04:55:02Z end=2026-10-06T04:55:03Z exit=0 ; output: (none); 786 files, 10,124 lines of TypeScript checked
+Negative control on the commit-1 copy: /products passing section.products un-narrowed -> error TS2322: Type 'CategoryProduct[]' is not assignable to type 'ProductCardData[]' (... Types of property 'id' are incompatible).
+Builder's build logs (not re-run by QA, by instruction): commit-1 build 09:57 local (before the 10:17 commit), commit-2 build 10:18, final build 10:25 = served BUILD_ID uJ6gQNfbIFf9rjlZy1uyU; each compiled, finished TypeScript and generated 27/27 pages, with 0 error lines; the route table is identical to main's for all three.

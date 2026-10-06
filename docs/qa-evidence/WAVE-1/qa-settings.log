@@ -1,0 +1,12 @@
+qa-settings: allowlist, delete guard, first Save (MUST-ADDs 2, 6; items 4, 5)
+  PASS  A. updateSettings: getUser() first, then BUSINESS_MOVED, then the six keys by exact match; allowed keys write exactly as on main: 77/77
+        - control: main given "Business" wrote a junk row (["Business"]); the branch writes nothing
+        - call sites: WhoWeWorkWithClient.tsx→who_we_work_with, ContactSettingsClient.tsx→contact, ContactSettingsClient.tsx→general, HomepageSettingsClient.tsx→homepage, SustainabilityClient.tsx→sustainability, WhoWeAreClient.tsx→who_we_are
+  PASS  B. the delete guard: one category keeps main's wording; two or more are each quoted, joined with commas and a final "and"; a blocked save writes nothing: 22/22
+        - two blocked: main said "Remove its products first: \"T-Shirts, Sportswear\" still has products assigned to it."
+        - three blocked, in stored order: main said "Remove its products first: \"T-Shirts, Polo Shirts, Sportswear\" still has products assigned to it."
+        - four blocked: main said "Remove its products first: \"T-Shirts, Polo Shirts, Sportswear, Dresses\" still has products assigned to it."
+  PASS  C. the first Save through the real saveCategories: the 8 live titles keep their 8 addresses, in order, identical to main; a second save keeps them frozen: 41/41
+        - live titles: T-Shirts | Polo Shirts | Tank Tops | Dresses | Sleepwear | Leggings | Sportswear | Heavy Jersey Products
+        - defaults' slugs: t-shirts polo-shirts tank-tops dresses sleepwear leggings sportswear heavy-jersey-products
+qa-settings: allowlist, delete guard, first Save (MUST-ADDs 2, 6; items 4, 5): 140/140 passed, 0 failed

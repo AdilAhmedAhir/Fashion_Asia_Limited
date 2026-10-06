@@ -1,0 +1,80 @@
+KILLED       Q1   slugify no longer cuts at 255
+             qa-slugs: 1731365/1731565 passed, 200 failed; e.g. head: an over-long slug is main's, cut at 255 and trimmed (256 chars)
+KILLED       Q2   the dedupe suffix is appended to the uncut base
+             qa-slugs: 1731551/1731565 passed, 14 failed; e.g. 253 x12: every slug well-formed and at most 255
+KILLED       Q3   the invisible-title refusal is gone
+             qa-slugs: 1732600/1732644 passed, 44 failed; e.g. the random saves exercise both new refusals and plenty of ordinary saves
+KILLED       Q4   an invisible title is read as a delete
+             qa-slugs: 1735942/1736142 passed, 200 failed; e.g. head save 0: identical to main (ids masked)
+KILLED       Q5   #n is 0-based
+             qa-slugs: 1731522/1731565 passed, 43 failed; e.g. a new category titled U+200B: refused with item 2's message
+KILLED       Q6   the non-Latin refusal is gone
+             qa-slugs: 1734349/1734359 passed, 10 failed; e.g. the random saves exercise both new refusals and plenty of ordinary saves
+KILLED       Q7   the non-Latin check tests the slug "category"
+             qa-slugs: 1730730/1730732 passed, 2 failed; e.g. a new category titled "Category" still saves, as /products/category
+KILLED       Q8   the non-Latin check runs before the visible-character check
+             qa-slugs: 1731535/1731565 passed, 30 failed; e.g. a new category titled U+200B: refused with item 2's message
+KILLED       Q9   the non-Latin refusal applies to existing categories too
+             qa-slugs: 1730584/1730586 passed, 2 failed; e.g. an existing category renamed to Bengali keeps its frozen slug
+KILLED       Q10  the allowlist is gone
+             qa-settings: 96/140 passed, 44 failed; e.g. signed in, "Business": UNKNOWN_SETTINGS_KEY, no table access, no page refresh
+KILLED       Q11  the allowlist runs before BUSINESS_MOVED
+             qa-settings: 137/140 passed, 3 failed; e.g. signed in, "business": BUSINESS_MOVED, byte-identical to main
+KILLED       Q12  the allowlist trims and folds case
+             qa-settings: 133/140 passed, 7 failed; e.g. signed in, "general ": UNKNOWN_SETTINGS_KEY, no table access, no page refresh
+KILLED       Q13  the allowlist is a plain-object lookup (prototype keys pass)
+             qa-settings: 133/140 passed, 7 failed; e.g. signed in, "constructor": UNKNOWN_SETTINGS_KEY, no table access, no page refresh
+KILLED       Q14  the allowlist is missing general
+             qa-settings: 136/140 passed, 4 failed; e.g. general: the same result, queries and page refreshes as main
+KILLED       Q15  the delete guard's list has no final "and"
+             qa-settings: 137/140 passed, 3 failed; e.g. two blocked: the message
+KILLED       Q16  several blocked categories get the singular wording
+             qa-settings: 137/140 passed, 3 failed; e.g. two blocked: the message
+KILLED       Q17  a failed category read is allowed (fails open)
+             qa-attachable: 264/344 passed, 80 failed; e.g. create "sportswear", a read error (with database text): CATEGORY_CHECK_FAILED
+KILLED       Q18  a failed category read is treated as an empty catalog
+             qa-attachable: 304/344 passed, 40 failed; e.g. create "sportswear", a read error (with database text): CATEGORY_CHECK_FAILED
+KILLED       Q19  the Sync conflict isn't reworded
+             qa-sync: 1864/1888 passed, 24 failed; e.g. the compare-and-swap loses (0 rows), [business]: the full sentence, with the pages synced first
+KILLED       Q20  seeded is [] on a partial failure
+             qa-sync: 1864/1888 passed, 24 failed; e.g. the business read fails, [homepage,who_we_are,business]: the full sentence, with the pages synced first
+KILLED       Q21  the whole-row sync becomes a plain upsert (drops stored-only fields)
+             qa-sync: 1688/1888 passed, 200 failed; e.g. [homepage]: queries
+KILLED       Q22  the panel falls back to raw keys
+             qa-sync: 1885/1888 passed, 3 failed; e.g. syncedSentence keeps only keys that own a label (hasOwnProperty), with no `?? key` fallback
+KILLED       Q23  the mapper copies the whole row
+             qa-render: 670/678 passed, 8 failed; e.g. never reads, enumerates or inspects any other key of a row
+KILLED       Q24  /products stops narrowing
+             qa-render: 675/678 passed, 3 failed; e.g. /products, development: no product id, category id, category_slug, sort_order, timestamp or extra column
+KILLED       Q25  /products/[category] stops narrowing
+             qa-render: 675/678 passed, 3 failed; e.g. /products/t-shirts, development: no product id, category id, category_slug, sort_order, timestamp or extra column
+KILLED       Q26  a description counts by truthiness again
+             qa-render: 531/678 passed, 147 failed; e.g. name visible x description spaces: a paragraph only if the description has a visible character, untrimmed
+KILLED       Q27  the text block renders even when both are blank
+             qa-render: 614/678 passed, 64 failed; e.g. name empty x description empty: the text block only if one of them is visible
+KILLED       Q28  the What We Do editor isn't frozen during a save
+             qa-ui: 50/58 passed, 8 failed; e.g. [production] frozenControls: during the save: both fieldsets are disabled and the marker still shows
+KILLED       Q29  the saved snapshot isn't moved on success
+             qa-ui: 52/58 passed, 6 failed; e.g. [production] doubleClickSave: ...which lands as saved, with no marker
+KILLED       Q30  process steps compared by reference
+             qa-ui: 56/58 passed, 2 failed; e.g. [production] stepsEmptyAndBack: adding them all back in the same order clears it (compared step by step)
+KILLED       Q31  the heading is compared trimmed
+             qa-ui: 56/58 passed, 2 failed; e.g. [production] whitespaceCounts: a trailing space is a change (the text is compared exactly, as the server stores it
+KILLED       Q32  the panel drops the synced pages on a failure
+             qa-ui: 56/58 passed, 2 failed; e.g. [production] syncTwiceAndHtml: an error with markup in it shows as text, after the synced labels
+KILLED       Q33  NOTHING_TO_SAVE back to main's wording
+             qa-scope: 141/144 passed, 3 failed; e.g. HEAD src/app/actions/products-actions.ts: strings removed
+KILLED       Q34  the placeholder back to a real-looking path
+             qa-scope: 141/144 passed, 3 failed; e.g. HEAD src/components/admin/ImageUploadField.tsx: strings removed
+KILLED       Q35  a frozen message changes (BUSINESS_MOVED)
+             qa-scope: 140/144 passed, 4 failed; e.g. HEAD src/app/actions/settings-actions.ts: strings removed
+KILLED       Q36  the one-category delete guard's wording changes
+             qa-settings: 134/140 passed, 6 failed; e.g. one blocked: the message
+KILLED       Q37  the allowlist runs before getUser()
+             qa-settings: 131/140 passed, 9 failed; e.g. signed in, "business": BUSINESS_MOVED, byte-identical to main
+KILLED       Q38  CATEGORY_CHECK_FAILED's wording changes
+             qa-attachable: 304/344 passed, 40 failed; e.g. create "sportswear", a read error (with database text): CATEGORY_CHECK_FAILED
+KILLED       Q39  the editor flags a title by trim() again (invisible titles pass)
+             qa-slugs: 1731365/1731565 passed, 200 failed; e.g. draft 1: flags exactly the blank or invisible rows, by #n
+
+qa-mutants: 39/39 killed

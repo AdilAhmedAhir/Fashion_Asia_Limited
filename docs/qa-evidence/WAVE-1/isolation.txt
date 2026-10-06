@@ -1,0 +1,22 @@
+Wave 1 QA, 2026-10-06: harness isolation (path-free summary of the guard and the process-tree monitor).
+Guard: guard.mjs preloaded into every Node process via NODE_OPTIONS=--import; refuses and logs fetch, WebSocket, http/https, net, tls, dgram and any .env read/open/stat.
+Monitor: every 0.2 s, lsof of every live descendant of the run (Node, git, shasum, grep, tsc, Chrome and its helpers) for internet sockets, loopback included.
+
+Positive controls:
+  guard: fetch: refused;httpGet: refused;netConnect: refused;readEnv: refused;existsEnv: refused   (targets: 127.0.0.1:9 and a dummy .env.control file in the QA folder)
+  monitor: a perl process holding a UDP socket on 127.0.0.1 -> 8 socket sightings in 8 polls
+
+run                exit   guarded  attempts  sockets  processes seen (by kind)
+wave1-run-all      0      12       0         0        Chrome 133, node 12, short-lived (git/shasum/grep) 9
+t016-run-all       0      6        0         0        Chrome 310, GoogleUpdater (Chrome's own updater) 2, node 5, short-lived (git/shasum/grep) 5
+qa-slugs           0      1        0         0        node 1
+qa-settings        0      1        0         0        node 1
+qa-attachable      0      1        0         0        node 1, short-lived (git/shasum/grep) 1
+qa-sync            0      1        0         0        node 1
+qa-render          0      1        0         0        node 1, short-lived (git/shasum/grep) 2
+qa-scope           0      1        0         0        node 1, short-lived (git/shasum/grep) 2
+qa-client-rules    0      1        0         0        node 1
+qa-ui              0      1        0         0        Chrome 27, node 1, profiles (macOS, started by Chrome) 1
+qa-mutants         0      40       0         0        Chrome 130, grep 1, node 40, profiles (macOS, started by Chrome) 1, short-lived (git/shasum/grep) 25
+tsc-head           0      1        0         0        node 1
+tsc-commit1        0      1        0         0        node 1

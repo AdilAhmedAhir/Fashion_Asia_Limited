@@ -22,6 +22,16 @@ const LABELS: Record<string, string> = {
     general: "General / SEO"
 };
 
+// "Synced Homepage, Who We Are and Sustainability." for the keys a sync
+// wrote, in the order it wrote them, or "" for none (T-033). Pages are named
+// only by the labels above: a key without one is left out, never shown raw.
+function syncedSentence(keys: readonly string[]): string {
+    const labels = keys.filter(key => Object.prototype.hasOwnProperty.call(LABELS, key)).map(key => LABELS[key]);
+    if (!labels.length) return "";
+    const list = labels.length > 1 ? `${labels.slice(0, -1).join(", ")} and ${labels[labels.length - 1]}` : labels[0];
+    return `Synced ${list}.`;
+}
+
 export default function SeedDefaultsPanel() {
     const [isPending, startTransition] = useTransition();
     const [selected, setSelected] = useState<string[]>(PAGE_KEYS);
@@ -44,13 +54,15 @@ export default function SeedDefaultsPanel() {
             try {
                 // Returns its failures (T-026) rather than throwing them,
                 // because Next redacts a thrown Server Action message in
-                // production.
+                // production. A failure still lists the pages synced before
+                // it (T-033), and they're named first.
                 const outcome = await seedSettingsFromDefaults(selected);
+                const synced = syncedSentence(outcome.seeded);
                 if (!outcome.ok) {
-                    setResult({ ok: false, message: outcome.error });
+                    setResult({ ok: false, message: synced ? `${synced} ${outcome.error}` : outcome.error });
                     return;
                 }
-                setResult({ ok: true, message: `Synced ${outcome.seeded.length} page(s): ${outcome.seeded.join(", ")}.` });
+                setResult({ ok: true, message: synced || "Synced." });
             } catch {
                 setResult({ ok: false, message: "Sync failed. Check your connection and try again." });
             }
