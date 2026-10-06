@@ -3,7 +3,14 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { MEDIA_ASSETS, hasVisibleText, isAllowedImageUrl, type MediaAsset } from "@/lib/site-content";
-import { MAX_UPLOAD_BYTES, formatBytes, sniffImageFormat } from "@/lib/upload-limits";
+import {
+    MAX_UPLOAD_BYTES,
+    MAX_UPLOAD_DIMENSION,
+    describeDimensionLimit,
+    formatBytes,
+    readImageDimensions,
+    sniffImageFormat
+} from "@/lib/upload-limits";
 import { actionFailure, logActionError } from "@/lib/action-errors";
 
 // The gallery is the built-in photographs plus whatever the client has uploaded
@@ -66,13 +73,21 @@ export async function importBuiltInGallery() {
 
 export type UploadResult = { ok: true; url: string } | { ok: false; error: string };
 
+// T-007: the header's width and height couldn't be read, so the upload is
+// refused rather than let through unchecked.
+const IMAGE_DIMENSIONS_UNREADABLE = "That image's width and height couldn't be read. Export it again as a WebP or JPG, then upload it.";
+
 /**
  * Store one already-optimised image and hand back its public URL.
  *
  * Everything the browser told us is re-checked here, because the form is only a
- * convenience: size, and the real format read from the file's own bytes. Files
+ * convenience: size, the real format read from the file's own bytes, and the
+ * pixel size read from the header (T-007), refused when it can't be read. Files
  * are NOT re-encoded — the brief is to accept optimised images only, so an
  * oversized one is refused with instructions rather than silently shrunk.
+ * Nothing is decoded either, and EXIF orientation isn't applied: a rotated
+ * photo's width and height come out swapped, but its longest edge, and so the
+ * decision, is the same as the browser's.
  *
  * Uploads go to the existing public `media` bucket under a products/ prefix.
  * That bucket already backs the gallery, so no new bucket has to be created in
@@ -101,6 +116,12 @@ export async function uploadOptimizedImage(formData: FormData): Promise<UploadRe
     const format = sniffImageFormat(bytes);
     if (!format) {
         return { ok: false, error: "That is not a WebP or JPG image. Convert it first, then upload." };
+    }
+
+    const dimensions = readImageDimensions(bytes, format);
+    if (!dimensions) return { ok: false, error: IMAGE_DIMENSIONS_UNREADABLE };
+    if (Math.max(dimensions.width, dimensions.height) > MAX_UPLOAD_DIMENSION) {
+        return { ok: false, error: describeDimensionLimit(dimensions.width, dimensions.height) };
     }
 
     const ext = format === "jpeg" ? "jpg" : "webp";
