@@ -22,6 +22,7 @@ import { readSettingsForEditor } from "@/lib/settings-read";
 import { actionFailure } from "@/lib/action-errors";
 import {
     hasVisibleText,
+    isAllowedImageUrl,
     normalizeProducts,
     readStoredCategoryIdentities,
     isWellFormedSlug,
@@ -54,6 +55,15 @@ const PRODUCT_NAME_REQUIRED = "A product needs a name. Type one in, then try aga
 const PRODUCT_IMAGE_REQUIRED = "A product needs an image. Upload one or paste its path, then try again.";
 const NOTHING_TO_SAVE = "Nothing was saved. Reload the page, then try again.";
 const CATEGORY_CHECK_FAILED = "Nothing was saved, because the category couldn't be checked. Try again in a moment.";
+
+// The longest a product name can be, in code points. It mirrors
+// products.name VARCHAR(255) (db/migrations/0001_products-within-category.sql),
+// which Postgres counts in characters, so it's a schema limit, not a policy
+// number. A longer name is refused, never cut (T-014, SEC-INFO-15).
+const MAX_PRODUCT_NAME_LENGTH = 255;
+const PRODUCT_NAME_TOO_LONG = `A product name can be at most ${MAX_PRODUCT_NAME_LENGTH} characters. Shorten it, then try again.`;
+// An image address isAllowedImageUrl refuses (T-014).
+const PRODUCT_IMAGE_INVALID = "The image address must start with https:// or /. Upload the image, or paste its full https:// address, then try again.";
 
 // The only fields an edit can write (T-016, partial update).
 const PATCH_FIELDS = ["name", "description", "image"] as const;
@@ -152,7 +162,6 @@ function sanitizeInput(input: CategoryProductInput) {
         name: typeof input.name === "string" ? input.name.trim() : "",
         description: typeof input.description === "string" ? input.description.trim() : "",
         image: typeof input.image === "string" ? input.image.trim() : "",
-        sort_order: Number.isFinite(input.sort_order) ? input.sort_order : 0,
     };
 }
 
@@ -172,13 +181,22 @@ function takePatchFields(patch: unknown): CategoryProductPatch {
     return taken;
 }
 
-// The domain rule for a product (T-016): its name and its image each need a
-// visible character. Checked only for the fields given, so an edit that
-// doesn't touch the image can still save an older row whose image is empty.
-// The description stays optional.
+// The domain rule for a product (T-016, T-014): its name needs a visible
+// character and at most MAX_PRODUCT_NAME_LENGTH code points, and its image a
+// visible character and an address isAllowedImageUrl accepts. Checked only
+// for the fields given, so an edit that doesn't touch the image can still
+// save an older row whose image is empty or predates the rule. The
+// description stays optional.
 function productFieldsError(fields: CategoryProductPatch): string | null {
-    if (fields.name !== undefined && !hasVisibleText(fields.name)) return PRODUCT_NAME_REQUIRED;
-    if (fields.image !== undefined && !hasVisibleText(fields.image)) return PRODUCT_IMAGE_REQUIRED;
+    if (fields.name !== undefined) {
+        if (!hasVisibleText(fields.name)) return PRODUCT_NAME_REQUIRED;
+        // Code points, the way Postgres counts VARCHAR: an emoji counts as one.
+        if (Array.from(fields.name).length > MAX_PRODUCT_NAME_LENGTH) return PRODUCT_NAME_TOO_LONG;
+    }
+    if (fields.image !== undefined) {
+        if (!hasVisibleText(fields.image)) return PRODUCT_IMAGE_REQUIRED;
+        if (!isAllowedImageUrl(fields.image)) return PRODUCT_IMAGE_INVALID;
+    }
     return null;
 }
 
@@ -272,24 +290,20 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
     const attachability = await checkCategoryAttachable(categorySlug);
     if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, categorySlug) };
 
-    // A newly added product with no explicit order lands at the end of the
-    // category's list, not the front (docs/ROADMAP.md T-004, folded
-    // 2026-09-27; docs/QA_REPORT.md T-003 Static Pass first-pass INFO-1) —
-    // sanitizeInput()'s own bare default is 0, which would put it at the
-    // front instead. Computed here, server-side, rather than trusted from
-    // the caller: T-004's "Add product" UI never sends one, and resolving it
-    // here means the guarantee holds for any caller, not just that one.
-    let sortOrder: number = sanitized.sort_order ?? 0;
-    if (!Number.isFinite(input.sort_order)) {
-        const { data: maxRow } = await supabase
-            .from("products")
-            .select("sort_order")
-            .eq("category_slug", categorySlug)
-            .order("sort_order", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-        sortOrder = maxRow ? (maxRow.sort_order as number) + 1 : 0;
-    }
+    // A new product always goes at the end of its category's list, at the
+    // current highest position + 1, read here, server-side (T-014,
+    // SEC-MED-11). A caller's sort_order is never read, so no caller can put
+    // a product first or outside the column's range. If the read fails,
+    // nothing is inserted: guessing would put the product first.
+    const { data: maxRow, error: maxError } = await supabase
+        .from("products")
+        .select("sort_order")
+        .eq("category_slug", categorySlug)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    if (maxError) return actionFailure("read", "createCategoryProduct: the position read failed.", maxError);
+    const sortOrder = maxRow ? (maxRow.sort_order as number) + 1 : 0;
 
     const { data, error } = await supabase
         .from("products")
