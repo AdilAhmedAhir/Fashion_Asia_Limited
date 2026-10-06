@@ -1,0 +1,61 @@
+captured 2026-10-06T10:16:16Z from :3101, build t3WHlyYfVkIO2zR9uA4fX (1c3027a); GET only, no cookies; baseline build OCXL9ds3YEQlum3_SZFgx (30edcb6)
+/what-we-do                              200
+/products                                200
+/career                                  200
+/contact                                 200
+/life-at-fashion-asia                    200
+/grievance                               200
+/who-we-are                              200
+/products/t-shirts                       200
+/products/polo-shirts                    200
+/products/tank-tops                      200
+/products/dresses                        200
+/products/sleepwear                      200
+/products/leggings                       200
+/products/sportswear                     200
+/products/heavy-jersey-products          200
+/sitemap.xml                             200
+
+== build id normalized only:
+what-we-do.html                      bytes base=69345 now=69345 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products.html                        bytes base=53242 now=53242 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+career.html                          bytes base=50615 now=50615 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 1 | /_next/static refs same: NO (18) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+contact.html                         bytes base=38518 now=38518 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 739: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+life-at-fashion-asia.html            bytes base=68898 now=68898 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 17 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+grievance.html                       bytes base=38995 now=38995 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 739: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+who-we-are.html                      bytes base=65289 now=65289 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 495: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_t-shirts.html               bytes base=38158 now=38158 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_polo-shirts.html            bytes base=38212 now=38212 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_tank-tops.html              bytes base=38176 now=38176 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_dresses.html                bytes base=38140 now=38140 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_sleepwear.html              bytes base=38176 now=38176 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_leggings.html               bytes base=38158 now=38158 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_sportswear.html             bytes base=38194 now=38194 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+products_heavy-jersey-products.html  bytes base=38392 now=38392 | build id base=1x now=1x (old id in now: 0) | identical after normalizing: NO | UUIDs now: 0 | /_next/static refs same: NO (17) first difference at char 426: base "9_f0da-xmd8z.css\" data-precedence=\"next\"/><link rel=\"preload" vs now "ijgn8pft6xkc.css\" data-precedence=\"next\"/><link rel=\"preload"
+sitemap.xml: <lastmod> masked (base 18, now 18); every other byte compared
+sitemap.xml                          bytes base=3126 now=3126 | build id base=0x now=0x (old id in now: 0) | identical after normalizing: YES | UUIDs now: 0 | /_next/static refs same: yes (0)
+
+sitemap <loc> paths: base 18, now 18, identical list (order included): YES
+category addresses now: /products/t-shirts /products/polo-shirts /products/tank-tops /products/dresses /products/sleepwear /products/leggings /products/sportswear /products/heavy-jersey-products
+category addresses identical to the baseline: YES (8)
+ALL 16 identical after normalizing the build id: NO; UUID-shaped strings across the 16 captures: 18
+
+== build id + /_next/static refs mapped by position:
+career.html                          refs=76 changed-positions=4 identical-after-ref-map=YES
+contact.html                         refs=81 changed-positions=4 identical-after-ref-map=YES
+grievance.html                       refs=81 changed-positions=4 identical-after-ref-map=YES
+life-at-fashion-asia.html            refs=72 changed-positions=4 identical-after-ref-map=YES
+products.html                        refs=73 changed-positions=4 identical-after-ref-map=YES
+products_dresses.html                refs=73 changed-positions=4 identical-after-ref-map=YES
+products_heavy-jersey-products.html  refs=73 changed-positions=4 identical-after-ref-map=YES
+products_leggings.html               refs=73 changed-positions=4 identical-after-ref-map=YES
+products_polo-shirts.html            refs=73 changed-positions=4 identical-after-ref-map=YES
+products_sleepwear.html              refs=73 changed-positions=4 identical-after-ref-map=YES
+products_sportswear.html             refs=73 changed-positions=4 identical-after-ref-map=YES
+products_t-shirts.html               refs=73 changed-positions=4 identical-after-ref-map=YES
+products_tank-tops.html              refs=73 changed-positions=4 identical-after-ref-map=YES
+what-we-do.html                      refs=73 changed-positions=4 identical-after-ref-map=YES
+who-we-are.html                      refs=72 changed-positions=4 identical-after-ref-map=YES
+distinct changed refs: 1, inconsistent mappings: 0
+  /_next/static/chunks/29_f0da-xmd8z.css  ->  /_next/static/chunks/2ijgn8pft6xkc.css
+ALL 15 HTML pages identical apart from the build id and the mapped static refs: YES

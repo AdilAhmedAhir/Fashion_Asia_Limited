@@ -1,0 +1,84 @@
+label=w2a-qa-server-attacks start=2026-10-06T10:29:45Z end=2026-10-06T10:29:45Z exit=0
+guarded node processes=1, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 2 polls; distinct pids: 1)
+
+PASS  8 jobs deleteJob: returns the fixed "delete" message
+PASS  8 jobs deleteJob: no database text (QAMARK) in the result
+PASS  8 jobs deleteJob: the failing call happened, and nothing ran after it
+PASS  8 jobs deleteJob: one log line (fixed label + the error object), no payload/user/email
+PASS  8 jobs createJob: returns the fixed "save" message
+PASS  8 jobs createJob: no database text (QAMARK) in the result
+PASS  8 jobs createJob: the failing call happened, and nothing ran after it
+PASS  8 jobs createJob: one log line (fixed label + the error object), no payload/user/email
+PASS  8 settings deleteReport: returns the fixed "delete" message
+PASS  8 settings deleteReport: no database text (QAMARK) in the result
+PASS  8 settings deleteReport: the failing call happened, and nothing ran after it
+PASS  8 settings deleteReport: one log line (fixed label + the error object), no payload/user/email
+PASS  8 settings uploadFile: returns the fixed "upload" message
+PASS  8 settings uploadFile: no database text (QAMARK) in the result
+PASS  8 settings uploadFile: the failing call happened, and nothing ran after it
+PASS  8 settings uploadFile: one log line (fixed label + the error object), no payload/user/email
+PASS  8 products update (stored-row read): returns the fixed "read" message
+PASS  8 products update (stored-row read): no database text (QAMARK) in the result
+PASS  8 products update (stored-row read): the failing call happened, and nothing ran after it
+PASS  8 products update (stored-row read): one log line (fixed label + the error object), no payload/user/email
+PASS  8 products delete: returns the fixed "delete" message
+PASS  8 products delete: no database text (QAMARK) in the result
+PASS  8 products delete: the failing call happened, and nothing ran after it
+PASS  8 products delete: one log line (fixed label + the error object), no payload/user/email
+PASS  8 products create (T-014 position read): returns the fixed "read" message
+PASS  8 products create (T-014 position read): no database text (QAMARK) in the result
+PASS  8 products create (T-014 position read): the failing call happened, and nothing ran after it
+PASS  8 products create (T-014 position read): one log line (fixed label + the error object), no payload/user/email
+PASS  3 baseline 30edcb6: 8 categories with an image and a title parsed
+PASS  3 baseline 30edcb6: every image is an https:// Storage address with no whitespace or control character
+PASS  3 baseline 30edcb6: isAllowedImageUrl accepts all 8
+PASS  3 baseline 30edcb6: first Save resolveCategoriesForSave(8 live categories, new Map()) is ok
+PASS  3 baseline 30edcb6: same 8 slugs in the same order, images kept byte for byte
+PASS  3 baseline 30edcb6: one http:// image refuses the whole save, naming "Leggings"
+PASS  3 live today: 8 categories with an image and a title parsed
+PASS  3 live today: every image is an https:// Storage address with no whitespace or control character
+PASS  3 live today: isAllowedImageUrl accepts all 8
+PASS  3 live today: first Save resolveCategoriesForSave(8 live categories, new Map()) is ok
+PASS  3 live today: same 8 slugs in the same order, images kept byte for byte
+PASS  3 live today: one http:// image refuses the whole save, naming "Leggings"
+PASS  3 live images unchanged since the baseline (re-check before merge)
+PASS  12 products-actions.ts: no string literal present on 30edcb6 was removed or changed
+PASS  12 products-actions.ts: SESSION_EXPIRED initializer byte-identical
+PASS  12 products-actions.ts: PRODUCT_NOT_FOUND initializer byte-identical
+PASS  12 products-actions.ts: PRODUCT_NAME_REQUIRED initializer byte-identical
+PASS  12 products-actions.ts: PRODUCT_IMAGE_REQUIRED initializer byte-identical
+PASS  12 products-actions.ts: NOTHING_TO_SAVE initializer byte-identical
+PASS  12 products-actions.ts: CATEGORY_CHECK_FAILED initializer byte-identical
+PASS  12 products-actions.ts: no .message read anywhere (raw text can't be returned)
+PASS  12 settings-actions.ts: no string literal present on 30edcb6 was removed or changed
+PASS  12 settings-actions.ts: SESSION_EXPIRED initializer byte-identical
+PASS  12 settings-actions.ts: REPORT_NOT_FOUND initializer byte-identical
+PASS  12 settings-actions.ts: LEADER_NOT_FOUND initializer byte-identical
+PASS  12 settings-actions.ts: UNKNOWN_SETTINGS_KEY initializer byte-identical
+PASS  12 settings-actions.ts: SEED_CONFLICT initializer byte-identical
+PASS  12 settings-actions.ts: BUSINESS_MOVED initializer byte-identical
+PASS  12 settings-actions.ts: BUSINESS_UNREADABLE initializer byte-identical
+PASS  12 settings-actions.ts: SAVE_CONFLICT initializer byte-identical
+PASS  12 settings-actions.ts: no .message read anywhere (raw text can't be returned)
+PASS  12 jobs-actions.ts: no string literal present on 30edcb6 was removed or changed
+PASS  12 jobs-actions.ts: SESSION_EXPIRED initializer byte-identical
+PASS  12 jobs-actions.ts: JOB_NOT_FOUND initializer byte-identical
+PASS  12 jobs-actions.ts: no .message read anywhere (raw text can't be returned)
+PASS  12 site-content.ts: no string literal present on 30edcb6 was removed or changed
+PASS  12 every item 11 named constant was found on 30edcb6
+PASS  12 fixed "save" message: in the helper and in the contract, byte for byte
+PASS  12 fixed "delete" message: in the helper and in the contract, byte for byte
+PASS  12 fixed "read" message: in the helper and in the contract, byte for byte
+PASS  12 fixed "upload" message: in the helper and in the contract, byte for byte
+PASS  12 PRODUCT_IMAGE_INVALID matches the contract
+PASS  12 PRODUCT_NAME_TOO_LONG (with 255) matches the contract
+PASS  12 category image message matches the contract (title as <title>)
+
+added literals (for review):
+  products-actions.ts: "@/lib/action-errors" | "A product name can be at most ${…} characters. Shorten it, then try again." | "The image address must start with https:// or /. Upload the image, or paste its full https:// address, then try again." | "object" | "string" | "" | "read" | "createCategoryProduct: the position read failed." | "save" | "createCategoryProduct: the insert failed." | "updateCategoryProduct: the read failed." | "updateCategoryProduct: the update failed." | "delete" | "deleteCategoryProduct: the delete failed." | "reorderCategoryProducts: an update failed."
+  settings-actions.ts: "@/lib/action-errors" | "save" | "updateSettings: the upsert failed." | "read" | "seedSettingsFromDefaults: the read failed." | "seedSettingsFromDefaults: the upsert failed." | "writeBusinessFields: the read failed." | "writeBusinessFields: the insert failed." | "writeBusinessFields: the update failed." | "saveCategories: the product count failed." | "createReport: the insert failed." | "updateReport: the update failed." | "delete" | "deleteReport: the delete failed." | "createLeader: the insert failed." | "updateLeader: the update failed." | "deleteLeader: the delete failed." | "upload" | "uploadFile: the upload failed."
+  jobs-actions.ts: "@/lib/action-errors" | "save" | "createJob: the insert failed." | "updateJob: the update failed." | "delete" | "deleteJob: the delete failed."
+  site-content.ts: "" | "string" | "/" | "\\" | "https:" | "\"${…}\"'s image address must start with https:// or /, so nothing was saved. Upload the image, or paste its full https:// address, then save again."
+
+w2a server attacks: 72/72 passed, 0 failed

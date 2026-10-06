@@ -19,8 +19,10 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { readSettingsForEditor } from "@/lib/settings-read";
+import { actionFailure } from "@/lib/action-errors";
 import {
     hasVisibleText,
+    isAllowedImageUrl,
     normalizeProducts,
     readStoredCategoryIdentities,
     isWellFormedSlug,
@@ -53,6 +55,15 @@ const PRODUCT_NAME_REQUIRED = "A product needs a name. Type one in, then try aga
 const PRODUCT_IMAGE_REQUIRED = "A product needs an image. Upload one or paste its path, then try again.";
 const NOTHING_TO_SAVE = "Nothing was saved. Reload the page, then try again.";
 const CATEGORY_CHECK_FAILED = "Nothing was saved, because the category couldn't be checked. Try again in a moment.";
+
+// The longest a product name can be, in code points. It mirrors
+// products.name VARCHAR(255) (db/migrations/0001_products-within-category.sql),
+// which Postgres counts in characters, so it's a schema limit, not a policy
+// number. A longer name is refused, never cut (T-014, SEC-INFO-15).
+const MAX_PRODUCT_NAME_LENGTH = 255;
+const PRODUCT_NAME_TOO_LONG = `A product name can be at most ${MAX_PRODUCT_NAME_LENGTH} characters. Shorten it, then try again.`;
+// An image address isAllowedImageUrl refuses (T-014).
+const PRODUCT_IMAGE_INVALID = "This image path can't be used. Upload the image, or paste a path that starts with https://, then try again.";
 
 // The only fields an edit can write (T-016, partial update).
 const PATCH_FIELDS = ["name", "description", "image"] as const;
@@ -139,12 +150,18 @@ function revalidateCategory(categorySlug: string) {
     revalidatePath(PRODUCTS_PATH);
 }
 
+// A crafted call can send any value as an argument, so each write checks the
+// shape of its arguments right after the session check and answers a
+// malformed one with a fixed message instead of throwing (QA T-016 I1).
+function isPlainObject(value: unknown): boolean {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function sanitizeInput(input: CategoryProductInput) {
     return {
         name: typeof input.name === "string" ? input.name.trim() : "",
         description: typeof input.description === "string" ? input.description.trim() : "",
         image: typeof input.image === "string" ? input.image.trim() : "",
-        sort_order: Number.isFinite(input.sort_order) ? input.sort_order : 0,
     };
 }
 
@@ -164,13 +181,22 @@ function takePatchFields(patch: unknown): CategoryProductPatch {
     return taken;
 }
 
-// The domain rule for a product (T-016): its name and its image each need a
-// visible character. Checked only for the fields given, so an edit that
-// doesn't touch the image can still save an older row whose image is empty.
-// The description stays optional.
+// The domain rule for a product (T-016, T-014): its name needs a visible
+// character and at most MAX_PRODUCT_NAME_LENGTH code points, and its image a
+// visible character and an address isAllowedImageUrl accepts. Checked only
+// for the fields given, so an edit that doesn't touch the image can still
+// save an older row whose image is empty or predates the rule. The
+// description stays optional.
 function productFieldsError(fields: CategoryProductPatch): string | null {
-    if (fields.name !== undefined && !hasVisibleText(fields.name)) return PRODUCT_NAME_REQUIRED;
-    if (fields.image !== undefined && !hasVisibleText(fields.image)) return PRODUCT_IMAGE_REQUIRED;
+    if (fields.name !== undefined) {
+        if (!hasVisibleText(fields.name)) return PRODUCT_NAME_REQUIRED;
+        // Code points, the way Postgres counts VARCHAR: an emoji counts as one.
+        if (Array.from(fields.name).length > MAX_PRODUCT_NAME_LENGTH) return PRODUCT_NAME_TOO_LONG;
+    }
+    if (fields.image !== undefined) {
+        if (!hasVisibleText(fields.image)) return PRODUCT_IMAGE_REQUIRED;
+        if (!isAllowedImageUrl(fields.image)) return PRODUCT_IMAGE_INVALID;
+    }
     return null;
 }
 
@@ -249,7 +275,10 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    const categorySlug = input.category_slug?.trim();
+    // The argument's shape: a plain object, with a category_slug that's a
+    // string and isn't blank.
+    if (!isPlainObject(input)) return { ok: false, error: NOTHING_TO_SAVE };
+    const categorySlug = typeof input.category_slug === "string" ? input.category_slug.trim() : "";
     if (!categorySlug) return { ok: false, error: "Missing category." };
 
     // Before any read (T-016). sanitizeInput turns a non-string name or image
@@ -261,24 +290,20 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
     const attachability = await checkCategoryAttachable(categorySlug);
     if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, categorySlug) };
 
-    // A newly added product with no explicit order lands at the end of the
-    // category's list, not the front (docs/ROADMAP.md T-004, folded
-    // 2026-09-27; docs/QA_REPORT.md T-003 Static Pass first-pass INFO-1) —
-    // sanitizeInput()'s own bare default is 0, which would put it at the
-    // front instead. Computed here, server-side, rather than trusted from
-    // the caller: T-004's "Add product" UI never sends one, and resolving it
-    // here means the guarantee holds for any caller, not just that one.
-    let sortOrder: number = sanitized.sort_order ?? 0;
-    if (!Number.isFinite(input.sort_order)) {
-        const { data: maxRow } = await supabase
-            .from("products")
-            .select("sort_order")
-            .eq("category_slug", categorySlug)
-            .order("sort_order", { ascending: false })
-            .limit(1)
-            .maybeSingle();
-        sortOrder = maxRow ? (maxRow.sort_order as number) + 1 : 0;
-    }
+    // A new product always goes at the end of its category's list, at the
+    // current highest position + 1, read here, server-side (T-014,
+    // SEC-MED-11). A caller's sort_order is never read, so no caller can put
+    // a product first or outside the column's range. If the read fails,
+    // nothing is inserted: guessing would put the product first.
+    const { data: maxRow, error: maxError } = await supabase
+        .from("products")
+        .select("sort_order")
+        .eq("category_slug", categorySlug)
+        .order("sort_order", { ascending: false })
+        .limit(1)
+        .maybeSingle();
+    if (maxError) return actionFailure("read", "createCategoryProduct: the position read failed.", maxError);
+    const sortOrder = maxRow ? (maxRow.sort_order as number) + 1 : 0;
 
     const { data, error } = await supabase
         .from("products")
@@ -286,7 +311,7 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
         .select()
         .single();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "createCategoryProduct: the insert failed.", error);
 
     revalidateCategory(categorySlug);
     return { ok: true, product: data as CategoryProduct };
@@ -301,7 +326,7 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    if (!id) return { ok: false, error: "Missing product id." };
+    if (typeof id !== "string" || !id) return { ok: false, error: "Missing product id." };
 
     const fields = takePatchFields(patch);
     if (fields.name === undefined && fields.description === undefined && fields.image === undefined) {
@@ -322,7 +347,7 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
         .eq("id", id)
         .maybeSingle();
 
-    if (readError) return { ok: false, error: readError.message };
+    if (readError) return actionFailure("read", "updateCategoryProduct: the read failed.", readError);
     if (!stored) return { ok: false, error: PRODUCT_NOT_FOUND };
 
     const categorySlug = stored.category_slug as string;
@@ -336,7 +361,7 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
         .select()
         .maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "updateCategoryProduct: the update failed.", error);
     // Deleted (by another tab) between the read and the update.
     if (!data) return { ok: false, error: PRODUCT_NOT_FOUND };
 
@@ -351,7 +376,7 @@ export async function deleteCategoryProduct(id: string): Promise<ProductVoidResu
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    if (!id) return { ok: false, error: "Missing product id." };
+    if (typeof id !== "string" || !id) return { ok: false, error: "Missing product id." };
 
     const { data, error } = await supabase
         .from("products")
@@ -360,7 +385,7 @@ export async function deleteCategoryProduct(id: string): Promise<ProductVoidResu
         .select("category_slug")
         .maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("delete", "deleteCategoryProduct: the delete failed.", error);
     if (!data) return { ok: false, error: PRODUCT_NOT_FOUND };
 
     revalidateCategory(data.category_slug as string);
@@ -378,9 +403,9 @@ export async function reorderCategoryProducts(categorySlug: string, orderedIds: 
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    const slug = categorySlug?.trim();
+    const slug = typeof categorySlug === "string" ? categorySlug.trim() : "";
     if (!slug) return { ok: false, error: "Missing category." };
-    if (!orderedIds?.length) return { ok: false, error: "Nothing to reorder." };
+    if (!Array.isArray(orderedIds) || !orderedIds.length) return { ok: false, error: "Nothing to reorder." };
 
     const attachability = await checkCategoryAttachable(slug);
     if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, slug) };
@@ -392,7 +417,7 @@ export async function reorderCategoryProducts(categorySlug: string, orderedIds: 
             .eq("id", orderedIds[i])
             .eq("category_slug", slug);
 
-        if (error) return { ok: false, error: error.message };
+        if (error) return actionFailure("save", "reorderCategoryProducts: an update failed.", error);
     }
 
     revalidateCategory(slug);

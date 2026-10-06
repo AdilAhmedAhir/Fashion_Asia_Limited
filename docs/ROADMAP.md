@@ -139,6 +139,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
 *(T-012–T-014 appended 2026-09-27, third `/pm` pass — fast-follow findings from T-003, which had not yet been built when this Sprint 2 section was first written.)*
 
 - [ ] **T-013** — Harden `reorderCategoryProducts`: validate input completeness, batch the write, revalidate on failure
+  **Built in Wave 2b under the Wave 2 contract** (`architect-reviewer`, 2026-10-06): see T-018, item 9. There's no upsert and no database function: exact-set validation, writes only for changed rows, put-backs on failure. Where this ticket's AC below differs ("single batched write"), the contract wins.
   - **Source:** `docs/QA_REPORT.md` T-003 Static Pass WARN-2, 2026-09-27 (re-checked and still open in the re-run pass); `docs/SECURITY.md` SEC-INFO-16, 2026-09-27 (T-003 CSO entry) — same function, complementary gaps: QA flagged the missing input-completeness check and the missing revalidate-on-failure call; CSO flagged the missing transaction
   - **Files:** `src/app/actions/products-actions.ts` (`reorderCategoryProducts`)
   - **Flags:** schema-touching: **no** · sensitive: **yes** (server action, writes `public.products`) · UI: **no**
@@ -151,7 +152,9 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/cso review` → `/qa static` → `/qa live` (read-only regression) → `/git Merge`
   - **Notes:** Both source findings are 🟡 non-blocking (self-heals on the next successful full reorder). Recommend landing before or alongside T-004 if T-004's reorder UI calls this function directly — not a hard block either way, since T-004 can ship against today's non-atomic behavior without violating any of its own acceptance criteria.
 
-- [ ] **T-014** — Add an image-URL scheme allow-list and a `name` length cap to the products write path
+- [x] **T-014** — Add an image-URL scheme allow-list and a `name` length cap to the products write path
+  Done 2026-10-06 in **Wave 2a** (commits `1c3027a`, `732c67e`; reviews and evidence under T-018's done note). Image addresses must be `https://` or a root path, with no whitespace or invisible characters; names over 255 code points are refused; a new product always goes at the end of its category.
+  **Built in Wave 2a with T-018, under one binding contract** (`architect-reviewer`, 2026-10-06): see T-018, items 5–8. Where this ticket's AC below differs (the `http://` scheme, `name.slice`, the `sort_order` clamp), the contract wins.
   - **Source:** `docs/SECURITY.md` SEC-MED-7, 2026-09-27 (T-003 CSO entry, reconfirmed still open in the re-review entry); `docs/SECURITY.md` SEC-INFO-15, 2026-09-27 (T-003 CSO entry) — bundled into one ticket: same file (`products-actions.ts::sanitizeInput`), both small validation-hardening additions with no interaction between them
   - **Files:** `src/app/actions/products-actions.ts` (`sanitizeInput`), `src/lib/site-content.ts` (`resolveCategoriesForSave` — same `.trim()`-only pattern on the pre-existing category-level `Product.image` field; CSO's own finding notes both fields share the identical gap)
   - **Flags:** schema-touching: **no** · sensitive: **yes** (server actions, writes) · UI: **no**
@@ -439,7 +442,196 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Full-stack row; no DB, not sensitive). Fully agent-verifiable, no manual checklist.
   - **Notes:** Ranked #5. QA's other option, restoring the frame sequence, needs 160 frame assets that exist nowhere in the repo, plus a product decision on the hero effect. The hero moved to one poster plus a video before the A-Team era (`docs/MEMORY_BANK.md` §12, onboarding entry). Not ticketed; restoring the frames would need a new ticket if the user wants it. This would trigger WORKFLOW §10's Core Web Vitals review if marketing were active; §10 is inert.
 
-- [ ] **T-018** — Replace raw database error text in admin Server Action results with generic messages, logging the raw error server-side
+- [x] **T-018** — Replace raw database error text in admin Server Action results with generic messages, logging the raw error server-side
+  Done 2026-10-06, in **Wave 2a** with T-014:
+  - **Commits:** `e87f2ab` (contract and premortem folded in), `022d5fc` (T-018), `1c3027a` (T-014), `732c67e` (the fix round: a stricter image rule and clearer image messages).
+  - **Reviews** (the lean protocol, DECISIONS 2026-10-06):
+    - `code-reviewer`, which also reviewed the wording in place of a separate `/design-review` for copy-only changes: FIX FIRST on the image rule, then fixed and re-checked.
+    - `security-reviewer`: CLEARED. It re-bound the five files, and re-bound the two fix-round files. SEC-MED-7, 8, 11 and 13 and SEC-INFO-15 close in code; SEC-INFO-42 and 43 close in the fix round.
+    - QA: PASS. 15 public pages are byte-identical to the post-Wave-1 baseline, and the admin gate held on 40 of 40 probes.
+  - **Narrowed:** premortem MUST-ADD 10 now covers the product writes only; the other writes went to T-039 (DECISIONS 2026-10-06, SEC-MED-16).
+  - **Evidence:** `docs/qa-evidence/WAVE-2A/`.
+  **Wave 2 binding contract, covering T-018, T-014 and T-013** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim, so no second `/architect-review` is needed). It's split under the ½-day line: **Wave 2a** is T-018 then T-014; **Wave 2b** is T-013. Each wave has its own review stage. It needs no schema change, no new dependency and no new database object, so there's no HARD STOP. Where the older AC below conflicts with this contract, the contract wins.
+  - **Scope guard:** code only. Every file on the unchanged list stays byte-identical. No new exported function in any `"use server"` file. Every message is a non-exported constant or a private function that builds it. `/design-review` may tune the wording; the names, the files they live in and when they show are binding.
+  1. **The shared helper** (T-018), a new file, `src/lib/action-errors.ts`.
+     - Plain TypeScript with no imports. It isn't a `"use server"` file, and only the three action files import it.
+     - `actionFailure(kind: "save" | "delete" | "read" | "upload", context: string, error: unknown): { ok: false; error: string }` logs `console.error(context, error)` on the server, then returns that kind's fixed message. `logActionError(context, error)` only logs, for branches that return their own message.
+     - The fixed messages, private to the helper:
+       - **save:** "Something went wrong, so nothing was saved. Try again in a moment."
+       - **delete:** "Something went wrong, so nothing was deleted. Try again in a moment."
+       - **read:** "Nothing was saved, because the saved data couldn't be read. Try again in a moment."
+       - **upload:** "The file couldn't be uploaded. Try again in a moment."
+     - No `server-only` package: it isn't installed, and adding it would be a new dependency.
+  2. **What it covers** (T-018). Every returned `error.message`, `readError.message`, `insertError.message`, `updateError.message` or `countError.message` in the three files becomes an `actionFailure` call:
+     - **save:** the product insert and update; `updateSettings`' upsert; the Sync's whole-row upsert; `writeBusinessFields`' insert (except 23505) and its update; create and update for reports, leaders and jobs.
+     - **delete:** the product, report, leader and job deletes.
+     - **read:** the product update's read of the stored row; `writeBusinessFields`' read; `saveCategories`' delete-guard count; the Sync's read.
+     - **upload:** `uploadFile`'s storage error.
+     - **Unchanged inside the compare-and-swap writer:** the 23505 → SAVE_CONFLICT branch, the 0-row SAVE_CONFLICT with its diagnostic logs, and BUSINESS_UNREADABLE. In `writeBusinessFields` and `saveCategories`, only the error-return lines change.
+     - **Through Wave 1's Sync wording,** a database failure in the What We Do step reads "The What We Do page text wasn't synced: Something went wrong, so nothing was saved. Try again in a moment." `/design-review` may tune the generic text; Wave 1's wrapper stays.
+  3. **Malformed arguments** (T-018, QA T-016 I1). These checks run right after `getUser()`, so no action throws on a malformed argument.
+     - **Create:** an input that isn't a plain object (null, an array or a primitive) returns NOTHING_TO_SAVE, with Wave 1's wording. A `category_slug` that isn't a string, or is blank after trimming, returns "Missing category.".
+     - **Update and delete:** an `id` that isn't a string, or is empty, returns "Missing product id.".
+     - **Reorder:** see item 9.
+  4. **The sitemap comment** (T-018). In `saveCategories`, the comment above `revalidatePath("/sitemap.xml")` should say the sitemap stays fresh because it renders on every request (`sitemap.ts` → `getSettings` → `createClient()` → `cookies()`), and that this call is a harmless extra. Comment only.
+  5. **The image address rule** (T-014, SEC-MED-7 and 13).
+     - **The rule:** `export function isAllowedImageUrl(value: string): boolean` in `site-content.ts`. It uses only the global `URL`, so the file keeps no imports. It returns true only for:
+       - a path from the site root (a `/` followed by a character that's neither `/` nor `\`); or
+       - an absolute `https:` address that `new URL` can parse, with a host and no username or password;
+       - and, in both cases, no backslash, whitespace or control character anywhere.
+     - **Refused:** everything else, including `http:`, `data:`, `javascript:`, `blob:`, `//host`, `/\host` and paths without a leading slash. `http:` is refused on purpose, narrowing the ticket's AC: on this `https` site, browsers upgrade or block such images.
+     - **Products:** on create, and on update when an image is sent, after the visible-character check. A failure returns PRODUCT_IMAGE_INVALID: "The image address must start with https:// or /. Upload the image, or paste its full https:// address, then try again."
+     - **Categories:** in `resolveCategoriesForSave`, after the blank-image fallback and Wave 1's title checks. Every row's image must pass, or the whole save is refused: `"<title>"'s image address must start with https:// or /, so nothing was saved. Upload the image, or paste its full https:// address, then save again.`
+     - **No check in the browser.** The add form, the product row and the Categories header already show the server's message, which meets SEC-MED-13's "visible in the ordinary admin" rule.
+  6. **The name length** (T-014, SEC-INFO-15).
+     - A private `MAX_PRODUCT_NAME_LENGTH = 255` in `products-actions.ts`, with a comment saying it mirrors `products.name VARCHAR(255)`. Length is counted in code points (`Array.from(name).length`), the way Postgres counts `VARCHAR`.
+     - A longer name is refused, never cut: PRODUCT_NAME_TOO_LONG, "A product name can be at most 255 characters. Shorten it, then try again." It's checked on create, and on update when a name is sent, right after the PRODUCT_NAME_REQUIRED check. This replaces the AC's `name.slice(0, 255)`.
+  7. **Where a new product goes** (T-014, SEC-MED-11).
+     - A caller's `sort_order` is never read. Every new product goes at the end of its category (the current highest position + 1). `sort_order` comes out of `CategoryProductInput` and `sanitizeInput`, and the type's comment is updated.
+     - If the read of the highest position fails, the create fails closed with `actionFailure("read", …)` and nothing is inserted. Today that failure is ignored and the product lands first. This replaces the AC's clamp to 0–2147483647.
+  8. **Check order in the product write actions.** Every action starts with `getUser()` as its first await (SESSION_EXPIRED).
+     - **Create:** item 3's argument checks; `sanitizeInput`; the name (visible → PRODUCT_NAME_REQUIRED, then at most 255 → PRODUCT_NAME_TOO_LONG); the image (visible → PRODUCT_IMAGE_REQUIRED, then allowed → PRODUCT_IMAGE_INVALID); `checkCategoryAttachable`; the read of the highest position; the insert; refresh.
+     - **Update:** the id check; `takePatchFields` (T-016's, unchanged); NOTHING_TO_SAVE if nothing was taken; the item 6 and item 5 checks on whichever fields were sent; the stored-row read (not found → PRODUCT_NOT_FOUND); `checkCategoryAttachable` on the stored category; the update (no row → PRODUCT_NOT_FOUND); refresh.
+     - **Delete:** the id check, the delete (no row → PRODUCT_NOT_FOUND), then refresh.
+  9. **Reorder** (T-013, **Wave 2b**). No upsert and no database function: a batched upsert would insert a blank product for an id deleted in the meantime, or fail NOT NULL on `category_slug`, and a database function is a new database object (an owner HARD STOP).
+     1. `getUser()`.
+     2. `categorySlug` must be a non-blank string, or "Missing category.".
+     3. `orderedIds` must be a non-empty array, or "Nothing to reorder.".
+     4. `checkCategoryAttachable`.
+     5. Read the category's rows (`id, sort_order`, filtered by `category_slug`). An error returns `actionFailure("read", …)`.
+     6. `orderedIds` must be exactly the stored ids: every entry a string, no duplicates, the same count, and each one stored. Otherwise REORDER_STALE: "The products in this category changed since the page loaded, so the new order wasn't saved. Reload the page and try again."
+     7. Write only the rows whose stored `sort_order` differs from their new position, one at a time, as `update({ sort_order, updated_at }).eq("id", id).eq("category_slug", slug).select("id")`. Each write must change exactly one row. If nothing differs, return ok without writing.
+     8. On an error, or a write that changes no row: log it with `logActionError`, then put every row already written back to its stored `sort_order`, newest first, with the same filters. Return REORDER_STALE if everything was put back and a product had disappeared; REORDER_FAILED ("The new order couldn't be saved, so nothing changed. Try again in a moment.") if everything was put back after an error; REORDER_PARTIAL ("The new order was only partly saved. Reload the page to see the current order, then try again.") if any put-back failed.
+     9. After any write attempt, successful or not, call `revalidateCategory(slug)`.
+     - **Accepted residual:** if a write and its put-back both fail, the category keeps a mixed order until the next successful reorder, and REORDER_PARTIAL tells staff to reload. Making it truly all-or-nothing needs a database function, which waits for the owner.
+  10. **No client changes.** T-016's queue shows `error` as plain text, keeps the committed values on a failure, and resends them on Retry or the next commit. So a refusal stays on the row until the user fixes the field the message names. `moveProduct` already swaps the two products back on screen and shows the message.
+  11. **Must not change:**
+      - **Every hand-written message, byte for byte, re-baselined on Wave 1's merged strings:** SESSION_EXPIRED in all three files; PRODUCT_NOT_FOUND, REPORT_NOT_FOUND, LEADER_NOT_FOUND and JOB_NOT_FOUND; every "Missing … id." message, "Missing category.", "Nothing to reorder.", "No file provided." and "No pages selected."; PRODUCT_NAME_REQUIRED and PRODUCT_IMAGE_REQUIRED; Wave 1's NOTHING_TO_SAVE, CATEGORY_CHECK_FAILED, UNKNOWN_SETTINGS_KEY and SEED_CONFLICT; BUSINESS_MOVED, BUSINESS_UNREADABLE and SAVE_CONFLICT; the "not saved yet" and "does not exist" texts, every name-clash and category-identity message, Wave 1's title refusals, both delete-guard messages, and `pickWhatWeDoText`'s message.
+      - T-026's compare-and-swap, apart from item 2's error-return lines; T-016's partial update.
+      - Every read function (`getCategoryProducts`, `getAllCategoryProducts`, `getSettings`, `getReports`, `getLeaders`, `getJobs`).
+      - Every page-refresh target, apart from reorder's new refresh after a failure; and Wave 1's rules.
+  12. **Commits and checks.**
+      - **Wave 2a:** a T-018 commit (helper, coverage, argument checks, comment), then a T-014 commit (image rule, name length, create order). **Wave 2b:** one T-013 commit. Each must typecheck and build on its own.
+      - **No agent writes anything.** Fake-database scripts must cover:
+        - every database-error branch, showing it returns the fixed message and that no result contains the fake error's text;
+        - a table of image addresses and a table of name lengths, including 255 emoji;
+        - reorder: the exact set, changed rows only, put-backs, a disappeared row, and both filters on every write;
+        - a re-run of T-016's harness;
+        - a byte-for-byte diff of item 11's message list.
+      - If staff edit category images after 2026-10-06, re-check the live images read-only before merge.
+  - **Touches.**
+    - **Wave 2a:**
+      - new `src/lib/action-errors.ts` (a new sign-off);
+      - `settings-actions.ts` and `products-actions.ts` (both void Wave 1's re-signs);
+      - `jobs-actions.ts` (voids T-015's `628e5e74…`);
+      - `site-content.ts` (voids Wave 1's re-sign).
+    - **Wave 2b:** `products-actions.ts`, the reorder function only.
+  - **Unchanged** (byte-identical, by hash where signed off):
+    - `settings-read.ts` (`cc5c8a2c…`), `business/page.tsx` (`87071736…`) and the admin `products/page.tsx` (`969a00de…`);
+    - both public products pages at Wave 1's hashes;
+    - `nav.ts`, `sitemap.ts`, `next.config.ts`, `middleware.ts` and `src/lib/supabase/*`;
+    - `media-actions.ts`, `form-actions.ts` and `auth-actions.ts`;
+    - every client component (`CategoryProductsManager`, `ProductsClient`, `ImageUploadField`, `SettingsForm`, `BusinessClient`, `SeedDefaultsPanel`, `category-draft`, the six settings clients, Reports, Careers, Who We Are and the catalog components);
+    - `db/`, `supabase-schema.sql`, `package.json` and `package-lock.json`.
+  - **Docs at close:**
+    - ROADMAP and DECISIONS;
+    - SECURITY, which closes SEC-MED-7, 8, 11 and 13, SEC-INFO-15 and 16, and QA T-016 I1;
+    - DATA_MODEL §3, the products rules;
+    - STACK §4, which adds the shared helper;
+    - INVENTORY, regenerated with `@purpose` on `actionFailure`, `logActionError` and `isAllowedImageUrl`.
+  - **Sequence:**
+    - **Wave 2a (about 3.5 hours):** `/build` ✅ → wording (folded into `code-reviewer` under the lean protocol) ✅ → `/security-review` ✅ CLEARED → `/qa` ✅ PASS → `code-reviewer` ✅ FIX FIRST → fixed → merge ✅ (2026-10-06).
+    - **Wave 2b (about 1.5 hours):** `/build` → `/security-review` → `/qa` → `code-reviewer` → merge.
+  - **Re-review triggers:**
+    - **Schema and dependencies:** any SQL, migration, table, column, index, constraint, RPC, database function or trigger; any new dependency, including `server-only`.
+    - **Reorder:** an upsert or insert in reorder, or any write other than create that can make a product row; a reorder write without both the id and category filters; dropping the exact-set check.
+    - **The validation rules:** an image rule wider than `https://` plus root paths, or a host allow-list; truncating names, or counting UTF-16 units; reading a caller's `sort_order`.
+    - **What must not change:** a change to any message in item 11; raw database text reaching any result in the three files; changes to `writeBusinessFields` or `saveCategories` beyond their error-return lines, to `takePatchFields`, or to any refresh target.
+    - **Files and scope:** an edit to any file on the unchanged list; the helper becoming `"use server"` or being imported by a client component; pulling in items from T-019, T-010, T-007 or T-009; either wave growing past its estimate.
+  **Wave 2 premortem (`premortem-planner`, 2026-10-06: GO WITH ADDITIONS). These MUST-ADDs are binding.** Its must-settle points L1–L4 are settled by contract items 5, 6, 7 and 9. Where a MUST-ADD assumed a different answer (spaces in image paths, a per-code error mapping), it's restated here to fit the contract.
+  - **Top failure modes:**
+    1. The image rule refuses real values. Because it runs on every category in every save, that locks the catalog: no first Save means no products.
+    2. Generic messages swallow the instructions staff act on, above all the "save the categories once" prompt.
+    3. A reorder is refused, half-written, or creates ghost rows.
+    4. A correct refusal still loses an edit in T-016's queue.
+    5. The name cap or the `sort_order` handling quietly damages data.
+  1. **One image rule, in one place:** `isAllowedImageUrl` in `site-content.ts`.
+     - **Called by:** create (`sanitizeInput`'s output); `updateCategoryProduct`, only when `image` is present; and `resolveCategoriesForSave` on every category, after the blank-image fallback. All three run before any database read.
+     - **Untouched:** every other image field (homepage, leaders, gallery) keeps its save path byte for byte.
+  2. **The rule's truth table, checked offline.**
+     - **Accepted:**
+       - the 8 live category image URLs (from the scratchpad `wave-1/baseline-95f7ea1/*.html`);
+       - every `PRODUCT_IMAGES` value and `PRODUCT_IMAGE_FALLBACK`;
+       - an upload's returned URL shape;
+       - a Storage URL with `?t=1&width=800`;
+       - an uppercase `HTTPS://` address (normalized by `URL`).
+     - **Refused, with the named message:**
+       - `C:\photos\tee.jpg`, `www.example.com/tee.jpg`, `example.com/x.jpg`;
+       - `javascript:alert(1)`, `data:image/svg+xml,…`, `blob:…`, `file:///x`;
+       - `//cdn.example.com/x.jpg`, `/\evil.example/x.jpg`, `images/x.webp`;
+       - `https://` with no host, a username or password in the URL;
+       - `http://…`;
+       - any value containing a space, tab or newline (contract item 5).
+     - **Check before merge:** no live or default image contains whitespace.
+     - **Regex:** any regex used has no `g` or `y` flag.
+  3. **Staff's first Save still succeeds.** Re-run Wave 1's offline first-Save simulation with this rule: `resolveCategoriesForSave(<the 8 baseline categories with their live images>, new Map())` returns `ok: true`, with the same 8 slugs. A category whose image fails the rule refuses the whole save, with a message naming its title.
+  4. **The refusal is visible in ordinary use,** in T-016's synthetic UI harness.
+     - **Product row:** a refused image shows the row's red error and Retry; the draft keeps the text; ▼ and the trash work again; a later valid commit sends `{ image }` and saves.
+     - **Merged commits:** a merged `{ description, image: <bad> }` is refused as a unit, and the next commit, after the image is fixed, sends both.
+     - **Add a product:** the form's red error shows, and nothing is added.
+     - **A category card:** `SettingsHeader` shows the message naming the category, and the draft stays.
+     - **Client mirrors:** none disables a button without showing the same text.
+  5. **The name cap:** a trimmed name over 255 code points is refused on create and update, before any read. 255 Bengali characters, 255 ASCII characters, and 127 emoji plus one letter are all accepted. No lone surrogate can reach the database, and names of 255 code points or fewer pass unchanged.
+  6. **`sort_order` on create:** a caller's value is ignored, a failed max-order read returns `actionFailure("read", …)` and inserts nothing, and an omitted value still lands at max + 1.
+  7. **Reorder (T-013, Wave 2b),** with a fake database that interleaves concurrent edits.
+     - **Order:** the checks run in item 9's order.
+     - **REORDER_STALE, nothing written,** for a missing id, an extra id, an id from another category, a duplicate, an empty list, a non-array, or non-string entries.
+     - **No upsert or insert:** none on the reorder path.
+     - **Scoped, confirmed writes:** every update is filtered by `id` and `category_slug` and confirmed with `.select("id")`. A product deleted between the check and the write leads to put-backs and REORDER_STALE, and never creates a row.
+     - **Results:** `ok: true` only when every changed row is confirmed written. `revalidateCategory` runs after any write attempt.
+     - **In T-016's UI harness:** a refused reorder swaps the rows back by id and shows the message.
+  8. **Generic messages (T-018),** by code reading plus a harness.
+     - **All 22 raw-message sites** return a fixed message:
+
+       | File | Functions |
+       |---|---|
+       | `jobs-actions.ts` | `createJob`, `updateJob`, `deleteJob` |
+       | `settings-actions.ts` | `updateSettings`; the Sync's read and write; `writeBusinessFields` (read, non-23505 insert, update); `saveCategories`' product count; reports ×3; leaders ×3; `uploadFile` |
+       | `products-actions.ts` | create; update (read and write); delete; reorder |
+
+     - **No `.message` in any returned `error`** in the three files, Wave 2's own new branches included.
+     - **The mapping** is the contract's four kinds (save, delete, read, upload). There's no per-code mapping.
+     - **Byte-identical:** every message in contract item 11.
+  9. **Logs.**
+     - **What's logged:** the helper logs a context label and the error object (`code`, `message`, `details`, `hint`).
+     - **What's never logged:** the request payload or form data, the user object, emails, cookies or tokens.
+     - **Not an endpoint:** the helper isn't a `"use server"` module.
+     - **Unchanged files:** `form-actions.ts` (the submissions insert), `admin/(dashboard)/submissions/page.tsx` and `media-actions.ts` have 0-byte diffs.
+  10. **No action throws on a bad argument.**
+      - **What the harness sends:** every write in the three files gets `null`, `undefined`, numbers, arrays, `{ category_slug: 5 }` and `orderedIds` values that aren't arrays.
+      - **Signed out:** SESSION_EXPIRED comes back first.
+      - **Signed in (fake):** each call returns `{ ok: false }` with fixed wording, never throws, and writes nothing.
+  11. **T-016 and Wave 1 still hold.** Re-run their harnesses on the Wave 2 tree. Expectations may change only for the new refusals and the generic messages, and the mutation suites still catch everything.
+  12. **Each editor's error display.**
+      - **Plain text:** the 5 settings clients, `CareersClient`, `ReportsClient`, `WhoWeAreClient`, `ProductsClient` and `CategoryProductsManager` still show `result.error` as plain text in a `role="alert"`.
+      - **No text matching:** none checks the error's text.
+      - **`ReportsClient`'s comment** ("the real reason from uploadFile") becomes stale, because the file is on the unchanged list. That's accepted, and noted for T-033's or a later copy pass.
+  13. **Scope and security sign-offs.**
+      - **Public pages:** HTML is identical to the post-Wave-1 baseline at 0 products.
+      - **Unchanged-list files:** 0-byte diffs, and no new export in any `"use server"` file.
+      - **Security re-binds by sha256:** `products-actions.ts`, `settings-actions.ts`, `site-content.ts` and `jobs-actions.ts`, plus a new binding for the helper.
+      - **INVENTORY:** `@purpose` lines for the helper and the image rule.
+      - **Evidence:** in `docs/qa-evidence/WAVE-2/`, with local paths and the Supabase project ref scrubbed.
+  - **Optional owner rows** (evidence only):
+    - **O1:** paste a bad image address on a ZZ-TEST product, then a good one; delete the product afterwards.
+    - **O2:** clear a job's title, then click Save.
+    - **O3:** add a product in tab A, then press ▲ in tab B without reloading.
+    - **O4:** paste a 300-character name.
+  - **`/ship` additions:**
+    1. **Before the push:** MUST-ADD 2–3's evidence exists.
+    2. **After the deploy:** `/what-we-do` and `/products` still show the same 8 image URLs, and each answers 200.
+    3. **If the first Save never lands:** if staff report refusals and the category ids never appear, treat it as a Wave 2 incident.
+  - **Backlog:** the admin list reads `getJobs`, `getReports` and `getLeaders` turn a failed read into an empty list, which invites duplicate re-entry. That's filed as T-035.
   - **Source:** `docs/SECURITY.md` SEC-MED-8, 2026-09-27 (`ticket-review:T-012` entry: "a small, shared ... helper, applied to both `settings-actions.ts` and `products-actions.ts` in one pass rather than patched file-by-file"), extended to `jobs-actions.ts` because T-015 gives its functions the same result shape. Also `docs/QA_REPORT.md` Static Pass — T-005 WARN-1, a comment-only fix in a function this ticket already edits.
   - **Files:** one new shared helper (e.g. `src/lib/action-errors.ts`; name at `/lead-dev`'s discretion; plain TypeScript, no dependency), `src/app/actions/settings-actions.ts`, `src/app/actions/products-actions.ts`, `src/app/actions/jobs-actions.ts`
   - **Flags:** schema-touching: **no** · sensitive: **yes** · UI: **no**
@@ -1077,6 +1269,24 @@ The owner asked for every open ticket to be finished, then one deploy at the end
 - **`design-reviewer`, extending T-027:** the Sync panel's `text-white` heading and `text-primary` code text, and the dashboard's `text-white` h1.
 - **`design-reviewer`, DESIGN.md §2:** add a `warning` token for the amber advisory color (13.7:1), alongside T-027's `scrim`.
 - **`security-reviewer`:** `settings-read.ts` now has three importers. If its `next/headers` chain is ever removed, add `import "server-only"`.
+
+- [ ] **T-035** — Admin list reads must not show a failed read as an empty list [app:admin]
+  AC:
+  - `getJobs`, `getReports` and `getLeaders` tell a failed read apart from an empty result (for example `{ ok: true, data } | { ok: false }`, like T-016's `getAllCategoryProducts`).
+  - Their admin pages show a `role="alert"` "couldn't load, refresh" message and withhold their create buttons after a failed read, so staff can't re-enter duplicates.
+  - The public pages that read the same data keep failing open (the T-005 / T-016 visitor ruling).
+  Source: Wave 2 premortem, 2026-10-06.
+  Sequence: `architect-reviewer` (the result shape of three `"use server"` reads) → `/build` → `/design-review` → `/security-review` → `/qa` → `code-reviewer` → merge. Backlog.
+
+- [ ] **T-039** — Argument-shape guards on the non-product admin writes [app:admin][sec]
+  AC:
+  - **The writes covered:** `createReport`, `updateReport`, `createLeader`, `updateLeader`, `createJob`, `updateJob` and `uploadFile` return `{ ok: false }` with fixed wording, instead of throwing, when the argument isn't a `FormData`.
+  - **`uploadFile`:** it accepts only the `reports` bucket (or an explicit server-side list), never a caller-chosen bucket.
+  - **`updateSettings`:** it refuses a value that isn't a plain object for any allowed key.
+  - **Category titles:** `resolveCategoriesForSave` refuses a non-text title, instead of dropping the row (QA Wave 2a INFO-3).
+  - **Order:** signed out still answers SESSION_EXPIRED first. Wave 2a's harness `args-known-gaps-final.json` is the spec; it records 12 known-gap cases that must flip.
+  Source: SEC-MED-16 (Medium; security Wave 2a), from Wave 2a's premortem MUST-ADD 10, which DECISIONS 2026-10-06 narrowed to the product writes.
+  Sequence: `/build` → `/security-review` → `code-reviewer` → merge. Backlog.
 
 ### Dependency Order
 

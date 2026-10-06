@@ -371,18 +371,13 @@ export type CategoryProduct = {
 // client-picked id or timestamp that the insert never actually uses
 // (docs/QA_REPORT.md T-001 Static Pass WARN-3; docs/ROADMAP.md T-003).
 //
-// `sort_order` is optional here (unlike the required field on CategoryProduct
-// itself) so a caller adding a brand-new product can omit it entirely rather
-// than guess: createCategoryProduct (products-actions.ts) computes current
-// max + 1 server-side whenever it's missing/non-finite, landing the new
-// product at the end of its category's list, not the front
-// (docs/ROADMAP.md T-004, folded 2026-09-27; docs/QA_REPORT.md T-003 Static
-// Pass first-pass INFO-1). Only a create takes this shape since T-016: an
-// edit sends a CategoryProductPatch (below), which can't carry the category
-// or the order.
-export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at" | "sort_order"> & {
-    sort_order?: number;
-};
+// It carries no `sort_order` either (T-014, SEC-MED-11): createCategoryProduct
+// (products-actions.ts) always puts a new product at the end of its
+// category's list, at the current highest position + 1, read server-side,
+// and never reads a caller's value. Only a create takes this shape since
+// T-016: an edit sends a CategoryProductPatch (below), which can't carry the
+// category or the order.
+export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at" | "sort_order">;
 
 /**
  * @purpose The fields one product edit may change (name, description, image): a partial update that never carries the category, the order or the id.
@@ -404,6 +399,42 @@ const VISIBLE_CHARACTER = /[^\s\p{Default_Ignorable_Code_Point}\p{C}]/u;
  */
 export function hasVisibleText(value: unknown): boolean {
     return typeof value === "string" && VISIBLE_CHARACTER.test(value);
+}
+
+// A character an image address may never contain: a backslash, whitespace,
+// or any character hasVisibleText treats as invisible (a control, format,
+// private-use, unassigned or lone surrogate code point, or a
+// Default_Ignorable one such as U+200B, U+00AD or U+202E). Whitespace is
+// refused, not encoded, so what's stored is exactly what staff pasted. No "g"
+// or "y" flag, so test() keeps no state between calls.
+const IMAGE_URL_FORBIDDEN_CHARACTER = /[\\\s\p{C}\p{Default_Ignorable_Code_Point}]/u;
+
+/**
+ * @purpose Whether an image address may be stored: a path from the site root, or an absolute https:// address with a host and no username or password.
+ * The one image rule (T-014, SEC-MED-7 and 13), for a product's image
+ * (products-actions.ts) and a category's (resolveCategoriesForSave, below).
+ * Everything else is refused: http:, data:, javascript:, blob:, file:,
+ * "//host", "/\host", "https:host" without its "//", a path without a
+ * leading slash, and any backslash, whitespace or invisible character. http:
+ * is refused on purpose: on this https site, browsers upgrade or block such
+ * images. Only the global URL is used, so this file keeps no imports.
+ */
+export function isAllowedImageUrl(value: string): boolean {
+    if (typeof value !== "string" || IMAGE_URL_FORBIDDEN_CHARACTER.test(value)) return false;
+    // A path from the site root: "/" and then anything but a second "/" or "\".
+    if (value.startsWith("/")) return value.length > 1 && value[1] !== "/" && value[1] !== "\\";
+    // Otherwise an absolute address that itself starts with "https://": a
+    // browser on this site reads "https:host" or "https:/host" as a relative
+    // path, which shows as a broken image.
+    if (!/^https:\/\//i.test(value)) return false;
+    let url: URL;
+    try {
+        url = new URL(value);
+    } catch {
+        return false;
+    }
+    // new URL already refuses an https: address without a host.
+    return url.protocol === "https:" && url.hostname !== "" && url.username === "" && url.password === "";
 }
 
 // The longest a category slug can be. It mirrors products.category_slug
@@ -551,6 +582,11 @@ const invisibleTitleMessage = (n: number) =>
 const needsLatinMessage = (title: string) =>
     `"${title}" needs at least one letter from A to Z or a digit from 0 to 9 in its title, because its web address is made from them. Add one (the rest of the title can stay), then save again.`;
 
+// A category whose image address isAllowedImageUrl refuses (T-014). The whole
+// save is refused, naming the category by the title staff see.
+const invalidImageMessage = (title: string) =>
+    `"${title}" has an image path that can't be used, so nothing was saved. Upload its image, or paste a path that starts with https://, then save again.`;
+
 // Save-time counterpart to normalizeProducts() above, for the category write
 // path (src/app/actions/settings-actions.ts::saveCategories, T-026).
 // normalizeProducts() is READ-time only and silently auto-suffixes a
@@ -685,6 +721,13 @@ export function resolveCategoriesForSave(
                     : `"${claimant}" and "${title}" would both use the page /products/${slug}. Rename one of them and save again.`,
             };
         }
+        // Every category's image must be an address the site may store
+        // (isAllowedImageUrl, T-014), or the whole save is refused. After the
+        // blank-image fallback above (its defaults are root paths) and after
+        // every title check, so a title's own refusal (no letter from A to Z,
+        // a clash) is the one staff see first.
+        if (!isAllowedImageUrl(image)) return { ok: false, error: invalidImageMessage(title) };
+
         seenSlugs.set(slug, title);
 
         categories.push({ id, title, slug, description, image });

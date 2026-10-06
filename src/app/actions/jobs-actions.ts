@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { actionFailure } from "@/lib/action-errors";
 
 export interface Job {
     id: string;
@@ -91,7 +92,7 @@ export async function createJob(formData: FormData): Promise<JobActionResult> {
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
     const { error } = await supabase.from("jobs").insert(formToPayload(formData));
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "createJob: the insert failed.", error);
     revalidatePath("/admin/careers");
     revalidatePath("/career");
     return { ok: true };
@@ -116,7 +117,7 @@ export async function updateJob(id: string, formData: FormData): Promise<JobActi
         .eq("id", id)
         .select("id")
         .maybeSingle();
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "updateJob: the update failed.", error);
     if (!data) return { ok: false, error: JOB_NOT_FOUND };
     revalidatePath("/admin/careers");
     revalidatePath("/career");
@@ -131,7 +132,7 @@ export async function deleteJob(id: string): Promise<JobActionResult> {
     if (!id) return { ok: false, error: "Missing job posting id." };
 
     const { data, error } = await supabase.from("jobs").delete().eq("id", id).select("id").maybeSingle();
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("delete", "deleteJob: the delete failed.", error);
     if (!data) return { ok: false, error: JOB_NOT_FOUND };
     revalidatePath("/admin/careers");
     revalidatePath("/career");
