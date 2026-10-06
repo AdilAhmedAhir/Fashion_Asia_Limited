@@ -19,7 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { readSettingsForEditor } from "@/lib/settings-read";
-import { actionFailure } from "@/lib/action-errors";
+import { actionFailure, logActionError } from "@/lib/action-errors";
 import {
     hasVisibleText,
     isAllowedImageUrl,
@@ -64,6 +64,10 @@ const MAX_PRODUCT_NAME_LENGTH = 255;
 const PRODUCT_NAME_TOO_LONG = `A product name can be at most ${MAX_PRODUCT_NAME_LENGTH} characters. Shorten it, then try again.`;
 // An image address isAllowedImageUrl refuses (T-014).
 const PRODUCT_IMAGE_INVALID = "This image path can't be used. Upload the image, or paste a path that starts with https://, then try again.";
+// A reorder that wasn't saved (T-013).
+const REORDER_STALE = "The products in this category changed since the page loaded, so the new order wasn't saved. Reload the page and try again.";
+const REORDER_FAILED = "The new order couldn't be saved, so nothing changed. Try again in a moment.";
+const REORDER_PARTIAL = "The new order was only partly saved. Reload the page to see the current order, then try again.";
 
 // The only fields an edit can write (T-016, partial update).
 const PATCH_FIELDS = ["name", "description", "image"] as const;
@@ -393,11 +397,74 @@ export async function deleteCategoryProduct(id: string): Promise<ProductVoidResu
     return { ok: true };
 }
 
-// Persists staff-set order for one category's products. `orderedIds` must
-// list every product currently in that category, front to back — each id's
-// sort_order is written as its index in this array. The category_slug filter
-// on every update means an id that doesn't actually belong to this category
-// simply matches zero rows rather than corrupting another category's list.
+// One product's place in a reorder (T-013): its stored sort_order and its new one.
+type SortOrderMove = { id: string; from: number; to: number };
+
+// The reorder's exact-set check (T-013): every entry a string, no duplicates,
+// the same count, and each one stored in the category. Indexed, so a hole in
+// a crafted array counts as a non-string entry.
+function isStoredIdSet(orderedIds: unknown[], stored: Map<string, number>): boolean {
+    if (orderedIds.length !== stored.size) return false;
+    const seen = new Set<string>();
+    for (let i = 0; i < orderedIds.length; i++) {
+        const id = orderedIds[i];
+        if (typeof id !== "string" || seen.has(id) || !stored.has(id)) return false;
+        seen.add(id);
+    }
+    return true;
+}
+
+// Writes one product's sort_order, filtered by its id AND the category, and
+// reports how many rows changed. Used for the new order and for the put-backs.
+async function writeSortOrder(supabase: SupabaseServerClient, slug: string, id: string, sortOrder: number) {
+    const { data, error } = await supabase
+        .from("products")
+        .update({ sort_order: sortOrder, updated_at: new Date().toISOString() })
+        .eq("id", id)
+        .eq("category_slug", slug)
+        .select("id");
+    return { error, changed: data?.length ?? 0 };
+}
+
+// Writes the moves one at a time; each must change exactly one row. On an
+// error, or a write that changed no row, it logs that, then puts every row
+// already written back to its stored sort_order, newest first.
+async function writeSortOrders(supabase: SupabaseServerClient, slug: string, moves: SortOrderMove[]): Promise<ProductVoidResult> {
+    const written: SortOrderMove[] = [];
+    for (const move of moves) {
+        const { error, changed } = await writeSortOrder(supabase, slug, move.id, move.to);
+        if (!error && changed === 1) {
+            written.push(move);
+            continue;
+        }
+        if (error) logActionError("reorderCategoryProducts: an update failed.", error);
+        else logActionError("reorderCategoryProducts: an update didn't change exactly one row.", { changed });
+
+        // Every put-back is tried, even after one fails.
+        let allPutBack = true;
+        for (let i = written.length - 1; i >= 0; i--) {
+            const back = await writeSortOrder(supabase, slug, written[i].id, written[i].from);
+            if (back.error) logActionError("reorderCategoryProducts: a put-back failed.", back.error);
+            else if (back.changed !== 1) logActionError("reorderCategoryProducts: a put-back didn't change exactly one row.", { changed: back.changed });
+            if (back.error || back.changed !== 1) allPutBack = false;
+        }
+        if (!allPutBack) return { ok: false, error: REORDER_PARTIAL };
+        // A write that changed no row: the product left this category (another
+        // tab deleted it) after the exact-set check.
+        return { ok: false, error: error ? REORDER_FAILED : REORDER_STALE };
+    }
+    return { ok: true };
+}
+
+// Persists staff-set order for one category's products (T-013, the Wave 2
+// contract's item 9). `orderedIds` must be exactly the ids stored in that
+// category, front to back, and each id's sort_order becomes its index. There
+// is no upsert and no database function: an upsert would create a blank row
+// for an id deleted in the meantime. Only the rows whose position changes are
+// written, one at a time, each filtered by id and category; if one fails, the
+// rows already written are put back. If a write and its put-back both fail,
+// the category keeps a mixed order until the next reorder, and
+// REORDER_PARTIAL tells staff to reload (the contract's accepted residual).
 export async function reorderCategoryProducts(categorySlug: string, orderedIds: string[]): Promise<ProductVoidResult> {
     const supabase = await createClient();
     const user = await requireUser(supabase);
@@ -410,16 +477,29 @@ export async function reorderCategoryProducts(categorySlug: string, orderedIds: 
     const attachability = await checkCategoryAttachable(slug);
     if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, slug) };
 
+    const { data: rows, error: readError } = await supabase
+        .from("products")
+        .select("id, sort_order")
+        .eq("category_slug", slug);
+
+    if (readError) return actionFailure("read", "reorderCategoryProducts: the read failed.", readError);
+
+    const stored = new Map<string, number>();
+    for (const row of rows ?? []) stored.set(row.id as string, row.sort_order as number);
+    if (!isStoredIdSet(orderedIds, stored)) return { ok: false, error: REORDER_STALE };
+
+    // Only the rows whose stored sort_order differs from their new place.
+    const moves: SortOrderMove[] = [];
     for (let i = 0; i < orderedIds.length; i++) {
-        const { error } = await supabase
-            .from("products")
-            .update({ sort_order: i, updated_at: new Date().toISOString() })
-            .eq("id", orderedIds[i])
-            .eq("category_slug", slug);
-
-        if (error) return actionFailure("save", "reorderCategoryProducts: an update failed.", error);
+        const from = stored.get(orderedIds[i]) as number;
+        if (from !== i) moves.push({ id: orderedIds[i], from, to: i });
     }
+    if (!moves.length) return { ok: true };
 
-    revalidateCategory(slug);
-    return { ok: true };
+    try {
+        return await writeSortOrders(supabase, slug, moves);
+    } finally {
+        // After any write attempt, saved or not. A throw still propagates.
+        revalidateCategory(slug);
+    }
 }
