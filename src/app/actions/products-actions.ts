@@ -18,7 +18,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
-import { getSettings } from "@/app/actions/settings-actions";
+import { readSettingsForEditor } from "@/lib/settings-read";
 import {
     hasVisibleText,
     normalizeProducts,
@@ -52,6 +52,7 @@ const PRODUCT_NOT_FOUND = "Product not found.";
 const PRODUCT_NAME_REQUIRED = "A product needs a name. Type one in, then try again.";
 const PRODUCT_IMAGE_REQUIRED = "A product needs an image. Upload one or paste its path, then try again.";
 const NOTHING_TO_SAVE = "Nothing was saved. Reload the page, then try again.";
+const CATEGORY_CHECK_FAILED = "Nothing was saved, because the category couldn't be checked. Try again in a moment.";
 
 // The only fields an edit can write (T-016, partial update).
 const PATCH_FIELDS = ["name", "description", "image"] as const;
@@ -71,7 +72,8 @@ async function requireUser(supabase: SupabaseServerClient) {
 type CategoryAttachability =
     | { attachable: true }
     | { attachable: false; reason: "not_found" }
-    | { attachable: false; reason: "not_yet_bootstrapped"; title: string };
+    | { attachable: false; reason: "not_yet_bootstrapped"; title: string }
+    | { attachable: false; reason: "unchecked" };
 
 // The one copy of the "category not saved yet" answer (T-026), shared by every
 // write below. It names the page and the button staff actually use: categories
@@ -81,6 +83,8 @@ const categoryNotSavedYet = (title: string) =>
     `"${title}" hasn't been saved as a category yet. Open /admin/products and click Save categories once (no other changes needed), then try again.`;
 
 function attachabilityError(attachability: Exclude<CategoryAttachability, { attachable: true }>, categorySlug: string) {
+    // Fixed copy for a read that failed (T-032), never the database's text.
+    if (attachability.reason === "unchecked") return CATEGORY_CHECK_FAILED;
     return attachability.reason === "not_yet_bootstrapped"
         ? categoryNotSavedYet(attachability.title)
         : `Category "${categorySlug}" does not exist.`;
@@ -97,8 +101,18 @@ function attachabilityError(attachability: Exclude<CategoryAttachability, { atta
 // category that's genuinely displayed but not yet frozen gets the distinct
 // "not_yet_bootstrapped" answer instead of being lumped in with "does not
 // exist."
+//
+// It fails closed (T-032). getSettings falls back to the code defaults when
+// its read fails, which used to turn a failed read into a misleading "hasn't
+// been saved as a category yet". readSettingsForEditor tells the two apart: a
+// missing row still reads as the defaults, but a read error, a throw (Next's
+// own signals pass through) or a stored value that isn't an object answers
+// `unchecked`, and the write is refused. settings-read.ts is server-only and
+// not a "use server" module, so importing it adds no endpoint.
 async function checkCategoryAttachable(categorySlug: string): Promise<CategoryAttachability> {
-    const business = await getSettings("business");
+    const read = await readSettingsForEditor("business");
+    if (!read.ok) return { attachable: false, reason: "unchecked" };
+    const business = read.value;
 
     const frozen = readStoredCategoryIdentities(business.products);
     for (const ref of frozen.values()) {

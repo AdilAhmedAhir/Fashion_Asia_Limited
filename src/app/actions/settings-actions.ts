@@ -48,6 +48,16 @@ const SETTINGS_ROUTES: Record<string, string> = {
     contact: "/contact"
 };
 
+// The rows updateSettings may write (T-032): the six page editors' own keys,
+// written out by hand and never derived from SITE_SETTINGS, so a new default
+// key can't widen it. Matched exactly, with no trimming or case folding, so
+// "Business" or "business " can't create a junk row. `business` isn't here:
+// it has its own two writers (below). This limits which rows a signed-in
+// account can write, not who can write them (RISKS R1 stands).
+const UPDATABLE_SETTINGS_KEYS = new Set(["homepage", "who_we_are", "who_we_work_with", "sustainability", "contact", "general"]);
+
+const UNKNOWN_SETTINGS_KEY = "Nothing was saved, because these settings aren't recognized. Reload the page and try again.";
+
 // Failure-reporting convention (docs/TECH_STACK.md "Server Action
 // failure-reporting convention", 2026-09-27; docs/SECURITY.md SEC-HIGH-4;
 // T-012): every failure RETURNS a typed result — never throws — including a
@@ -73,8 +83,12 @@ export async function updateSettings(key: string, value: Record<string, unknown>
 
     // A What We Do tab left open from before T-026 still calls this with the
     // page's whole old value, categories included. Refused outright, with
-    // wording that makes sense on that old screen.
+    // wording that makes sense on that old screen, before the allowlist below
+    // so that screen keeps getting it.
     if (key === "business") return { ok: false, error: BUSINESS_MOVED };
+
+    // Only the six known rows, by exact match (T-032), before any table access.
+    if (typeof key !== "string" || !UPDATABLE_SETTINGS_KEYS.has(key)) return { ok: false, error: UNKNOWN_SETTINGS_KEY };
 
     const { error } = await supabase
         .from("site_settings")
@@ -379,6 +393,14 @@ async function writeBusinessFields(
 // ids and frozen slugs included, so the editor can adopt it as-is.
 type SaveCategoriesResult = { ok: true; categories: Product[] } | { ok: false; error: string };
 
+// The delete guard's list of titles (T-032), each in its own quotes:
+// "T-Shirts"; "T-Shirts" and "Sportswear"; "T-Shirts", "Polo Shirts" and
+// "Sportswear".
+function quotedList(titles: readonly string[]): string {
+    const quoted = titles.map(title => `"${title}"`);
+    return quoted.length > 1 ? `${quoted.slice(0, -1).join(", ")} and ${quoted[quoted.length - 1]}` : quoted[0] ?? "";
+}
+
 /**
  * @purpose Save the category list (site_settings.business.products) and nothing else in that row, under every category identity rule.
  *
@@ -424,8 +446,13 @@ export async function saveCategories(categories: Product[]): Promise<SaveCategor
             const remainingSlugs = new Set((remainingProducts ?? []).map(row => row.category_slug as string));
             const blocked = gone.filter(r => remainingSlugs.has(r.slug));
             if (blocked.length) {
-                const names = blocked.map(r => r.title).join(", ");
-                return { ok: false, error: `Remove its products first: "${names}" still has products assigned to it.` };
+                const names = quotedList(blocked.map(r => r.title));
+                return {
+                    ok: false,
+                    error: blocked.length === 1
+                        ? `Remove its products first: ${names} still has products assigned to it.`
+                        : `Remove their products first: ${names} still have products assigned to them.`,
+                };
             }
         }
 

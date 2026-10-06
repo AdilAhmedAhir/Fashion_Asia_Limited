@@ -534,6 +534,14 @@ function randomUUID(): string {
 const invisibleTitleMessage = (n: number) =>
     `Category #${n}'s title has no visible characters, so nothing was saved. Type a title, then save again.`;
 
+// A NEW category whose title has no letter from A to Z and no digit (Bengali
+// alone, or only punctuation): its slug could only be the shared "category"
+// fallback, so a second one could never be saved (T-032). Refused instead,
+// saying what to add. An existing category keeps its frozen slug, so it's
+// never refused for this.
+const needsLatinMessage = (title: string) =>
+    `"${title}" needs at least one letter from A to Z or a number in its title, because its web address is made from them. Add one (the rest of the title can stay), then save again.`;
+
 // Save-time counterpart to normalizeProducts() above, for the category write
 // path (src/app/actions/settings-actions.ts::saveCategories, T-026).
 // normalizeProducts() is READ-time only and silently auto-suffixes a
@@ -638,6 +646,13 @@ export function resolveCategoriesForSave(
             slug = existing.slug;
         } else {
             // No id, or an id absent from existingById: a new category.
+            // Its web address is made only from the title's letters a-z and
+            // digits, so a title with none of them is refused. Tested on
+            // slugBody, never on the slug "category", so a category titled
+            // "Category" still saves. After the visible-character check
+            // above, so an invisible title gets that message instead.
+            if (!slugBody(title)) return { ok: false, error: needsLatinMessage(title) };
+
             // Fresh id, fresh slug derived only from the title — again, the
             // incoming item's own `.slug` field is never read here either.
             // slugify cuts a long title's slug to MAX_SLUG_LENGTH and trims
