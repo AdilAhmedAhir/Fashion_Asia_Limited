@@ -889,6 +889,20 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   Source: QA T-016 I3, 2026-10-05. Leaving mid-save still sends the save, by design, but nobody sees how it ends. Until then, staff guidance is to wait for "Saved".
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
+## Autonomous run — 2026-10-06 (owner: "complete all the things… and then deploy it")
+The owner asked for every open ticket to be finished, then one deploy at the end, with no further input ("I don't want to put any thought into this anymore"). Mode: AUTONOMOUS (documented defaults, logged). LAW-touching calls and hard stops still go to the owner.
+- **Agent-buildable, in waves.** Each wave builds in place, one builder at a time; a wave may carry several tickets as separate commits, and its review stage covers every ticket's AC.
+  1. **Wave 1, catalog data hygiene:** T-033, T-032.
+  2. **Wave 2, products write path:** T-014, T-013, T-018.
+  3. **Wave 3, uploads and media:** T-019, T-007, T-009, T-010 (T-010 and T-019 need `architect-reviewer` first).
+  4. **Wave 4, admin UX and accessibility:** T-034 (with T-016's two nits), T-011, T-020, T-027, T-030.
+  5. **Wave 5, public site:** T-008, T-017, T-022, T-028, T-029.
+- **Needs the owner (not built autonomously):**
+  - **T-023**, the admin allowlist: it changes the auth model (LAW), needs `/debate` and a hand-applied migration.
+  - **T-031**, the grants hardening: a hand-applied migration. It may be prepared on its own branch, never merged with `STATUS: PENDING_USER_APPLY`, because that blocks `/ship`.
+  - **Supabase sign-ups:** still ON on 2026-10-06, read live (`disable_signup: false`). Only the owner can turn them off in the dashboard.
+- **Deploy:** one `/ship` at the end, under the owner's "deploy". An earlier deploy, attempted on 2026-10-06 because of SEC-HIGH-1's live exposure, was refused by the session's permission check, since the owner sequenced it after the tickets. The manual checklist rows count as waived by the owner's instruction, recorded in DECISIONS at deploy time.
+
 ### Dependency Order
 
 **2026-10-03:** the `/products` client request above runs first: T-024, then T-025, then T-026, then T-016. T-021 is folded into T-024. After that, the order below resumes, without T-016, which is done in that run.
