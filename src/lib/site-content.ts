@@ -320,6 +320,15 @@ export const PRODUCT_IMAGES: Record<string, string> = {
 
 export const PRODUCT_IMAGE_FALLBACK = "/images/client/4-copy.webp";
 
+// A category's image when it has none of its own: the photograph its exact
+// title maps to in PRODUCT_IMAGES, else the fallback. Own keys only: a plain
+// lookup would give a category titled "constructor" or "toString" a function
+// as its image, and "__proto__" Object.prototype (T-033).
+function defaultCategoryImage(title: string): string {
+    const mapped = Object.prototype.hasOwnProperty.call(PRODUCT_IMAGES, title) ? PRODUCT_IMAGES[title] : undefined;
+    return mapped ?? PRODUCT_IMAGE_FALLBACK;
+}
+
 export type Product = {
     id: string; // server-issued category identity. "" = not yet assigned. Internal only: never displayed, never a URL segment.
     title: string;
@@ -472,7 +481,7 @@ export function normalizeProducts(raw: unknown): Product[] {
             if (title) {
                 const slug = dedupeSlug(slugify(title), seen);
                 seen.add(slug);
-                acc.push({ id: "", title, slug, description: "", image: PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK });
+                acc.push({ id: "", title, slug, description: "", image: defaultCategoryImage(title) });
             }
             return acc;
         }
@@ -484,7 +493,7 @@ export function normalizeProducts(raw: unknown): Product[] {
 
             const image = typeof row.image === "string" && row.image.trim()
                 ? row.image.trim()
-                : PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK;
+                : defaultCategoryImage(title);
             const description = typeof row.description === "string" ? row.description.trim() : "";
 
             // Carried forward exactly like slug below — read-time only,
@@ -540,7 +549,7 @@ const invisibleTitleMessage = (n: number) =>
 // saying what to add. An existing category keeps its frozen slug, so it's
 // never refused for this.
 const needsLatinMessage = (title: string) =>
-    `"${title}" needs at least one letter from A to Z or a number in its title, because its web address is made from them. Add one (the rest of the title can stay), then save again.`;
+    `"${title}" needs at least one letter from A to Z or a digit from 0 to 9 in its title, because its web address is made from them. Add one (the rest of the title can stay), then save again.`;
 
 // Save-time counterpart to normalizeProducts() above, for the category write
 // path (src/app/actions/settings-actions.ts::saveCategories, T-026).
@@ -608,7 +617,7 @@ export function resolveCategoriesForSave(
         // existing category as much as a new one, and never read as a delete.
         if (!title) continue;
         if (!hasVisibleText(title)) return { ok: false, error: invisibleTitleMessage(position) };
-        if (!image) image = PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK;
+        if (!image) image = defaultCategoryImage(title);
 
         const existing = incomingId ? existingById.get(incomingId) : undefined;
 

@@ -1,6 +1,7 @@
 // Pure helpers for the /admin/products category editor's draft (T-026). The
 // one value import is hasVisibleText (T-033) from site-content.ts, a file
-// that itself has no imports, so these still run in plain Node too.
+// that itself has no imports; loading this file outside the app needs the
+// "@/" path alias resolved.
 
 import { hasVisibleText, type Product } from "@/lib/site-content";
 
