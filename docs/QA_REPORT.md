@@ -2673,3 +2673,12 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **INFO-3 (seen in passing, outside Wave 2a):** given 8 rows whose `title` is `null`, `resolveCategoriesForSave` returned `{ ok: true, categories: [] }`. The rows were dropped, not refused, while a blank text title is refused. Only a hand-crafted call can send this, and any signed-in user can already send `saveCategories([])`; the delete guard still protects categories that have products. Wave 2a's only change to that function is the one image-check line, so this behaviour is older than this wave. I didn't investigate further. It's worth a backlog ticket to refuse non-text titles.
 
 **Fix round `732c67e` (2026-10-06):** the image rule now also requires the literal `https://` prefix and refuses every `\p{C}` and Default_Ignorable character, and two messages were reworded. The builder reports T-014 145/145 and 41/41 mutants, plus green Wave 1 and T-016 re-runs. `code-reviewer` re-checked it and `security-reviewer` re-bound the two files; the public pages and admin gate don't depend on this change.
+
+## Static Pass — Wave 2b (T-013) — 2026-10-06 (by `code-reviewer`, light QA, under the lean protocol)
+- **Target:** branch `wave-2b-reorder` at `48fc3d7`. Only `products-actions.ts` changes (`reorderCategoryProducts` plus three private helpers).
+- **Re-runs:** the builder's suites, once: T-013 100/100, the Wave 2a suites 921/921, mutants 59/59. The T-016 harness passes, with UI 319/319 including the new refused-reorder scenario.
+- **Own mutants:** `code-reviewer`'s 7 mutants were 6 caught. The survivor (Y1) dropped the `await` before the refresh; it's noted as a test-only follow-up.
+- **Item 9 is met:** the check order; exact-set before any write; only changed rows written; both filters on every write and put-back; one row per write; put-backs newest first; the three outcomes with their exact strings; refresh after any write attempt; no upsert or insert.
+- **Untouched:** item 11's messages are byte-identical, and `CategoryProductsManager.tsx` is 0-byte.
+- **Security** (`security-reviewer`): CLEARED. 228/228 probes, plus the builder's 1,582 checks from a private copy.
+- **Verdict: PASS.**

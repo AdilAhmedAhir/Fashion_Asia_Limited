@@ -100,6 +100,12 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
   - **Not covered:** the other image and link fields are unchanged (SEC-INFO-44).
   - **Since `732c67e`:** the rule also refuses any other Unicode `C` character (format, surrogate, private-use or unassigned) and any default-ignorable code point. An absolute address must start with a literal `https://`.
 
+*Amended 2026-10-06 (Wave 2b CSO review, T-013; appended, rows above left as written):*
+- **Reorder.** `reorderCategoryProducts` reads the category's rows after the session, argument and category checks, and refuses (REORDER_STALE) any list that isn't exactly the stored ids.
+  - It writes only the rows that move, one at a time. Each write is filtered by `id` and `category_slug`, and confirmed by the row it returns. On a failure, it puts the written rows back.
+  - It never inserts or upserts, and it writes at most one row per stored product. So a crafted list can't create a row, reach another category, or drive an unbounded write loop.
+  - It's still not atomic: SEC-INFO-16's accepted residual, and SEC-INFO-45.
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -2117,6 +2123,103 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 - **Verdict: ✅ still cleared, at `732c67e`.** The sign-off above is updated to these hashes.
 
 
+### 🔒 CSO Audit — 2026-10-06 — ticket-review:Wave 2b (T-013)
+
+**Scope:** Dispatched by `/system-architect` (the 2026-10-06 run, Wave 2b). It covers **T-013**, reorder hardening, under the Wave 2 binding contract's item 9 and premortem MUST-ADD 7 (`docs/ROADMAP.md`, top of T-018).
+- **The diff under review:** `git diff main...wave-2b-reorder` at HEAD `48fc3d7`, merge base `3eb2759` (= `main`). It's one commit and one file: `src/app/actions/products-actions.ts` (+95/−15).
+  - It changes `reorderCategoryProducts` and adds three private helpers (`isStoredIdSet`, `writeSortOrder`, `writeSortOrders`), the `SortOrderMove` type, three message constants and the `logActionError` import.
+- **Commit names:** authored and committed by `happierbangladesh`, with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+
+**Method.**
+- **Static:** a full read of the diff, of the helpers the function calls (`requireUser`, `checkCategoryAttachable`, `attachabilityError`, `revalidateCategory`) and of `src/lib/action-errors.ts`, plus greps over the file.
+- **The builder's suites (`scratchpad/wave-2b/`), run once from a private copy (`scratchpad/cso-w2b/`).** Isolation was reviewed first:
+  - the loader refuses `@/lib/supabase/*` and `@supabase/*`;
+  - every `git` call is read-only (`cat-file`, `diff`, `grep`, `ls-files`, `ls-tree`);
+  - writes land inside the copy or a temporary Chrome profile, and there's no network, no server and no `.env`.
+- **Results:** 1,582/1,582 checks and 101/101 mutants, in 210 s, with no Chrome left and the repo clean.
+  - **Wave 2b harness** (`--stage final`): 1,021/1,021 (helper 30, error branches 309, bad arguments 336, scope 100, T-014 146, T-013 100) and 59/59 mutants. Those include T-013's T1–T17 and CR12.
+  - **T-016's re-run:** 561/561 (server 117, serializer 14, `hasVisibleText` 111, and UI 319 in production and dev/StrictMode, with the new `w2breorder` scenario) and 42/42 mutants.
+- **This office's own probe** (`cso-w2b/cso/probe-reorder.mjs`): **228/228.** It runs the real file through the builder's loader and fake database. Its expected strings are copied from item 9 and `action-errors.ts`, not from the builder's fixtures.
+  - **Positive control:** the same probe fails 61 of 200 checks against `main`'s file (`3eb2759`). That file answers `{ ok: true }` to another category's id, a subset, duplicates and non-strings, and writes for each one.
+- **Not done:** no sign-in, no Server Action call, no request to any server, no build, no server started or stopped, nothing on `:3001`. `.env*` was never read.
+
+**1. Re-binds by sha256: ✅ matches the builder's report.**
+
+| File | Before (`main` `3eb2759`, Wave 2a at `732c67e`) | `48fc3d7` |
+|---|---|---|
+| `src/app/actions/products-actions.ts` | `8d716929d62ab7ee…` | `7e8a1069828c472e…` |
+
+- **`git diff --name-only main HEAD` lists only that file.** The working tree is clean, and `main`'s `src/` equals `732c67e`'s. So every other Wave 2a binding stands, re-hashed in this pass:
+  - `settings-actions.ts` `b4c3da2ec3c0a894…`, `jobs-actions.ts` `bd4387b1df2eb4c7…`, `site-content.ts` `9939d4f36731bd7f…` and `action-errors.ts` `b0be0a48a81ce6a8…`;
+  - `settings-read.ts` `cc5c8a2c06d9acb0…`, `business/page.tsx` `87071736c1516fcb…`, the admin `products/page.tsx` `969a00dea762e782…`, and the public products pages `238f87491891667b…` and `bc243115a2583eba…`;
+  - `nav.ts` `507e5c62c5f6347f…`, `sitemap.ts` `105e10253fdd12fb…`, `next.config.ts` `a44a56d9f997bb13…`, `package.json` `26068c14d0df4a0c…` and `package-lock.json` `6a026457868784a9…`;
+  - `ProductGrid.tsx` `407c3a38fec9b7b2…` and `ProductCard.tsx` `7c2f81e96140ad02…`;
+  - and 0 bytes for `middleware.ts`, `src/lib/supabase/*`, `media-actions.ts`, `form-actions.ts`, `auth-actions.ts`, every client component, `db/`, `supabase-schema.sql` and `.env.example`.
+- **No new audit:** the lockfile is Wave 1's and Wave 2a's.
+- **Secrets:** 0 hits in the added lines for the `stack.json` patterns plus a JWT shape. `products-actions.ts` reads no `process.env`, and only the three action files import `action-errors.ts`.
+
+**2. Authorization and integrity of the reorder: ✅**
+- **Order (item 9.1–9.6), confirmed in code and by the probe:**
+  - `getUser()` runs first. Signed out, only `createClient` and `getUser` run, with no query.
+  - Then the slug and list shapes, then `checkCategoryAttachable` (the category check), and only then the one products read: `select("id, sort_order").eq("category_slug", slug)`.
+  - A read error returns `actionFailure("read", …)`.
+- **The exact-set check runs before any write.** Every entry must be a string (checked by index, so a hole counts), with no duplicates, the same count, and each one stored.
+  - **Refused with REORDER_STALE, zero writes and no refresh:** another category's id swapped in; this category's ids under another slug; an extra id; a subset; duplicates (count kept); a `toString` object; a `String` object; numbers; a hole; `new Array(4)`; and `__proto__` / `constructor` keys.
+- **Every write and every put-back** is `update({ sort_order, updated_at }).eq("id", id).eq("category_slug", slug).select("id")`, through the one `writeSortOrder` helper. In every probe scenario, every update carried both filters and wrote only those two columns.
+- **No cross-category write.** A row moved to another category mid-reorder matched 0 rows and kept its values.
+  - An in-process Proxy that swaps in another category's id after the check is also stopped by the category filter. It isn't reachable over the wire: a decoded Server Action argument is a plain array.
+- **No ghost rows.** There's no insert, upsert, delete or RPC on the path; the ops seen were `site_settings:select`, `products:select` and `products:update`. A product deleted mid-reorder was not recreated.
+  - Writes are capped at the category's stored row count. That closes Wave 2a's unbounded-loop carry-over: a 1,000,000-entry list is refused by the length check, with no write.
+- **Answers.** Put-backs run newest first, and each one is tried even after one fails.
+  - Everything put back: REORDER_STALE if a row vanished, REORDER_FAILED after an error. Any put-back failed: REORDER_PARTIAL.
+  - A throw still propagates, and the refresh runs after any write attempt (`finally`).
+- **No raw database text in any result.** A hostile error (marker text in `message`, `code`, `details` and `hint`) on the read, a write or a put-back gives only the fixed copy. No `.message` is read in the file.
+- **Logs carry no ids or request data.** The four new labels are literals. The second argument is either the database error object (the Wave 2a ruling) or `{ changed: <count> }`. No label carries an id or slug, and no log carries the user, the token or the payload.
+- **The authorization boundary is unchanged:** the same `getUser()` gate, the same anon-key session client, and no SQL.
+  - RLS on `products` is still anon read-only and `authenticated` ALL. A signed-in account could already write any product row directly with its own token.
+  - So the filters above are integrity controls. The boundary is SEC-HIGH-2's, which is open and unchanged.
+
+**3. New exports: ✅ none.** The file's `export` lines are byte-identical to `main`'s, and the three helpers and the type are module-private. There are still 34 public Server Actions: products 6, settings 14, media 5, jobs 4, form 3 and auth 2.
+
+**4. SEC-INFO-16: 🟢 narrowed to the contract's accepted residual, not closed.**
+- Put-backs now undo the mid-loop failure it names (REORDER_FAILED or REORDER_STALE).
+- A mixed order is left only if a write and its put-back both fail, and then REORDER_PARTIAL says so. Only a database function (an owner HARD STOP) makes the reorder all-or-nothing.
+- **New 🟢 SEC-INFO-45:** two more edges of the same design. Both are cosmetic and signed-in only, stay within one category, and self-heal at the next successful reorder.
+  - **(a)** A write that commits but whose reply is lost is answered REORDER_FAILED ("nothing changed"), though that one row has moved. Only confirmed rows are put back.
+  - **(b)** Two reorders of one category at once can interleave, because nothing compares and swaps on `sort_order`. The order can end mixed while both tabs report it saved. This predates Wave 2b.
+  - **Optional, without a database function** (for the orchestrator to weigh; it changes item 9's write shape, so it isn't a condition): also put back the failing row after an error, and add `.eq("sort_order", from)` to writes and `.eq("sort_order", to)` to put-backs.
+
+**Notes (no finding):**
+- The moves loop reads `orderedIds[i]` again after the check (the Proxy case above). A snapshot copy would be tidier; there's no exposure either way.
+- The products read has no limit. If the API's row cap (Supabase's default is 1,000) ever cut it short, every reorder of that category would fail closed with REORDER_STALE.
+
+**Authz-as-other-user:**
+- **Signed out:** SESSION_EXPIRED, with no query. Pass (this probe, and the builder's 9.1 three times).
+- **Signed in, aiming at another category's rows** (swapped ids, a foreign slug, a mid-reorder move, a Proxy swap): refused, or 0 rows matched, and the other category byte-identical. Pass.
+- **Live:** not attempted. Owner law bars sign-in and Server Action calls against the live database, and this diff changes nothing at the data layer.
+
+**Status changes** (in code, pending merge): SEC-INFO-16 narrowed; Wave 2a's unbounded-loop carry-over closed. **New:** 🟢 SEC-INFO-45.
+
+**Overall verdict this pass:** ✅ **Wave 2b (T-013) cleared.**
+- No 🔴, 🟠 or 🟡.
+- The commit narrows a surface: a stale or crafted list can no longer write a subset, write without bound, or report success after a partial write.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** Wave 2b may proceed to `/qa` → `code-reviewer` → merge. Conditions:
+- **Bound by sha256 at `48fc3d7`:** `products-actions.ts` `7e8a1069828c472ede33b5660f84c1eed8ac620f110be7013b3a79f6427e352c`. Every other binding in item 1 stands.
+  - If a bound file changes before merge, the clearance lapses for that file until `/cso` re-reviews it.
+- **Contract triggers:** any of the Wave 2 contract's reorder triggers comes back to `/cso`: an upsert or insert, a write without both filters, or dropping the exact-set check. SEC-INFO-45's optional change, if taken, also comes back, because it changes item 9's write shape.
+
+**Pre-deploy position:**
+- A `main` holding Wave 2b at this hash adds no sensitive surface beyond this pass.
+- SEC-HIGH-2's standing is unchanged. Its §5 row is open and blocks the next deploy pending the owner's confirmation, and the project checkpoint (2026-10-05) still records sign-ups as ON.
+- Deploying still needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md`: this entry, plus its §3, §5 and §7 rows. Left uncommitted, for the orchestrator.
+- Ran offline tests in the session scratchpad only.
+- No sign-in, no Server Action call, no request to any server, no write to the live database, no build, no server started or stopped.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -2202,6 +2305,9 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-44 — the other admin URL fields (leaders' `photo_url`, the settings images, reports' `file_url`) still accept any string | **T-039** (recommended) | Open — informational, pre-existing. Out of Wave 2a's scope by contract (premortem MUST-ADD 1) |
 | SEC-INFO-42 — status update, 2026-10-06 (Wave 2a re-bind, `732c67e`) | **T-014** | ✅ **Closed in code, pending merge.** The forbidden class is now `\p{C}` plus `Default_Ignorable_Code_Point`. All 23 invisible code points tried are refused, in every position tried |
 | SEC-INFO-43 — status update, 2026-10-06 (Wave 2a re-bind, `732c67e`) | **T-014** | ✅ **Closed in code, pending merge.** An absolute address must start with a literal `https://`. On 300,000 fuzzed shapes, the rule's parse equals what a browser on this site loads |
+| SEC-INFO-16 — status update, 2026-10-06 (Wave 2b CSO entry) | **T-013** (`48fc3d7`) | 🟢 **Narrowed in code, pending merge; open only as the contract's accepted residual.** Put-backs now undo a failed write (REORDER_FAILED or REORDER_STALE). A mixed order is left only if a write and its put-back both fail, and then REORDER_PARTIAL says so. All-or-nothing needs a database function, which waits for the owner. Bound to `products-actions.ts` sha256 `7e8a1069…` |
+| SEC-INFO-45 — two more edges of the same non-atomic reorder: (a) a write that commits but whose reply is lost is answered REORDER_FAILED ("nothing changed"), though that row moved, because only confirmed rows are put back; (b) two reorders of one category at once can interleave, with no compare-and-swap on `sort_order`, so the order can end mixed while both tabs report it saved | The owner's database-function follow-up, with SEC-INFO-16. Optional without one: also put back the failing row after an error, and add `.eq("sort_order", from)` to writes and `.eq("sort_order", to)` to put-backs (an item 9 change, back to `/cso`) | Open — informational. One category's display order only, signed-in only (R1), with no cross-category write and no row created. It self-heals at the next successful reorder. (b) predates Wave 2b |
+| Wave 2a carry-over: the unbounded `orderedIds` loop — status update, 2026-10-06 (Wave 2b CSO entry) | **T-013** | ✅ **Closed in code, pending merge.** Writes are capped at the category's stored row count. A 1,000,000-entry list is refused by the length check, with no write |
 
 ## 6. Secrets log
 
@@ -2269,3 +2375,7 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
      1. Have staff upload that image again, which returns an `https://` Storage address, or paste its full `https://` address. Then save.
      2. Never widen the rule, add a host allow-list, or skip the check. Each is a contract re-review trigger.
      3. If staff report it on images that look valid, read the live category images back read-only and compare them with the 8 URLs in the Wave 2a entry, as a Wave 2 incident.
+14. **Staff see "The products in this category changed since the page loaded…", "The new order couldn't be saved, so nothing changed…" or "The new order was only partly saved…" when they move a product (T-013, Wave 2b, 2026-10-06).**
+     1. The first means the list on screen no longer matches the stored rows: another tab added, deleted or moved a product. Reload and redo the move. If it repeats on a fresh page with no other tab open, read the category's rows back read-only and compare their ids with the page, as a Wave 2 incident.
+     2. The second and third come with a server log line labelled `reorderCategoryProducts: …`. Read the logged error. After the third, reload: the category may show a mixed order until the next successful reorder (SEC-INFO-16's accepted residual).
+     3. None of the three can move a product between categories or create one. A product appearing or vanishing on a reorder is a security incident, not this item.
