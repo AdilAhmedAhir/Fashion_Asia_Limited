@@ -63,7 +63,7 @@ const CATEGORY_CHECK_FAILED = "Nothing was saved, because the category couldn't 
 const MAX_PRODUCT_NAME_LENGTH = 255;
 const PRODUCT_NAME_TOO_LONG = `A product name can be at most ${MAX_PRODUCT_NAME_LENGTH} characters. Shorten it, then try again.`;
 // An image address isAllowedImageUrl refuses (T-014).
-const PRODUCT_IMAGE_INVALID = "The image address must start with https:// or /. Upload the image, or paste its full https:// address, then try again.";
+const PRODUCT_IMAGE_INVALID = "This image path can't be used. Upload the image, or paste a path that starts with https://, then try again.";
 
 // The only fields an edit can write (T-016, partial update).
 const PATCH_FIELDS = ["name", "description", "image"] as const;

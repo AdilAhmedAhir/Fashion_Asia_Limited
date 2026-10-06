@@ -401,26 +401,32 @@ export function hasVisibleText(value: unknown): boolean {
     return typeof value === "string" && VISIBLE_CHARACTER.test(value);
 }
 
-// A character an image address may never contain: a backslash, whitespace or
-// a control character (C0, DEL, C1). Whitespace is refused, not encoded, so
-// what's stored is exactly what staff pasted. No "g" or "y" flag, so test()
-// keeps no state between calls.
-const IMAGE_URL_FORBIDDEN_CHARACTER = /[\\\s\p{Cc}]/u;
+// A character an image address may never contain: a backslash, whitespace,
+// or any character hasVisibleText treats as invisible (a control, format,
+// private-use, unassigned or lone surrogate code point, or a
+// Default_Ignorable one such as U+200B, U+00AD or U+202E). Whitespace is
+// refused, not encoded, so what's stored is exactly what staff pasted. No "g"
+// or "y" flag, so test() keeps no state between calls.
+const IMAGE_URL_FORBIDDEN_CHARACTER = /[\\\s\p{C}\p{Default_Ignorable_Code_Point}]/u;
 
 /**
  * @purpose Whether an image address may be stored: a path from the site root, or an absolute https:// address with a host and no username or password.
  * The one image rule (T-014, SEC-MED-7 and 13), for a product's image
  * (products-actions.ts) and a category's (resolveCategoriesForSave, below).
  * Everything else is refused: http:, data:, javascript:, blob:, file:,
- * "//host", "/\host", a path without a leading slash, and any backslash,
- * whitespace or control character. http: is refused on purpose: on this https
- * site, browsers upgrade or block such images. Only the global URL is used,
- * so this file keeps no imports.
+ * "//host", "/\host", "https:host" without its "//", a path without a
+ * leading slash, and any backslash, whitespace or invisible character. http:
+ * is refused on purpose: on this https site, browsers upgrade or block such
+ * images. Only the global URL is used, so this file keeps no imports.
  */
 export function isAllowedImageUrl(value: string): boolean {
     if (typeof value !== "string" || IMAGE_URL_FORBIDDEN_CHARACTER.test(value)) return false;
     // A path from the site root: "/" and then anything but a second "/" or "\".
     if (value.startsWith("/")) return value.length > 1 && value[1] !== "/" && value[1] !== "\\";
+    // Otherwise an absolute address that itself starts with "https://": a
+    // browser on this site reads "https:host" or "https:/host" as a relative
+    // path, which shows as a broken image.
+    if (!/^https:\/\//i.test(value)) return false;
     let url: URL;
     try {
         url = new URL(value);
@@ -579,7 +585,7 @@ const needsLatinMessage = (title: string) =>
 // A category whose image address isAllowedImageUrl refuses (T-014). The whole
 // save is refused, naming the category by the title staff see.
 const invalidImageMessage = (title: string) =>
-    `"${title}"'s image address must start with https:// or /, so nothing was saved. Upload the image, or paste its full https:// address, then save again.`;
+    `"${title}" has an image path that can't be used, so nothing was saved. Upload its image, or paste a path that starts with https://, then save again.`;
 
 // Save-time counterpart to normalizeProducts() above, for the category write
 // path (src/app/actions/settings-actions.ts::saveCategories, T-026).
@@ -718,7 +724,8 @@ export function resolveCategoriesForSave(
         // Every category's image must be an address the site may store
         // (isAllowedImageUrl, T-014), or the whole save is refused. After the
         // blank-image fallback above (its defaults are root paths) and after
-        // every title check.
+        // every title check, so a title's own refusal (no letter from A to Z,
+        // a clash) is the one staff see first.
         if (!isAllowedImageUrl(image)) return { ok: false, error: invalidImageMessage(title) };
 
         seenSlugs.set(slug, title);
