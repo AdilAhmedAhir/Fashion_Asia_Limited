@@ -1,0 +1,12 @@
+Why the one stylesheet name changed: Tailwind 3.4.19 run offline (project's own tailwindcss + postcss, under the guard) on git-archive snapshots of 30edcb6 and 1c3027a (tracked .env.example removed unread first).
+rules 30edcb6=803 1c3027a=803 rule diff lines=0
+live chunk 2ijgn8pft6xkc.css: 50390 bytes, sha256 b0bb68208c977944… (same bytes as the build output on disk); guard attempts during compile: 0
+files changed 30edcb6..1c3027a:
+   docs/DECISIONS.md                   |   3 +
+   docs/ROADMAP.md                     | 191 ++++++++++++++++++++++++++++++++++++
+   src/app/actions/jobs-actions.ts     |   7 +-
+   src/app/actions/products-actions.ts |  95 +++++++++++-------
+   src/app/actions/settings-actions.ts |  32 +++---
+   src/lib/action-errors.ts            |  48 +++++++++
+   src/lib/site-content.ts             |  60 ++++++++---
+   7 files changed, 372 insertions(+), 64 deletions(-)

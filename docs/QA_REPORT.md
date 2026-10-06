@@ -2626,3 +2626,50 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
   - the admin gate is 40/40 clean;
   - `/products/constructor` and `/products/__proto__` return 404.
 - **Verdict: PASS.** Evidence: `docs/qa-evidence/WAVE-1/1a57cfa/`.
+
+## Static Pass — Wave 2a (T-018, T-014) — 2026-10-06
+
+**Setup:** branch `wave-2a-write-path` at `1c3027a`, compared with `30edcb6`. Everything ran offline: real sources, a fake database, no sign-in, no Server Action against the live database, no repo writes. Every Node process loaded the network/`.env` guard, and every process tree was watched for internet sockets. Across all runs there were **0 blocked network or `.env` attempts and 0 sockets**.
+
+**Builder's suites, re-run once** (from a byte-identical copy; `diff -rq` showed no differences):
+
+| Suite | Result |
+|---|---|
+| Wave 2a harness, final stage | helper 30/30 · the 22 error branches plus the new one 309/309 · bad arguments 336/336 · scope + item 11 100/100 · T-014 134/134 · **37/37 mutants killed** · item-11 diff is 0 bytes |
+| T-016 harness on the Wave 2a tree | server 117/117 · serializer 14/14 · hasVisibleText 111/111 · UI (production and dev/StrictMode) 311/311 · **42/42 killed** |
+| Wave 1 harness on the Wave 2a tree | all 9 suites green (58 · 144 · 57 · 55 · 9 · 85 · 175 · 76 · 134) · **67/67 killed** |
+| Wave 2a harness, `--stage t018` | helper 30/30, args 336/336 and 18/18 mutants green; 4 checks fail because this stage can't run on this tree (INFO-2) |
+
+**QA's own targeted attacks** (my own loader and fake database; T-016's UI harness used from a copy):
+
+| MUST-ADD | What was attacked | Result |
+|---|---|---|
+| 3: first Save | I took the 8 category images from the baseline and from today's live `/products`, with titles from each category page's `<h1>`. All are `https://` Storage addresses with no whitespace, control character or backslash, and all pass `isAllowedImageUrl`. `resolveCategoriesForSave(8, new Map())` returns `ok` with the same 8 slugs in the same order and every image byte for byte. One `http:` image refuses the whole save with the contract message naming "Leggings". Live images are unchanged since the baseline. | 13/13 PASS |
+| 4: a refusal stays on the T-016 row | New `qa4retry`: a refused image, then **Retry** resends the unchanged `{ image }`. It's refused again with one alert line and Retry still offered; the draft and stored value are kept. The fixed commit sends only `{ image }` and saves. New `qa4name`: 256 emoji are sent whole and refused with the length message, and the draft keeps all 256. Exactly 255 emoji (510 UTF-16 units) are sent uncut and saved. No admin input has a `maxLength`. Both ran in production and dev/StrictMode with 0 network requests. | 20/20 PASS |
+| 8: marker errors | 7 sites covering all 3 files and all 4 kinds: `deleteJob`, `createJob`, `deleteReport`, `uploadFile`, the product update's stored-row read, the product delete, and T-014's new position read. Each returns the fixed message, with no marker text in the result. Nothing runs after the failing call, and there's no refresh. Each logs one line: a fixed label plus the error object, with no payload, user or email. | 28/28 PASS |
+| 12: messages | I diffed every string literal in the 4 touched files against `30edcb6`: none was removed or changed. All 14 item-11 constants are byte-identical in every file that defines them (16 checks). None of the 3 action files reads `.message`. The 4 fixed messages, `PRODUCT_IMAGE_INVALID`, `PRODUCT_NAME_TOO_LONG` (with 255) and the category message match the contract byte for byte. The only added strings are log labels, kinds, `typeof` names, the import, and T-014's messages. | 31/31 PASS |
+
+## Live Pass — Wave 2a — 2026-10-06
+
+:3101 was serving build `t3WHlyYfVkIO2zR9uA4fX` (`1c3027a`). I used GET and HEAD only, with no cookies, forms, Server Actions or Sync, and never touched :3001.
+
+- **Public pages:** I fetched `/what-we-do`, `/products`, the 8 `/products/<slug>` pages, `/career`, `/contact`, `/life-at-fashion-asia`, plus `/grievance` and `/who-we-are`, and `/sitemap.xml`.
+  - All returned 200 with no Set-Cookie. Each page is the same byte length as its `30edcb6` baseline.
+  - With the build id normalized and one stylesheet file name mapped, **all 15 pages are byte-identical** to the baseline.
+  - `sitemap.xml` is identical once `<lastmod>` is masked (18 and 18). It has the same 18 `<loc>` entries in the same order, and the 8 category URLs are unchanged.
+  - JS chunks, font preloads and next/font class names are unchanged.
+- **The one difference:** the global stylesheet was renamed from `29_f0da-xmd8z.css` to `2ijgn8pft6xkc.css`, a single consistent 1:1 swap on every page (INFO-1).
+- **Admin gate:** I sent 40 anonymous probes at `/admin/products` and `/admin/business`. They covered plain GET, HEAD, `RSC: 1`, both prefetch forms, `?_rsc`, `.rsc`, trailing and double slashes, `x-middleware-subrequest` twice, `x-nextjs-data`, encoded, dot-segment, `;` and `%2F` paths, `/admin`, and a control. Every probe ends **307 → `/admin/login`** (308 first for the slash variants, 404 for the case variants). **0 Set-Cookie and 0 admin markers**, including Wave 2a's new strings.
+
+**Findings**
+- **INFO-1 (live):** the stylesheet's file name changed although no styling input changed. Compiling Tailwind offline from both commits gives an identical rule set (748 and 748 rules, empty diff), and the commit range touches no stylesheet, config, component or page file. The rebuild overwrote the old chunk, so it can't be diffed directly. With the page markup, fonts and JS all identical, no visible change is expected. Future baselines should also save the CSS chunk.
+- **INFO-2 (harness):** `--stage t018` doesn't load commit 1's text. It applies commit-1-only expectations to the working tree, so it only passes with `022d5fc` checked out, which is how the builder ran it (298/298 and 88/88). On `1c3027a` exactly 4 checks fail, each one a T-014 addition:
+  - the 23rd `actionFailure` call;
+  - the `read` kind in create;
+  - T-014's new strings;
+  - `site-content.ts` being touched.
+
+  I didn't check out `022d5fc`, because that would write to the repo. Commit 1's own type-check and build logs are in `gates/`. The harness README should say this, or the stage should read commit 1 through `git cat-file`.
+- **INFO-3 (seen in passing, outside Wave 2a):** given 8 rows whose `title` is `null`, `resolveCategoriesForSave` returned `{ ok: true, categories: [] }`. The rows were dropped, not refused, while a blank text title is refused. Only a hand-crafted call can send this, and any signed-in user can already send `saveCategories([])`; the delete guard still protects categories that have products. Wave 2a's only change to that function is the one image-check line, so this behaviour is older than this wave. I didn't investigate further. It's worth a backlog ticket to refuse non-text titles.
+
+**Fix round `732c67e` (2026-10-06):** the image rule now also requires the literal `https://` prefix and refuses every `\p{C}` and Default_Ignorable character, and two messages were reworded. The builder reports T-014 145/145 and 41/41 mutants, plus green Wave 1 and T-016 re-runs. `code-reviewer` re-checked it and `security-reviewer` re-bound the two files; the public pages and admin gate don't depend on this change.

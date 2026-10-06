@@ -4,11 +4,12 @@
 
 > **Reuse rubric:** exact match → **reuse** · close (differs by config) → **extend with a variant/prop** · genuinely new → **create** in the right unit, add a one-line `@purpose` comment, regenerate this file. Search here before writing any new component/util/schema, and state your reuse/extend/new choice in the ticket summary.
 
-## src  _(226)_
+## src  _(229)_
 
 | Export | Kind | Purpose | File |
 |---|---|---|---|
 | `AboutSection` | default function | — | `src/components/sections/AboutSection.tsx` |
+| `actionFailure` | function | A Server Action's answer to a database or storage failure: logs the raw error on the server, then returns that kind's fixed message, never the database's text. | `src/lib/action-errors.ts` |
 | `ActionResult` | type | — | `src/app/actions/settings-actions.ts` |
 | `addMediaAction` | function | — | `src/app/actions/media-actions.ts` |
 | `AdminCareersPage` | default function | — | `src/app/admin/(dashboard)/careers/page.tsx` |
@@ -96,6 +97,7 @@
 | `ImageUploadField` | function | — | `src/components/admin/ImageUploadField.tsx` |
 | `importBuiltInGallery` | function | — | `src/app/actions/media-actions.ts` |
 | `ImportBuiltInGallery` | default function | — | `src/app/admin/(dashboard)/media/ImportBuiltInGallery.tsx` |
+| `isAllowedImageUrl` | function | — | `src/lib/site-content.ts` |
 | `isLeaderPublishable` | function | — | `src/lib/site-content.ts` |
 | `isWellFormedSlug` | function | — | `src/lib/site-content.ts` |
 | `Job` | interface | — | `src/app/actions/jobs-actions.ts` |
@@ -106,6 +108,7 @@
 | `Leader` | interface | — | `src/lib/site-content.ts` |
 | `LEADERS` | const | — | `src/lib/site-content.ts` |
 | `ListEditor` | function | — | `src/components/admin/SettingsForm.tsx` |
+| `logActionError` | function | Log a Server Action's raw database error on the server only, for a branch that returns its own fixed message. | `src/lib/action-errors.ts` |
 | `loginAction` | function | — | `src/app/actions/auth-actions.ts` |
 | `LoginPage` | default function | — | `src/app/admin/login/page.tsx` |
 | `logoutAction` | function | — | `src/app/actions/auth-actions.ts` |
@@ -236,4 +239,4 @@
 | `WhoWeWorkWithSettingsPage` | default function | — | `src/app/admin/(dashboard)/who-we-work-with/page.tsx` |
 
 
-_226 exports across 1 unit(s)._
+_229 exports across 1 unit(s)._

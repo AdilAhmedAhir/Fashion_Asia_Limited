@@ -152,7 +152,8 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/cso review` → `/qa static` → `/qa live` (read-only regression) → `/git Merge`
   - **Notes:** Both source findings are 🟡 non-blocking (self-heals on the next successful full reorder). Recommend landing before or alongside T-004 if T-004's reorder UI calls this function directly — not a hard block either way, since T-004 can ship against today's non-atomic behavior without violating any of its own acceptance criteria.
 
-- [ ] **T-014** — Add an image-URL scheme allow-list and a `name` length cap to the products write path
+- [x] **T-014** — Add an image-URL scheme allow-list and a `name` length cap to the products write path
+  Done 2026-10-06 in **Wave 2a** (commits `1c3027a`, `732c67e`; reviews and evidence under T-018's done note). Image addresses must be `https://` or a root path, with no whitespace or invisible characters; names over 255 code points are refused; a new product always goes at the end of its category.
   **Built in Wave 2a with T-018, under one binding contract** (`architect-reviewer`, 2026-10-06): see T-018, items 5–8. Where this ticket's AC below differs (the `http://` scheme, `name.slice`, the `sort_order` clamp), the contract wins.
   - **Source:** `docs/SECURITY.md` SEC-MED-7, 2026-09-27 (T-003 CSO entry, reconfirmed still open in the re-review entry); `docs/SECURITY.md` SEC-INFO-15, 2026-09-27 (T-003 CSO entry) — bundled into one ticket: same file (`products-actions.ts::sanitizeInput`), both small validation-hardening additions with no interaction between them
   - **Files:** `src/app/actions/products-actions.ts` (`sanitizeInput`), `src/lib/site-content.ts` (`resolveCategoriesForSave` — same `.trim()`-only pattern on the pre-existing category-level `Product.image` field; CSO's own finding notes both fields share the identical gap)
@@ -441,7 +442,15 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Full-stack row; no DB, not sensitive). Fully agent-verifiable, no manual checklist.
   - **Notes:** Ranked #5. QA's other option, restoring the frame sequence, needs 160 frame assets that exist nowhere in the repo, plus a product decision on the hero effect. The hero moved to one poster plus a video before the A-Team era (`docs/MEMORY_BANK.md` §12, onboarding entry). Not ticketed; restoring the frames would need a new ticket if the user wants it. This would trigger WORKFLOW §10's Core Web Vitals review if marketing were active; §10 is inert.
 
-- [ ] **T-018** — Replace raw database error text in admin Server Action results with generic messages, logging the raw error server-side
+- [x] **T-018** — Replace raw database error text in admin Server Action results with generic messages, logging the raw error server-side
+  Done 2026-10-06, in **Wave 2a** with T-014:
+  - **Commits:** `e87f2ab` (contract and premortem folded in), `022d5fc` (T-018), `1c3027a` (T-014), `732c67e` (the fix round: a stricter image rule and clearer image messages).
+  - **Reviews** (the lean protocol, DECISIONS 2026-10-06):
+    - `code-reviewer`, which also reviewed the wording in place of a separate `/design-review` for copy-only changes: FIX FIRST on the image rule, then fixed and re-checked.
+    - `security-reviewer`: CLEARED. It re-bound the five files, and re-bound the two fix-round files. SEC-MED-7, 8, 11 and 13 and SEC-INFO-15 close in code; SEC-INFO-42 and 43 close in the fix round.
+    - QA: PASS. 15 public pages are byte-identical to the post-Wave-1 baseline, and the admin gate held on 40 of 40 probes.
+  - **Narrowed:** premortem MUST-ADD 10 now covers the product writes only; the other writes went to T-039 (DECISIONS 2026-10-06, SEC-MED-16).
+  - **Evidence:** `docs/qa-evidence/WAVE-2A/`.
   **Wave 2 binding contract, covering T-018, T-014 and T-013** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim, so no second `/architect-review` is needed). It's split under the ½-day line: **Wave 2a** is T-018 then T-014; **Wave 2b** is T-013. Each wave has its own review stage. It needs no schema change, no new dependency and no new database object, so there's no HARD STOP. Where the older AC below conflicts with this contract, the contract wins.
   - **Scope guard:** code only. Every file on the unchanged list stays byte-identical. No new exported function in any `"use server"` file. Every message is a non-exported constant or a private function that builds it. `/design-review` may tune the wording; the names, the files they live in and when they show are binding.
   1. **The shared helper** (T-018), a new file, `src/lib/action-errors.ts`.
@@ -531,7 +540,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - STACK §4, which adds the shared helper;
     - INVENTORY, regenerated with `@purpose` on `actionFailure`, `logActionError` and `isAllowedImageUrl`.
   - **Sequence:**
-    - **Wave 2a (about 3.5 hours):** `/build` → `/design-review` (the wording, code-level) → `/security-review` → `/qa` → `code-reviewer` → merge.
+    - **Wave 2a (about 3.5 hours):** `/build` ✅ → wording (folded into `code-reviewer` under the lean protocol) ✅ → `/security-review` ✅ CLEARED → `/qa` ✅ PASS → `code-reviewer` ✅ FIX FIRST → fixed → merge ✅ (2026-10-06).
     - **Wave 2b (about 1.5 hours):** `/build` → `/security-review` → `/qa` → `code-reviewer` → merge.
   - **Re-review triggers:**
     - **Schema and dependencies:** any SQL, migration, table, column, index, constraint, RPC, database function or trigger; any new dependency, including `server-only`.
@@ -1268,6 +1277,16 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - The public pages that read the same data keep failing open (the T-005 / T-016 visitor ruling).
   Source: Wave 2 premortem, 2026-10-06.
   Sequence: `architect-reviewer` (the result shape of three `"use server"` reads) → `/build` → `/design-review` → `/security-review` → `/qa` → `code-reviewer` → merge. Backlog.
+
+- [ ] **T-039** — Argument-shape guards on the non-product admin writes [app:admin][sec]
+  AC:
+  - **The writes covered:** `createReport`, `updateReport`, `createLeader`, `updateLeader`, `createJob`, `updateJob` and `uploadFile` return `{ ok: false }` with fixed wording, instead of throwing, when the argument isn't a `FormData`.
+  - **`uploadFile`:** it accepts only the `reports` bucket (or an explicit server-side list), never a caller-chosen bucket.
+  - **`updateSettings`:** it refuses a value that isn't a plain object for any allowed key.
+  - **Category titles:** `resolveCategoriesForSave` refuses a non-text title, instead of dropping the row (QA Wave 2a INFO-3).
+  - **Order:** signed out still answers SESSION_EXPIRED first. Wave 2a's harness `args-known-gaps-final.json` is the spec; it records 12 known-gap cases that must flip.
+  Source: SEC-MED-16 (Medium; security Wave 2a), from Wave 2a's premortem MUST-ADD 10, which DECISIONS 2026-10-06 narrowed to the product writes.
+  Sequence: `/build` → `/security-review` → `code-reviewer` → merge. Backlog.
 
 ### Dependency Order
 

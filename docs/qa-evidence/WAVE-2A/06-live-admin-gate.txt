@@ -1,0 +1,44 @@
+anonymous GET/HEAD only against :3101, no cookies, no POST, no Next-Action header; hops followed by hand
+/admin/products plain GET                    | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products HEAD                         | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products RSC: 1                       | 307→/admin/login 307→/admin/login?_rsc 200 | set-cookie=0 admin-markers=0
+/admin/products prefetch (RSC+Next-Router-Prefetch) | 307→/admin/login 307→/admin/login?_rsc=tMYrY3TnOKvc3iaD 200 | set-cookie=0 admin-markers=0
+/admin/products prefetch (segment /_tree)    | 307→/admin/login 307→/admin/login?_rsc=_i_aeImnuN6u1u1r 200 | set-cookie=0 admin-markers=0
+/admin/products Purpose/Sec-Purpose prefetch | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products ?_rsc=x with RSC: 1          | 307→/admin/login 307→/admin/login?_rsc 200 | set-cookie=0 admin-markers=0
+/admin/products.rsc                          | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products.rsc with RSC: 1              | 307→/admin/login 307→/admin/login?_rsc 200 | set-cookie=0 admin-markers=0
+/admin/products/ (trailing slash)            | 308→/admin/products 307→/admin/login 200 | set-cookie=0 admin-markers=0
+//admin/products (double slash)              | 308→/admin/products 307→/admin/login 200 | set-cookie=0 admin-markers=0
+//admin/products/ (double + trailing)        | 308→/admin/products/ 308→/admin/products 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products x-middleware-subrequest      | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products x-middleware-subrequest src/ | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products x-nextjs-data: 1             | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business plain GET                    | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business HEAD                         | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business RSC: 1                       | 307→/admin/login 307→/admin/login?_rsc 200 | set-cookie=0 admin-markers=0
+/admin/business prefetch (RSC+Next-Router-Prefetch) | 307→/admin/login 307→/admin/login?_rsc=tMYrY3TnOKvc3iaD 200 | set-cookie=0 admin-markers=0
+/admin/business prefetch (segment /_tree)    | 307→/admin/login 307→/admin/login?_rsc=_i_aeImnuN6u1u1r 200 | set-cookie=0 admin-markers=0
+/admin/business Purpose/Sec-Purpose prefetch | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business ?_rsc=x with RSC: 1          | 307→/admin/login 307→/admin/login?_rsc 200 | set-cookie=0 admin-markers=0
+/admin/business.rsc                          | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business.rsc with RSC: 1              | 307→/admin/login 307→/admin/login?_rsc 200 | set-cookie=0 admin-markers=0
+/admin/business/ (trailing slash)            | 308→/admin/business 307→/admin/login 200 | set-cookie=0 admin-markers=0
+//admin/business (double slash)              | 308→/admin/business 307→/admin/login 200 | set-cookie=0 admin-markers=0
+//admin/business/ (double + trailing)        | 308→/admin/business/ 308→/admin/business 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business x-middleware-subrequest      | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business x-middleware-subrequest src/ | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/business x-nextjs-data: 1             | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/%70roducts (encoded p)                | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/./products (dot segment)              | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/x/../products                         | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/ADMIN/PRODUCTS (case)                       | 404 | set-cookie=0 admin-markers=0
+/Admin/products (case)                       | 404 | set-cookie=0 admin-markers=0
+/admin/products%2F                           | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/products;x                            | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin%2Fproducts                            | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin (dashboard)                           | 307→/admin/login 200 | set-cookie=0 admin-markers=0
+/admin/login (control)                       | 200 | set-cookie=0 admin-markers=0
+
+totals:
+  40  set-cookie=0 admin-markers=0

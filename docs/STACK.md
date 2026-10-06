@@ -45,7 +45,8 @@
 
 | Unit | Path | Purpose |
 |---|---|---|
-| Content defaults + domain types | `src/lib/site-content.ts` | `SITE_SETTINGS` fallbacks, `Product` (= a *category*), `CategoryProduct` (= an *item*), slug and identity helpers (`slugify`, `normalizeProducts`, `resolveCategoriesForSave`, `isWellFormedSlug`, `readStoredCategoryIdentities`), the What We Do page-text picker (`WhatWeDoText`, `pickWhatWeDoText`), the product rules `hasVisibleText` and `CategoryProductPatch` (T-016), and `slugify` cut at the schema's 255 (Wave 1) |
+| Content defaults + domain types | `src/lib/site-content.ts` | `SITE_SETTINGS` fallbacks, `Product` (= a *category*), `CategoryProduct` (= an *item*), slug and identity helpers (`slugify`, `normalizeProducts`, `resolveCategoriesForSave`, `isWellFormedSlug`, `readStoredCategoryIdentities`), the What We Do page-text picker (`WhatWeDoText`, `pickWhatWeDoText`), the product rules `hasVisibleText` and `CategoryProductPatch` (T-016), `slugify` cut at the schema's 255 (Wave 1), and `isAllowedImageUrl` (`https://` or a root path; Wave 2a) |
+| Action errors | `src/lib/action-errors.ts` | `actionFailure(kind, context, error)` and `logActionError`: the three write-action files return fixed save/delete/read/upload messages and log the raw error on the server (Wave 2a, T-018). No imports; not a `"use server"` file. |
 | Admin editor reads | `src/lib/settings-read.ts` | `readSettingsForEditor`: the admin pages' settings read, which tells "failed" from "empty" so an editor never opens on defaults. It isn't a Server Action file (T-026). |
 | Upload contract | `src/lib/upload-limits.ts` | size, edge and format limits; `sniffImageFormat`; `checkImageSizeAdvisory` |
 | Supabase clients | `src/lib/supabase/{server,client,middleware}.ts` | server, browser and middleware clients; `updateSession` runs the `/admin` gate |

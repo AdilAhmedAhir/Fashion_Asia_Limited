@@ -1,0 +1,59 @@
+Wave 2a QA, 2026-10-06. Builder's suites re-run ONCE from a byte-identical copy (diff -rq excluding out/: IDENTICAL), HEAD 1c3027a, clean tree, every Node process preloading the network/.env guard, every process tree watched for internet sockets.
+
+== w2a-harness-final
+label=w2a-harness-final start=2026-10-06T10:16:54Z end=2026-10-06T10:18:24Z exit=0
+guarded node processes=7, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 377 polls; distinct pids: 13)
+OK    helper (item 1): helper: src/lib/action-errors.ts (contract item 1): 30/30 passed, 0 failed
+OK    22 database-error branches (MUST-ADDs 8, 9): errors: every database-error branch returns fixed copy (MUST-ADDs 8, 9), stage final: 309/309 passed, 0 failed
+OK    bad arguments (MUST-ADD 10, item 3): args: no write throws on a bad argument (MUST-ADD 10), stage final: 336/336 passed, 0 failed
+OK    scope + item 11 messages (MUST-ADDs 12, 13): scope: strings, unchanged list, sign-offs (MUST-ADDs 12, 13), stage final: 100/100 passed, 0 failed
+OK    T-014 rules (MUST-ADDs 1-3, 5, 6, items 5-8): t014: image rule, first Save, name length, create position, check order (contract items 5-8): 134/134 passed, 0 failed
+OK    mutations: mutations (final): 37/37 killed
+
+== w2a-t016-rerun
+label=w2a-t016-rerun start=2026-10-06T10:18:24Z end=2026-10-06T10:20:19Z exit=0
+guarded node processes=6, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 449 polls; distinct pids: 348)
+OK    server (fake Supabase): server: products-actions + /products + /admin/products: 117/117 passed, 0 failed
+OK    serializer (Map round trip): serializer: Map round trip through next@16.3.6's compiled react-server-dom-turbopack: 14/14 passed, 0 failed
+OK    hasVisibleText (Node): hasVisibleText (Node): 111/111 passed, 0 failed
+OK    UI (Chrome, prod + dev/StrictMode): ui: 311/311 passed, 0 failed
+OK    mutations: mutations: 42/42 killed
+
+== w2a-wave1-rerun
+label=w2a-wave1-rerun start=2026-10-06T10:20:19Z end=2026-10-06T10:22:21Z exit=0
+guarded node processes=12, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 472 polls; distinct pids: 160)
+OK    slug old vs new (MUST-ADDs 1-3): slug: old (main) vs new (branch) — MUST-ADDs 1, 2, 3: 58/58 passed, 0 failed
+OK    categories (MUST-ADDs 4, 5): categories: invisible titles (T-033) + non-Latin titles (T-032): 144/144 passed, 0 failed
+OK    sync, server (MUST-ADD 11): sync: seedSettingsFromDefaults old vs new + writeBusinessFields + SAVE_CONFLICT (MUST-ADD 11): 57/57 passed, 0 failed
+OK    render + no-leak flight (MUST-ADD 9): render: toProductCards, ProductGrid/ProductCard old vs new, no-leak flight render (MUST-ADD 9): 55/55 passed, 0 failed
+OK    types: tsc guard (MUST-ADD 9): types: tsc rejects un-narrowed product rows (MUST-ADD 9): 9/9 passed, 0 failed
+OK    scope + strings (MUST-ADDs 12, 13): scope: string inventory + sign-offs (MUST-ADDs 12, 13), stage final: 85/85 passed, 0 failed
+OK    UI in Chrome (MUST-ADDs 10, 11): ui: 175/175 passed, 0 failed
+OK    settings keys + delete guard (MUST-ADD 6, item 5): settings keys: updateSettings allowlist (MUST-ADD 6) + delete guard wording (item 5): 76/76 passed, 0 failed
+OK    fail-closed category check (MUST-ADD 7): attachable: checkCategoryAttachable fails closed (MUST-ADD 7): 134/134 passed, 0 failed
+OK    mutations: mutations (final): 67/67 killed
+
+== w2a-harness-t018
+label=w2a-harness-t018 start=2026-10-06T10:15:44Z end=2026-10-06T10:16:54Z exit=1
+guarded node processes=6, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 290 polls; distinct pids: 11)
+FAIL  static: each function's kinds are the contract's four-kind mapping (no per-code mapping)
+FAIL  static: 22 actionFailure calls in the three files (22 sites)
+FAIL  strings: products-actions.ts adds only helper labels, kinds, typeof names
+FAIL  only the 4 touched files differ under src/
+OK    helper (item 1): helper: src/lib/action-errors.ts (contract item 1): 30/30 passed, 0 failed
+FAIL  22 database-error branches (MUST-ADDs 8, 9): errors: every database-error branch returns fixed copy (MUST-ADDs 8, 9), stage t018: 298/300 passed, 2 failed
+OK    bad arguments (MUST-ADD 10, item 3): args: no write throws on a bad argument (MUST-ADD 10), stage t018: 336/336 passed, 0 failed
+FAIL  scope + item 11 messages (MUST-ADDs 12, 13): scope: strings, unchanged list, sign-offs (MUST-ADDs 12, 13), stage t018: 86/88 passed, 2 failed
+OK    mutations: mutations (t018): 18/18 killed
+
+== stage t018 failing checks (all four are T-014's additions on the 1c3027a tree; the stage pins commit-1-only expectations against the WORKING TREE, so it only passes with 022d5fc checked out, as the builder ran it: 298/298, 88/88):
+FAIL  static: each function's kinds are the contract's four-kind mapping (no per-code mapping)
+FAIL  static: 22 actionFailure calls in the three files (22 sites)
+FAIL  strings: products-actions.ts adds only helper labels, kinds, typeof names
+FAIL  only the 4 touched files differ under src/
+
+== item 11 message diff files (0 bytes = identical): final=0 bytes

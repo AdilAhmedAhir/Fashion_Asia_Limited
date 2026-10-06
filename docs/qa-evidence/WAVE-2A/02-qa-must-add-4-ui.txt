@@ -1,0 +1,37 @@
+Wave 2a QA: two QA scenarios added to a COPY of T-016's UI harness (builder's file untouched), headless Chrome over a pipe, file:// only, prod + dev/StrictMode.
+
+== w2a-qa-must-add-4
+label=w2a-qa-must-add-4 start=2026-10-06T10:25:10Z end=2026-10-06T10:25:13Z exit=1
+guarded node processes=1, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 10 polls; distinct pids: 14)
+PASS  [production] qa4name  QA4 name: 256 emoji sent whole (256 code points)
+PASS  [production] qa4name  QA4 name: refused with the length message, draft keeps all 256 emoji
+PASS  [production] qa4name  QA4 name: the fix sends exactly 255 emoji, uncut
+PASS  [production] qa4name  QA4 name: Saved, no alert, stored name is the 255 emoji
+PASS  [production] whole run  no network request (http/https/ws/wss) was even attempted
+PASS  [development+StrictMode] qa4name  QA4 name: 256 emoji sent whole (256 code points)
+PASS  [development+StrictMode] qa4name  QA4 name: refused with the length message, draft keeps all 256 emoji
+PASS  [development+StrictMode] qa4name  QA4 name: the fix sends exactly 255 emoji, uncut
+PASS  [development+StrictMode] qa4name  QA4 name: Saved, no alert, stored name is the 255 emoji
+PASS  [development+StrictMode] whole run  no network request (http/https/ws/wss) was even attempted
+
+== w2a-qa-must-add-4-retry
+label=w2a-qa-must-add-4-retry start=2026-10-06T10:26:20Z end=2026-10-06T10:26:22Z exit=0
+guarded node processes=1, refused network/.env attempts=0
+internet sockets seen in the process tree=0 (monitor stopped after 8 polls; distinct pids: 14)
+PASS  [production] whole run  no network request (http/https/ws/wss) was even attempted
+PASS  [development+StrictMode] whole run  no network request (http/https/ws/wss) was even attempted
+
+== qa4retry, final run (first run's qa4retry stopped at the Retry click: the scenario hadn't re-tagged the row after the refusal; the re-tag the builder's own scenarios use was added):
+PASS  [production] qa4retry  QA4 retry: first refusal shows the image message and Retry
+PASS  [production] qa4retry  QA4 retry: Retry resends exactly the refused { image }
+PASS  [production] qa4retry  QA4 retry: refused again, exactly one alert line, Retry still offered
+PASS  [production] qa4retry  QA4 retry: draft kept, nothing stored
+PASS  [production] qa4retry  QA4 retry: the fixed commit sends only the fixed { image }
+PASS  [production] qa4retry  QA4 retry: then Saved, no alert, image stored
+PASS  [development+StrictMode] qa4retry  QA4 retry: first refusal shows the image message and Retry
+PASS  [development+StrictMode] qa4retry  QA4 retry: Retry resends exactly the refused { image }
+PASS  [development+StrictMode] qa4retry  QA4 retry: refused again, exactly one alert line, Retry still offered
+PASS  [development+StrictMode] qa4retry  QA4 retry: draft kept, nothing stored
+PASS  [development+StrictMode] qa4retry  QA4 retry: the fixed commit sends only the fixed { image }
+PASS  [development+StrictMode] qa4retry  QA4 retry: then Saved, no alert, image stored

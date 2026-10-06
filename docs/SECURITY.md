@@ -87,6 +87,19 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
   - 24 of their ids appear in the client bundle: the writes client components import, the three public forms and login.
   - The other 10, every read included, appear in none.
 
+*Amended 2026-10-06 (Wave 2a CSO review, T-018 + T-014; appended, rows above left as written):*
+- **Action failures.** A database or storage error in `settings-actions.ts`, `products-actions.ts` or `jobs-actions.ts` now returns one of four fixed messages (`actionFailure`, `src/lib/action-errors.ts`). The server logs a fixed label plus the error object. The helper has no imports and isn't a `"use server"` module, so it isn't an endpoint.
+- **Product writes.**
+  - Create checks its argument's shape and never reads a caller's `sort_order`: it uses the server-read max + 1, and fails closed if that read fails.
+  - Create and update refuse a name over 255 code points.
+  - Update and delete refuse an id that isn't a string.
+- **Image addresses.** A product's image (on create, and on update when one is sent) and every category's image (`resolveCategoriesForSave`) must pass `isAllowedImageUrl`.
+  - **Accepted:** a root path, or an `https:` address with a host and no username or password.
+  - **Never accepted:** a backslash, whitespace or a control character.
+  - **When:** the rule runs before any database read.
+  - **Not covered:** the other image and link fields are unchanged (SEC-INFO-44).
+  - **Since `732c67e`:** the rule also refuses any other Unicode `C` character (format, surrogate, private-use or unassigned) and any default-ignorable code point. An absolute address must start with a literal `https://`.
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -1844,6 +1857,266 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
   - **The client bundle:** 0 hits for every server-only name and secret pattern, with 34 actions (24 discoverable, as in item 3).
 - **Verdict: ✅ still cleared, at `1a57cfa`.** The sign-off above is updated to this hash.
 
+### 🔒 CSO Audit — 2026-10-06 — ticket-review:Wave 2a (T-018 + T-014)
+
+**Scope:** Dispatched by `/system-architect` (the 2026-10-06 run, Wave 2a). It covers two tickets under one binding contract: **T-018** (fixed messages for database errors, plus argument checks on the product writes) and **T-014** (the image address rule, the name cap, and end-of-list create). Wave 2b (T-013, reorder) isn't part of this pass.
+- **The diff under review:** `git diff main...wave-2a-write-path` at HEAD `1c3027a`, merge base `30edcb6` (= `main`). It touches 5 files under `src/` (+178/−64) across three commits:
+  - `e87f2ab`, the contract and premortem (docs only);
+  - `022d5fc`, T-018: the helper, its coverage, the argument checks and the sitemap comment;
+  - `1c3027a`, T-014: the image rule, the name cap and end-of-list create.
+- **The contract:** the Wave 2 binding contract (items 1–12) and the premortem's MUST-ADDs 1–13 at the top of T-018 (`docs/ROADMAP.md`).
+- **Commit names:** all three commits are authored `happierbangladesh`, each with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+
+**Method.**
+- **Static:** a full read of the diff of all five files, plus greps over the three action files.
+- **The builder's suites (`scratchpad/wave-2/`), run once from a private copy (`scratchpad/cso-w2a/`).** Isolation was reviewed first:
+  - the loader refuses `@/lib/supabase/*` and `@supabase/*`, and any package not on its allowlist;
+  - every `git` call is read-only (`cat-file`, `diff --quiet` / `--name-only`, `ls-files`, `ls-tree`, `grep`);
+  - writes land only inside the copy, and Chrome runs over a pipe.
+- **Results:** 2,255/2,255 checks and 146/146 mutants, in 338 s, with no Chrome left and the repo clean.
+  - **Wave 2a harness** (`--stage final`): 909/909 checks (helper 30, error branches 309, bad arguments 336, scope 100, T-014 134) and 37/37 mutants.
+  - **Wave 1's re-run:** 793/793 and 67/67 mutants.
+  - **T-016's re-run:** 553/553 (its UI suite is 311, in production and in dev/StrictMode) and 42/42 mutants.
+  - **The item 11 message diff is 0 bytes.**
+- **This office's own tests** (session scratchpad `cso-w2a/cso/`):
+  - **`probe-image.mjs`: 102/102** on the real `isAllowedImageUrl`. It covers the live images, 60 refused shapes, 7 non-strings and the 9 defaults; the edge shapes, checked against how a browser resolves them; a 200,000-shape fuzz; the regex flags; and a 1 MB timing.
+  - **`cso-actions.test.mjs`: 111/111** on the real action modules, through the builder's reviewed loader and fake database.
+  - **`positive-control.mjs`:** the same assertions fail on `main`'s four files, swapped in memory. It returns the raw text, stores a caller's `-500`, and accepts both `javascript:` and a 256-emoji name.
+- **Live, read-only:** GET only, with no cookie, against `:3101` only.
+- **Typecheck:** `npx tsc --noEmit --incremental false` exits 0.
+- **Not done:** no sign-in, no Server Action call against the live database, no write, no build, no server started or stopped, nothing on `:3001`. `.env*` was never read.
+
+**1. Re-binds by sha256: ✅ all five match the builder's report.** Each `main`-side hash is the sign-off this wave voids.
+
+| File | Before (`main` `30edcb6`) | `1c3027a` |
+|---|---|---|
+| `src/app/actions/settings-actions.ts` | Wave 1 `4de7d6a482792281…` | `b4c3da2ec3c0a894…` |
+| `src/app/actions/products-actions.ts` | Wave 1 `bf86b1dfac9d20ee…` | `b0f31500ebc9eda8…` |
+| `src/app/actions/jobs-actions.ts` | T-015 `628e5e74c4dca925…` | `bd4387b1df2eb4c7…` |
+| `src/lib/site-content.ts` | Wave 1 `eeab383b515b10fa…` | `79c5ebfd73a30176…` |
+| `src/lib/action-errors.ts` | — (new file) | `b0be0a48a81ce6a8…` |
+
+**2. The unchanged list: ✅ byte-identical to `main`.**
+- **Same hash as their sign-offs:**
+  - `settings-read.ts` `cc5c8a2c06d9acb0…`, `business/page.tsx` `87071736c1516fcb…` and the admin `products/page.tsx` `969a00dea762e782…`;
+  - both public products pages: `238f87491891667b…` and `bc243115a2583eba…`;
+  - `nav.ts` `507e5c62c5f6347f…`, `sitemap.ts` `105e10253fdd12fb…` and `next.config.ts` `a44a56d9f997bb13…`;
+  - `package-lock.json` `6a026457868784a9…`;
+  - `ProductGrid.tsx` `407c3a38…` and `ProductCard.tsx` `7c2f81e9…`.
+- **Also 0-byte:**
+  - `src/middleware.ts`, `src/lib/supabase/`, `db/`, `supabase-schema.sql`, `package.json` and `.env.example`;
+  - `media-actions.ts`, `form-actions.ts` and `auth-actions.ts`;
+  - all of `src/components/`, and the submissions admin page.
+- **Only the contract's five files changed under `src/`,** and none of them is a client file.
+- **The three `"use server"` files' `export` lines are identical** to `main`'s.
+
+**3. No raw database text in any result: ✅ SEC-MED-8 is closed in code.**
+- **No `.message` is read anywhere** in `settings-actions.ts`, `products-actions.ts` or `jobs-actions.ts`.
+- **Every remaining non-literal `error:`** comes from a hand-written builder:
+  - `built`, `resolution`, `picked` and `attachabilityError`;
+  - the delete guard;
+  - `defaults.error`, which is `pickWhatWeDoText`'s message.
+- **All 22 sites in the premortem's table, plus create's new position read,** return `actionFailure(kind, "<literal label>", error)`, with the contract's kinds.
+- **Unchanged:** the compare-and-swap writer's 23505 → SAVE_CONFLICT branch, its 0-row SAVE_CONFLICT, and BUSINESS_UNREADABLE.
+- **Tested by this office on 12 branches:**
+  - **The branches:** the job insert, update and delete; the report update; the leader insert and delete; the `uploadFile` upload; the `updateSettings` upsert; create's position read and insert; update's stored-row read; and the product delete.
+  - **The hostile error:** marker text in `message`, `code`, `details` and `hint`, plus a lying `toString` and `toJSON`.
+  - **The result:** each one deep-equals `{ ok: false, error: <that kind's fixed message> }`, with no marker anywhere.
+  - **Positive control:** `main`'s `createJob` returns the marker text.
+- **The builder's 309 error-branch checks and mutants C1–C5** cover the rest. Wave 1's re-run sync suite (57/57) covers Sync's wrapper around the What We Do step.
+
+**4. The helper and what it logs: ✅**
+- **`src/lib/action-errors.ts`** has no imports and no directive. It has exactly two exports, `actionFailure` and `logActionError`, and the four messages are a private constant.
+  - Only the three action files import it.
+  - `.next/static` has 0 hits for its messages, its labels, `actionFailure`, `logActionError` or `FAILURE_MESSAGES`.
+- **What's logged:** `console.error(context, error)`, once per failure. The label is a literal naming the function and the step, and the error is the database or storage error object.
+  - **Tested on all 12 branches:** the one line is (a fixed string, the error object itself), and no log line carries the caller's payload, the user's email or the token.
+- **Accepted, no finding:** Postgres `details` can echo the failing row (23502's "Failing row contains (…)"). So a server log line may hold values the caller sent.
+  - In these seven tables, that's content the site publishes.
+  - The PII path is untouched: `form-actions.ts` (submissions), the submissions page and `media-actions.ts` all have 0-byte diffs.
+  - This matches MUST-ADD 9's "the error object (code, message, details, hint)".
+
+**5. The image rule (SEC-MED-7, SEC-MED-13, contract item 5): ✅ closed in code for the product and category paths.**
+- **The rule:** `isAllowedImageUrl` (`site-content.ts`). The forbidden class is `/[\\\s\p{Cc}]/u`, with no `g` or `y` flag. A root path must have a second character that's neither `/` nor `\`. Otherwise it must be an `https:` URL with a host and an empty username and password.
+- **Where it runs:** before any database read.
+  - On create.
+  - On update, only when an image is sent. A merged `{ description, image }` is refused as a unit.
+  - On every category in `resolveCategoriesForSave`, after the blank-image fallback. Its 9 defaults (`PRODUCT_IMAGES` and the fallback) all pass.
+- **The 8 live category images pass,** as does the page's `/logo.png`.
+  - **Where they were read:** from a fresh GET of `:3101` `/products`. They're all Supabase Storage `https:` URLs, and none contains whitespace.
+  - **Unchanged:** the same set as both baselines (`30edcb6` and `95f7ea1`), so staff haven't edited a category image since. The premortem's "re-check the live images before merge" holds as of this pass.
+- **Refused, as the dispatch asked** (60 shapes, all refused):
+  - `javascript:`, in mixed case, with a leading space, a tab, a newline, NUL, ZWSP or a BOM, and with `//%0a`;
+  - `data:`, `blob:`, `file:`, `ftp:`, `vbscript:`, `about:`, `ws:` and `intent:`;
+  - `//host`, `///host`, `/\host`, `\\host`, `/<tab>/host`, `/<LF>/host`, `/<CR>/host`, ` //host` and `<ZWSP>//host`;
+  - `http:` in all three forms;
+  - userinfo in all five forms (`user:pass@`, `user@`, `:pass@`, `www.fal.com.bd@evil`, `%40`);
+  - `https://` with no host or with an empty host, and `https:\\`;
+  - relative paths, `C:\…` and `C:/…`, `""` and `/`;
+  - every whitespace, C0, DEL and C1 character tried.
+
+  Non-strings are refused too, including an object with a `toString`.
+- **Origin invariant:** a 200,000-shape fuzz, with 89,725 values accepted, finds:
+  - 0 accepted values that a browser on `https://www.fal.com.bd/…` would load over anything but `https:`;
+  - 0 accepted root paths that leave the origin;
+  - 0 accepted absolute values that load from a third origin.
+- **No ReDoS:** 1 MB values take 7 ms.
+- **Every sink is an escaped attribute.** On the public pages, product and category images render only as `<img src={…}>`, in `CategoryCardGrid.tsx:99` and `ProductCard.tsx:60`.
+  - There's no `next/image`, CSS `url()` or JSON-LD sink.
+  - The only `dangerouslySetInnerHTML` in `src` is MarqueeSection's static keyframes.
+  - So accepted markup or CSS characters (`"`, `<`, `)`, `;`) are inert.
+- **The refusal shows in the ordinary admin.** In T-016's re-run, the `w2row`, `w2merge`, `w2add` and `w2category` scenarios pass in production and in dev/StrictMode. That meets SEC-MED-13's "visible in the ordinary admin" rule.
+- **Ruling on the builder's two flagged acceptances: both are acceptable for Wave 2a, and neither needs fixing now.**
+  - 🟢 **SEC-INFO-42 (new; informational) — Unicode format characters (`Cf`) are accepted.** That's because "control" is read as `Cc` only: U+200B, U+202E, U+00AD, U+2066–2069 and U+180E all pass. U+FEFF and U+2028/9 are already refused, because JS `\s` covers them.
+    - **They can't defeat the scheme rule.** A format character before or inside a scheme makes `new URL` fail, so it's refused. That covers `<ZWSP>javascript:`, `<BOM>javascript:` and `<ZWSP>//host`.
+    - **In a host,** IDNA deletes ZWSP and the soft hyphen, so the address loads the host it visibly shows.
+    - **In a path,** browsers percent-encode them, and a root path stays on the origin (the fuzz above).
+    - **What's left is display only.** A bidi control can make the stored address read differently in the admin path box than the characters it holds. Only a signed-in account can store one, and under R1 that account can store any `https:` address anyway.
+    - **Recommendation:** add `\p{Cf}` to the class the next time `site-content.ts` opens. None of the live or default images contains one. It narrows the rule, so it's no contract trigger, but it re-binds the file.
+  - 🟢 **SEC-INFO-43 (new; informational) — `https:` without `//` is accepted.**
+    - **What happens:** `new URL("https:host/x")` reads it as `https://host/x`. But a browser on this `https` site resolves `https:host/x` and `https:/host/x` as same-origin relative paths (`https://www.fal.com.bd/products/host/x`), per WHATWG's same-scheme rule. On an `http://localhost` page, it loads `https://host/x`, which is exactly what the rule allowed.
+    - **Why it's acceptable:** the difference only ever narrows what loads, so it's not a bypass. The cost is a broken image with no refusal message.
+    - **Recommendation:** a later pass may require a literal, case-insensitive `https://` prefix, so the stored text matches what loads.
+  - 🟢 **SEC-INFO-44 (new; informational; pre-existing) — the other admin URL fields still accept any string.**
+    - **The fields:** `createLeader` and `updateLeader` take `photo_url` straight from the form, as do the report writes with `file_url`. The settings editors' image fields go through `updateSettings` unchecked.
+    - **Why it's open:** they were never in SEC-MED-7 or 13, which named the product and category paths. The contract leaves them byte-identical on purpose (premortem MUST-ADD 1). Their render sites weren't reviewed this pass.
+    - **Recommendation:** T-039 opens these same functions, so it should apply `isAllowedImageUrl` to the image fields and review the `file_url` link sink.
+
+**6. The name cap and `sort_order`: ✅ SEC-INFO-15 and SEC-MED-11 are closed in code.**
+- **The name cap:** a private `MAX_PRODUCT_NAME_LENGTH = 255`, counted as `Array.from(name).length` (code points, as Postgres counts `VARCHAR`). It runs right after PRODUCT_NAME_REQUIRED, on create's trimmed name and on update when a name is sent.
+  - **Tested here:** 255 emoji, 254 ASCII plus 1 emoji, and 255 ASCII plus padding are stored unchanged, trimmed.
+  - **Refused with PRODUCT_NAME_TOO_LONG, with 0 database queries on create or update:** 256 emoji, 256 Bengali characters, and 255 ASCII characters plus a combining mark.
+  - **The builder's table** adds 127 emoji plus a letter, 128 emoji and lone surrogates, and mutants N1–N4 (UTF-16 units, off by one, cutting, order) are all killed.
+  - **So the raw "value too long" path is gone,** and any database refusal would now read as fixed copy anyway (item 3).
+- **`sort_order`:**
+  - It's gone from `CategoryProductInput` and from `sanitizeInput`.
+  - The insert is `{ category_slug, ...sanitized, sort_order: <server-read max + 1> }`.
+  - A failed position read returns `actionFailure("read", …)`, and nothing is inserted.
+  - **Tested here:** six caller values (`-500`, `3.5`, `1e15`, `2147483647`, `"0"`, `null`) and a `__proto__`-smuggled `sort_order` and `id` all land at max + 1, and the insert's keys are exactly `category_slug, description, image, name, sort_order`. On `main`, `-500` is stored (positive control).
+  - **Update** has never written it since T-016. **Reorder** writes only array positions, and Wave 2b hardens it.
+
+**7. Bad arguments: ✅ for the product writes, and 🟡 SEC-MED-16 for the rest (T-039).**
+- **Signed out, every write answers SESSION_EXPIRED first:**
+  - **The builder's suite:** all 18 writes, with their valid arguments and every bad shape, run nothing after `getUser()`.
+  - **This office's 20 signed-out calls** include `updateSettings("business", null)`, `uploadFile(null, "private-bucket")` and non-array reorder ids. They made 0 table, storage or refresh operations, and none threw.
+- **Signed in, the product writes** (contract item 3) return fixed copy without throwing and without a query. That covers a create input that isn't a plain object, a `category_slug` that isn't a string, a non-string id, and non-array `orderedIds`. This closes QA T-016 I1 in code.
+- 🟡 **SEC-MED-16 (new; pre-existing, not introduced by this wave) — the non-product writes don't check their arguments' shapes.** It's pinned in the builder's `args-known-gaps-final.json`, re-run here.
+  - **`updateSettings(<allowed key>, value)` stores a value that isn't an object** (`null`, a number, `""` or `[]`) and answers `ok: true`. `null` depends on the column's NOT NULL; the others are valid JSONB.
+    - `getSettings` falls back to the code defaults, so the public section quietly shows them and that key's saved content is overwritten.
+    - The six writable keys' editors load through the same fallback, so an ordinary Save restores an object. `business` can't be reached (BUSINESS_MOVED).
+  - **A non-`FormData` argument throws a `TypeError`** in `createReport`, `updateReport`, `createLeader`, `updateLeader`, `createJob`, `updateJob` and `uploadFile`. It throws before any database call, so nothing is written. Next replaces the message with a digest in production, so nothing leaks.
+  - **`uploadFile`'s `bucket` is still caller-chosen.** Recommend that T-019 pins it to a private allowlist, alongside Known Trap #9's size and type checks.
+  - **Rating:**
+    - **Why 🟡:** this office's precedent for crafted-call-only integrity gaps, SEC-MED-11.
+    - **Why not 🟠:** only a signed-in session reaches any of it. Under R1, that session can already overwrite the same content through the ordinary editors, so it gains no capability beyond the role.
+  - **Deferring it to T-039 is accepted.** It blocks neither Wave 2a nor deploy.
+  - **Suggested shape for T-039:** an own `FormData` check at the top of the six form writes and `uploadFile`, and a plain-object check in `updateSettings` before the upsert, each returning fixed copy.
+
+**8. Endpoints and the client bundle: ✅ unchanged.**
+- **The server-reference manifest** of the build `:3101` serves lists 34 action ids, and 24 of them are discoverable in `.next/static`, the same as Wave 1. `isPlainObject` in `products-actions.ts` isn't exported.
+- **`.next/static` has 0 hits** for the T-014 messages, `isAllowedImageUrl`, `site_settings`, `service_role`, `SERVICE_ROLE` or `SUPABASE_SERVICE`. So the browser has no image check, as contract item 5 intends.
+
+**9. Live, read-only, on build `t3WHlyYfVkIO2zR9uA4fX`: ✅**
+- **It's `1c3027a`'s build.**
+  - `.next/BUILD_ID` was written at 15:57:08, 15 min 29 s before the `1c3027a` commit.
+  - No file in `src/`, and neither `next.config.ts` nor `package.json`, is newer, and the tree equals `1c3027a`.
+  - The server process (pid 5624, cwd the repo) started at 16:13:44.
+- **The gate:** 86 unique anonymous probes, which are Wave 1's set plus three lines.
+  - Every gated path answers 307 to `/admin/login`, directly or after a 308 normalization. Non-routes give 404 (one mistyped non-admin path, `/dmin/products`, returned no status line), and the login page gives 200.
+  - 0 `Set-Cookie` and 0 editor content. The results are identical to Wave 1's, apart from the three added lines.
+- **The public pages:** `/products`, the 8 `/products/<slug>` pages and `/what-we-do`, as HTML and as flight data, plus the sitemap.
+  - All answer 200, with 0 `Set-Cookie`, 0 UUID- or JWT-shaped strings and 0 row fields. The 8 `/what-we-do/<slug>` pages still 308 to `/products/<slug>`.
+  - Byte identity with the baseline is QA's check (MUST-ADD 13); this pass compared the image set only.
+
+**10. As another user.**
+- **Anonymous vs admin — PASS.**
+  - **Live:** the 86 gate probes.
+  - **Offline, on the real code:** the 18 writes return SESSION_EXPIRED, with every bad shape and nothing run after `getUser()`. That's the builder's suite plus this office's 20 calls.
+- **A public visitor vs row internals — PASS:** 0 row fields in the live bodies.
+- **A second authenticated user — N/A.** There's one role (R1 / SEC-HIGH-2), and this wave limits what a session may store, not who may store it.
+- **RLS:** no SQL, table, policy or grant changed.
+
+**11. Dependencies and secrets.**
+- **No new audit:** `package.json` and the lockfile are byte-identical, so the Wave 1 audit (the same day, the same lockfile) stands. It's SEC-INFO-31's.
+- **Secrets:** 0 secret-pattern hits in the diff's added lines (the `stack.json` patterns plus a JWT shape), and 0 server-only names in `.next/static`.
+
+**Status changes** (all closed in code, pending merge):
+- SEC-MED-8;
+- SEC-MED-7 and SEC-MED-13, for the product and category paths;
+- SEC-MED-11;
+- SEC-INFO-15;
+- QA T-016 I1.
+
+**Still open:** SEC-INFO-16 stays open for Wave 2b (T-013). **New:** 🟡 SEC-MED-16 (T-039), and 🟢 SEC-INFO-42, 43 and 44.
+
+**Carry-overs:**
+- **Wave 2b (T-013):** SEC-INFO-16, with the contract's item 9 under its own `/security-review`.
+  - Wave 2b edits `products-actions.ts`, so this pass's binding on it lapses then, as expected.
+  - The unbounded `orderedIds` loop (one update per entry, authenticated only) ends with item 9's exact-set check.
+- **T-039:** SEC-MED-16, plus SEC-INFO-44 if it takes the other URL fields.
+- **T-019:** pin `uploadFile`'s bucket.
+- **The next pass that opens `site-content.ts`:** SEC-INFO-42 (`\p{Cf}`), and optionally SEC-INFO-43.
+- **Still separate:** SEC-HIGH-2 (keep Supabase sign-ups OFF; the owner's open action), and SEC-MED-5.
+
+**Overall verdict this pass:** ✅ **Wave 2a (T-018 + T-014) cleared.**
+- No 🔴 or 🟠. The one 🟡 is pre-existing and deferred to T-039 with this office's agreement.
+- Both commits narrow a surface: what a database error can tell a caller, and what a product or category may store as its image, name and position.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** Wave 2a may proceed to `/qa` → `code-reviewer` → merge. Conditions:
+- **Server files are bound by sha256 at `732c67e`:** the five re-binds in item 1, except that `site-content.ts` is now `9939d4f36731bd7f…` and `products-actions.ts` is now `8d716929d62ab7ee…` (see the re-bind note at the end of this entry). The other three are unchanged since `1c3027a`.
+  - The unchanged-list hashes in item 2 stand.
+  - If a bound file changes before merge, the clearance lapses for that file until `/cso` re-reviews it. Wave 2b's edit to `products-actions.ts` goes through its own review.
+- **Contract triggers:** any of the Wave 2 contract's re-review triggers (`docs/ROADMAP.md` T-018) also comes back to `/cso`. That includes a wider image rule or a host allow-list, raw database text in any result, the helper becoming `"use server"` or being imported by a client file, and a caller's `sort_order` being read.
+
+**Pre-deploy position:**
+- A `main` holding Wave 2a at these hashes adds no sensitive surface beyond this pass.
+- It isn't held for SEC-HIGH-2, which predates it; that row's standing is unchanged.
+- `/ship` follows the premortem's additions:
+  - before the push, MUST-ADD 2–3's evidence exists;
+  - after the deploy, `/what-we-do` and `/products` show the same 8 image URLs and each answers 200;
+  - a first Save that never lands is a Wave 2 incident (§7 item 13).
+- Deploying still needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md`: this entry, plus its §3, §5 and §7 rows. Left uncommitted, for the orchestrator.
+- Made only GET requests, with no cookie, to `:3101`.
+- Ran offline tests in the session scratchpad, and one typecheck with no emit.
+- No sign-in, no Server Action call, no write to the live database, no build, no server started or stopped.
+
+**Re-bind, 2026-10-06: fix commit `732c67e`.** This is Wave 2a's fix round, after this entry cleared `1c3027a`.
+- **The commit:** 2 files, +19/−12, authored `happierbangladesh` with one `Co-Authored-By: Claude Opus 5.5` line. Nothing else changed since `1c3027a`, and the working tree's `src/` equals `732c67e`.
+  - **`site-content.ts`:**
+    - `IMAGE_URL_FORBIDDEN_CHARACTER` becomes `/[\\\s\p{C}\p{Default_Ignorable_Code_Point}]/u`, still with only the `u` flag.
+    - `isAllowedImageUrl` now refuses a value before `new URL` if it isn't a root path and doesn't start with a literal, case-insensitive `https://` (`/^https:\/\//i`, no `g` or `y`).
+    - The category refusal is reworded. It still echoes only the caller's own title.
+  - **`products-actions.ts`:** PRODUCT_IMAGE_INVALID is reworded.
+  - **Neither message is on contract item 11's list,** and `/design-review` may tune both. Everything else in the diff is comments; the check order is unchanged.
+- **Re-bound:**
+
+| File | `1c3027a` | `732c67e` |
+|---|---|---|
+| `src/lib/site-content.ts` | `79c5ebfd73a30176…` | `9939d4f36731bd7f…` |
+| `src/app/actions/products-actions.ts` | `b0f31500ebc9eda8…` | `8d716929d62ab7ee…` |
+
+- **Unchanged since `1c3027a`:** `settings-actions.ts` `b4c3da2ec3c0a894…`, `jobs-actions.ts` `bd4387b1df2eb4c7…`, `action-errors.ts` `b0be0a48a81ce6a8…`, and every binding in item 2.
+- **The rule is strictly narrower: ✅** (`cso-w2a/cso/probe-image-fix.mjs`, 158/159).
+  - **The one failure is the probe's own count:** it found 10 `<img>` values because it doesn't unwrap `/_next/image`, and all 10 are accepted. The original probe, which does unwrap them, finds the same 9 and accepts them.
+  - **The fuzz:** on 300,000 shapes, nothing the new rule accepts was refused by `1c3027a`'s (0 widened, 74,780 narrowed).
+  - **The invariants still hold, and one more now does:** the rule parses every accepted absolute value exactly as a browser on this site loads it (0 differences). That's SEC-INFO-43's closure.
+  - **Refused now, in every position tried** (host, path, root path, fragment): 23 invisible code points. They are ZWSP, ZWNJ, ZWJ, LRM, RLO, LRI, PDI, the soft hyphen, U+180E, the word joiner, the BOM, CGJ, three Hangul fillers, VS16, a tag, a variation-selector supplement, both lone surrogates, two private-use points and an unassigned one. That's SEC-INFO-42's closure.
+  - **Still accepted:** the 8 live category images and the logo; the 9 defaults; a Storage URL with `?t=1&width=800`; `HTTPS://`; and a Bengali, an emoji and an accented path.
+  - **The original 102-check probe still passes,** and every shape it flagged is now refused.
+- **The builder's suites, re-run from a fresh private copy (`cso-w2a-fix/`):** 2,266/2,266 checks and 150/150 mutants, in 306 s, with no Chrome left and `src/` clean.
+  - **Wave 2a harness:** 920/920 and 41/41 mutants.
+  - **Wave 1's re-run:** 793/793 and 67/67.
+  - **T-016's re-run:** 553/553 and 42/42.
+  - **The item 11 message diff** is still 0 bytes.
+  - **This office's 111 action checks** pass against the new wording.
+- **Status:** 🟢 SEC-INFO-42 and 🟢 SEC-INFO-43 are closed in code by `732c67e`, pending merge.
+- **Verdict: ✅ still cleared, at `732c67e`.** The sign-off above is updated to these hashes.
+
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -1917,6 +2190,18 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-31 — status update, 2026-10-06 (Wave 1 CSO entry) | Same lockfile-only ticket | Open. 17 packages are flagged now (0 critical, 13 high, 3 moderate, 1 low), on the same lockfile (`6a026457…`), so it's advisory-feed growth only. `source-map-js` is new (high, via `postcss`, at build time), and `postcss-selector-parser` moved from low to moderate. All are build or lint toolchain; `next`, `react` and `@supabase/*` have none |
 | SEC-HIGH-2 — structural-fix scope note, 2026-10-06 (Wave 1 CSO entry) | For the role-scoping ticket (T-023) | `updateSettings` now writes only six hand-written keys, checked after `getUser()`: a limit on which rows, not on who. There are still 34 public Server Action exports. 24 of their ids can be found in the client bundle, and none of those 24 is a read |
 | SEC-INFO-41 — before the fix, a category titled with an `Object.prototype` name (`constructor`, `toString`, `__proto__`, …), with no image of its own, took a function or `Object.prototype` as its default image, which React can't serialize. `/products` and `/admin/products` both fail to render, so only a SQL edit recovers it. Any signed-in account could cause it through the ordinary editor. Pre-existing since `ecf6cf6` (2026-08-24) and live in production (`e8eace1`) | Fixed by `1a57cfa` (T-033's fix round): the private `defaultCategoryImage` checks own keys (`site-content.ts:327`) | ✅ Closed in code, pending merge. 🟢 Low, availability only. Verified offline: all 12 `Object.prototype` names get the fallback on every read and save path, both pages render, and no real title's image changes. Production stays exposed until a user-typed deploy of a `main` containing `1a57cfa` |
+| SEC-MED-8 — status update, 2026-10-06 (Wave 2a CSO entry) | **T-018** | ✅ **Closed in code, pending merge.** All 22 raw-message sites, plus create's new position read, return one of four fixed messages from `src/lib/action-errors.ts`, and no `.message` is read in the three action files. The raw error is logged on the server under a fixed label. Bound to the Wave 2a sha256s; production stays exposed until a user-typed deploy |
+| SEC-MED-7 / SEC-MED-13 — status update, 2026-10-06 (Wave 2a CSO entry) | **T-014** | ✅ **Closed in code, pending merge, for the product and category write paths they name.** `isAllowedImageUrl` (a root path, or `https:` with a host and no userinfo; no backslash, whitespace or control character) runs on create, on update when an image is sent, and on every category save, before any read. The refusal shows in the ordinary admin. The other URL fields were never in scope: see SEC-INFO-44 |
+| SEC-MED-11 — status update, 2026-10-06 (Wave 2a CSO entry) | **T-014** | ✅ **Closed in code, pending merge.** Create never reads a caller's `sort_order`. It uses the server-read max + 1, and inserts nothing if that read fails |
+| SEC-INFO-15 — status update, 2026-10-06 (Wave 2a CSO entry) | **T-014** | ✅ **Closed in code, pending merge.** A name over 255 code points is refused before any read, on create and update, and is never cut |
+| SEC-INFO-16 — status note, 2026-10-06 (Wave 2a CSO entry) | **T-013** (Wave 2b) | Open. Not part of Wave 2a; Wave 2b's own `/security-review` takes it |
+| QA T-016 I1 — status update, 2026-10-06 (Wave 2a CSO entry) | **T-018** | ✅ **Closed in code, pending merge.** A malformed argument to a product write returns fixed copy, with no throw and no query |
+| SEC-MED-16 — the non-product writes don't check argument shapes. `updateSettings` stores a non-object value for an allowed key (the public section falls back to the defaults, and that key's saved content is overwritten); the six form writes and `uploadFile` throw a `TypeError` on an argument that isn't `FormData` (nothing written, the message redacted in production); `uploadFile`'s bucket is caller-chosen | **T-039** (new); the bucket goes to **T-019** | Open — doesn't block Wave 2a or deploy. Signed-in only (R1): signed out, every write answers SESSION_EXPIRED first. Pre-existing |
+| SEC-INFO-42 — `isAllowedImageUrl` accepts Unicode format characters (`Cf`: U+200B, U+202E, U+2066–2069, …) | The next pass that opens `site-content.ts` (add `\p{Cf}`) | Open — informational. Display-only spoofing in the admin path box; no scheme or origin bypass (fuzzed) |
+| SEC-INFO-43 — `isAllowedImageUrl` accepts `https:host` without `//`, which a browser on this site resolves as a same-origin path | Same | Open — informational. It fails toward the same origin (a broken image), never toward a new one |
+| SEC-INFO-44 — the other admin URL fields (leaders' `photo_url`, the settings images, reports' `file_url`) still accept any string | **T-039** (recommended) | Open — informational, pre-existing. Out of Wave 2a's scope by contract (premortem MUST-ADD 1) |
+| SEC-INFO-42 — status update, 2026-10-06 (Wave 2a re-bind, `732c67e`) | **T-014** | ✅ **Closed in code, pending merge.** The forbidden class is now `\p{C}` plus `Default_Ignorable_Code_Point`. All 23 invisible code points tried are refused, in every position tried |
+| SEC-INFO-43 — status update, 2026-10-06 (Wave 2a re-bind, `732c67e`) | **T-014** | ✅ **Closed in code, pending merge.** An absolute address must start with a literal `https://`. On 300,000 fuzzed shapes, the rule's parse equals what a browser on this site loads |
 
 ## 6. Secrets log
 
@@ -1972,3 +2257,15 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
      1. Never bypass the check, and never point it back at `getSettings`, whose fallback to the code defaults is what this replaced.
      2. Never widen a `site_settings` policy by hand. Rerun the owner's read-only SQL check and compare it with the 8 items in the T-026 entry.
      3. If the value isn't an object, the owner fixes it in the Supabase SQL editor, per the hand-applied-SQL rule.
+12. **Staff see "Something went wrong, so nothing was saved / deleted…", "…the saved data couldn't be read…" or "The file couldn't be uploaded…" (T-018, Wave 2a, 2026-10-06).** Every database or storage failure in the three action files now shows one of these four fixed messages.
+   - **Where to look:** the server log line that starts with the action's fixed label, for example `createJob: the insert failed.` or `createCategoryProduct: the position read failed.`. It carries the raw error object: `code`, `message`, `details` and `hint`.
+     - **`42501` or "row-level security"** is a policy denial. Treat it like item 11's policy case, and never widen a policy by hand.
+     - **`23xxx`** is a constraint. The `details` may echo the row.
+     - **A network or `fetch` error** is transient.
+   - **Response:** never put the raw text back into a result, because SEC-MED-8 would reopen. If a message needs to say more, add a hand-written, fixed message for that case through `/cso review`.
+13. **Every category save is refused with "…has an image path that can't be used, so nothing was saved…" (T-014, Wave 2a, 2026-10-06; wording since `732c67e`).** This is the premortem's top failure mode: a refused image locks the first Save, so the category ids never appear.
+   - **Where to look:** the category the message names. Its image address is neither a root path nor an address starting with `https://` with no username or password. Or it contains a space, a backslash, or an invisible or control character.
+   - **Response:**
+     1. Have staff upload that image again, which returns an `https://` Storage address, or paste its full `https://` address. Then save.
+     2. Never widen the rule, add a host allow-list, or skip the check. Each is a contract re-review trigger.
+     3. If staff report it on images that look valid, read the live category images back read-only and compare them with the 8 URLs in the Wave 2a entry, as a Wave 2 incident.
