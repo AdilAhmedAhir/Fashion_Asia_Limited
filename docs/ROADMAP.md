@@ -60,6 +60,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Notes:** Blocks the next `deploy` (push to `origin`/`client`) per `docs/SECURITY.md` §5 and `docs/WORKFLOW.md` §6 — does **not** block any local `/git Merge`, including this sprint's. Independent of T-003/T-004/T-005; can run in parallel with the feature chain at any point before the next `deploy`. `docs/SECURITY.md` SEC-HIGH-2 (Supabase Dashboard "allow new user signups" toggle) also blocks the next deploy but is explicitly **not** a ticket — it's a Dashboard setting only the user can check (`docs/SECURITY.md` §5: "User action, not a code ticket — no `/pm` ticket needed"). **Addendum 2026-09-28 (fourth `/pm` pass):** Sprint 1 deployed on 2026-09-28 without this fix. The advisory range, including the null-origin Server Actions CSRF bypass (`GHSA-mq59-m269-xvcx`), now fronts every live Server Action, T-004's product create/update/delete/reorder included. The "blocks the next deploy" framing above is superseded: the exposure is live now, and the fix reaches production only on the next user-typed "deploy". Ranked #1 in the refreshed Dependency Order. `16.3.6` was npm's latest on 2026-09-26; `/architect` confirms the current patched release within `^16` when the ticket starts.
 
 - [ ] **T-007** — Add a server-side pixel-dimension re-check to `uploadOptimizedImage`
+  **Built in Wave 3a with T-019 under one binding contract** (`architect-reviewer`, 2026-10-06): see T-019, items 5–6 plus the amendments. Where this ticket's AC differs, the contract wins.
   - **Source:** `docs/SECURITY.md` SEC-MED-1, 2026-09-26
   - **Files:** `src/lib/upload-limits.ts` (header-based width/height reader for the already-sniffed WebP/JPEG bytes), `src/app/actions/media-actions.ts` (`uploadOptimizedImage` — call the new check, reject before the storage write)
   - **Flags:** schema-touching: **no** · sensitive: **yes** (server action, upload path) · UI: **no**
@@ -87,6 +88,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Notes:** Independent of T-003/T-004/T-005. Does not block `deploy` — 🟡 Medium, non-blocking per `docs/SECURITY.md` §5 — but good hygiene to land before the next production push given SEC-HIGH-1/2 are already being addressed this cycle.
 
 - [ ] **T-009** — Harden `ImageUploadField`'s advisory/error state: 0×0 NaN guard, re-entrant upload race, stale warning after manual path edit
+  **Built in Wave 3b with T-010 under the Wave 3 contract** (`architect-reviewer`, 2026-10-06): see T-019, items 7–8 plus the amendments. Where this ticket's AC differs, the contract wins.
   - **Source:** `docs/QA_REPORT.md` T-002 Static Pass WARN-1, WARN-2, WARN-3, 2026-09-26
   - **Files:** `src/lib/upload-limits.ts` (`checkImageSizeAdvisory` — guard the divide-by-zero), `src/components/admin/ImageUploadField.tsx` (`handleFile` re-entrancy guard; the path `<input>`'s `onChange` clears stale `error`/`warning`)
   - **Flags:** schema-touching: **no** · sensitive: **no** (matches T-002's own classification of this file) · UI: **yes**
@@ -100,6 +102,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Notes:** All three are pre-existing patterns T-002 extended rather than originated (per `/qa`'s own framing) — this is the fast-follow `/qa` recommended, not a re-open of T-002.
 
 - [ ] **T-010** — Stop a reordered/deleted `ObjectListEditor` row from inheriting a sibling's stale upload warning/error
+  **Built in Wave 3b under the Wave 3 contract** (`architect-reviewer`, 2026-10-06): see T-019, items 9–12 plus the amendments. These replace this ticket's interim fix with stable row keys, uploads that land on their own row, and Save waiting for uploads.
   - **Source:** `docs/QA_REPORT.md` T-002 Static Pass WARN-4, 2026-09-26
   - **Files:** `src/components/admin/SettingsForm.tsx` (`ObjectListEditor`), `src/components/admin/ImageUploadField.tsx` (interim fix — reset local `error`/`warning` when its `value` prop changes for a reason other than its own completed `handleFile` call)
   - **Flags:** schema-touching: **no** · sensitive: **no** · UI: **yes**
@@ -652,6 +655,540 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - QA T-016 I1: `createCategoryProduct(null)` or `(undefined)` throws a `TypeError` instead of returning `{ ok: false }`, so a crafted call gets Next's generic error. The editor always sends an object. Guard the argument here, or in T-014, which already edits `sanitizeInput`.
 
 - [ ] **T-019** — Make Media Center add and delete report their failures, stop a failed upload from publishing a broken item, and add the session check
+  **Wave 3 binding contract, covering T-019, T-007, T-009 and T-010** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim, so no second `/architect-review` is needed). It's split under the ½-day line: **Wave 3a** is T-019 then T-007, and **Wave 3b** is T-009 then T-010. Each has its own review stage. There's no schema change, database object, storage-policy or bucket change, or new dependency, so there's no HARD STOP. Where older AC conflicts with this contract, the contract wins.
+  - **Scope guard:**
+    - Code only. Every file on the unchanged lists stays byte-identical.
+    - No new exported function in any `"use server"` file. The only new export there is the type `MediaActionResult`.
+    - Every message is a non-exported constant, apart from the shared `describeDimensionLimit`. `/design-review` may tune the wording; the names, the files they live in and when they show are binding.
+  - **Preconditions:**
+    - 3a builds on a `main` that already holds Wave 1 and Waves 2a/2b (`actionFailure`, `logActionError`, `isAllowedImageUrl`, Wave 1's placeholder).
+    - 3b builds after 3a merges.
+    - If either precondition fails, stop.
+
+  **Wave 3a**
+
+  1. **The result contract** (T-019, `media-actions.ts`).
+     - `export type MediaActionResult = { ok: true } | { ok: false; error: string }`. `addMediaAction(formData)` and `deleteMediaAction(formData)` return it. Their argument stays `FormData`.
+     - `getUser()` is each action's first await. With no user, it returns SESSION_EXPIRED (byte-identical to the other action files) and makes no table or storage call.
+     - **A bad argument:** one that isn't a `FormData` returns NOTHING_RECEIVED ("Nothing was received. Reload the page, then try again.") from add, and MISSING_MEDIA_ID ("Missing media id.") from delete. A text field that isn't a string counts as missing.
+     - **Supabase errors** go through Wave 2's `actionFailure`: the upload is `"upload"`, the insert `"save"` and the delete `"delete"`. Clean-up failures go through `logActionError`. No result carries database or storage text.
+  2. **Add, in this order** (T-019):
+     1. `getUser()`, then the argument check.
+     2. **Type:** `type` must be exactly `gallery` or `news`, else MEDIA_TYPE_INVALID: "Choose Photo Gallery or Press / News, then publish again."
+     3. **Title:** it's trimmed and must pass `hasVisibleText`, else MEDIA_TITLE_REQUIRED: "Give the item a title, then publish again."
+        - It's at most 255 code points: a private `MAX_MEDIA_TITLE_LENGTH = 255`, commented as mirroring `media_assets.title VARCHAR(255)`.
+        - A longer title gets MEDIA_TITLE_TOO_LONG: "A title can be at most 255 characters. Shorten it, then publish again."
+     4. **Content** is stored as sent, or as `""`.
+     5. **The image:**
+        - A `File` with `size > 0` counts as a file, and the URL box is then ignored, as today.
+        - With no file, a non-blank URL must pass `isAllowedImageUrl`, else MEDIA_URL_INVALID: "The image address must start with https:// or /. Choose a file instead, or paste its full https:// address, then publish again."
+        - A `gallery` item with neither a file nor a URL gets GALLERY_IMAGE_REQUIRED: "A gallery photo needs an image. Choose a file or paste its address, then publish again."
+        - A `news` item may still have no image.
+     6. **The upload:**
+        - The storage key is today's `<Date.now()>_<random>`, plus the file name's extension only if it matches `\.[A-Za-z0-9]{1,5}$` (lowercased). Nothing else from the file name reaches the key.
+        - It goes to the root of bucket `media`, with no upsert.
+        - **An upload error returns `actionFailure("upload", …)` and nothing is inserted.** There's no fallback to the URL box.
+     7. **The insert:** on an error, remove the key this request uploaded (best effort, and log a failure), then return `actionFailure("save", …)`.
+     8. Refresh `/admin/media` and `/life-at-fashion-asia`, then return ok. A refusal refreshes nothing.
+     - **Unchanged:** there's still no file size, type or dimension check on this path (Known Trap #9, the VISION anti-goal, T-019's AC), and `accept="image/*"` stays.
+  3. **Delete, in this order** (T-019). The browser's `url` field is never read.
+     1. `getUser()`, then the argument check. `id` must be a non-empty string, else MISSING_MEDIA_ID.
+     2. `delete().eq("id", id).select("url")`. An error returns `actionFailure("delete", …)`. No row returns MEDIA_NOT_FOUND: "Media item not found. Reload the page to see the current list."
+     3. Refresh both paths. From here the result is `{ ok: true }`, whatever the clean-up does.
+     4. **Clean-up, only when it's safe:**
+        - **Ours only:** the stored URL must equal `getPublicUrl(name)` for one bucket-root name matching `^[A-Za-z0-9._-]+$`.
+        - **Unused only:** nothing else may mention `name`: `media_assets.url`, `products.image`, `leaders.photo_url` (each an `ilike %name%` count), or any `site_settings` value searched as JSON text.
+        - **Any doubt keeps the file:** a failed or uncertain check keeps it.
+        - **Then the removal:** `remove([name])`; an error, or an empty result, is logged.
+     - "Any failure is reported" therefore means every failure that leaves the item listed is shown. A clean-up failure after the item is gone is logged only.
+  4. **The Media page's client side** (T-019): a client wrapper, not `useActionState`.
+     - **Files:** new `media/MediaPublishForm.tsx` and `media/MediaDeleteButton.tsx`, both `"use client"`, each importing only its own action. `page.tsx` stays a server component, with its read and its `revalidate` unchanged.
+     - **Publishing:**
+       - `onSubmit` prevents the default and captures the `FormData` synchronously, then calls the action inside `startTransition` with try/catch, the `ImportBuiltInGallery` pattern.
+       - The fields sit in `<fieldset disabled={isPending}>`.
+       - On `ok: false`, every field, the chosen file included, stays as it was, and the error shows in a `role="alert"`.
+       - On a throw (a dropped connection, or Next's 1 MB body limit), PUBLISH_THREW shows: "The item couldn't be published. Check your connection, then try again. A very large photo can also fail, so compress it at TinyPNG first."
+       - On success the form resets, and an always-mounted `role="status"` says "Published."
+     - **Why not `useActionState` with `<form action>`:** React 19 resets the form's uncontrolled fields when the action finishes, whatever it returns. A failed upload would then lose the title and the chosen file.
+     - **The submit button:** `SubmitButton` gets an opt-in `pending?: boolean` that overrides `useFormStatus()`. Without it, its markup is byte-identical, so the three public forms don't change.
+     - **Deleting:**
+       - **The button:** one per card, with `aria-label` "Delete <title>". It's visible on focus as well as on hover.
+       - **A confirm first,** worded like the product delete: `Delete "<title>"? This can't be undone.`
+       - **While it runs,** the button is disabled.
+       - **On a failure:** `ok: false`, or a throw (DELETE_THREW: "The item couldn't be deleted. Check your connection, then try again."), shows in a `role="alert"` on that card.
+       - **On success,** focus moves to the "Published Assets" heading (`tabIndex={-1}`). That's a default; `/design-review` may pick another target, as long as focus doesn't land on `<body>`.
+     - **Labels** get `htmlFor`/`id`. The layout and classes are otherwise unchanged.
+  5. **The dimension reader** (T-007, `upload-limits.ts`, which still has no imports). No dependency is needed.
+     - **The function:** `export function readImageDimensions(bytes: Uint8Array, format: "jpeg" | "webp"): { width: number; height: number } | null`. It's pure, bounds-checks before every read, never throws and never decodes.
+     - **JPEG:** walk the segments from offset 2 the way libjpeg finds markers:
+       - **Finding a marker:** skip to the next `0xFF`, skip any fill `0xFF`s, and skip `FF 00` like any stray byte.
+       - **No length:** RST0–7 and TEM have none.
+       - **Too early:** SOS, EOI or a second SOI before a frame header returns null.
+       - **Lengths:** must be at least 2 and stay inside the buffer, else null.
+       - **The frame header:** the first SOFn (`C0`–`CF`, except `C4`, `C8` and `CC`) gives height, then width. A length under 8, or a zero side, returns null.
+       - **Every other segment is skipped whole by its length,** APP1/EXIF included.
+       - **Never byte-scan for `FF C0`:** an EXIF thumbnail's frame header comes first.
+     - **WebP:** read the chunk at offset 12. A file under 30 bytes returns null.
+       - **`VP8 `:** start code `9D 01 2A` at offset 23; width and height are the 14-bit values at 26 and 28.
+       - **`VP8L`:** byte `0x2F` at 20; width−1 and height−1 are bits 0–13 and 14–27 of the 32-bit value at 21.
+       - **`VP8X`:** canvas width−1 and height−1 are the 24-bit values at 24 and 27.
+       - **Anything else** returns null.
+     - **The shared message:** `export function describeDimensionLimit(width, height)` returns `ImageUploadField.tsx:153`'s exact text: `That image is ${width}×${height}. Resize it to ${MAX_UPLOAD_DIMENSION}px on the longest edge or smaller.`
+     - **Limits:** no new policy value. `MAX_UPLOAD_BYTES` (400 KB) runs first and bounds the walk. `MAX_UPLOAD_DIMENSION` (2400 px, longest edge) is the limit: 2400 passes, and 2401 fails, using the same `>` as the browser. There's no minimum and no pixel-area limit. The format constants stay private, commented as format facts.
+  6. **`uploadOptimizedImage`** (T-007). After the format sniff and before the storage write:
+     - **Unreadable:** returns IMAGE_DIMENSIONS_UNREADABLE: "That image's width and height couldn't be read. Export it again as a WebP or JPG, then upload it."
+     - **Too big:** a longest edge over the limit returns `describeDimensionLimit(w, h)`.
+     - **Fail closed:** both refuse with no storage call.
+     - **Nothing else changes** apart from the doc comment.
+
+  **Wave 3b**
+
+  7. **The advisory guard** (T-009 WARN-1). `checkImageSizeAdvisory` returns `{ tooSmall: true, offProportion: true }` when either side isn't a finite number above 0. Otherwise it's unchanged.
+  8. **The latest pick wins** (T-009 WARN-2 and WARN-3, `ImageUploadField`).
+     - **The pick counter:** a private counter numbers every pick (file input or drop), and each pick resets `error`, `warning` and `busy`. After each await, a pick that's been overtaken stops, with no `onChange` and no state change. `busy` clears only for the latest pick. Both files still upload; only the latest one is applied and shown.
+     - **The callback:** the field still calls the `onChange` it captured at that pick, never a newer one.
+     - **Hand edits:** a hand edit in the path box, in both modes, clears `error` and `warning`. It doesn't cancel an upload: a finished upload still replaces the path (T-016's rule).
+     - **The shared message:** the dimension hard block uses `describeDimensionLimit`, with byte-identical output. The `readDimensions` comment now notes the server re-checks.
+     - **Unchanged:** T-002's hard blocks, Wave 1's placeholder, and all of the `commitPathOnBlur` logic and styling.
+  9. **Stable row keys** (T-010, `ObjectListEditor` only).
+     - **How rows are keyed:** each row's key comes from a per-instance `WeakMap` from item object to key. It's assigned lazily on first sight, which is idempotent under StrictMode.
+       - The editor carries the key over when it replaces an item.
+       - A new row gets a new key.
+       - A non-object entry gets a positional key.
+     - **No item field is read or written for keying:** no `id`, slug, title or `_key`. Consumers save byte-identical lists, and category identity (server id plus frozen slug) is untouched.
+     - **After a save:** rows that `ProductsClient` hands in as new objects after a successful save remount, which clears their upload notices. That's an accepted, admin-only visible change.
+     - This closes WARN-4 and supersedes T-010's original "clear on an outside value change" fix.
+  10. **Every change lands on its own row in the latest list** (T-010).
+      - **The refs:** the latest list and `onChange` live in refs. They're set after each commit and moved forward on every emitted change. The only writes during render are the lazy key assignments.
+      - **By key:** edit, move and remove name their row by key and build from the latest list. An image field's callback is `v => updateRow(key, field, v)`.
+      - **Uploads:**
+        - An upload lands on the row it started on, keeping every edit made in the meantime.
+        - If that row has been removed, the result is dropped (the file stays in storage). It never lands on another row.
+        - Two uploads that finish back to back both land, without relying on Next's one-at-a-time dispatch (DECISIONS 2026-10-04).
+  11. **Focus** (T-010), following `CategoryProductsManager`'s precedent.
+      - **After a move:** the pressed button keeps focus. If it's now disabled, the row's other move button takes it.
+      - **After a remove:** focus goes to the next row's Remove button, else the previous row's, else the Add button.
+      - **Never `<body>`:** focus never lands there. Accessible names and contrast stay with T-011.
+  12. **Save waits for uploads** (T-010).
+      - **Opt-in props:**
+        - **`ImageUploadField`** gets `onBusyChange?(busy)`. It reports true once a pick passes its synchronous checks, and false after the latest pick's outcome has been applied, or when the field unmounts.
+        - **`ObjectListEditor`** gets `onUploadingChange?(uploading)`, combining its rows by key, and reports false on its own unmount.
+        - **With either prop off,** every attribute and branch is unchanged.
+      - **The two pages:** `ProductsClient` (categories) and `HomepageSettingsClient` (Facilities) hold an `uploading` state, declared with the other hooks, above `ProductsClient`'s fail-closed return.
+        - `save()` checks it first. While it's true, the save shows UPLOAD_IN_PROGRESS in `SettingsHeader`'s error slot and sends nothing.
+        - The message: "An image is still uploading. Wait for it to finish, then click Save categories." On Homepage it ends "…then click Save Changes."
+      - **A drop on a disabled field** (`inputRef.current.matches(":disabled")`, as inside the saving fieldset) is ignored: no upload and no highlight. The drop's default is still prevented, so the browser doesn't open the file.
+      - **Unchanged:** T-026's draft and confirmed logic, `confirmed` being what `CategoryProductsManager` gets, `blankTitleRows`, the fieldset and `SettingsHeader`.
+  13. **Must not change:**
+      - **Messages:** every existing message, byte for byte, measured on Wave 1's and Wave 2's merged strings.
+      - **Media functions:** `getMediaAssets`; `importBuiltInGallery`; `uploadOptimizedImage` beyond item 6; `sniffImageFormat`.
+      - **Pages and editors:** every public page, `/life-at-fashion-asia` included; what any editor saves.
+      - **The product editor:** `CategoryProductsManager.tsx` (0-byte diff); T-016's save queue.
+      - **Auth:** `getUser()` stays every write's first await.
+  14. **Commits and checks.** Commits go T-019, then T-007 (3a), then T-009, then T-010 (3b). Each must typecheck and build on its own. No agent publishes, deletes, uploads or saves.
+      - **3a, against a fake database and storage:**
+        - every branch, in order;
+        - signed out: no calls at all;
+        - a failed upload makes 0 inserts, and a failed insert removes its own key;
+        - a planted browser `url` is never removed;
+        - clean-up is skipped for a foreign URL, for each of the 4 references, and when a check fails;
+        - no fake error text reaches any result.
+      - **T-007's reader:**
+        - checked against `sips` on the 40 JPGs and 18 WebPs in `public/`;
+        - crafted cases: an EXIF thumbnail before the frame, SOF2, fill bytes, SOS before SOF, zero sides, 2400 and 2401 on each axis, and a 2²⁴ VP8X canvas;
+        - every truncation of each sample's first 4 KB returns null or the true size, and never throws;
+        - a refusal makes no storage call, and its text is byte-identical to the browser's.
+      - **The media page:** a synthetic render with stubbed actions.
+      - **3b:** a synthetic UI harness in StrictMode and production, on both pages:
+        - WARN-4's repro;
+        - an upload followed by typing, a move or a remove;
+        - two uploads finishing back to back;
+        - picks A and B resolving in both orders, and B failing a hard check;
+        - Save while an upload runs, with no `saveCategories` call;
+        - a drop during a save;
+        - focus after moves and removes;
+        - 0 duplicate-key warnings;
+        - payloads byte-identical to `main`'s;
+        - T-016's harness re-run, where a product-row upload that finishes after a category switch behaves exactly as on `main`.
+  - **Touches:**
+    - **3a:**
+      - `src/app/actions/media-actions.ts`, `src/lib/upload-limits.ts` and `src/app/admin/(dashboard)/media/page.tsx`;
+      - the 2 new media components;
+      - `src/components/ui/SubmitButton.tsx` (the opt-in prop only).
+    - **3b:**
+      - `upload-limits.ts` (item 7 only), `src/components/admin/ImageUploadField.tsx` and `src/components/admin/SettingsForm.tsx` (`ObjectListEditor` only);
+      - `products/ProductsClient.tsx` and `homepage/HomepageSettingsClient.tsx` (item 12 only).
+  - **Unchanged:**
+    - **3a:**
+      - every file 3b touches;
+      - every other action file, `action-errors.ts`, `site-content.ts` and `settings-read.ts`;
+      - `ImportBuiltInGallery.tsx` and the public pages;
+      - `nav.ts`, `sitemap.ts`, `next.config.ts`, `middleware.ts` and `src/lib/supabase/*`;
+      - `db/`, `supabase-schema.sql`, `package.json` and the lockfile.
+    - **3b:**
+      - all of 3a's files except `upload-limits.ts`;
+      - `CategoryProductsManager.tsx`, `category-draft.ts`, `WhoWeAreClient`, `BusinessClient` and `SeedDefaultsPanel`;
+      - every server file.
+  - **Sign-offs:** no sha256 sign-off is voided.
+    - **Invariant sign-offs reopened:**
+      - T-016's 5 client invariants on `ImageUploadField` and `ProductsClient`. Invariant 4 is restated: "`commitPathOnBlur` opt-in; one `uploadOptimizedImage` call per accepted pick, with one `file` field; only the latest pick is applied, through the `onChange` captured at that pick."
+      - T-026's 7 client invariants on `SettingsForm` and `ProductsClient`.
+      - T-012's `.ok` rule on `HomepageSettingsClient`.
+    - **New hash bindings:** `media-actions.ts` and `upload-limits.ts` at 3a. `upload-limits.ts` is re-bound at 3b.
+  - **Docs at close:**
+    - ROADMAP, DECISIONS and INVENTORY, with `@purpose` lines for `readImageDimensions`, `describeDimensionLimit`, `MediaActionResult` and the 2 components;
+    - STACK §4: drop "except media", and add the new upload-contract functions;
+    - ARCHITECTURE §4 and §5, and DATA_MODEL §3's `media_assets` row;
+    - SECURITY: SEC-MED-1, SEC-MED-9, and the last 2 functions of SEC-MED-10;
+    - QA_REPORT: T-002 WARN-1 to WARN-4.
+  - **Sequence:**
+    - **3a (about 4 hours):** `/build` → `/design-review` → `/security-review` → `/qa` (read-only; production build on :3101; an anonymous `/admin/media` answers 307) → `code-reviewer` → merge.
+    - **3b (about 4 hours):** the same stages.
+    - **Pre-agreed cuts, with no new architect review:** if 3a runs past ½ day, items 5–6 become Wave 3c. Wave 3c runs after 3b and also switches T-009's dimension-message line. If 3b runs past ½ day, item 12 becomes Wave 3d, and T-010 stays open until then.
+  - **Re-review triggers:**
+    - **Schema and dependencies:** any SQL, migration, table, column, constraint, index, RPC, database function, trigger, storage policy, bucket or key prefix; any new dependency, including `sharp` or `image-size` as a direct dependency, `server-only` or a test runner.
+    - **T-019:**
+      - an insert after a failed upload;
+      - removing a file before the row delete, by a browser-sent URL, or without item 3's checks;
+      - any file size or type check on the Media Center;
+      - `<form action>` or `useActionState` auto-reset;
+      - a signature change beyond the return type, or raw error text in a result;
+      - touching `importBuiltInGallery` or `getMediaAssets`.
+    - **T-007:**
+      - decoding or re-encoding, byte-scanning, or failing open;
+      - any new or changed policy value;
+      - the dimension check anywhere other than `uploadOptimizedImage`;
+      - a message that differs from the browser's.
+    - **T-009/T-010:**
+      - keys taken from, or stored in, item fields;
+      - the field calling its latest `onChange`, or dropping a result on unmount;
+      - any change to what a consumer saves;
+      - a non-zero diff on `CategoryProductsManager.tsx`;
+      - changes to `ProductsClient`'s draft/confirmed logic or to `commitPathOnBlur`;
+      - pulling in T-011, T-020 or T-034.
+    - **Files and scope:** an edit to any unchanged-list file; either sub-wave passing its cut.
+  - **Optional owner rows** (the checklists are waived):
+    - **O1:** publish a gallery photo, then delete it.
+    - **O2:** paste `www.example.com/x.jpg` with no file. Expected: the message, and nothing published.
+    - **O3:** pick a category image and click Save categories straight away. Expected: the "still uploading" message.
+    - **O4:** move a facility row while its photo uploads. Expected: the photo lands on that row.
+  - **`/ship` additions:** an anonymous `/admin/media` answers 307 on both domains, and `/life-at-fashion-asia` answers 200 with the same number of gallery images as before.
+  - **For later waves and the backlog:**
+    - Wave 4's T-011 and T-020 re-baseline on `SubmitButton`, `ImageUploadField` and `SettingsForm` as Wave 3 leaves them.
+    - **Backlog:** `importBuiltInGallery` still throws raw database text; `CategoryProductsManager`'s Add form can add during an upload (it can use `onBusyChange` later); the Media Center keeps storing the browser-reported content type (Known Trap #9).
+  **Amendments from `architect-reviewer`'s rulings on the premortem's C1–C10 (2026-10-06: APPROVE, no re-review trigger). Folded verbatim; each amendment wins over the item it amends:**
+  **Architecture Review: Wave 3 premortem rulings (C1 to C10)**
+
+  **Verdict: APPROVE, with the amendments below. No re-review trigger is tripped.** The rulings make item 3 stricter, add one read on a failure path, spell out item 12 more exactly, and add tests. None of them involves SQL, a database object, a storage policy, a dependency, an edit to an unchanged-list file, or growth past the cuts. 3a gains about 30 minutes and stays inside its cut; 3b doesn't change.
+
+  Before ruling, I checked the source:
+  - **C1:** `site_settings.value` is `jsonb`, while `media_assets.url`, `products.image`, `leaders.photo_url` and `reports.file_url` are all `TEXT` (`supabase-schema.sql`, migration 0001).
+  - **C9:** `reports.file_url` is only set through `uploadFile(fd, "reports")`. It has no text box, so a `media` file can only end up there through a crafted call.
+
+  **Amendments, to fold verbatim into the Wave 3 contract**
+
+  **Item 3, step 2 (replaces it):**
+     2. `delete().eq("id", id).select("url")`. An error returns `actionFailure("delete", …)`. **If no row comes back, re-read it** (C3) with `select("id").eq("id", id).maybeSingle()`, because RLS turns a refused delete into "0 rows" with no error:
+        - **A read error:** returns `actionFailure("delete", …)`.
+        - **The row is still there:** returns MEDIA_DELETE_REFUSED: "This item couldn't be deleted, because the database refused the change. Ask your developer to check the gallery's delete permission." It's logged with `logActionError`, with the row id only. The fix is an owner SQL step, so the run doesn't attempt it.
+        - **The row is gone:** returns MEDIA_NOT_FOUND, unchanged.
+        - None of the three makes a storage call or a refresh.
+
+  **Item 3, step 4 (replaces it):**
+     4. **Clean-up, only when it's safe** (C1, C7, C9). It runs inside its own try/catch, so nothing in it can throw out of the action.
+        - **Ours only:**
+          - `name` is the stored URL's last `/`-segment, and it must match `^[A-Za-z0-9][A-Za-z0-9._-]*$`, so `.` and `..` fail.
+          - `getPublicUrl(name).data.publicUrl` must equal the stored URL exactly. A foreign host, a query string, a `/render/image/` URL, a subfolder or a repo path therefore keeps the file.
+        - **Unused only:** 4 counts and 1 read, run together.
+          - **The counts:** `media_assets.url`, `products.image`, `leaders.photo_url` and `reports.file_url`, all `TEXT`. Each is `.select("id", { count: "exact", head: true }).ilike(column, "%" + name + "%")`. An error, a `null` count or a count above 0 keeps the file. A `_` in `name` is a LIKE wildcard, so it can only over-match, which keeps more files.
+          - **`site_settings`:** `.select("value")` reads every row, and the search is `JSON.stringify(value).includes(name)`, in code. An error, `null` data, 0 rows or any match keeps the file.
+          - **Never** an `ilike` on `value`: Postgres has no jsonb ILIKE, so it errors and no file is ever removed. **Never** a single-key `value->>…` filter: it misses `homepage.lifeFacilities` and every other key, so a file in use is removed. The 8 live category images are bucket-root keys of the same shape as gallery uploads, so this read is what protects them.
+        - **Not searched, on purpose:**
+          - free-text fields (news `content`, the job fields), which hold no image or file address;
+          - `submissions`, which is personal data and never published.
+        - **Then:** `remove([name])`, once. An error, or an empty result, is logged.
+
+  **Item 4, add:**
+     - **Capture before awaiting:** `onSubmit` captures the form element and its `FormData` synchronously, before any await. The try/catch wraps only the action call, so the success branch can't show PUBLISH_THREW.
+     - **Focus after a settle** (C6): a disabled fieldset or button drops focus. When a publish settles, either way, focus goes back to the Publish button once it's enabled again. When a delete fails, it goes back to that card's delete button. Never `<body>`. `/design-review` may choose other targets.
+
+  **Item 6, add (C8):**
+     - **EXIF orientation isn't applied:** the server reads the stored width × height, and the browser reports those swapped for a rotated photo.
+       - The longest edge is the same either way, so the accept-or-refuse decision is too. That's accepted.
+       - Only a refusal's `W×H` order can differ. A server refusal is only reachable when the browser check was skipped.
+
+  **Item 11, add (C5):**
+     - **Restore focus explicitly:** after the list commits, apply a pending-focus record in a layout effect (`CategoryProductsManager`'s pattern). Never trust the row's DOM node to stay put: React moves the node of a row that moves down, and Chrome drops focus from a moved node, while Move up keeps it.
+
+  **Item 12, "Opt-in props" (replaces it; C2):**
+      - **Opt-in props:**
+        - **`ImageUploadField`** gets `onBusyChange?(busy)`. It reports changes only, never during render, and only for the latest pick:
+          - true when the latest pick passes its synchronous checks;
+          - false when the latest pick settles in any way: applied (after its `onChange`), refused at any stage (a synchronous check, the dimension read, the server's `ok: false`), or thrown;
+          - false on unmount, if it last reported true.
+          - **An overtaken pick never reports.** So "A in flight, then B refused" ends false at B's refusal.
+        - **`ObjectListEditor`** gets `onUploadingChange?(uploading)`. `uploading` is true only while a key in the current list last reported busy.
+          - A key that leaves the list, such as a removed row or rows replaced after a save, stops counting at once, whatever its field reports.
+          - It reports changes only, and false on its own unmount.
+        - **With either prop off,** every attribute and branch is unchanged.
+      - **Accepted:** a hung upload keeps Save refused only while its field shows "Uploading…". A new pick, or removing the row, ends it.
+
+  **Item 14, add:**
+     - **3a:** the reference checks run through the real supabase-js client with an injected `fetch` (premortem MUST-ADD 1); a fake returning canned counts doesn't count. The harness covers the C3 re-read's three answers with 0 storage calls, and focus after a publish and after a failed delete, in real Chrome.
+     - **3b:** the harness drives all 8 `ObjectListEditor` instances, including Who We Are's 3 and Homepage's 3 without images (C4).
+       - `WhoWeAreClient` stays on the unchanged list (0-byte), but its runtime changes.
+       - Typing, move, remove and focus are checked in real Chrome on a production bundle, not jsdom (C5).
+       - Each page's saved payload is byte-identical to `main`'s.
+
+  **Docs at close, add (C10):** STACK §4 and INVENTORY list `media-actions.ts` as the fourth importer of `action-errors.ts`. That file stays byte-identical, and its Wave 2 binding stands.
+
+  **Re-review triggers, add:**
+  - **The reference checks:**
+    - a `site_settings` search other than reading every row and searching `JSON.stringify(value)` in code;
+    - a reference set narrower than the 4 columns plus `site_settings`;
+    - a storage name rule that admits a leading `.`, `-` or `_`.
+  - **The delete:** a zero-row delete answered without the re-read.
+  - **The Save guard:** `uploading` counting keys outside the current list, or an overtaken pick reporting busy.
+
+  **For later waves, add:** `SettingsHeader`'s Save button drops focus to `<body>` while it's disabled for a save, on every settings page. That's pre-existing, so it goes to T-011's notes.
+
+  **On each concern:**
+  - **C1, C2 and C9** are ruled in the amendments.
+  - **C3:** I chose the re-read over neutral wording. Neutral wording would hide a missing DELETE policy, and that policy has never been tested live; owner row O1 is still the only live check.
+  - **C4, C5 and C6:** confirmed, and amended into items 14, 11 and 4.
+  - **C7:** adopted in item 3.
+  - **C8:** accepted, and recorded in item 6.
+  - **C10:** confirmed, and recorded under "Docs at close".
+
+  **DECISIONS.md row:**
+
+  | 2026-10-06 | **Wave 3 premortem rulings (C1–C10).** C1: the delete's `site_settings` check reads every row and searches `JSON.stringify(value)` in code; 0 rows or an error keeps the file. The other checks are `ilike` counts with `head: true`; an error or a `null` count keeps the file. C9: `reports.file_url` joins the reference set, which is every column that holds a file address; free text and `submissions` are excluded. C3: a delete that removes no row re-reads it, and says MEDIA_DELETE_REFUSED if RLS kept it. C7: storage names start with a letter or digit. C2: only the latest pick reports busy, and any refusal reports false; `uploading` counts only keys in the current list. C5 and C6: focus is restored explicitly after Move down, after a publish and after a failed delete, and tested in real Chrome. C4: all 8 list editors are in 3b's harness. C8: the server doesn't apply EXIF orientation, which is accepted. C10: `media-actions.ts` is the fourth importer of `action-errors.ts`. | `architect-reviewer` | two-way (code only) | No re-review trigger is tripped: the rulings tighten item 3, add one read on a failure path, clarify item 12 and add tests. Rejected: `ilike` on jsonb (it errors, so nothing is ever removed); a `value->>key` filter (a file in use is removed); neutral "wasn't deleted" wording (it hides a missing DELETE policy). |
+
+  Approved. Next: fold the contract, these amendments and the premortem's MUST-ADDs into ROADMAP at the top of T-019, then run `/build` for Wave 3a once Waves 2a and 2b have merged.
+
+  **Files:**
+  - /Users/adilahmed/.claude/projects/-Volumes-D-Architect-Codebase-Fashion-asia-limited/memory/fashion-asia-wave3-contract-draft.md
+  - /Volumes/D_Architect/Codebase/Fashion_asia_limited/docs/ROADMAP.md
+  - /Volumes/D_Architect/Codebase/Fashion_asia_limited/docs/DECISIONS.md
+  - /Volumes/D_Architect/Codebase/Fashion_asia_limited/supabase-schema.sql
+  - /Volumes/D_Architect/Codebase/Fashion_asia_limited/src/app/actions/media-actions.ts
+  - /Volumes/D_Architect/Codebase/Fashion_asia_limited/src/app/admin/(dashboard)/reports/ReportsClient.tsx
+  **Wave 3 premortem (`premortem-planner`, 2026-10-06: GO WITH ADDITIONS). Its MUST-ADDs are binding, as amended by the rulings above. Folded verbatim:**
+  **Premortem — Wave 3 (T-019, T-007, T-009, T-010) — 2026-10-06**
+
+  **Verdict: GO WITH ADDITIONS.** No owner decision is needed. `architect-reviewer` must settle two points first: C1 before 3a builds, and C2 before 3b builds.
+
+  Two facts from the code change the picture:
+  - **The 8 live category images are bucket-root keys like `media/1788158482273_0vq7mdv.jpg`** (Wave 1 baseline evidence, `docs/qa-evidence/T-012/public-regression/`), not short `<n>.jpg` names. That's the same key shape as the gallery's uploads, so the `site_settings` search is the only check that protects a category or facility file from a gallery delete.
+  - **`ObjectListEditor` has 8 instances in 3 files**, not 6: Products ×1, Homepage ×4, Who We Are ×3. The categories also carry `id` and `slug` on top of the editor's three fields.
+
+  **TOP FAILURE MODES (most likely first):**
+
+  1. **Save is refused forever: "An image is still uploading", with nothing uploading.** — likelihood M × impact H
+     - **How it happens:** staff pick photo A on a slow connection, then pick B before A finishes. B is refused by a synchronous check (wrong type, over 400 KB) or the dimension check. A is now stale, so it never reports. B never reports "not busy" either, if that's only reported on the async success path. A second way in: a row removed mid-upload whose key stays in the editor's busy set.
+     - **The cost:** staff can't run the one-time first Save (R6), and a reload throws away the draft.
+     - **SHOWS UP AS:** staff report they can't save `/admin/products` or `/admin/homepage`.
+     - **CATCH BEFORE MERGE:** production-bundle harness (MUST-ADD 11) and contract point C2.
+
+  2. **The rewritten shared editors break a page the harness didn't drive.** — M × H
+     - A row remounts on every keystroke and loses focus.
+     - Move down drops focus to `<body>`. React 19.2 physically moves the DOM node of the row moving down, and the browser blurs a moved focused node; Move up keeps focus.
+     - An upload lands on the wrong row, or reverts typing.
+     - Rows rebuilt from `fields` drop a category's `id`/`slug`. That's the category-identity pattern: changed web addresses, or confusing refusals.
+     - An "is it still mounted" guard silently drops T-016's product-row upload after a category switch.
+     - **SHOWS UP AS:** typing stops after one letter; "Unsaved category changes" after a save; a product photo that never saves.
+     - **CATCH:** real-Chrome production harness, identity diff, and T-016 re-run (MUST-ADDs 12–15).
+
+  3. **The Media Center's new publish form or delete button reports the wrong result.** — M × M
+     - Using `e.currentTarget` after the await (React has nulled it by then) turns a successful publish into PUBLISH_THREW, so staff publish again and the live gallery gets duplicates.
+     - A failure wipes the chosen file.
+     - A throw outside the transition's try/catch blanks the page.
+     - Every delete says "Media item not found" if the live `media_assets` table has no DELETE policy for signed-in users. Nobody has ever tested this, because today's delete ignores its result (R2; the policy isn't in `supabase-schema.sql`).
+     - **SHOWS UP AS:** duplicate photos on `/life-at-fashion-asia`, or "not found" while the item stays listed.
+     - **CATCH:** synthetic render (MUST-ADDs 4–6) and contract point C3.
+
+  4. **T-007's fail-closed reader refuses ordinary photos.** — L × H
+     - It runs on every `ImageUploadField` upload: categories, facilities and products. A product needs an image (T-016's rule), so a refusal also stops new products.
+     - The corpus lacks real phone JPEGs: EXIF thumbnail plus MPF/ICC, ICC pushing the frame header past 64 KB, stray bytes between segments.
+     - `public/`'s 18 WebPs are cwebp lossy output, so VP8L and VP8X are probably only crafted.
+     - **SHOWS UP AS:** "That image's width and height couldn't be read" sitewide, after the deploy.
+     - **CATCH:** the client's own 17 live images plus a server-equals-browser agreement check (MUST-ADDs 8–10).
+
+  5. **The delete clean-up gets the reference check wrong.** — L × H (deletes a file in use, irreversibly) / M × L (never deletes)
+     - **Never deletes (likely):** an `ilike` on the jsonb `value` column errors, because Postgres has no jsonb-ILIKE operator. Every file is then kept, and the orphans are silent.
+     - **Deletes a file in use (unlikely, irreversible):**
+       - a `value->>key` filter searches only one key and misses `homepage.lifeFacilities`;
+       - a hand-written fake returning canned counts passes a wrong query;
+       - a URL split on its last segment matches one of our keys on a foreign host.
+     - **SHOWS UP AS:** a broken category card or facility photo after a gallery delete. Supabase Storage has no undo.
+     - **CATCH:** real supabase-js behind a stubbed network layer, plus positive controls (MUST-ADDs 1–3), and contract point C1.
+
+  **HARD STOPS THIS TICKET TOUCHES:**
+  - **Deploy:** the end-of-run `/ship`, on the owner's "deploy" only.
+  - **Data deletion:** a new code path removes a Storage file when staff delete. It's irreversible, and no agent may exercise it.
+  - **No schema apply.**
+
+  **MUST-ADD ACCEPTANCE CRITERIA**
+
+  **3a — T-019 (Media Center)**
+
+  1. **The reference checks run real query code, with a positive control.**
+     - The `site_settings` check reads every row's `value` and searches `JSON.stringify(value)` in code. It never uses `ilike` on the jsonb column, and never a single-key `value->>…` filter.
+     - The other three checks are `.ilike(col, "%name%")` counts with `head: true`. An error, or a `null` count, keeps the file.
+     - The harness drives the real supabase-js client through an injected `fetch`, with no network, and asserts each request: table, column, filter, HEAD, `count=exact`.
+     - Fed rows shaped like the live data, the file is kept when it's referenced by:
+       - the `business` categories (the 8 baseline URLs);
+       - `homepage.lifeFacilities[].image`;
+       - a leader `photo_url`;
+       - a product `image`;
+       - a second `media_assets` row.
+     - With no reference, it's removed exactly once, as `remove([name])`.
+  2. **The "ours only" check holds on real and hostile URLs.**
+     - It returns true for the 9 live gallery URLs and the 8 category URLs, checked offline. The URLs are scraped read-only from the public pages, and the check uses a supabase-js client built from the scraped origin and a dummy key.
+     - It returns false for:
+       - a foreign host whose last path segment equals a real key;
+       - a `?width=800` query string;
+       - a `/render/image/` URL;
+       - a subfolder;
+       - `.` and `..`;
+       - `/images/client/…` paths.
+     - Any URL shared between the gallery and the category or facility images is recorded and used in MUST-ADD 1's positive control.
+  3. **The delete runs in order, and failures stay safe.**
+     - The order is `getUser` → `delete().eq("id").select("url")` → both refreshes → checks → `remove`.
+     - A failed row delete makes 0 Storage calls.
+     - A 0-row delete makes 0 Storage calls, including one where the row still exists because RLS refused it.
+     - Deleting a built-in (repo-path) row makes 0 Storage calls.
+     - A `remove` that returns `[]` is logged, and the result is still `{ ok: true }`.
+  4. **The publish form passes a synthetic render, in StrictMode and in a production bundle.**
+     - The FormData carries exactly `title`, `type`, `file`, `url` and `content`.
+     - **Success:**
+       - The form element is captured synchronously, never read from `e.currentTarget` after an await.
+       - The form resets, "Published." shows, no alert appears, and the action is called exactly once.
+       - The catch wraps only the action call, so the success branch can't show PUBLISH_THREW.
+     - **`ok: false`:** every field stays, including `fileInput.files.length === 1`, and the alert shows the result's text.
+     - **A rejected promise** (the 1 MB body limit, or the network): PUBLISH_THREW shows, every field stays, and the page never hits the error boundary.
+     - **Double submit:** a double click, or Enter twice, makes 1 call.
+     - "Published." clears when the next submit starts.
+     - After success or failure, focus isn't on `<body>`.
+  5. **The delete button behaves.**
+     - A cancelled confirm makes no call.
+     - The button is disabled while the delete runs.
+     - On `ok: false` or a throw, the message shows on that card only and the button re-enables.
+     - On success, simulated with the card removed from the list, focus moves to the heading. No mounted-check may skip the focus call.
+     - With two cards, each card's button sends its own id.
+  6. **`SubmitButton` is unchanged for the public forms.**
+     - `useFormStatus()` is called unconditionally.
+     - Without `pending`, its static markup inside a `<form>` is byte-identical to `main`'s.
+     - The three public form pages' production-build button markup matches the pre-3a baseline.
+  7. **The gallery is untouched.**
+     - `getMediaAssets`, `importBuiltInGallery` and `ImportBuiltInGallery.tsx` have 0-byte diffs, checked by sha256.
+     - The production build's `/life-at-fashion-asia` gallery `<img src>` list, in order, equals production's list fetched in the same minute. Both read the same database, so a difference can only come from code.
+
+  **3a — T-007 (dimension reader)**
+
+  8. **The corpus goes beyond `public/`.**
+     - **The client's live images:** the 8 category images, the facility photos and the 9 gallery photos, downloaded read-only to the scratchpad and never committed.
+     - **Headless-Chrome canvas exports:** JPEG, lossy WebP, and WebP with alpha (VP8X).
+     - **Crafted headers:**
+       - WebP: VP8L, and animated VP8X;
+       - JPEG frame types: SOF1 at 12-bit, SOF3, SOF9;
+       - CMYK with an Adobe APP14 segment;
+       - ICC or XMP data pushing the frame header past 64 KB;
+       - stray non-FF bytes between segments;
+       - DNL, where the height is 0, which must return null.
+     - Results go in a table: the reader's answer, `sips`, and Chrome's natural size.
+  9. **Server and browser agree.** For every real file, the server's accept/refuse under the 2400 px rule equals the browser's, with 0 disagreements. Compare the longest edge, because EXIF rotation swaps width and height.
+  10. **Misalignment traps.**
+      - The EXIF thumbnail has different dimensions from the main frame, and the reader returns the main ones.
+      - A decoy `FF C0` sits where an off-by-2 length error would land.
+      - The reader indexes the `Uint8Array` directly, never a `DataView` over `.buffer` without the byte offset.
+      - Truncation tests use `slice` copies, not `subarray`.
+      - It walks the whole array, not a fixed-size head.
+
+  **3b — T-009/T-010 (shared upload field and list editor)**
+
+  11. **The Save guard always comes back to false.** On both pages, in StrictMode and in a production bundle: once every stubbed promise settles, `uploading === false`, and one Save click calls the save action exactly once. The scenarios:
+      - a single pick ending: ok, `ok: false`, a throw, null dimensions, 2401 px, the wrong type, or over 400 KB;
+      - A in flight, then B refused at each stage (synchronous check, dimension check, server);
+      - A and B resolving in both orders;
+      - a row removed or moved mid-upload.
+
+      `uploading` counts only rows in the current list. No React warning of any kind appears.
+  12. **Category identity is kept.**
+      - Every surviving row keeps `id`, `slug` and any unknown key. Rows are spread, never rebuilt from `fields`; `blank()` is the only exception.
+      - For sequences with no race, the payload sent to `saveCategories`/`updateSettings` equals `main`'s byte for byte.
+      - With an upload in flight, every edit is kept and the image lands on its own row.
+  13. **Focus and typing hold in real Chrome, not jsdom, on a production bundle.**
+      - Typing 20 characters into every text box, textarea and path box of all 8 instances keeps focus, the caret and the row's DOM node.
+      - Move up and Move down both keep focus in the moved row.
+      - After a remove, focus follows contract item 11.
+      - Focus never lands on `<body>`.
+  14. **The pick counter works on all 4 consumers:** category row, facility row, product row and the product add form.
+      - A single pick applies the image and clears busy.
+      - An overtaken pick makes 0 `onChange` calls, 0 `onBusyChange` calls and 0 state updates, while both files still reach the upload stub.
+      - The `onChange` captured at the pick fires after a re-render with a new prop, and after unmount.
+  15. **T-016's harness re-runs after each 3b commit** (T-009, then T-010), on a production bundle.
+      - A product-row upload that finishes after a category switch commits exactly one `{ image }`, to its own product.
+      - A second pick on the same row commits only the second image.
+      - The add form's image still fills.
+      - `CategoryProductsManager.tsx` has a 0-byte diff.
+
+  **Evidence**
+
+  16. **Baseline and evidence rules.**
+      - Before 3a, capture a production baseline: the gallery list, the facility image URLs, the 8 category URLs and the three form pages.
+      - Evidence goes in `docs/qa-evidence/WAVE-3/`, with the project ref and local paths scrubbed and no client photo committed.
+
+  **OPTIONAL OWNER ROWS** (on top of the contract's O1–O4)
+  - **O1 matters most.** It's the only check of the live DELETE policies, on the table and on Storage. If the owner runs one row, it should be O1, using a ZZ-TEST title.
+  - **O5:** upload a phone photo, after TinyPNG, as a category image. Expected: it uploads.
+  - **O6:** pick an image, pick a `.png` while it uploads, then click Save categories. Expected: it saves, with no "still uploading" message.
+
+  **/SHIP ADDITIONS**
+  1. **Before the push,** the evidence exists for MUST-ADDs 8–9 (0 disagreements), 11 (every run ends false), 12 (empty diff) and 15.
+  2. **A few minutes before the push,** capture production's `/life-at-fashion-asia` `<img src>` list.
+  3. **After the deploy, on both domains:**
+     - that list is unchanged, and every image answers 200;
+     - the facility images and the 8 category images are unchanged and answer 200;
+     - an anonymous `/admin/media` answers 307 with no `Set-Cookie`.
+  4. **Tell the owner to reload any `/admin` tab opened before the deploy.** Server Action ids change with each build, so saves from an old tab fail with the "check your connection" messages.
+  5. **These reports mean a Wave 3 incident:**
+
+     | Report | Points to |
+     |---|---|
+     | "Still uploading" when nothing is uploading | T-010 |
+     | "Width and height couldn't be read" on an ordinary photo | T-007 |
+     | "Not found" while the item stays listed | the DELETE policy (RLS) |
+     | A broken image after a gallery delete | the clean-up |
+
+     Fix by reverting through `/ship` to both remotes.
+
+  **CONTRACT CONCERNS for `architect-reviewer`**
+  - **C1 — MUST SETTLE BEFORE BUILD (3a).** Name the `site_settings` search method: every row's `JSON.stringify(value)`, searched in code. An `ilike` on the column errors, so files are never deleted. A `value->>key` filter misses other keys, so an in-use file is deleted. A fake database can't tell these apart.
+  - **C2 — MUST SETTLE BEFORE BUILD (3b).** Add one sentence to item 12:
+    - a newer pick refused at any stage is "the latest pick's outcome", and reports false;
+    - an overtaken pick never reports;
+    - `uploading` is computed over keys in the current list only.
+  - **C3 — settle before build, or at `/design-review` by wording.** MEDIA_NOT_FOUND also fires when RLS refuses the delete and the row is still there. Either add a follow-up read with its own message, or use neutral wording such as "The item wasn't deleted. Reload the page to see the current list."
+  - **C4.** The rekey changes Who We Are's three editors, a file on the unchanged list. Add it to the harness (MUST-ADD 13).
+  - **C5.** Item 11's focus rule matters mostly for Move down, because React moves that row's node. Require tests in real Chrome.
+  - **C6.** Extend "never `<body>`" to publishing. The disabled fieldset blurs the focused button.
+  - **C7.** The name regex `^[A-Za-z0-9._-]+$` accepts `.` and `..`. Require a leading letter or digit. This is defence in depth only; it takes a crafted row.
+  - **C8.** For EXIF-rotated photos, the server reports the stored width×height, swapped relative to the browser. Record that as accepted; the decision on the longest edge is the same.
+  - **C9.** `reports.file_url` is the only URL column outside the reference set. Add one count, or record why it's excluded.
+  - **C10.** `media-actions.ts` becomes the fourth importer of `action-errors.ts`. Update STACK §4 and INVENTORY at close.
+
+  **GO / NO-GO: GO WITH ADDITIONS.** C1 is settled before 3a builds, C2 before 3b builds, and C3 by `/design-review` at the latest.
+
+  Files read (source from the working tree, which a builder may be editing):
+  - `/Users/adilahmed/.claude/projects/-Volumes-D-Architect-Codebase-Fashion-asia-limited/memory/fashion-asia-wave3-contract-draft.md`
+  - `/Volumes/D_Architect/Codebase/Fashion_asia_limited/src/app/actions/media-actions.ts`
+  - `/Volumes/D_Architect/Codebase/Fashion_asia_limited/src/components/admin/SettingsForm.tsx`
+  - `/Volumes/D_Architect/Codebase/Fashion_asia_limited/src/components/admin/ImageUploadField.tsx`
+  - `/Volumes/D_Architect/Codebase/Fashion_asia_limited/src/app/admin/(dashboard)/products/ProductsClient.tsx`
+  - `/Volumes/D_Architect/Codebase/Fashion_asia_limited/src/app/admin/(dashboard)/homepage/HomepageSettingsClient.tsx`
+  - `/Volumes/D_Architect/Codebase/Fashion_asia_limited/src/app/admin/(dashboard)/who-we-are/WhoWeAreClient.tsx`
+  - `/Volumes/D_Architect/Codebase/Fashion_asia_limited/supabase-schema.sql`
   - **Source:** `docs/SECURITY.md` SEC-MED-9, 2026-09-27 (`ticket-review:T-012` entry: "needs a distinct design ... rather than a copy of T-012's pattern"); `docs/SECURITY.md` SEC-MED-10, same entry (the two functions T-015 doesn't cover). Also a PM source check on 2026-09-28: when the storage upload fails, `addMediaAction` (`media-actions.ts:139-149`) only logs it and still inserts the `media_assets` row, with `url` left empty or unchanged. `deleteMediaAction` (:157-173) removes the storage file first and checks neither result.
   - **Files:** `src/app/actions/media-actions.ts` (`addMediaAction` :126-155, `deleteMediaAction` :157-173), `src/app/admin/(dashboard)/media/page.tsx` (the two `<form action>` sites, :26 and :88), new client component(s) under `src/app/admin/(dashboard)/media/` for form state (name at `/lead-dev`'s discretion)
   - **Flags:** schema-touching: **no** · sensitive: **yes** (storage upload path, WORKFLOW §5) · UI: **yes**
