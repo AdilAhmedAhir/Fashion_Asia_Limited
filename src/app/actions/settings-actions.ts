@@ -2,6 +2,7 @@
 
 import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
+import { actionFailure } from "@/lib/action-errors";
 import {
     SITE_SETTINGS,
     resolveCategoriesForSave,
@@ -94,7 +95,7 @@ export async function updateSettings(key: string, value: Record<string, unknown>
         .from("site_settings")
         .upsert({ key, value, updated_at: new Date().toISOString() }, { onConflict: "key" });
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "updateSettings: the upsert failed.", error);
 
     revalidatePath("/admin");
 
@@ -164,7 +165,7 @@ export async function seedSettingsFromDefaults(keys: string[]): Promise<SeedResu
             .select("key,value")
             .in("key", wholeRows);
 
-        if (readError) return { ok: false, error: readError.message, seeded: [] };
+        if (readError) return { ...actionFailure("read", "seedSettingsFromDefaults: the read failed.", readError), seeded: [] };
 
         const stored = new Map<string, Record<string, unknown>>(
             (existing ?? []).map(row => [row.key as string, isPlainObject(row.value) ? row.value : {}])
@@ -178,7 +179,7 @@ export async function seedSettingsFromDefaults(keys: string[]): Promise<SeedResu
         }));
 
         const { error } = await supabase.from("site_settings").upsert(rows, { onConflict: "key" });
-        if (error) return { ok: false, error: error.message, seeded: [] };
+        if (error) return { ...actionFailure("save", "seedSettingsFromDefaults: the upsert failed.", error), seeded: [] };
         seeded.push(...wholeRows);
     }
 
@@ -310,7 +311,7 @@ async function writeBusinessFields(
         .eq("key", "business")
         .maybeSingle();
 
-    if (readError) return { ok: false, error: readError.message };
+    if (readError) return actionFailure("read", "writeBusinessFields: the read failed.", readError);
 
     if (row && !isPlainObject(row.value)) {
         console.error("writeBusinessFields: the stored business value is not an object, so nothing was saved.", {
@@ -347,7 +348,7 @@ async function writeBusinessFields(
                 });
                 return { ok: false, error: SAVE_CONFLICT };
             }
-            return { ok: false, error: insertError.message };
+            return actionFailure("save", "writeBusinessFields: the insert failed.", insertError);
         }
         if (!inserted?.length) {
             console.error("writeBusinessFields: the insert reported no row, so the save is treated as not done.", {
@@ -366,7 +367,7 @@ async function writeBusinessFields(
     const swap = readStamp === null ? update.is("updated_at", null) : update.eq("updated_at", readStamp as string);
     const { data: changed, error: updateError } = await swap.select("key");
 
-    if (updateError) return { ok: false, error: updateError.message };
+    if (updateError) return actionFailure("save", "writeBusinessFields: the update failed.", updateError);
 
     if (!changed?.length) {
         // Diagnostics only (the result is SAVE_CONFLICT either way). If the
@@ -441,7 +442,7 @@ export async function saveCategories(categories: Product[]): Promise<SaveCategor
                 .select("category_slug")
                 .in("category_slug", gone.map(r => r.slug));
 
-            if (countError) return { ok: false, error: countError.message };
+            if (countError) return actionFailure("read", "saveCategories: the product count failed.", countError);
 
             const remainingSlugs = new Set((remainingProducts ?? []).map(row => row.category_slug as string));
             const blocked = gone.filter(r => remainingSlugs.has(r.slug));
@@ -476,6 +477,9 @@ export async function saveCategories(categories: Product[]): Promise<SaveCategor
     for (const slug of slugs) {
         if (isWellFormedSlug(slug)) revalidatePath(categoryPath(slug));
     }
+    // A harmless extra. The sitemap stays fresh because it renders on every
+    // request (sitemap.ts → getSettings → createClient() → cookies(), so
+    // /sitemap.xml is dynamic), not because of this call.
     revalidatePath("/sitemap.xml");
 
     return { ok: true, categories: resolved };
@@ -536,7 +540,7 @@ export async function createReport(formData: FormData): Promise<ActionResult> {
         title, category, year, published, file_url: fileUrl,
     });
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "createReport: the insert failed.", error);
     revalidatePath("/admin/reports");
     revalidatePath("/sustainability");
     return { ok: true };
@@ -566,7 +570,7 @@ export async function updateReport(id: string, formData: FormData): Promise<Acti
         updated_at: new Date().toISOString(),
     }).eq("id", id).select("id").maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "updateReport: the update failed.", error);
     if (!data) return { ok: false, error: REPORT_NOT_FOUND };
     revalidatePath("/admin/reports");
     revalidatePath("/sustainability");
@@ -581,7 +585,7 @@ export async function deleteReport(id: string): Promise<ActionResult> {
     if (!id) return { ok: false, error: "Missing report id." };
 
     const { data, error } = await supabase.from("reports").delete().eq("id", id).select("id").maybeSingle();
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("delete", "deleteReport: the delete failed.", error);
     if (!data) return { ok: false, error: REPORT_NOT_FOUND };
     revalidatePath("/admin/reports");
     revalidatePath("/sustainability");
@@ -612,7 +616,7 @@ export async function createLeader(formData: FormData): Promise<ActionResult> {
         photo_url: formData.get("photo_url") as string,
         sort_order: parseInt(formData.get("sort_order") as string || "0"),
     });
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "createLeader: the insert failed.", error);
     revalidatePath("/admin/who-we-are");
     revalidatePath("/who-we-are");
     return { ok: true };
@@ -632,7 +636,7 @@ export async function updateLeader(id: string, formData: FormData): Promise<Acti
         photo_url: formData.get("photo_url") as string,
         sort_order: parseInt(formData.get("sort_order") as string || "0"),
     }).eq("id", id).select("id").maybeSingle();
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "updateLeader: the update failed.", error);
     if (!data) return { ok: false, error: LEADER_NOT_FOUND };
     revalidatePath("/admin/who-we-are");
     revalidatePath("/who-we-are");
@@ -647,7 +651,7 @@ export async function deleteLeader(id: string): Promise<ActionResult> {
     if (!id) return { ok: false, error: "Missing leader id." };
 
     const { data, error } = await supabase.from("leaders").delete().eq("id", id).select("id").maybeSingle();
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("delete", "deleteLeader: the delete failed.", error);
     if (!data) return { ok: false, error: LEADER_NOT_FOUND };
     revalidatePath("/admin/who-we-are");
     revalidatePath("/who-we-are");
@@ -671,7 +675,7 @@ export async function uploadFile(formData: FormData, bucket: string = "uploads")
     const filename = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
 
     const { error } = await supabase.storage.from(bucket).upload(filename, file);
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("upload", "uploadFile: the upload failed.", error);
 
     const { data: urlData } = supabase.storage.from(bucket).getPublicUrl(filename);
     return { ok: true, url: urlData.publicUrl };

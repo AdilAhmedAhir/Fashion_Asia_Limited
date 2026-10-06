@@ -19,6 +19,7 @@ import { createClient } from "@/lib/supabase/server";
 import { revalidatePath } from "next/cache";
 import { unstable_rethrow } from "next/navigation";
 import { readSettingsForEditor } from "@/lib/settings-read";
+import { actionFailure } from "@/lib/action-errors";
 import {
     hasVisibleText,
     normalizeProducts,
@@ -139,6 +140,13 @@ function revalidateCategory(categorySlug: string) {
     revalidatePath(PRODUCTS_PATH);
 }
 
+// A crafted call can send any value as an argument, so each write checks the
+// shape of its arguments right after the session check and answers a
+// malformed one with a fixed message instead of throwing (QA T-016 I1).
+function isPlainObject(value: unknown): boolean {
+    return typeof value === "object" && value !== null && !Array.isArray(value);
+}
+
 function sanitizeInput(input: CategoryProductInput) {
     return {
         name: typeof input.name === "string" ? input.name.trim() : "",
@@ -249,7 +257,10 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    const categorySlug = input.category_slug?.trim();
+    // The argument's shape: a plain object, with a category_slug that's a
+    // string and isn't blank.
+    if (!isPlainObject(input)) return { ok: false, error: NOTHING_TO_SAVE };
+    const categorySlug = typeof input.category_slug === "string" ? input.category_slug.trim() : "";
     if (!categorySlug) return { ok: false, error: "Missing category." };
 
     // Before any read (T-016). sanitizeInput turns a non-string name or image
@@ -286,7 +297,7 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
         .select()
         .single();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "createCategoryProduct: the insert failed.", error);
 
     revalidateCategory(categorySlug);
     return { ok: true, product: data as CategoryProduct };
@@ -301,7 +312,7 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    if (!id) return { ok: false, error: "Missing product id." };
+    if (typeof id !== "string" || !id) return { ok: false, error: "Missing product id." };
 
     const fields = takePatchFields(patch);
     if (fields.name === undefined && fields.description === undefined && fields.image === undefined) {
@@ -322,7 +333,7 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
         .eq("id", id)
         .maybeSingle();
 
-    if (readError) return { ok: false, error: readError.message };
+    if (readError) return actionFailure("read", "updateCategoryProduct: the read failed.", readError);
     if (!stored) return { ok: false, error: PRODUCT_NOT_FOUND };
 
     const categorySlug = stored.category_slug as string;
@@ -336,7 +347,7 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
         .select()
         .maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("save", "updateCategoryProduct: the update failed.", error);
     // Deleted (by another tab) between the read and the update.
     if (!data) return { ok: false, error: PRODUCT_NOT_FOUND };
 
@@ -351,7 +362,7 @@ export async function deleteCategoryProduct(id: string): Promise<ProductVoidResu
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    if (!id) return { ok: false, error: "Missing product id." };
+    if (typeof id !== "string" || !id) return { ok: false, error: "Missing product id." };
 
     const { data, error } = await supabase
         .from("products")
@@ -360,7 +371,7 @@ export async function deleteCategoryProduct(id: string): Promise<ProductVoidResu
         .select("category_slug")
         .maybeSingle();
 
-    if (error) return { ok: false, error: error.message };
+    if (error) return actionFailure("delete", "deleteCategoryProduct: the delete failed.", error);
     if (!data) return { ok: false, error: PRODUCT_NOT_FOUND };
 
     revalidateCategory(data.category_slug as string);
@@ -378,9 +389,9 @@ export async function reorderCategoryProducts(categorySlug: string, orderedIds: 
     const user = await requireUser(supabase);
     if (!user) return { ok: false, error: SESSION_EXPIRED };
 
-    const slug = categorySlug?.trim();
+    const slug = typeof categorySlug === "string" ? categorySlug.trim() : "";
     if (!slug) return { ok: false, error: "Missing category." };
-    if (!orderedIds?.length) return { ok: false, error: "Nothing to reorder." };
+    if (!Array.isArray(orderedIds) || !orderedIds.length) return { ok: false, error: "Nothing to reorder." };
 
     const attachability = await checkCategoryAttachable(slug);
     if (!attachability.attachable) return { ok: false, error: attachabilityError(attachability, slug) };
@@ -392,7 +403,7 @@ export async function reorderCategoryProducts(categorySlug: string, orderedIds: 
             .eq("id", orderedIds[i])
             .eq("category_slug", slug);
 
-        if (error) return { ok: false, error: error.message };
+        if (error) return actionFailure("save", "reorderCategoryProducts: an update failed.", error);
     }
 
     revalidateCategory(slug);
