@@ -4,7 +4,7 @@ import { ArrowUpRight } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import CategoryCardGrid, { toCategoryCards } from "@/components/catalog/CategoryCardGrid";
-import ProductGrid from "@/components/catalog/ProductGrid";
+import ProductGrid, { toProductCards } from "@/components/catalog/ProductGrid";
 import { getSettings } from "@/app/actions/settings-actions";
 import { getAllCategoryProducts, type AllProductsRead } from "@/app/actions/products-actions";
 import { normalizeProducts } from "@/lib/site-content";
@@ -144,9 +144,11 @@ export default async function ProductsPage() {
                     </ScrollReveal>
 
                     {/* Only the category's title string is passed in, never
-                        a category object. */}
+                        a category object, and each product is narrowed to
+                        the 3 fields its card renders: no row id, category
+                        slug, order or timestamps (SEC-INFO-36). */}
                     <ProductGrid
-                        products={section.products}
+                        products={toProductCards(section.products)}
                         categoryTitle={section.title}
                         headingLevel="h3"
                         className="mt-12"

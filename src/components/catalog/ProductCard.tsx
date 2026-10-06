@@ -1,7 +1,18 @@
-import type { CategoryProduct } from "@/lib/site-content";
+import { hasVisibleText, type CategoryProduct } from "@/lib/site-content";
+
+/**
+ * A product row also carries its id, its category's slug, its order and its
+ * timestamps. None of them is rendered, and in development React streams every
+ * server component's props to the browser's debug channel, so they must not be
+ * passed in at all (SEC-INFO-36). `id?: never` turns handing over a whole
+ * `CategoryProduct` into a type error: narrow with `toProductCards`
+ * (ProductGrid.tsx) first.
+ * @purpose The fields a product card renders (name, description, image), and nothing more: no row id, category, order or timestamps.
+ */
+export type ProductCardData = Pick<CategoryProduct, "name" | "description" | "image"> & { id?: never };
 
 type ProductCardProps = {
-    product: Pick<CategoryProduct, "name" | "description" | "image">;
+    product: ProductCardData;
     /** The category the product belongs to. It names the photo when the product's own name is blank. */
     categoryTitle: string;
     /**
@@ -26,10 +37,14 @@ export default function ProductCard({ product, categoryTitle, headingLevel: Head
     // photo it gets a name (T-024, closing T-021). The database doesn't require
     // one (products.name defaults to ''), so a blank name falls back to the
     // product's category for the alt, and renders no heading rather than an
-    // empty one.
+    // empty one. A name or description made only of spaces or invisible
+    // characters (zero-width spaces, direction marks) counts as blank, by the
+    // same rule the product save applies (T-033).
     // Precondition: categoryTitle is non-empty (normalizeProducts drops categories with a blank title).
     const name = product.name.trim();
-    const alt = name || `Product from our ${categoryTitle} range`;
+    const hasName = hasVisibleText(product.name);
+    const hasDescription = hasVisibleText(product.description);
+    const alt = hasName ? name : `Product from our ${categoryTitle} range`;
 
     return (
         <div className="flex h-full flex-col overflow-hidden rounded-xl border border-white/10 bg-surface">
@@ -50,18 +65,22 @@ export default function ProductCard({ product, categoryTitle, headingLevel: Head
                 />
                 <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/3 bg-gradient-to-t from-surface to-transparent" />
             </div>
-            <div className="flex flex-col gap-2 p-5">
-                {name && (
-                    <Heading className="break-words font-serif text-lg font-bold leading-snug text-foreground">
-                        {name}
-                    </Heading>
-                )}
-                {product.description && (
-                    <p className="break-words text-sm leading-relaxed text-white/70">
-                        {product.description}
-                    </p>
-                )}
-            </div>
+            {/* No text block at all when both are blank, rather than empty
+                padding under the photo. */}
+            {(hasName || hasDescription) && (
+                <div className="flex flex-col gap-2 p-5">
+                    {hasName && (
+                        <Heading className="break-words font-serif text-lg font-bold leading-snug text-foreground">
+                            {name}
+                        </Heading>
+                    )}
+                    {hasDescription && (
+                        <p className="break-words text-sm leading-relaxed text-white/70">
+                            {product.description}
+                        </p>
+                    )}
+                </div>
+            )}
         </div>
     );
 }

@@ -1,7 +1,8 @@
-// Pure helpers for the /admin/products category editor's draft (T-026). No
-// imports but a type, so they run in plain Node too.
+// Pure helpers for the /admin/products category editor's draft (T-026). The
+// one value import is hasVisibleText (T-033) from site-content.ts, a file
+// that itself has no imports, so these still run in plain Node too.
 
-import type { Product } from "@/lib/site-content";
+import { hasVisibleText, type Product } from "@/lib/site-content";
 
 // A draft row. Rows added with "Add category" start without `id` or `slug`
 // (ObjectListEditor creates only its field keys), which is how the server
@@ -11,12 +12,14 @@ type DraftCategory = Partial<Product>;
 const text = (value: unknown) => (typeof value === "string" ? value : "");
 
 /**
- * @purpose The 1-based row numbers (#n, as the editor labels its rows) of draft categories with a blank title, which a save would treat as deletions.
+ * @purpose The 1-based row numbers (#n, as the editor labels its rows) of draft categories whose title is blank or has no visible character, which a save would delete or refuse.
+ * The same visible-character rule the save applies (resolveCategoriesForSave),
+ * so Save is blocked here first, with one message for both kinds of row.
  */
 export function blankTitleRows(draft: readonly DraftCategory[]): number[] {
     const rows: number[] = [];
     draft.forEach((category, i) => {
-        if (!text(category.title).trim()) rows.push(i + 1);
+        if (!hasVisibleText(category.title)) rows.push(i + 1);
     });
     return rows;
 }

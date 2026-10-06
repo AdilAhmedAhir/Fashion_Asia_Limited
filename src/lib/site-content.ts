@@ -397,16 +397,35 @@ export function hasVisibleText(value: unknown): boolean {
     return typeof value === "string" && VISIBLE_CHARACTER.test(value);
 }
 
-// Category slug: lowercase, every run of non-alphanumeric characters
-// collapsed to a single "-", leading/trailing "-" trimmed. A title with no
-// alphanumeric characters at all would otherwise produce an empty, unusable
-// URL segment, so that case falls back to "category".
-export function slugify(title: string): string {
-    const slug = title
+// The longest a category slug can be. It mirrors products.category_slug
+// VARCHAR(255) (db/migrations/0001_products-within-category.sql), so it's a
+// schema limit, not a policy number. Private, like slugBody and cutSlug.
+const MAX_SLUG_LENGTH = 255;
+
+// A title's slug before any cut or fallback: lowercase, every run of
+// characters outside a-z and 0-9 collapsed to a single "-", leading and
+// trailing "-" trimmed. Empty when the title has no letter from a to z and no
+// digit. Nothing is transliterated: "é" or a Bengali letter is just another
+// character outside a-z.
+function slugBody(title: string): string {
+    return title
         .toLowerCase()
         .replace(/[^a-z0-9]+/g, "-")
         .replace(/^-+|-+$/g, "");
-    return slug || "category";
+}
+
+// Cuts a slug to at most `max` characters. A cut can end on a dash, which
+// isWellFormedSlug rejects, so trailing dashes are trimmed after it.
+function cutSlug(slug: string, max: number): string {
+    return slug.slice(0, max).replace(/-+$/, "");
+}
+
+// Category slug: slugBody, cut to MAX_SLUG_LENGTH. A title with no letter or
+// digit would otherwise produce an empty, unusable URL segment, so that case
+// falls back to "category". Every slug of 255 characters or fewer comes out
+// exactly as it did before the cut existed.
+export function slugify(title: string): string {
+    return cutSlug(slugBody(title), MAX_SLUG_LENGTH) || "category";
 }
 
 // Appends -2, -3, ... until `slug` no longer collides with a slug already
@@ -414,12 +433,15 @@ export function slugify(title: string): string {
 // read-time-only fallback for a legacy category that predates the `slug`
 // field (docs/TECH_STACK.md → Database, decision (b)) — an actual save
 // rejects a colliding freshly-computed slug outright instead of ever
-// reaching this function.
+// reaching this function. The base is cut first so that, suffix included, a
+// candidate never runs past MAX_SLUG_LENGTH.
 function dedupeSlug(slug: string, seen: Set<string>): string {
     if (!seen.has(slug)) return slug;
-    let suffix = 2;
-    while (seen.has(`${slug}-${suffix}`)) suffix++;
-    return `${slug}-${suffix}`;
+    for (let n = 2; ; n++) {
+        const suffix = `-${n}`;
+        const candidate = `${cutSlug(slug, MAX_SLUG_LENGTH - suffix.length)}${suffix}`;
+        if (!seen.has(candidate)) return candidate;
+    }
 }
 
 // `products` used to be a plain list of names. Stored rows still hold that shape
@@ -491,7 +513,7 @@ export type CategorySaveResult =
 // forward again) and, in products-actions.ts, to gate whether a category is
 // genuinely attachable yet.
 export function isWellFormedSlug(value: string): boolean {
-    return value.length > 0 && value.length <= 255 && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(value);
+    return value.length > 0 && value.length <= MAX_SLUG_LENGTH && /^[a-z0-9]+(-[a-z0-9]+)*$/.test(value);
 }
 
 // A server-issued id for a brand-new category. Deliberately backed by the
@@ -504,6 +526,13 @@ export function isWellFormedSlug(value: string): boolean {
 function randomUUID(): string {
     return globalThis.crypto.randomUUID();
 }
+
+// A category title that isn't blank after trimming but has no visible
+// character (only zero-width spaces, direction marks and the like). It would
+// show as an empty card, so the save is refused rather than guessing. `n` is
+// the row's 1-based position in the list sent, which is the editor's #n.
+const invisibleTitleMessage = (n: number) =>
+    `Category #${n}'s title has no visible characters, so nothing was saved. Type a title, then save again.`;
 
 // Save-time counterpart to normalizeProducts() above, for the category write
 // path (src/app/actions/settings-actions.ts::saveCategories, T-026).
@@ -544,7 +573,11 @@ export function resolveCategoriesForSave(
     const claimedIds = new Set<string>();
     const categories: Product[] = [];
 
-    for (const item of raw) {
+    // entries(), like the for...of it replaced, visits every position (a hole
+    // reads as undefined and is skipped below), so `position` stays the row's
+    // 1-based place in the list sent, blank rows included.
+    for (const [index, item] of raw.entries()) {
+        const position = index + 1;
         let title = "";
         let description = "";
         let image = "";
@@ -562,7 +595,11 @@ export function resolveCategoriesForSave(
             continue;
         }
 
+        // Blank after trimming: the category is left out, which deletes it
+        // (T-026). Not blank but invisible: the whole save is refused, for an
+        // existing category as much as a new one, and never read as a delete.
         if (!title) continue;
+        if (!hasVisibleText(title)) return { ok: false, error: invisibleTitleMessage(position) };
         if (!image) image = PRODUCT_IMAGES[title] ?? PRODUCT_IMAGE_FALLBACK;
 
         const existing = incomingId ? existingById.get(incomingId) : undefined;
@@ -603,12 +640,11 @@ export function resolveCategoriesForSave(
             // No id, or an id absent from existingById: a new category.
             // Fresh id, fresh slug derived only from the title — again, the
             // incoming item's own `.slug` field is never read here either.
-            // Cutting a long title's slug at 255 can end it on a dash, which
-            // isWellFormedSlug rejects, so the category's next save would be
-            // refused; the dash is trimmed. slugify never starts with a dash,
-            // so the result can't be empty.
+            // slugify cuts a long title's slug to MAX_SLUG_LENGTH and trims
+            // the dash a cut can leave, exactly as normalizeProducts does at
+            // read time, so the two never disagree.
             id = randomUUID();
-            slug = slugify(title).slice(0, 255).replace(/-+$/, "");
+            slug = slugify(title);
         }
 
         // Collision check — across ALL resolved slugs so far, whether frozen

@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
-import ProductGrid from "@/components/catalog/ProductGrid";
+import ProductGrid, { toProductCards } from "@/components/catalog/ProductGrid";
 import { getSettings } from "@/app/actions/settings-actions";
 import { getCategoryProducts } from "@/app/actions/products-actions";
 import { normalizeProducts } from "@/lib/site-content";
@@ -83,7 +83,9 @@ export default async function CategoryDetailPage(
     const category = await findCategory(rawSlug);
     if (!category) notFound();
 
-    const products = await getCategoryProducts(category.slug);
+    // Narrowed straight away to the 3 fields a card renders, so no row id,
+    // category slug, order or timestamp reaches a prop (SEC-INFO-36).
+    const products = toProductCards(await getCategoryProducts(category.slug));
 
     return (
         <div className="flex flex-col bg-background">

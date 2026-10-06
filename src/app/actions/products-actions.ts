@@ -51,7 +51,7 @@ const SESSION_EXPIRED = "Your session expired. Sign in again and retry.";
 const PRODUCT_NOT_FOUND = "Product not found.";
 const PRODUCT_NAME_REQUIRED = "A product needs a name. Type one in, then try again.";
 const PRODUCT_IMAGE_REQUIRED = "A product needs an image. Upload one or paste its path, then try again.";
-const NOTHING_TO_SAVE = "There was nothing to save.";
+const NOTHING_TO_SAVE = "Nothing was saved. Reload the page, then try again.";
 
 // The only fields an edit can write (T-016, partial update).
 const PATCH_FIELDS = ["name", "description", "image"] as const;

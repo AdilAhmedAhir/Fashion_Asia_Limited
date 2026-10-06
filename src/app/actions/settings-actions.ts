@@ -101,7 +101,20 @@ export async function updateSettings(key: string, value: Record<string, unknown>
 }
 
 // The "Sync content from code" result: which keys were written, or why not.
-type SeedResult = { ok: true; seeded: string[] } | { ok: false; error: string };
+// A failure still lists the keys synced before it (T-033), or [] if none
+// were. The keys are for the panel, which shows each page by its own label:
+// no message here ever names a storage key.
+type SeedResult = { ok: true; seeded: string[] } | { ok: false; error: string; seeded: string[] };
+
+// The What We Do page text's sync failure, as a full sentence. A clash with
+// another save gets its own wording, since SAVE_CONFLICT ("Click Save again")
+// names the two editors' button, not Sync's.
+const SEED_CONFLICT =
+    "The What We Do page text wasn't synced, because another save changed it at the same moment. Click Sync again.";
+
+function businessSeedError(reason: string): string {
+    return reason === SAVE_CONFLICT ? SEED_CONFLICT : `The What We Do page text wasn't synced: ${reason}`;
+}
 
 // Writes the defaults from site-content.ts into site_settings for the named
 // keys. Used after a redesign, when the stored rows still hold copy written
@@ -118,13 +131,13 @@ type SeedResult = { ok: true; seeded: string[] } | { ok: false; error: string };
 export async function seedSettingsFromDefaults(keys: string[]): Promise<SeedResult> {
     const supabase = await createClient();
     const user = await requireUser(supabase);
-    if (!user) return { ok: false, error: SESSION_EXPIRED };
+    if (!user) return { ok: false, error: SESSION_EXPIRED, seeded: [] };
 
     // Own keys only, so "constructor" and friends can't match Object.prototype.
     const targets = Array.isArray(keys)
         ? [...new Set(keys.filter(key => typeof key === "string" && Object.prototype.hasOwnProperty.call(SITE_SETTINGS, key)))]
         : [];
-    if (!targets.length) return { ok: false, error: "No pages selected." };
+    if (!targets.length) return { ok: false, error: "No pages selected.", seeded: [] };
 
     const seeded: string[] = [];
     const wholeRows = targets.filter(key => key !== "business");
@@ -137,7 +150,7 @@ export async function seedSettingsFromDefaults(keys: string[]): Promise<SeedResu
             .select("key,value")
             .in("key", wholeRows);
 
-        if (readError) return { ok: false, error: readError.message };
+        if (readError) return { ok: false, error: readError.message, seeded: [] };
 
         const stored = new Map<string, Record<string, unknown>>(
             (existing ?? []).map(row => [row.key as string, isPlainObject(row.value) ? row.value : {}])
@@ -151,7 +164,7 @@ export async function seedSettingsFromDefaults(keys: string[]): Promise<SeedResu
         }));
 
         const { error } = await supabase.from("site_settings").upsert(rows, { onConflict: "key" });
-        if (error) return { ok: false, error: error.message };
+        if (error) return { ok: false, error: error.message, seeded: [] };
         seeded.push(...wholeRows);
     }
 
@@ -162,10 +175,11 @@ export async function seedSettingsFromDefaults(keys: string[]): Promise<SeedResu
             : { ok: false, error: defaults.error };
 
         if (!result.ok) {
-            if (!seeded.length) return result;
+            const error = businessSeedError(result.error);
+            if (!seeded.length) return { ok: false, error, seeded: [] };
             revalidatePath("/admin");
             revalidatePath("/", "layout");
-            return { ok: false, error: `Synced ${seeded.join(", ")}, but not the What We Do page text: ${result.error}` };
+            return { ok: false, error, seeded };
         }
         seeded.push("business");
     }
@@ -259,11 +273,11 @@ function isPlainObject(value: unknown): value is Record<string, unknown> {
 // 3. The write changes the row only if it still carries the exact stamp read
 //    in step 1. The stamp goes back exactly as PostgREST returned it, never
 //    through a JS Date, which would drop its microseconds and never match.
-//    The new stamp is always later than the one read (at least 1 ms past it,
-//    even on a server whose clock runs behind), so stamps only move forward
-//    and no save can write back a stamp another save still holds, which would
-//    let that save's swap pass by mistake (a lost update). Date only computes
-//    that new stamp.
+//    When the stamp parses, the new stamp is strictly later than the one read
+//    (1 ms past its millisecond part, even on a server whose clock runs
+//    behind), so stamps only move forward and no save can write back a stamp
+//    another save still holds, which would let that save's swap pass by
+//    mistake (a lost update). Date only computes that new stamp.
 //    `.select("key")` then counts the changed rows: 0 means another save got
 //    there first (or something else blocked the row), and the save fails
 //    closed with SAVE_CONFLICT. There's no automatic retry.

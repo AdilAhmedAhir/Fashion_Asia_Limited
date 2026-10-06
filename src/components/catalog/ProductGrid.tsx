@@ -1,11 +1,21 @@
 import type { ComponentProps } from "react";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import ProductCard from "@/components/catalog/ProductCard";
+import type { ProductCardData } from "@/components/catalog/ProductCard";
 import { cn } from "@/lib/utils";
 import type { CategoryProduct } from "@/lib/site-content";
 
+/**
+ * @purpose Narrow product rows to the 3 fields a ProductCard renders, so a row's id, category, order and timestamps never reach component props or a page's payload.
+ * New objects, in the same order and number; nothing is trimmed or filtered.
+ */
+export function toProductCards(rows: readonly CategoryProduct[]): ProductCardData[] {
+    return rows.map(({ name, description, image }) => ({ name, description, image }));
+}
+
 type ProductGridProps = {
-    products: Pick<CategoryProduct, "name" | "description" | "image">[];
+    /** Narrowed with toProductCards: a whole product row is a type error. */
+    products: ProductCardData[];
     /** The category these products belong to. It names any photo whose product name is blank. */
     categoryTitle: string;
     /** Passed to every card; see ProductCard. */
