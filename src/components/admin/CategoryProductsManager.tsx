@@ -23,10 +23,11 @@ const GENERIC_ERROR = "Something went wrong. Check your connection and try again
 // only: nothing in the save queue below uses a timer.
 const SAVED_VISIBLE_MS = 2000;
 
-// What staff see if they try to leave this page while a product is still
-// saving (T-034). Design review may tune the words.
+// What staff see if they try to leave this page or sign out while a product
+// is still saving (T-034). "May not be saved" covers Sign Out: a follow-up
+// save that is still waiting then runs signed out and fails unseen.
 const LEAVE_WHILE_SAVING =
-    "A product is still saving. If you leave this page now, you won't see whether your change was saved.\n\nPress OK to leave anyway, or Cancel to stay until it says “Saved”.";
+    "A product is still saving. If you leave this page or sign out now, your latest change may not be saved.\n\nPress OK to leave anyway, or Cancel to stay until it says “Saved”.";
 
 // Each category's products, keyed by category slug. A Map, never a plain
 // object (T-016, SEC-INFO-37): a category slugged "constructor" is just
