@@ -240,10 +240,14 @@ export function ImageUploadField({
 
     return (
         <div className="flex flex-col gap-2">
-            <label htmlFor={inputId} className="text-[10px] font-bold uppercase tracking-widest text-white/30">
+            <label htmlFor={inputId} className="text-xs font-bold uppercase tracking-widest text-white/50">
                 {label}
             </label>
 
+            {/* T-011: the file input is visually hidden, so its keyboard focus
+                ring shows on this drop zone (for the input only, not the
+                TinyPNG link inside it), and the zone looks disabled when a
+                saving fieldset disables the input. */}
             <div
                 onDragOver={e => {
                     e.preventDefault();
@@ -260,7 +264,7 @@ export function ImageUploadField({
                     const file = e.dataTransfer.files?.[0];
                     if (file) void handleFile(file);
                 }}
-                className={`flex items-center gap-4 rounded-xl border border-dashed p-3 transition-colors ${
+                className={`group/zone flex items-center gap-4 rounded-xl border border-dashed p-3 transition-colors has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 ${
                     dragging ? "border-primary bg-primary/10" : "border-white/15 bg-black/40"
                 }`}
             >
@@ -279,32 +283,32 @@ export function ImageUploadField({
                     <div className="flex flex-wrap items-center gap-2">
                         <label
                             htmlFor={inputId}
-                            className="cursor-pointer rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-primary/10"
+                            className="cursor-pointer rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-primary/10 group-has-[:disabled]/zone:cursor-not-allowed"
                         >
                             {busy ? "Uploading…" : value ? "Replace image" : "Choose image"}
                         </label>
                         {busy && <Loader2 size={14} className="animate-spin text-accent" />}
-                        <span className="text-[11px] text-white/50">or drag one here</span>
+                        <span className="text-xs text-white/50">or drag one here</span>
                     </div>
-                    {/* text-white/50, not the /30 used for labels elsewhere: this box
-                        sits two layers of bg-black/40 deep (ObjectListEditor's item
-                        card, then this dropzone), so the effective background is
-                        near-black — /30 measures ~2.5:1 there, below the 4.5:1 AA
-                        floor for 11px text. /50 clears ~5.3:1 on the same background. */}
-                    <p className="text-[11px] leading-relaxed text-white/50">
+                    {/* text-white/50: this box sits two layers of bg-black/40 deep
+                        (ObjectListEditor's item card, then this dropzone), so the
+                        effective background is near-black — /30 measures ~2.5:1
+                        there, below the 4.5:1 AA floor. /50 clears ~5.3:1 on the
+                        same background (T-011). */}
+                    <p className="text-xs leading-relaxed text-white/50">
                         {extList} · up to {formatBytes(MAX_UPLOAD_BYTES)} · max {MAX_UPLOAD_DIMENSION}px.
                         Compress at{" "}
                         <a
                             href={TINYPNG_URL}
                             target="_blank"
                             rel="noopener noreferrer"
-                            className="text-accent underline underline-offset-2"
+                            className="rounded-sm text-accent underline underline-offset-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                         >
                             TinyPNG
                         </a>{" "}
                         before uploading.
                     </p>
-                    <p className="text-[11px] leading-relaxed text-white/50">
+                    <p className="text-xs leading-relaxed text-white/50">
                         Recommended: {RECOMMENDED_UPLOAD_WIDTH}×{RECOMMENDED_UPLOAD_HEIGHT}px landscape,
                         for the sharpest result wherever this appears on the site.
                     </p>
@@ -324,7 +328,7 @@ export function ImageUploadField({
             </div>
 
             {error && (
-                <p role="alert" className="flex items-start gap-2 text-[11px] leading-relaxed text-red-400">
+                <p role="alert" className="flex items-start gap-2 text-xs leading-relaxed text-red-400">
                     <TriangleAlert size={13} className="mt-px flex-none" aria-hidden="true" />
                     {error}
                 </p>
@@ -339,7 +343,7 @@ export function ImageUploadField({
                 <p
                     role="status"
                     aria-live="polite"
-                    className="flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-[11px] leading-relaxed text-amber-300"
+                    className="flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs leading-relaxed text-amber-300"
                 >
                     <Info size={13} className="mt-px flex-none" aria-hidden="true" />
                     <span>
@@ -381,7 +385,7 @@ export function ImageUploadField({
                 readOnly={commitPathOnBlur && busy}
                 placeholder="Or paste an image path"
                 aria-label={`${label} — path`}
-                className={`rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-[11px] text-white/60 focus:border-primary/50 focus:outline-none${commitPathOnBlur ? " read-only:cursor-wait read-only:opacity-50" : ""}`}
+                className={`rounded-lg border border-white/10 bg-black px-4 py-2 font-mono text-xs text-white/60 focus:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50${commitPathOnBlur ? " read-only:cursor-wait read-only:opacity-50" : ""}`}
             />
         </div>
     );

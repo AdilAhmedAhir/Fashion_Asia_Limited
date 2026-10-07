@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { seedSettingsFromDefaults } from "@/app/actions/settings-actions";
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 
@@ -32,10 +32,28 @@ function syncedSentence(keys: readonly string[]): string {
     return `Synced ${list}.`;
 }
 
+// Hoisted (T-011): defined inside the panel's render, it was a new component
+// on every render, so each toggle remounted it and keyboard focus was lost.
+function Checkbox({ label, checked, onChange }: { label: string; checked: boolean; onChange: () => void }) {
+    return (
+        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
+            <input
+                type="checkbox"
+                checked={checked}
+                onChange={onChange}
+                className="h-4 w-4 shrink-0 accent-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+            />
+            {label}
+        </label>
+    );
+}
+
 export default function SeedDefaultsPanel() {
     const [isPending, startTransition] = useTransition();
     const [selected, setSelected] = useState<string[]>(PAGE_KEYS);
     const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+    // Names (T-011): each heading names its group of checkboxes.
+    const groupId = useId();
 
     const toggle = (key: string) =>
         setSelected(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
@@ -69,18 +87,6 @@ export default function SeedDefaultsPanel() {
         });
     };
 
-    const Checkbox = ({ k }: { k: string }) => (
-        <label className="flex cursor-pointer items-center gap-2.5 text-sm text-white/70 hover:text-white transition-colors">
-            <input
-                type="checkbox"
-                checked={selected.includes(k)}
-                onChange={() => toggle(k)}
-                className="h-4 w-4 accent-primary"
-            />
-            {LABELS[k] ?? k}
-        </label>
-    );
-
     return (
         <div className="rounded-2xl border border-amber-500/20 bg-white/[0.02] p-8 shadow-lg">
             <h2 className="font-serif text-2xl font-bold mb-2 text-foreground">Sync Content From Code</h2>
@@ -92,14 +98,14 @@ export default function SeedDefaultsPanel() {
             </p>
 
             <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="flex flex-col gap-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/40">Page content</span>
-                    {PAGE_KEYS.map(k => <Checkbox key={k} k={k} />)}
+                <div role="group" aria-labelledby={`${groupId}-pages`} className="flex flex-col gap-3">
+                    <span id={`${groupId}-pages`} className="text-xs font-bold uppercase tracking-widest text-white/50">Page content</span>
+                    {PAGE_KEYS.map(k => <Checkbox key={k} label={LABELS[k] ?? k} checked={selected.includes(k)} onChange={() => toggle(k)} />)}
                 </div>
-                <div className="flex flex-col gap-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/40">Configuration</span>
-                    {CONFIG_KEYS.map(k => <Checkbox key={k} k={k} />)}
-                    <p className="mt-1 text-xs leading-relaxed text-white/30">
+                <div role="group" aria-labelledby={`${groupId}-config`} className="flex flex-col gap-3">
+                    <span id={`${groupId}-config`} className="text-xs font-bold uppercase tracking-widest text-white/50">Configuration</span>
+                    {CONFIG_KEYS.map(k => <Checkbox key={k} label={LABELS[k] ?? k} checked={selected.includes(k)} onChange={() => toggle(k)} />)}
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">
                         Off by default — these hold contact details and SEO text you maintain by hand.
                     </p>
                 </div>
@@ -116,7 +122,7 @@ export default function SeedDefaultsPanel() {
             <button
                 onClick={run}
                 disabled={isPending || !selected.length}
-                className="flex items-center gap-2 rounded-lg border border-amber-500/40 px-6 py-3 text-sm font-bold text-amber-300 transition-all hover:bg-amber-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 rounded-lg border border-amber-500/40 px-6 py-3 text-sm font-bold text-amber-300 transition-colors hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {isPending ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                 {isPending ? "Syncing..." : `Sync ${selected.length} page(s) from code`}
@@ -124,12 +130,15 @@ export default function SeedDefaultsPanel() {
 
             {/* An error is role="alert" and a success role="status"
                 (docs/DESIGN.md §6). Success is text-accent: text-primary as
-                text on this dark panel fails AA (DESIGN.md §2). */}
-            {result && (
-                <p role={result.ok ? "status" : "alert"} className={`mt-4 text-sm ${result.ok ? "text-accent" : "text-red-400"}`}>
-                    {result.message}
-                </p>
-            )}
+                text on this dark panel fails AA (DESIGN.md §2). Both regions
+                stay mounted (T-011), so a screen reader hears each result;
+                an empty one takes no space. */}
+            <p role="status" className="mt-4 text-sm text-accent empty:mt-0">
+                {result?.ok ? result.message : null}
+            </p>
+            <p role="alert" className="mt-4 text-sm text-red-400 empty:mt-0">
+                {result && !result.ok ? result.message : null}
+            </p>
         </div>
     );
 }
