@@ -1,0 +1,36 @@
+# Wave 4d (T-030), 2026-10-07: scratchpad harness output, local paths scrubbed.
+
+== REAL production (+AX, screenshots): 71/71 checks pass
+
+== REAL development, StrictMode: 67/67 checks pass
+AX 360-topbar: 3 controls, 0 unnamed; navigation landmarks: []; button "Menu", button "A page button", textbox "A page field"
+AX 360-menu-open: 14 controls, 0 unnamed; navigation landmarks: ["Admin"]; button "Menu", link "Dashboard", link "Homepage", link "Who We Are", link "What We Do", link "Products", link "Global Partner", link "Sustainability", link "Careers", link "Reports (on /sustainability)", link "Life at Fashion Asia", link "Submissions", link "Contact & Settings", button "Sign Out"
+AX 1440-sidebar-current: 15 controls, 0 unnamed; navigation landmarks: ["Admin"]; button "A page button", textbox "A page field", link "Dashboard", link "Homepage", link "Who We Are", link "What We Do", link "Products", link "Global Partner", link "Sustainability", link "Careers", link "Reports (on /sustainability)", link "Life at Fashion Asia", link "Submissions", link "Contact & Settings", button "Sign Out"
+CAUGHT R-route a route change while open doesn't close the menu: 3 failing checks; failing: N6d,N6e,N6f
+CAUGHT M1 hook: no inert set: 6 failing checks; failing: N4a,N4b,N6b,N6c,N12a,P1
+CAUGHT M2 hook: focus not returned to the toggle on close: 4 failing checks; failing: N6d,N7b,N8b,P4
+CAUGHT M3 hook: Tab doesn't wrap (no Tab handling): 2 failing checks; failing: N6b,N6c
+CAUGHT M4 hook: Shift+Tab doesn't wrap from the toggle: 1 failing checks; failing: N6c
+CAUGHT M5 hook: Escape doesn't close: 15 failing checks; failing: N7a,N7b,N7c,N7d,N13,N13b,N12a,N12b,N8a,N8b,N8c,N14,P3,P4,P5
+CAUGHT M6 hook: no focus on open: 4 failing checks; failing: N3c,N6b,N6c,P1
+CAUGHT M7 hook: closeWhen ignored: 2 failing checks; failing: N11b,N14
+CAUGHT M8 hook: removes every inert on close, not just its own: 1 failing checks; failing: N14
+CAUGHT M9 hook: inert never removed: 9 failing checks; failing: N6d,N7c,N13,N13b,N12b,N8b,N11b,P4,P5
+CAUGHT M10 hook: keydown listener left behind on close: 3 failing checks; failing: N13,N13b,P5
+CAUGHT M11 hook: effects re-run whenever onClose changes: 1 failing checks; failing: P2
+CAUGHT M12 nav: /admin matches every path: 11 failing checks; failing: N8c,N9,N10,D3
+CAUGHT M13 nav: nested paths aren't current: 2 failing checks; failing: N9
+CAUGHT M14 nav: prefix match without the / boundary: 1 failing checks; failing: N9
+CAUGHT M15 nav: no aria-current: 10 failing checks; failing: N8c,N9,N10,D3
+CAUGHT M16 nav: current state by colour alone (no bar, no weight): 2 failing checks; failing: N10,D3
+CAUGHT M17 nav: plain <a> links instead of next/link: 1 failing checks (threw); failing: N17 | Error: eval failed: ReferenceError: __t is not defined
+CAUGHT M18 nav: a menu-link click doesn't close it: 2 failing checks; failing: N6g,N6h
+CAUGHT M19 nav: no scroll lock: 3 failing checks; failing: N5b,N5c,N12a
+CAUGHT M20 nav: scroll lock on <body> instead of <html>: 3 failing checks; failing: N5b,N5c,N12a
+CAUGHT M21 nav: aria-controls target only in the page while open: 3 failing checks (threw); failing: N1,N16,N17 | TypeError: Cannot read properties of null (reading 'join')
+CAUGHT M22 nav: no aria-expanded: 19 failing checks; failing: N1,N3b,N6d,N6e,N6f,N6g,N6h,N7a,N13b,N12a,N12b,N8a,N11a,N11b,N14,G3,G4,G5,G6
+CAUGHT M23 layout: main without id=admin-main (nothing made inert): 10 failing checks (threw); failing: N4a,N4b,N6b,N6c,N6d,N7c,N12a,N12b,N8b,N11b | Error: eval failed: TypeError: Cannot set properties of null (setting 'inert')
+
+MUTANTS: 24/24 caught
+
+SUMMARY {"prod":0,"dev":0,"mutants":"24/24"}

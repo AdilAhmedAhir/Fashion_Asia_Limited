@@ -2472,6 +2472,150 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 **Actions taken:** edited only `docs/SECURITY.md` (this entry) and left it uncommitted. No build, no server, no test run and no request to any server.
 
 
+### 🔒 CSO Audit — 2026-10-07 — ticket-review:Wave 4d (T-030)
+
+**Scope:** Dispatched by the orchestrator (Wave 4d) under the lean protocol (DECISIONS 2026-10-06). It covers `git diff f145abb..a8a3fdd` on `wave-4d-admin-nav`, where `f145abb` is `main` with Wave 4c merged.
+- **Commits:** `8b718dd` (the hook) and `a8a3fdd` (the nav), both authored and committed by `happierbangladesh`, each with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+- **Files:** exactly 4d's Touches list: the new `src/lib/use-overlay-menu.ts`, the new `"use client"` `src/app/admin/(dashboard)/AdminNav.tsx`, and the rewritten `src/app/admin/(dashboard)/layout.tsx`.
+- **Why `/cso` reviews 4d:** the admin shell renders Sign Out (the Wave 4 contract's "Split and reviewers", under T-034).
+- **Method:** static, from the diff, the files at `a8a3fdd`, and the builder's build (`BUILD_ID` `QiNB_UVNyAqxfeCyvHZvs`; not rebuilt). That build holds 4d: the client chunk `053hnxw0lo74q.js` carries AdminNav's `admin-menu`, `#admin-main` and `(min-width: 768px)`, and the compiled server layout carries `a8a3fdd`'s exact Sign Out classes.
+
+**1. Client boundary: ✅**
+- **`layout.tsx` has no directive, so it's still a server component.**
+  - It imports `logoutAction` (its only action, as on `main`), `LogOut` and `./AdminNav`.
+  - It builds the Sign Out `<form action={logoutAction}>` itself and hands it to `AdminNav` as the `signOut` ReactNode.
+- **`AdminNav.tsx` imports only `react`, `next/link`, `next/navigation`, `lucide-react`, `BrandLogo` and the hook.** The hook imports only `react`. Neither imports a Server Action, `@/lib/supabase/*` or `@/lib/settings-read`.
+- **No new module crosses into the client.** `BrandLogo` was already `"use client"`, imports only `next/image`, and already ships with `Header`, `Footer` and the login page.
+- **The build agrees:**
+  - The AdminNav chunk (35,166 B) has 0 `createServerReference`, `callServer`, `$ACTION`, `fetch(`, cookie or Web Storage access. It holds no "logout" or "Sign Out" text: the form arrives in the RSC payload, not in client code.
+  - `logoutAction`'s id (`002412103231…`, from `server-reference-manifest.json`) is in 0 of the 49 static files, so no client module imports it. Its body (`auth.signOut()`, then `redirect("/admin/login")`) exists only in `.next/server/chunks/ssr/_1os_du0._.js`, behind `registerServerReference(…, "002412103231…", null)`.
+  - All 49 static files have 0 hits for:
+    - the Supabase client: `createBrowserClient`, `createServerClient`, `@supabase`, `supabase.co`/`.in`, `GoTrue`, `/auth/v1`, `/rest/v1`, `/storage/v1` and `x-client-info`;
+    - `auth.signOut`, `signInWithPassword`, `readSettingsForEditor` and `site_settings`;
+    - `process.env`, and every env var name `src` uses (`CRON_SECRET`, `NEXT_PUBLIC_SUPABASE_*`, `NEXT_PUBLIC_SITE_URL`);
+    - JWT shapes, `sb_publishable_`, `sb_secret_`, and every `stack.json` `secretPatterns` entry.
+- **The diff's added lines have 0 secret-pattern hits.**
+
+**2. Sign Out: ✅ same mechanism as `main`**
+- **One server-built element, placed twice.**
+  - The compiled layout is `jsx(AdminNav, { signOut: jsx("form", { action: logoutAction, children: <button type="submit"> }) })`.
+  - `AdminNav` places `{signOut}` in the phone panel (`hidden` until opened, and `md:hidden`) and in the sidebar (`hidden md:flex`), so at most one copy shows at any width.
+  - Both copies are the same form with the same registered reference, so either posts to `logoutAction` as `main`'s single form did: a POST to the current page carrying Next's action id.
+- **No new logout path.** The diff adds no route, endpoint or `GET` handler, and no link or `location` change logs out. `navItems` has no logout entry.
+- **CSRF is unchanged.** It's still a POST-only Server Action behind Next's Origin check, and `next.config.ts` (`a44a56d9…`) and `auth-actions.ts` (`b8b822df…`) are both 0-byte.
+- **Not a security control, noted for `code-reviewer`:** both copies are real form submits, so T-034's capture-phase `submit` listener on `window` sees either one.
+
+**3. The auth gate: ✅**
+- **0-byte against `main`:** `src/middleware.ts`, and `src/lib/supabase/client.ts`, `middleware.ts` and `server.ts` (hashes under Bindings). The matcher still skips only `_next/static`, `_next/image`, `favicon.ico`, `api/keep-alive` and image suffixes, so every `/admin` page still passes through the gate.
+- **No page or layout newly re-checks or skips the session.**
+  - `layout.tsx` is the only admin file changed. It reads no session (as on `main`) and adds no `dynamic`, `revalidate` or other route export.
+  - The middleware stays the only page gate. RLS and the actions' own session checks still gate the data.
+- **The nav renders only inside `(dashboard)`.** The prerendered `/admin/login` HTML has 0 hits for `admin-menu`, "Super Admin", "Sign Out" or the logout id.
+- **`navItems` is byte-identical to `main`'s:** 32 lines, 12 links, and the same block sha256 (`edb7b9d13cdc11d1…`). No link was added, removed, reordered or relabelled.
+
+**4. No new sink: ✅**
+- **The three files have 0 sinks:** no `dangerouslySetInnerHTML`, `innerHTML`, `outerHTML`, `insertAdjacentHTML`, `eval`, `new Function`, `srcdoc`, `document.write`, `window.location` or `process.env`.
+- **Every `href` is a `navItems` constant.** `usePathname()` is only compared in `isCurrent`. It sets `aria-current="page"` and the current-page classes, and is never written into an attribute or URL.
+- **The hook's DOM inputs are constants from `AdminNav`:** the `#admin-main` selector and the `(min-width: 768px)` query.
+  - It focuses elements in the panel or the toggle, and sets or clears `inert` only on elements it marked.
+  - It adds one `keydown` listener while open.
+  - It has no network, storage, timer or navigation.
+- **The build's leftovers are the framework's.** Its 2 `dangerouslySetInnerHTML` hits are React DOM runtime chunks, not the AdminNav chunk. The AdminNav chunk's one `location.replace` is `next/link`'s own handler for non-local URLs, and every `href` it receives is a constant `/admin…` path.
+
+**5. T-026's client invariants for `layout.tsx`: ✅ all hold.**
+- **1:** no Server Action beyond `logoutAction`, which it already imported. `AdminNav` and the hook import none.
+- **2:** nothing from `@/lib/settings-read` or `@/lib/supabase/*`.
+- **3:** it renders no error text.
+- **4:** no raw-HTML sink.
+- **5 to 7:** untouched. The diff doesn't open `CategoryProductsManager`, the editors, or `products/*`/`business/*`.
+- **None of the contract's security re-review triggers has fired.**
+  - The layout is still a server component, no client file imports an action or Supabase, and the links are unchanged.
+  - The hook does item 19's list and nothing more. The scroll lock is `AdminNav`'s own (item 22) and sets only `<html>`'s `overflow`.
+
+**6. As another user: carried over by byte identity.**
+- No live test was run: this pass has no sign-in, no server and no request, by the owner's rules.
+- The diff changes no gate, action or data path. The last live gate result (T-026's 49 anonymous probes) is bound to `src/middleware.ts` and `src/lib/supabase/*`, which are 0-byte here.
+- A second signed-in user is still N/A: there's one role (R1 / SEC-HIGH-2).
+
+**7. New finding**
+- 🟢 **SEC-INFO-48 — the admin route map is now in a public static chunk.** Contract item 20 moves `navItems` into a client component. So the 12 admin paths, their labels, and "Super Admin"/"Secure Session" now sit in the AdminNav client chunk (`/_next/static/chunks/053hnxw0lo74q.js` at `a8a3fdd`, `08ttrkoaxemcr.js` at `edff562`; the name changes with each build). `_next/static` is outside the middleware matcher, so anyone who finds the chunk's name can fetch it without a session. No other static chunk carries these paths.
+  - **Why it's informational:** these are route names only, with no data, action id or key. Every path stays gated, `robots.ts` already publishes `/admin`, and admin client code (with 24 action ids, per the Wave 1 entry) was already public.
+  - **Accepted; no ticket. Guardrail:** nothing secret, user-specific or role-specific goes into `AdminNav` or `navItems`. That means no "unlisted" admin path relied on for obscurity, no signed-in email, and no role flag.
+
+**Bindings (sha256 at `a8a3fdd`):**
+- **Newly bound:**
+  - `src/app/admin/(dashboard)/layout.tsx` `f59aa5a267c896ce9e74b4457dc42e11cb9ce4da7483e3342be8314df8eb16dc` (`main`: `84da9f73bc5ae833…`; superseded at `edff562` by `817b002d29f68034…`, see the re-bind below). T-026 bound it by invariants only. It now carries the Sign Out wiring, so it's bound by hash too, and it must still keep those invariants.
+  - `src/app/admin/(dashboard)/AdminNav.tsx` `a41ecad1cf88032b4599ec9a1b9700ca8954be821476eeabfee1201702d4e620` (superseded at `edff562` by `dd00bffb9aaa484b…`)
+  - `src/lib/use-overlay-menu.ts` `eabaca484950644fb9c84204097bdb735d4317e4271a44fc05da735288f1b207` (superseded at `edff562` by `3bbc4bd3bb821ebc…`)
+  - **Class-only rule:** a later change to one of these three that alters only class-name strings, shown by blanking them as at `4abe008`, may be re-bound by that check alone. Anything else comes back to `/cso`.
+- **Reconciled: `MediaPublishForm.tsx`.**
+  - Its Wave 3a re-bind (`e569e6c0…`) lapsed on `main` at 4b's `84e4da3` (T-027). The contract's voided list didn't name it.
+  - Checked by the `4abe008` method: byte-identical to `4abe008`'s with every `className` value blanked, with 21 `className` attributes before and after.
+  - **Re-bound:** `1402beb299415bbb9368f6f5f175394a5288500fbc441f709c9ed876a2ae55ca`.
+- **Noted:**
+  - `SubmitButton.tsx` (Wave 3a: recorded, not bound) changed at 4a's `82067bd` (T-020) in its two class strings only. It's now `0e97d9c059750928…`.
+  - The public `products/[category]/page.tsx` (Wave 1's `bc243115…`) was voided at 4b, as the contract planned. It's now `b6b09179ca148947…`, 0-byte here; 5a re-binds it.
+- **Unchanged.** 105 tracked files were hashed at both `f145abb` and `a8a3fdd`: `src/`, `db/`, `next.config.ts`, `package*.json`, `supabase-schema.sql` and `tailwind.config.ts`. Only the three 4d files differ. Each standing server-file binding re-hashes equal at `a8a3fdd`:
+  - **actions:** `settings-actions.ts` `b4c3da2ec3c0a894…`, `jobs-actions.ts` `bd4387b1df2eb4c7…`, `products-actions.ts` `7e8a1069828c472e…` and `media-actions.ts` `dba76e48cac79f61…`;
+  - **lib:** `action-errors.ts` `b0be0a48a81ce6a8…`, `site-content.ts` `9939d4f36731bd7f…`, `settings-read.ts` `cc5c8a2c06d9acb0…`, `upload-limits.ts` `3bff92b6df8f005d…` and `nav.ts` `507e5c62c5f6347f…`;
+  - **pages:** the admin `products/page.tsx` `969a00dea762e782…` and `business/page.tsx` `87071736c1516fcb…`, and the public `products/page.tsx` `238f87491891667b…`;
+  - **components:** `ProductGrid.tsx` `407c3a38fec9b7b2…`, `ProductCard.tsx` `7c2f81e96140ad02…` and `MediaDeleteButton.tsx` `e1042edbc5b8ec4d…`;
+  - **config:** `sitemap.ts` `105e10253fdd12fb…`, `next.config.ts` `a44a56d9f997bb13…`, `package.json` `26068c14d0df4a0c…` and `package-lock.json` `6a026457868784a9…`.
+- **Recorded for the gate** (0-byte; the first hashes on file):
+  - `src/middleware.ts` `6d2c77576d75d3894df3a7b30e9d3bfaa01b3b9bafead451c6100d2c863d61d9`
+  - `src/lib/supabase/client.ts` `089fde0659be65810421ede9cec60a72c649d41d27943b351c4ef1444851d730`
+  - `src/lib/supabase/middleware.ts` `7693ad81921b0165fbf62cf630eb22dada0c332646eefaf0517b4f86da6aa03e`
+  - `src/lib/supabase/server.ts` `e0d8444a65660aefb9dbeac27bfeb49bd001066c026d3b4c247cfe040e144b57`
+  - `src/app/actions/auth-actions.ts` `b8b822df5be42905d97e05d7c4fd5a92ae7b3fa3aebd0e26276c35511b774bfe`
+  - `src/app/robots.ts` `1c283fdb3e3b24a0…` and `src/app/api/keep-alive/route.ts` `bbba775344720107…`
+
+**Re-bind at `edff562`** (design-review's FIX FIRST: "fix(admin): space the nav groups, 44 px phone targets, close the menu on any route change (T-030)").
+- **The commit** is authored and committed by `happierbangladesh`, with exactly one `Co-Authored-By: Claude Opus 5.5` line. It's the only commit after `a8a3fdd`, and it touches only the three bound files; `main..edff562` still lists only those three.
+- **`layout.tsx`:** the Sign Out button's classes only.
+  - It's byte-identical to `a8a3fdd`'s once every `className` value is blanked, with 4 `className` attributes before and after.
+  - `<form action={logoutAction}>`, the `type="submit"` button and the `signOut` prop are unchanged, and it's still a server component.
+- **`AdminNav.tsx`:** class tokens, plus a close-on-route-change.
+  - **The classes:** `py-3 md:py-2.5` and `motion-safe:transition-colors` in `linkClass`, a `hover:text-foreground`, the group spacing moved from the label to the group's `<div>`, and three `text-white` → `text-foreground`.
+  - **The new logic:** `const [menuPath, setMenuPath] = useState(pathname)`, and, when `menuPath !== pathname` during render, `setMenuPath(pathname)` and `setOpen(false)`. It only compares the path and closes the menu. There's no sink, navigation, network or new prop, and the hook's cleanups release `inert` and the listener as before.
+- **`use-overlay-menu.ts`:** a JSDoc change only. It's identical to `a8a3fdd`'s once comment lines are dropped.
+- **Unchanged in all three:** the imports (3, 6 and 1, byte-identical), the directives, 0 sinks, and `navItems`, which is still byte-identical to `main`'s (`edb7b9d13cdc11d1…`).
+- **The rebuilt build agrees** (`BUILD_ID` `Rs8yT2HIl40B3m69x9LwB`, 49 static files):
+  - The AdminNav chunk is now `08ttrkoaxemcr.js` (35,266 B), carrying `edff562`'s classes. It has 0 server-action stubs, 0 fetch, cookie or storage access, and no logout text.
+  - All 49 static files have 0 hits on item 1's patterns, and `logoutAction`'s id is in none.
+  - The compiled server layout is still `signOut: jsx("form", { action: logoutAction, … })`, behind `registerServerReference(…, "002412103231…", null)`.
+  - The two `dangerouslySetInnerHTML` hits are the same React DOM runtime chunks.
+  - The nav still doesn't render on `/admin/login`.
+- **Re-bound at `edff562`** (replacing the three `a8a3fdd` hashes above):
+  - `src/app/admin/(dashboard)/layout.tsx` `817b002d29f68034e4f68682e3b9dd251ecfa9006965d7d202ed5ab9a9bb14d2`
+  - `src/app/admin/(dashboard)/AdminNav.tsx` `dd00bffb9aaa484be99b70ddceffdabcd9022183ada9b43d248592bd3a197179`
+  - `src/lib/use-overlay-menu.ts` `3bbc4bd3bb821ebc06e5e5232f7748886199d8f6456afbb5e063d33a9187c8bc`
+- **Every other binding above stands.** `main..edff562` touches no other file.
+
+**Verdict:** ✅ **Wave 4d (T-030) cleared, and it stays cleared at `edff562`.** No 🔴, 🟠 or 🟡, and one new 🟢 (SEC-INFO-48, accepted). The only server file it changes is the admin layout, and only in markup and composition. It changes no authorization surface.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** Wave 4d may merge once `code-reviewer` and `design-reviewer` clear and `/qa` has written the owner's manual admin checklist. Conditions:
+- **The three 4d files are bound at `edff562`'s hashes (the re-bind above).** A change before merge that goes beyond the class-only rule lapses that file's clearance until `/cso` re-reviews it.
+- **These come back to `/cso`:**
+  - the layout gaining `"use client"`, a session read or skip, or a route export;
+  - Sign Out moving into client code, or gaining a link, a `GET`, a `fetch` or a second action;
+  - a nav file importing an action, `@/lib/supabase/*` or `settings-read`;
+  - any `navItems` change;
+  - anything user- or role-specific rendered by `AdminNav` (SEC-INFO-48's guardrail);
+  - the hook doing more than item 19.
+- **Pre-deploy position, unchanged:**
+  - **SEC-HIGH-2 (🟠) still blocks the deploy.** It closes only when the owner has turned sign-ups OFF, a read-only `GET /auth/v1/settings` reads `disable_signup: true`, and the owner has reviewed Authentication → Users. The latest checkpoint (2026-10-07) still says sign-ups are ON. This pass sent no request to check.
+  - **4d doesn't raise it.** SEC-INFO-32's guardrail holds: there's no anon key, JWT shape or Supabase host in any of the 49 static files. So SEC-HIGH-2 stays 🟠, not 🔴.
+  - **Production is waiting on it.** Per §5, production (`e8eace1`) still lacks the fixes that are closed in code, including SEC-HIGH-1's `next@16.1.6` and SEC-MED-15, until a deploy. So the owner's sign-up switch now gates all of them.
+  - **After the deploy:** O1 is recommended right after it. Deploying needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md` (this entry, including the `edff562` re-bind, and its §5 row, SEC-INFO-48), and left it uncommitted.
+- Ran read-only `git`, file reads, and greps over the existing `.next`.
+- Did not: build, start a server, sign in, submit Sign Out, call a Server Action, or send any request to the live site or Supabase; nothing on `:3001`.
+- Never read `.env*`: env var names came from the `process.env.*` references in `src`.
+
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -2566,6 +2710,7 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-46 — `isAllowedImageUrl` admits `"`, `'`, `<`, `>`, `(` and `)` in an `https://` address. No sink today: renders are React-escaped attributes only, and the one `dangerouslySetInnerHTML` is a static style | Not filed — hardening note | Open (info). Revisit if a CSS `url()` or raw-HTML sink for image addresses is added |
 | SEC-INFO-47 — the Media Center's Storage clean-up sees saved references only. An address in an unsaved draft, or saved during the gap between the checks and the removal, can lose its file | Not filed — accepted residual | Open (info). It needs concurrent signed-in staff, and it's recoverable by re-uploading |
 | O1 — the live DELETE policies on `media_assets` and on Storage have never been exercised by an agent (Wave 3a CSO entry) | Owner row **O1** | Open, not a merge condition. Recommended right after the deploy, on a ZZ-TEST photo. MEDIA_DELETE_REFUSED means an owner SQL step (HARD STOP) |
+| SEC-INFO-48 — T-030 (Wave 4 contract item 20) puts `navItems`, the 12 admin paths and their labels, in the public AdminNav client chunk (`08ttrkoaxemcr.js` at `edff562`; the name changes with each build). `_next/static` is outside the middleware matcher (Wave 4d CSO entry) | No ticket; accepted | Open (info). Route names only, with no data, action id or key, and every path stays gated. Guardrail: nothing secret, user-specific or role-specific in `AdminNav`/`navItems`, and no admin path that relies on being unlisted |
 
 ## 6. Secrets log
 
