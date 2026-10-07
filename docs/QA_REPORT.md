@@ -2695,3 +2695,14 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **Not run:** MUST-ADD 8's Chrome canvas exports and MUST-ADD 9's Chrome natural sizes (the weekly usage limit; DECISIONS 2026-10-07).
 - **Design fix `4abe008`:** class-only, matching `design-reviewer`'s exact strings. The orchestrator confirmed `file:text-accent`, `motion-safe:transition-opacity` and `focus-visible:ring-accent` are in the built CSS; design had confirmed F1–F4 in an in-memory re-render.
 - **Verdict: PASS.**
+
+## Static Pass — Wave 3b (T-009, T-010) — 2026-10-07 (`code-reviewer` light QA and `security-reviewer`, under the lean protocol)
+- **Target:** branch `wave-3b-editors`.
+  - `f8e29ed` (T-009): `upload-limits.ts` (item 7) and `ImageUploadField.tsx`.
+  - `367a6ab` (T-010): `SettingsForm.tsx` (`ObjectListEditor`), `ImageUploadField.tsx`, `ProductsClient.tsx` and `HomepageSettingsClient.tsx`.
+- **The builder's suites:** UI 476/476 (238 on a production bundle, 238 in StrictMode dev) in real Chrome, with 0 React warnings and 0 network attempts. It covers all 8 list editors and 49 text boxes (MUST-ADD 13), the Save guard on both pages (MUST-ADD 11), payloads byte-identical to `main` on Products, Homepage and Who We Are (MUST-ADD 12), and the 4 upload-field consumers (MUST-ADD 14). Item 7's unit test 19/19; mutants 19/19; T-016's harness 561/561 after each commit (MUST-ADD 15).
+- **Wave 3a's harness on the final tree:** server 202/202, UI 80/80, reader 153/153. The evidence has two runs because the reader test copied the browser's refusal message straight out of `ImageUploadField.tsx`, and T-009 moved that text into `describeDimensionLimit`, as the contract requires. The first run (`wave3a-final.log`) therefore stopped with no summary line; the re-run reads the template from `main` (`wave3a-reader-final.log`, 153/153), and item 7's unit test confirms the shared message is byte-identical to the old text.
+- **`code-reviewer`:** re-ran every suite once (476/476, 19/19, 19/19, 561/561) and added 9 mutants of its own. 5 survived: R7 is equivalent (the layout effect makes the same report), and the other 4 were test gaps. So it ruled FIX FIRST for tests only, then wrote 11 scenarios in a copy of the harness: save-then-edit on Products (R8), an overtaken pick released with a throw or a failure on both pages and in both orders (R2), and two picks sent in the same task (R1). HEAD passed 64/64 in each mode, and the whole copied suite 300/300 in each. R8, R2 and R1 are now caught. R5 (the same object listed twice) stays untested; no page can produce it.
+- **`security-reviewer`:** static. `upload-limits.ts` is re-bound at `3bff92b6…`, all of T-016's and T-026's client invariants hold, and only the five listed files changed.
+- **Not run:** `/design-review` and any screenshot (DECISIONS 2026-10-07). The admin is NOT VISUALLY VERIFIED against the live login.
+- **Verdict: PASS.**
