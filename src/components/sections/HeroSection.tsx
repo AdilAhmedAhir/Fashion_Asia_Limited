@@ -1,4 +1,5 @@
 import HeroOverlay from "./HeroOverlay";
+import AutoplayVideo from "@/components/ui/AutoplayVideo";
 
 interface HeroSectionProps {
     kicker?: string;
@@ -11,14 +12,10 @@ interface HeroSectionProps {
 export default function HeroSection({ kicker, titleTop, titleAccent, facts, stats }: HeroSectionProps) {
     return (
         <section className="relative h-screen min-h-[680px] w-full overflow-hidden bg-black">
-            {/* Background video */}
-            <video
+            {/* Background video: held on its poster with reduced motion on */}
+            <AutoplayVideo
                 src="/videos/hero.mp4"
                 poster="/sequence/hero/poster.webp"
-                autoPlay
-                muted
-                loop
-                playsInline
                 aria-hidden="true"
                 className="absolute inset-0 z-0 h-full w-full object-cover"
             />
@@ -32,6 +29,8 @@ export default function HeroSection({ kicker, titleTop, titleAccent, facts, stat
                 className="absolute inset-0 z-[1]"
                 style={{ background: "radial-gradient(circle at 50% 45%, transparent 0%, rgba(0,0,0,0.45) 100%)" }}
             />
+            {/* Keeps the headline's accent word and the stats at AA over every video frame */}
+            <div aria-hidden="true" className="absolute inset-0 z-[1] bg-background/30" />
 
             {/* Headline / stats / scroll indicator */}
             <div className="hero-overlay-wrapper absolute inset-0 z-10 flex flex-col items-center justify-center">

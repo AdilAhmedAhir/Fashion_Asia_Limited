@@ -2788,3 +2788,20 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **Mutants:** 25/25 caught by the source checks. In a runtime mutant build, an unquoted `form-action` fails every header row, and keeping the `isMobile` gate leaves desktop behind the curtain forever.
 - **Owner checks (optional; O1 needs a sign-in):** O1 sign in and sign out on :3101; O2 and O3 framing; O4 the curtain on real devices after the deploy; O5 sign-ups OFF.
 - **Verdict: PASS.**
+
+## Static and Local Live Pass — Wave 5b (T-028, plus the hero overlay AA) — 2026-10-08 (`code-reviewer` light QA and `design-reviewer`)
+- **Target:** branch `wave-5b-motion`, commits `2f5b093`, `0a5bf42`, `1768926`, `f65a8c2` and the fix `01245bf`; 27 files. Baselines came from `main`'s build before any edit. Every page was rendered in its own top-level tab per width (PM15), with `Emulation.setEmulatedMedia`.
+- **Reduced motion on** (`/`, `/what-we-do` and `/products` at 360 and 1440 px), 6/6 pass:
+  - no `lenis` class;
+  - 0 transform or infinite animations, and 0 GSAP style writes;
+  - videos paused on their posters;
+  - the preloader unmounted, with the page scrolling at 200 ms and 0 `scrollTo` calls;
+  - hover transforms stay `none`.
+- **Turning the setting off mid-visit** (the review's P1 probe): after the fix, no preloader layer comes back and nothing blocks clicks. The hero animation and video resume, which is correct for a visitor with no preference.
+- **No setting:** it matches `main`. Lenis, GSAP activity (about 730 writes on `/`), transform-animated elements (114, 32 and 29), videos, hover and the marquee are unchanged, and the preloader timing is within ±16 ms.
+- **The hero overlay** (6 frames, the worst 5%, shadows counted):
+  - the tag 7.69:1, the stat labels 8.14:1 or more, the facts line 6.58:1 or more, and "Scroll to explore" 4.95:1;
+  - the accent word 5.16:1 or more, and the stat values 3.85:1 or more, against 3:1 needed for large text.
+- **Mutants:** 8/8 killed (MotionConfig, Lenis, both `matchMedia` calls, two `motion-safe:` prefixes, the video pause, the preloader's early return). The review also killed them again by rewriting the served bundles, with no repo edit.
+- **NOT VISUALLY VERIFIED:** 768 and 1024 px, and a warm video cache with cold JavaScript.
+- **Verdict: PASS.**

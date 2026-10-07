@@ -17,8 +17,9 @@ export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
 
     const handleApply = (jobTitle: string) => {
         setPosition(jobTitle);
-        // Scroll to form section
-        formSectionRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+        // Scroll to form section: an instant jump with reduced motion on (T-028)
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        formSectionRef.current?.scrollIntoView({ behavior: prefersReducedMotion ? "auto" : "smooth", block: "start" });
     };
 
     return (

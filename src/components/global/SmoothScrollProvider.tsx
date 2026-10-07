@@ -2,6 +2,7 @@
 
 import { useEffect, useRef } from "react";
 import Lenis from "lenis";
+import { MotionConfig } from "framer-motion";
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
@@ -22,7 +23,9 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
     useEffect(() => {
         // Skip Lenis on touch devices — native scroll works better with GSAP on tablets/phones
         const isTouch = "ontouchstart" in window || navigator.maxTouchPoints > 0;
-        if (isTouch) return;
+        // Reduced motion: keep native scrolling, checked once at mount (T-028)
+        const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        if (isTouch || prefersReducedMotion) return;
 
         const lenis = new Lenis({
             duration: 1.2,
@@ -51,5 +54,7 @@ export default function SmoothScrollProvider({ children }: SmoothScrollProviderP
         };
     }, []);
 
-    return <>{children}</>;
+    // reducedMotion="user": with reduced motion on, framer-motion skips transform
+    // animations (ScrollReveal fades without sliding). The layout stays a server component.
+    return <MotionConfig reducedMotion="user">{children}</MotionConfig>;
 }

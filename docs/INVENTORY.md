@@ -4,7 +4,7 @@
 
 > **Reuse rubric:** exact match → **reuse** · close (differs by config) → **extend with a variant/prop** · genuinely new → **create** in the right unit, add a one-line `@purpose` comment, regenerate this file. Search here before writing any new component/util/schema, and state your reuse/extend/new choice in the ticket summary.
 
-## src  _(237)_
+## src  _(238)_
 
 | Export | Kind | Purpose | File |
 |---|---|---|---|
@@ -20,6 +20,7 @@
 | `AdminRootLayout` | default function | — | `src/app/admin/layout.tsx` |
 | `ALLOWED_EXTENSIONS` | const | — | `src/lib/upload-limits.ts` |
 | `AllProductsRead` | type | Every product grouped by category, or a failed read that an editor must not mistake for an empty catalog. | `src/app/actions/products-actions.ts` |
+| `AutoplayVideo` | default function | — | `src/components/ui/AutoplayVideo.tsx` |
 | `blankTitleMessage` | function | The message that blocks Save categories while rows are untitled, naming each row (#n). | `src/app/admin/(dashboard)/products/category-draft.ts` |
 | `blankTitleRows` | function | The 1-based row numbers (#n, as the editor labels its rows) of draft categories whose title is blank or has no visible character, which a save would delete or refuse. | `src/app/admin/(dashboard)/products/category-draft.ts` |
 | `BrandLogo` | function | — | `src/components/ui/BrandLogo.tsx` |
@@ -247,4 +248,4 @@
 | `WhoWeWorkWithSettingsPage` | default function | — | `src/app/admin/(dashboard)/who-we-work-with/page.tsx` |
 
 
-_237 exports across 1 unit(s)._
+_238 exports across 1 unit(s)._

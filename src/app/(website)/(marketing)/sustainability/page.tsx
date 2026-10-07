@@ -95,7 +95,7 @@ export default async function SustainabilityPage() {
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
                     {CERTIFICATIONS.map((cert, i) => (
                         <ScrollReveal key={cert.name} delay={0.05 + (i % 4) * 0.08}>
-                            <figure className="flex h-full flex-col items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md">
+                            <figure className="flex h-full flex-col items-center gap-4 rounded-xl bg-white p-6 shadow-sm transition-transform duration-300 motion-safe:hover:-translate-y-1 hover:shadow-md">
                                 <div className="flex h-16 flex-1 items-center justify-center md:h-20">
                                     <img
                                         src={cert.src}

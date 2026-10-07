@@ -96,7 +96,7 @@ export default async function Home() {
                     <div className="mt-12 grid grid-cols-2 gap-4 sm:grid-cols-3 md:mt-16 md:gap-6 lg:grid-cols-4">
                         {CLIENT_LOGOS.map((brand, i) => (
                             <ScrollReveal key={brand.name} delay={0.05 + (i % 4) * 0.08}>
-                                <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md md:h-28">
+                                <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 motion-safe:hover:-translate-y-1 hover:shadow-md md:h-28">
                                     <img
                                         src={brand.src}
                                         alt={brand.name}
@@ -114,7 +114,7 @@ export default async function Home() {
                                 className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                             >
                                 See All Partners
-                                <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+                                <ArrowUpRight className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover:rotate-45" />
                             </Link>
                         </div>
                     </ScrollReveal>

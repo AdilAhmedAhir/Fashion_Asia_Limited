@@ -106,7 +106,7 @@ export default function JobAccordion({ jobs, onApply }: { jobs: Job[]; onApply: 
                                 {/* Apply button */}
                                 <button
                                     onClick={() => onApply(job.title)}
-                                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-bold text-foreground hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/20"
+                                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-bold text-foreground hover:bg-primary/90 motion-safe:hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/20"
                                 >
                                     <Send size={14} /> Apply for this Position
                                 </button>

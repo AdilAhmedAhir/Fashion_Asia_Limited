@@ -14,16 +14,22 @@ export default function ScaleSection({ stats }: Props) {
     const bgRef = useRef<HTMLImageElement>(null);
 
     useGSAP(() => {
-        gsap.to(bgRef.current, {
-            yPercent: 30,
-            ease: "none",
-            scrollTrigger: {
-                trigger: containerRef.current,
-                start: "top bottom",
-                end: "bottom top",
-                scrub: true,
-            }
+        // Parallax only without a reduced-motion preference; otherwise the image
+        // stays still where the CSS puts it. Reverted on unmount (T-028).
+        const mm = gsap.matchMedia();
+        mm.add("(prefers-reduced-motion: no-preference)", () => {
+            gsap.to(bgRef.current, {
+                yPercent: 30,
+                ease: "none",
+                scrollTrigger: {
+                    trigger: containerRef.current,
+                    start: "top bottom",
+                    end: "bottom top",
+                    scrub: true,
+                }
+            });
         });
+        return () => mm.revert();
     }, { scope: containerRef });
 
     return (

@@ -51,7 +51,7 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
                             >
                                 <Link href={link.href} onClick={onClose} className="group flex items-baseline gap-4 w-full">
                                     <span className="font-sans text-sm text-primary/30">{link.num}</span>
-                                    <span className="font-serif text-[clamp(1.75rem,7vw,3.25rem)] font-bold leading-tight text-foreground transition-all duration-300 group-hover:translate-x-2 group-hover:text-accent">
+                                    <span className="font-serif text-[clamp(1.75rem,7vw,3.25rem)] font-bold leading-tight text-foreground transition-all duration-300 motion-safe:group-hover:translate-x-2 group-hover:text-accent">
                                         {link.label}
                                     </span>
                                 </Link>

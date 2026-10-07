@@ -8,6 +8,8 @@ import { motion, AnimatePresence } from "framer-motion";
  *
  * Pure branding animation at every screen width: the progress bar fills on a
  * timer and the curtain opens after 1.5s. No hero frames are preloaded (T-017).
+ * With reduced motion on, its layers are display:none (motion-reduce:hidden), so
+ * it never paints, and its effect unmounts them at once (T-028).
  */
 
 const COMPANY = "FASHION ASIA";
@@ -37,6 +39,13 @@ export default function Preloader() {
     }, []);
 
     useEffect(() => {
+        // Reduced motion: no scroll lock, no scrollTo and no timers (T-028). The hidden
+        // layers are unmounted, so clearing the preference mid-visit can't uncover them.
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            setDismissed(true);
+            return;
+        }
+
         document.body.style.overflow = "hidden";
         window.scrollTo(0, 0);
 
@@ -68,7 +77,7 @@ export default function Preloader() {
                         animate={phase === "complete" ? { y: "-100%" } : { y: 0 }}
                         transition={{ duration: 1, ease: [0.76, 0, 0.24, 1] }}
                         exit={{ y: "-100%", transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] } }}
-                        className="fixed inset-x-0 top-0 h-1/2 z-[9999] bg-[#050505]"
+                        className="fixed inset-x-0 top-0 h-1/2 z-[9999] bg-[#050505] motion-reduce:hidden"
                     />
                     <motion.div
                         key="bottom"
@@ -76,7 +85,7 @@ export default function Preloader() {
                         animate={phase === "complete" ? { y: "100%" } : { y: 0 }}
                         transition={{ duration: 1, ease: [0.76, 0, 0.24, 1] }}
                         exit={{ y: "100%", transition: { duration: 0.8, ease: [0.76, 0, 0.24, 1] } }}
-                        className="fixed inset-x-0 bottom-0 h-1/2 z-[9999] bg-[#050505]"
+                        className="fixed inset-x-0 bottom-0 h-1/2 z-[9999] bg-[#050505] motion-reduce:hidden"
                     />
                     <motion.div
                         key="content"
@@ -84,7 +93,7 @@ export default function Preloader() {
                         animate={phase === "complete" ? { opacity: 0, scale: 1.1 } : { opacity: 1 }}
                         transition={{ duration: 0.6, ease: "easeOut" }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[10000] flex flex-col items-center justify-center pointer-events-none"
+                        className="fixed inset-0 z-[10000] flex flex-col items-center justify-center pointer-events-none motion-reduce:hidden"
                     >
                         <motion.img
                             src="/logo.png"

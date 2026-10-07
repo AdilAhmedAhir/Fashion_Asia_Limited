@@ -100,7 +100,7 @@ function CategoryCard({ category, href }: { category: CategoryCardData; href: st
                 alt=""
                 loading="lazy"
                 decoding="async"
-                className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-700 group-hover:scale-105 group-hover:opacity-90"
+                className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-700 motion-safe:group-hover:scale-105 group-hover:opacity-90"
             />
             <div className="absolute inset-0 bg-scrim" />
             {/* Title and description share one bottom block so the card

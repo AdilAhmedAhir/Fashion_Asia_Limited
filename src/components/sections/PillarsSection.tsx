@@ -42,11 +42,11 @@ export default function PillarsSection() {
                     {pillars.map((pillar, i) => (
                         <ScrollReveal key={pillar.num} delay={0.2 + i * 0.1} className="h-full">
                             <div className={cn(
-                                "group relative flex h-full flex-col overflow-hidden rounded-2xl border transition-all duration-500 hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(14,201,122,0.1)]",
+                                "group relative flex h-full flex-col overflow-hidden rounded-2xl border transition-all duration-500 motion-safe:hover:-translate-y-2 hover:shadow-[0_20px_40px_rgba(14,201,122,0.1)]",
                                 pillar.featured ? "border-primary/50 bg-primary/5 hover:border-primary" : "border-white/10 bg-white/[0.02] hover:border-primary/50"
                             )}>
                                 <div className="relative h-[250px] w-full overflow-hidden">
-                                    <img src={pillar.img} alt={pillar.title} className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    <img src={pillar.img} alt={pillar.title} className="h-full w-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-105" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
                                     <div className="absolute right-4 top-4 flex h-14 w-14 items-center justify-center rounded-full border-2 border-primary bg-primary/20 font-serif text-lg font-bold text-white backdrop-blur-md">
                                         {pillar.num}
