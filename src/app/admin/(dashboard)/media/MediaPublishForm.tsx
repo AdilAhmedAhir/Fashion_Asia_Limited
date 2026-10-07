@@ -68,12 +68,12 @@ export default function MediaPublishForm() {
             <fieldset disabled={isPending} className="contents">
                 <div className="flex flex-col gap-2">
                     <label htmlFor="media-title" className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Title</label>
-                    <input id="media-title" name="title" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none" placeholder="e.g. Factory Floor" />
+                    <input id="media-title" name="title" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus-visible:ring-2 focus-visible:ring-accent focus:outline-none" placeholder="e.g. Factory Floor" />
                 </div>
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="media-type" className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Category</label>
-                    <select id="media-type" name="type" required className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white focus:border-primary focus:outline-none appearance-none">
+                    <select id="media-type" name="type" required className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white focus-visible:ring-2 focus-visible:ring-accent focus:outline-none appearance-none">
                         <option value="gallery">Photo Gallery</option>
                         <option value="news">Press / News</option>
                     </select>
@@ -81,17 +81,17 @@ export default function MediaPublishForm() {
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="media-file" className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Image Upload</label>
-                    <input id="media-file" name="file" type="file" accept="image/*" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none file:mr-4 file:rounded-md file:border-0 file:bg-primary/20 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-primary hover:file:bg-primary/30" />
+                    <input id="media-file" name="file" type="file" accept="image/*" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus-visible:ring-2 focus-visible:ring-accent focus:outline-none file:mr-4 file:rounded-md file:border-0 file:bg-primary/20 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-accent hover:file:bg-primary/30" />
                 </div>
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="media-url" className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Image URL (Fallback if no upload)</label>
-                    <input id="media-url" name="url" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none" placeholder="/images/client/1.jpg or https://..." />
+                    <input id="media-url" name="url" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus-visible:ring-2 focus-visible:ring-accent focus:outline-none" placeholder="/images/client/1.jpg or https://..." />
                 </div>
 
                 <div className="flex flex-col gap-2">
                     <label htmlFor="media-content" className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Text Content (For News)</label>
-                    <textarea id="media-content" name="content" rows={4} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none resize-none" />
+                    <textarea id="media-content" name="content" rows={4} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus-visible:ring-2 focus-visible:ring-accent focus:outline-none resize-none" />
                 </div>
 
                 <div ref={submitArea} className="mt-2 w-full">
@@ -101,7 +101,7 @@ export default function MediaPublishForm() {
                             {error}
                         </p>
                     )}
-                    <p role="status" className="mt-3 text-sm text-primary empty:mt-0">
+                    <p role="status" className="mt-3 text-sm text-accent empty:mt-0">
                         {published ? PUBLISHED : ""}
                     </p>
                 </div>

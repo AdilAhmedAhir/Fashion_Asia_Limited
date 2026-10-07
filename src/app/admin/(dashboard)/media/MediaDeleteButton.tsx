@@ -55,14 +55,14 @@ export default function MediaDeleteButton({ id, title, focusAfterDelete }: { id:
 
     return (
         <>
-            <div className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+            <div className={`absolute right-2 top-2 motion-safe:transition-opacity group-hover:opacity-100 focus-within:opacity-100 ${isPending ? "opacity-100" : "opacity-0"}`}>
                 <button
                     ref={button}
                     type="button"
                     onClick={onDelete}
                     disabled={isPending}
                     aria-label={`Delete ${name}`}
-                    className="rounded-full bg-red-500/80 p-2 text-white hover:bg-red-500 backdrop-blur-sm shadow-lg disabled:cursor-not-allowed disabled:opacity-50"
+                    className="rounded-full bg-red-500/80 p-2 text-white hover:bg-red-500 backdrop-blur-sm shadow-lg disabled:cursor-not-allowed disabled:opacity-50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent"
                 >
                     <Trash2 size={16} />
                 </button>
