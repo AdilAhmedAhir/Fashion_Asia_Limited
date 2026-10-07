@@ -1360,7 +1360,8 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/architect` (confirm the form-state approach and result contract; SEC-MED-9 asks for "its own design pass", the same insertion precedent as T-006/T-008) → `/lead-dev` → `/cso review` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Security-sensitive row, UI), plus a manual checklist for the user
   - **Notes:** Ranked #7. Independent of T-015 (different file, different mechanism).
 
-- [ ] **T-020** — Raise the `text-black`-on-`bg-primary` controls to WCAG AA contrast across the public site and admin
+- [x] **T-020** — Raise the `text-black`-on-`bg-primary` controls to WCAG AA contrast across the public site and admin
+  Done 2026-10-07 in **Wave 4a** (commit `82067bd`; reviews under T-034's done note). Text on solid green is `text-foreground` in every state but disabled, outline states use `text-accent`, no light text sits on `secondary` (now unused in `src`), and `::selection` uses the tokens instead of raw hex. The contrast log is `docs/qa-evidence/T-020/contrast-log.md`: every non-disabled state is at least 7.18:1.
   - **Source:** ui-ux T-004 pass, 2026-09-27: `docs/qa-evidence/T-004/ui-ux/contrast-and-methodology.log` §5 ("text-black on bg-primary ... ~2.77:1 ... EIGHT files ... recommend a dedicated cross-cutting follow-up ticket (bundling with or alongside T-011)"); `docs/MEMORY_BANK.md` T-004 entry ("For `/pm`")
   - **Files** (the log's 8, re-grepped by PM on 2026-09-28): `src/app/admin/login/page.tsx:37` (sign-in button), `src/components/ui/SubmitButton.tsx:16-17` (submit button on all three public forms), `src/components/admin/SettingsForm.tsx:32` (`SettingsHeader` "Save Changes"), `src/components/admin/CategoryProductsManager.tsx:360` ("Add product"), `src/app/admin/(dashboard)/submissions/page.tsx:38` (active tab), `src/app/not-found.tsx:15` (hover state), `src/app/(website)/(marketing)/sustainability/page.tsx:167` (hover state), `src/app/layout.tsx:65` (text-selection highlight)
   - **Flags:** schema-touching: **no** · sensitive: **no** by content (className-only), but two files sit under `src/app/admin/**` · UI: **yes**
@@ -1933,7 +1934,16 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   - **The comment wording** at `settings-actions.ts:262-266` ("strictly later than the one read (1 ms past its millisecond part)", plus "when the stamp parses"), and **the image path placeholder** at `ImageUploadField.tsx:252`, which looks like a real value in an empty add form.
   Source: T-016's contract (`architect-reviewer`, 2026-10-04), from T-026's reviews (QA F4, `code-reviewer`, `design-reviewer`, `security-reviewer`).
   Sequence: `/build` → `/design-review` → `/security-review` → `/qa` → `code-reviewer` → merge. After T-016; then T-010.
-- [ ] **T-034** — Warn before leaving `/admin/products` while a product save is still pending [app:admin][design]
+- [x] **T-034** — Warn before leaving `/admin/products` while a product save is still pending [app:admin][design]
+  Done 2026-10-07, in **Wave 4a** with T-020:
+  - **Commits:** `3d6f745` (T-034: the leave guard, the two nits and 4a item 5's two token changes, all in `CategoryProductsManager.tsx`), `82067bd` (T-020) and `40d4424` (fix: the LEAVE_WHILE_SAVING words now cover Sign Out).
+  - **What changed:** while any product shows "Saving…", closing or reloading the tab asks the browser's leave question, and an in-app link or Sign Out asks first (LEAVE_WHILE_SAVING). Cancel stays on the page; OK leaves, and the queued save still goes out, except after Sign Out, where a waiting follow-up runs signed out and fails unseen (an accepted gap, so the words say the change "may not be saved"). A row shows "Saving…" ahead of "Deleting…", and the notice says "leave a field you've edited". The nine save-queue functions are byte-identical to `main`.
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: SHIP, with five yellow notes. Note 1 (Sign Out) led to the copy fix `40d4424`, re-checked SHIP. Its 6 added checks and 3 mutants became the guard evidence, and the four conditions for skipping the security review hold.
+    - `design-reviewer`: SHIP, with no change. Both nits kept word for word, and the original LEAVE_WHILE_SAVING approved; the orchestrator later widened it to cover Sign Out, on `code-reviewer`'s note 1, and design approved the new words (DECISIONS 2026-10-07). Every non-disabled state measures at least 7.18:1 on real backgrounds (`docs/qa-evidence/T-020/contrast-log.md`).
+    - No `security-reviewer`: the recorded 4a–4c exception (DECISIONS 2026-10-06), with `code-reviewer` checking its four conditions.
+  - **NOT VISUALLY VERIFIED:** the live admin (no agent signs in) and the two browser dialogs themselves; their words are checked by the harness.
+  - **Follow-ups:** under "Follow-ups found in Wave 4a".
   **Wave 4 binding contract, covering T-034, T-020, T-027, T-011 and T-030** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim on 2026-10-07, so no second `/architect-review` is needed). It's split into **4a** (T-034, T-020), **4b** (T-027), **4c** (T-011) and **4d** (T-030), each with its own review stage. There's no SQL, database object or new dependency, so there's no HARD STOP. Where older AC conflicts with this contract, the contract wins. The facts below also ground the Wave 5 contract (under T-008).
 
   **Verdict: both waves APPROVE, under the two binding contracts below.**
@@ -2007,6 +2017,10 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
      - `text-[11px]` becomes `text-xs` (T-011's rule).
 
   **4b: T-027**
+
+  **4b additions, 2026-10-07** (orchestrator, on `design-reviewer`'s Wave 4a findings; DECISIONS 2026-10-07). Class tokens only; the files join 4b's Touches list.
+  - **F2:** apply item 3's rule to the strings that still put `text-white` (mostly `hover:text-white`) on a solid `bg-primary`: they become `text-foreground`. `code-reviewer` found 12: `CareersClient.tsx:105,275`, `ReportsClient.tsx:159,352`, `JobAccordion.tsx:109`, `(website)/page.tsx:114`, `AboutSection.tsx:54`, `BusinessPreviewSection.tsx:39`, `MediaPreviewSection.tsx:141`, `SustainabilityPreviewSection.tsx:47,66` and `ContactSection.tsx:40` (line numbers at `82067bd`). Re-grep; `design-reviewer` counted 11 strings in 9 files.
+  - **F4:** measure the `text-black/50` caption at `text-[0.65rem]` (`sustainability/page.tsx`, about line 107) on its real tile. If it's under 4.5:1, raise it with semantic tokens, and replace the magic size with `text-xs` unless design rules otherwise.
 
   6. **The rule:** after 4b, no `text-primary` (any opacity, any state prefix) colours text or a control anywhere in `src/`.
      - **Default replacement:** `text-accent` at full opacity. Any opacity variant must be re-measured.
@@ -2244,6 +2258,15 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: the Wave 5 architect review, 2026-10-06. A nonce CSP and Report-Only were both rejected for T-008 in this run.
   Sequence: `premortem-planner` → `architect-reviewer` → `/build` → `/security-review` → `/qa` → `code-reviewer` → merge. Backlog.
 
+- [ ] **T-040** — Give every public control the house focus ring [app:site][design]
+  AC:
+  - Every public control not covered by T-029 (the header and menu links) shows `focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background` on keyboard focus, instead of the browser's default outline. That includes the public forms' submit button, the 404 button and the report buttons.
+  - Admin controls outside T-011's shared parts and T-036's forms use the same string ending in `focus-visible:ring-offset-surface`.
+  - Wherever `transition-all` is present, add `focus-visible:transition-none`, so the ring appears at once (DESIGN.md §4).
+  - No change to layout, copy or colour at rest.
+  Source: `design-reviewer`, Wave 4a F1, 2026-10-07 (a banned default that predates the run).
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
+
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
 - **`code-reviewer` Y1, test only:** assert that the reorder's refresh comes after its last write. Today's `return await` is correct, but a "clean-up" that drops the `await` would pass the current suite.
@@ -2271,6 +2294,16 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **For T-011:** `ObjectListEditor` finds its focus targets with `:scope > div:first-child button` (`SettingsForm.tsx:269`), so they depend on the row header's DOM order. If T-011 changes those buttons, re-run the focus scenarios (S13).
   - **Untested, accepted:** the same object listed twice (the duplicate-key guard, mutant R5). No page can produce that today.
 - **`security-reviewer`, no finding:** an overtaken pick still uploads its file, which then sits unused in the public bucket. It's the same kind of orphan an abandoned pick leaves on `main`, and it's signed-in only.
+
+**Follow-ups found in Wave 4a (2026-10-07)**, for the backlog:
+- **`design-reviewer`:**
+  - **F1, now T-040:** no public control has the house focus ring; they show the browser's default outline. 4c (T-011) rings the shared admin parts, 5c (T-029) the header and menu links, and T-036 the hand-built admin forms. T-040 covers the rest.
+  - **F2 and F4:** folded into 4b (see "4b additions" in the Wave 4 contract).
+  - **F3:** done. The T-020 contrast log is `docs/qa-evidence/T-020/contrast-log.md`.
+- **`code-reviewer`:**
+  - **Accepted gap (note 1):** OK on Sign Out while a follow-up save is waiting very likely loses that save. Next runs Server Actions one at a time, so the follow-up runs after the logout, signed out, and fails unseen. `main` loses it too, with no warning. The words now say the change "may not be saved", and the owner's checklist has a row for it.
+  - **Watch only:** `new URL(link.href)` would throw on an href that won't parse, and `target="_self"` links are skipped because the contract says "no target". No admin link has either today.
+- **The builder's note:** a plain `<a href>` to another page in the admin would ask twice (the guard's confirm, then the browser's leave question). No such link exists today, because the admin shell uses only `<Link>` and the Sign Out form. If T-030's `AdminNav` adds one, give it a `<Link>`.
 
 ### Dependency Order
 
