@@ -26,6 +26,23 @@ import { ImageUploadField } from "@/components/admin/ImageUploadField";
 export function SettingsHeader({ title, tag, onSave, saving, error, saveLabel = "Save Changes" }: {
     title: string; tag: string; onSave: () => void; saving: boolean; error?: string | null; saveLabel?: string;
 }) {
+    // Focus (T-011): a save disables Save, and the browser then moves focus
+    // to <body>. If Save had focus when the save started and focus is still
+    // on <body> when it ends, it goes back to Save. Save stays disabled while
+    // saving, so this adds no second way to submit, and onSave is called
+    // exactly as before.
+    const saveButton = useRef<HTMLButtonElement>(null);
+    const refocusSave = useRef(false);
+    const wasSaving = useRef(saving);
+    useLayoutEffect(() => {
+        if (saving === wasSaving.current) return;
+        wasSaving.current = saving;
+        if (saving || !refocusSave.current) return;
+        refocusSave.current = false;
+        const active = document.activeElement;
+        if (!active || active === document.body) saveButton.current?.focus();
+    }, [saving]);
+
     return (
         <header className="mb-10 flex flex-col gap-3">
             <div className="flex items-start justify-between">
@@ -33,7 +50,8 @@ export function SettingsHeader({ title, tag, onSave, saving, error, saveLabel = 
                     <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{tag}</span>
                     <h1 className="mt-2 font-serif text-3xl font-bold text-foreground md:text-4xl">{title}</h1>
                 </div>
-                <button onClick={onSave} disabled={saving}
+                <button ref={saveButton} onClickCapture={e => { refocusSave.current = document.activeElement === e.currentTarget; }}
+                    onClick={onSave} disabled={saving}
                     className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-50">
                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     {saving ? "Saving..." : saveLabel}
@@ -154,7 +172,7 @@ export function ChipList({ label, items, onChange }: {
                 <input id={`${id}-input`} type="text" value={input} onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && (e.preventDefault(), add())}
                     placeholder="Type and press Enter..."
-                    className="flex-grow rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50" />
+                    className="min-w-0 flex-grow rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50" />
                 <button onClick={add} className="flex items-center gap-1.5 rounded-lg border border-primary/30 px-4 py-2.5 text-xs font-bold text-accent hover:bg-primary/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50 transition-colors">
                     <Plus size={14} /> Add
                 </button>
