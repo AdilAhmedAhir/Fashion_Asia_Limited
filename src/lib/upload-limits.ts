@@ -198,6 +198,11 @@ export interface ImageSizeAdvisory {
  * how to word a combined warning.
  */
 export function checkImageSizeAdvisory(width: number, height: number): ImageSizeAdvisory {
+    // T-009 WARN-1: a side that isn't a finite number above 0 can't be judged,
+    // and NaN compares false, so it would pass silently. It's flagged both ways.
+    if (!(Number.isFinite(width) && width > 0 && Number.isFinite(height) && height > 0)) {
+        return { tooSmall: true, offProportion: true };
+    }
     const tooSmall = width < RECOMMENDED_UPLOAD_WIDTH || height < RECOMMENDED_UPLOAD_HEIGHT;
     const ratio = width / height;
     const offProportion = ratio < MIN_RECOMMENDED_ASPECT_RATIO || ratio > MAX_RECOMMENDED_ASPECT_RATIO;
