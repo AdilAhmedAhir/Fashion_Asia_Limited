@@ -31,6 +31,35 @@ const nextConfig: NextConfig = {
             { source: "/what-we-do/:slug", destination: "/products/:slug", permanent: true },
         ];
     },
+    // Drops the `X-Powered-By: Next.js` response header (T-008).
+    poweredByHeader: false,
+    // Sitewide security headers on every response (T-008, docs/SECURITY.md
+    // SEC-MED-2). Every value is a static literal. The CSP is structural only:
+    // it has no fetch directive, so it can't block any script, style, image,
+    // font, video or request. Permissions-Policy must never list autoplay,
+    // fullscreen or picture-in-picture: the hero video autoplays. HSTS goes
+    // out from production builds only (`next build`), never from `next dev`.
+    async headers() {
+        return [
+            {
+                source: "/:path*",
+                headers: [
+                    { key: "X-Content-Type-Options", value: "nosniff" },
+                    { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
+                    { key: "Permissions-Policy", value: "camera=(), microphone=(), geolocation=(), payment=(), usb=()" },
+                    { key: "X-Frame-Options", value: "DENY" },
+                    {
+                        key: "Content-Security-Policy",
+                        value: "frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'",
+                    },
+                    // includeSubDomains is safe only while both bare domains are Vercel redirects; remove it before the site is ever served from one.
+                    ...(process.env.NODE_ENV === "production"
+                        ? [{ key: "Strict-Transport-Security", value: "max-age=63072000; includeSubDomains" }]
+                        : []),
+                ],
+            },
+        ];
+    },
 };
 
 export default nextConfig;
