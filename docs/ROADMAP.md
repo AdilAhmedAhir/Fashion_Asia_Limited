@@ -1756,7 +1756,20 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   - Header and menu links show a `ring-accent` focus ring instead of the browser default.
   Source: `design-reviewer`, T-025 review, 2026-10-03. This is an existing problem, not caused by T-025.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
-- [ ] **T-030** — Give the admin a way to navigate on phones, and mark the current page in the sidebar [app:admin][design]
+- [x] **T-030** — Give the admin a way to navigate on phones, and mark the current page in the sidebar [app:admin][design]
+  Done 2026-10-07 in **Wave 4d**:
+  - **Commits:** `8b718dd` (the shared `useOverlayMenu` hook), `a8a3fdd` (`AdminNav` and the layout) and `edff562` (fix round: group spacing, 44 px phone targets, `text-foreground`, close on any route change).
+  - **What changed:**
+    - below 768 px, a top bar's Menu toggle opens every sidebar link, in the same groups, plus Sign Out. Focus moves in, Tab wraps, Escape closes and returns focus to the toggle, and the page behind is `inert` and doesn't scroll. A link click, Back, Forward or widening to 768 px closes it;
+    - the current page is marked with `aria-current` plus a bar and bold text;
+    - the layout stays a server component and hands its Sign Out form to the client `AdminNav`.
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: SHIP, with five yellow notes. Y1 (Back and Forward) and Y2 (a JSDoc note) were handled in `edff562`, and Y3 went to T-036. It re-checked the fix SHIP: 79/79 in production and 75/75 in StrictMode with its own probes, and 28/28 mutants.
+    - `design-reviewer`: FIX FIRST (group spacing, 44 px phone targets, `text-white`, Back and Forward), then SHIP after `edff562`, re-shot at 360 and 1440 px.
+    - `security-reviewer`: CLEARED, then re-bound after the fix: `layout.tsx` `817b002d…`, `AdminNav.tsx` `dd00bffb…` and `use-overlay-menu.ts` `3bbc4bd3…`. SEC-INFO-48 is accepted. The entry is in `docs/SECURITY.md`.
+  - **Accepted gaps:** widening to 768 px while the menu is open leaves focus on `<body>`, because the toggle is hidden at that width; the next Tab reaches the sidebar. Back and Forward navigate and close the menu, not "Back closes the menu instead of navigating", which would need a history entry; decide that once for T-030 and T-029.
+  - **NOT VISUALLY VERIFIED:** the live signed-in admin, real phones (iOS scroll lock, safe areas, Android's system Back), and a real screen reader.
+  - **Follow-ups:** under "Follow-ups found in Wave 4d".
   AC:
   - Below 768 px, the admin has working navigation to every sidebar destination. Today the sidebar is `hidden md:flex` with no menu, so a phone shows the current page and no way to reach the others.
   - The sidebar marks the current page visually and with `aria-current="page"`.
@@ -2271,6 +2284,7 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - The Careers, Reports, Who We Are leaders and Contact socials forms get what Wave 4c (T-011) gives the shared admin parts: every control has a programmatic name containing its visible label, the house focus ring (`focus-visible:ring-2 ring-accent`), and labels and hints at 4.5:1 or more on their real panel.
   - No change to what any form sends, its handlers or its Server Actions.
   Source: the Wave 4 architect review, 2026-10-06 (outside T-011's shared-component scope).
+  - **Also (Wave 4d `code-reviewer` Y3):** the Careers and Reports modals (`CareersClient.tsx:183`, `ReportsClient.tsx:246`) are `fixed inset-0 z-50` inside `#admin-main`, with no Escape, focus handling or `role="dialog"`. Below 768 px a keyboard user can reach the Menu toggle under a modal's backdrop. Give them dialog semantics, Escape and focus handling.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
 - [ ] **T-037** — A pause control for the marquee and the three looping videos [app:site][design]
@@ -2363,6 +2377,12 @@ The owner asked for every open ticket to be finished, then one deploy at the end
 - **`code-reviewer`, tests:** add a homepage stand-in to the 4c suite (0 unnamed controls; the Stats names unique), and an "always refocus" mutant for item 17.
 - **Harness upkeep (scratchpad only):** T-016's harness needs `NOTICE_VARIANT=4a` since Wave 4a's notice copy, its path-box className pin predates 4c, and its mutation step's `ImageUploadField` anchor has been gone since Wave 3b. With current expectations it's 319/319.
 - **The builder's process slip:** commit 2's first attempt was committed with the gate's exit codes hidden, on a tree that didn't compile, then amended before anything built on it. Builders must read exit codes, never just log tails.
+
+**Follow-ups found in Wave 4d (2026-10-07)**, for the backlog:
+- **For T-029 (Wave 5c), reusing the hook:** lock `<html>`, not `<body>`, while the menu is open (`globals.css` clips `<html>`, so a `<body>` lock doesn't stop wheel scrolling; the public menu's own comment says its lock doesn't hold). Close the public menu on any route change too, with the same `menuPath` pattern.
+- **`security-reviewer`, SEC-INFO-48 (accepted):** the 12 admin route names are now in a public static chunk. It's route names only, and every path stays gated. The guardrail: nothing secret, user-specific or role-specific may go into `AdminNav` or `navItems`.
+- **`code-reviewer` Y3:** the Careers and Reports modals, added to T-036.
+- **`design-reviewer`, minor:** about 42 more `text-white` lines in the admin predate 4d (T-041's sweep).
 
 ### Dependency Order
 

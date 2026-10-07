@@ -1,0 +1,89 @@
+# Wave 4d (T-030), 2026-10-07: scratchpad harness output, local paths scrubbed.
+PASS  [production] F1 setup: one save in flight, a follow-up waiting, the row says Saving…
+PASS  [production] reload while saving shows the browser's leave prompt
+PASS  [production] staying (Cancel on the prompt) keeps the page: no reload, still Saving…
+PASS  [production] a same-origin link click while saving shows the confirm, worded LEAVE_WHILE_SAVING
+PASS  [production] Cancel leaves the URL unchanged
+PASS  [production] Cancel stops the click before the app's link handler: no soft navigation, the editor stays
+PASS  [production] Enter on a link also asks, and Cancel keeps the page
+PASS  [production] a form submit (Sign Out) asks, and Cancel stops it before the app's submit handler
+PASS  [production] RV1 a click on a link's SVG icon asks, and Cancel keeps the page
+PASS  [production] RV1 a click on a link's inner label <span> asks, and Cancel keeps the page
+PASS  [production] not intercepted: ctrl-click (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: meta-click (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: shift-click (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: alt-click (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: target=_blank link (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: download link (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: hash-only link (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: same-URL link (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: mailto link (no prompt, and the click reaches the page)
+PASS  [production] not intercepted: cross-origin link (no prompt, and the click reaches the page)
+PASS  [production] the editor is still on /admin/products after all of that
+PASS  [production] asking never sends, flushes or cancels a save: still one save, unsettled
+PASS  [production] RV3 OK on Sign Out while saving lets the submit through to the app's handler, and sends nothing
+PASS  [production] OK navigates: the confirm showed, the app's link handler ran, the URL is /admin/business and the editor unmounted
+PASS  [production] after OK, the queued follow-up is still sent: exactly one more save, only the description
+PASS  [production] after leaving, the guard is gone: reload has no prompt
+PASS  [production] F2 setup: nothing was sent (blur with no change)
+PASS  [production] nothing pending: reload has no prompt
+PASS  [production] nothing pending: a link click has no prompt and navigates
+PASS  [production] nothing pending: Sign Out has no prompt and submits
+PASS  [production] RV2 once the save lands, Sign Out has no prompt and reaches the app's submit handler
+PASS  [production] RV2b once the save lands, a same-origin link click has no prompt and reaches the page
+PASS  [production] once the save lands, the guard is removed: reload has no prompt
+PASS  [production] F4 setup: the delete asked, and is in flight
+PASS  [production] a delete with nothing saving reads Deleting…
+PASS  [production] item 2: a path-box commit during a delete queues a real save, and the row reads Saving…
+PASS  [production] item 2: the notice says “leave a field you've edited”
+PASS  [production] item 5: the move buttons hover to text-accent, never text-primary
+PASS  [production] item 5: the editor's own 7 small labels are text-xs, none text-[11px] (ImageUploadField's are 4c's)
+PASS  [production] RV4 typing then clicking a link directly (blur commit + click in one gesture) still asks, and Cancel keeps the page
+PASS  [production] every dialog was planned (no surprise prompt)
+PASS  [production] no request left the harness origin
+PASS  [production] no page error or React warning
+PASS  [development] F1 setup: one save in flight, a follow-up waiting, the row says Saving…
+PASS  [development] reload while saving shows the browser's leave prompt
+PASS  [development] staying (Cancel on the prompt) keeps the page: no reload, still Saving…
+PASS  [development] a same-origin link click while saving shows the confirm, worded LEAVE_WHILE_SAVING
+PASS  [development] Cancel leaves the URL unchanged
+PASS  [development] Cancel stops the click before the app's link handler: no soft navigation, the editor stays
+PASS  [development] Enter on a link also asks, and Cancel keeps the page
+PASS  [development] a form submit (Sign Out) asks, and Cancel stops it before the app's submit handler
+PASS  [development] RV1 a click on a link's SVG icon asks, and Cancel keeps the page
+PASS  [development] RV1 a click on a link's inner label <span> asks, and Cancel keeps the page
+PASS  [development] not intercepted: ctrl-click (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: meta-click (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: shift-click (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: alt-click (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: target=_blank link (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: download link (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: hash-only link (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: same-URL link (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: mailto link (no prompt, and the click reaches the page)
+PASS  [development] not intercepted: cross-origin link (no prompt, and the click reaches the page)
+PASS  [development] the editor is still on /admin/products after all of that
+PASS  [development] asking never sends, flushes or cancels a save: still one save, unsettled
+PASS  [development] RV3 OK on Sign Out while saving lets the submit through to the app's handler, and sends nothing
+PASS  [development] OK navigates: the confirm showed, the app's link handler ran, the URL is /admin/business and the editor unmounted
+PASS  [development] after OK, the queued follow-up is still sent: exactly one more save, only the description
+PASS  [development] after leaving, the guard is gone: reload has no prompt
+PASS  [development] F2 setup: nothing was sent (blur with no change)
+PASS  [development] nothing pending: reload has no prompt
+PASS  [development] nothing pending: a link click has no prompt and navigates
+PASS  [development] nothing pending: Sign Out has no prompt and submits
+PASS  [development] RV2 once the save lands, Sign Out has no prompt and reaches the app's submit handler
+PASS  [development] RV2b once the save lands, a same-origin link click has no prompt and reaches the page
+PASS  [development] once the save lands, the guard is removed: reload has no prompt
+PASS  [development] F4 setup: the delete asked, and is in flight
+PASS  [development] a delete with nothing saving reads Deleting…
+PASS  [development] item 2: a path-box commit during a delete queues a real save, and the row reads Saving…
+PASS  [development] item 2: the notice says “leave a field you've edited”
+PASS  [development] item 5: the move buttons hover to text-accent, never text-primary
+PASS  [development] item 5: the editor's own 7 small labels are text-xs, none text-[11px] (ImageUploadField's are 4c's)
+PASS  [development] RV4 typing then clicking a link directly (blur commit + click in one gesture) still asks, and Cancel keeps the page
+PASS  [development] every dialog was planned (no surprise prompt)
+PASS  [development] no request left the harness origin
+PASS  [development] no page error or React warning
+
+guard: 86/86 passed, 0 failed

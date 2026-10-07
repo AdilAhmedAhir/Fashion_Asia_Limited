@@ -4,7 +4,7 @@
 
 > **Reuse rubric:** exact match → **reuse** · close (differs by config) → **extend with a variant/prop** · genuinely new → **create** in the right unit, add a one-line `@purpose` comment, regenerate this file. Search here before writing any new component/util/schema, and state your reuse/extend/new choice in the ticket summary.
 
-## src  _(234)_
+## src  _(237)_
 
 | Export | Kind | Purpose | File |
 |---|---|---|---|
@@ -15,6 +15,7 @@
 | `AdminCareersPage` | default function | — | `src/app/admin/(dashboard)/careers/page.tsx` |
 | `AdminDashboard` | default function | — | `src/app/admin/(dashboard)/page.tsx` |
 | `AdminMediaPage` | default function | — | `src/app/admin/(dashboard)/media/page.tsx` |
+| `AdminNav` | default function | — | `src/app/admin/(dashboard)/AdminNav.tsx` |
 | `AdminProductsPage` | default function | The /admin/products page (T-026): loads the categories, failing closed, together with every category's products, for the editor. | `src/app/admin/(dashboard)/products/page.tsx` |
 | `AdminRootLayout` | default function | — | `src/app/admin/layout.tsx` |
 | `ALLOWED_EXTENSIONS` | const | — | `src/lib/upload-limits.ts` |
@@ -148,6 +149,7 @@
 | `NotFound` | default function | — | `src/app/not-found.tsx` |
 | `ObjectField` | type | — | `src/components/admin/SettingsForm.tsx` |
 | `ObjectListEditor` | function | — | `src/components/admin/SettingsForm.tsx` |
+| `OverlayMenuOptions` | type | — | `src/lib/use-overlay-menu.ts` |
 | `PageHeader` | default function | — | `src/components/ui/PageHeader.tsx` |
 | `pickWhatWeDoText` | function | Copy exactly the 4 What We Do text fields out of an untrusted value, refusing the whole value if any field is missing or mistyped. | `src/lib/site-content.ts` |
 | `PillarsSection` | default function | — | `src/components/sections/PillarsSection.tsx` |
@@ -231,6 +233,7 @@
 | `UploadFileResult` | type | — | `src/app/actions/settings-actions.ts` |
 | `uploadOptimizedImage` | function | — | `src/app/actions/media-actions.ts` |
 | `UploadResult` | type | — | `src/app/actions/media-actions.ts` |
+| `useOverlayMenu` | function | — | `src/lib/use-overlay-menu.ts` |
 | `viewport` | const | — | `src/app/layout.tsx` |
 | `WebsiteLayout` | default function | — | `src/app/(website)/layout.tsx` |
 | `WhatWeDoText` | type | The 4 What We Do page-text fields in site_settings.business: everything there except the categories. | `src/lib/site-content.ts` |
@@ -244,4 +247,4 @@
 | `WhoWeWorkWithSettingsPage` | default function | — | `src/app/admin/(dashboard)/who-we-work-with/page.tsx` |
 
 
-_234 exports across 1 unit(s)._
+_237 exports across 1 unit(s)._

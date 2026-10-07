@@ -2759,3 +2759,21 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
   - after the fix, the Stats rows fit at 360 px.
 - **NOT VISUALLY VERIFIED:** the live signed-in admin, Safari and Firefox, Windows High Contrast, a real screen reader, and 768/1024 px.
 - **Verdict: PASS.**
+
+## Static Pass — Wave 4d (T-030) — 2026-10-07 (`code-reviewer` light QA, `design-reviewer` and `security-reviewer`, under the lean protocol)
+- **Target:** branch `wave-4d-admin-nav`. The commits are `8b718dd` (the hook), `a8a3fdd` (`AdminNav` and the layout) and the fix `edff562`. Three files: `src/lib/use-overlay-menu.ts`, `src/app/admin/(dashboard)/AdminNav.tsx` and `layout.tsx`.
+- **The stand-in harness:** the real layout, `AdminNav`, hook and `CategoryProductsManager` with production CSS, on a harness origin with only the `"use server"` modules and Next's router stubbed, and no request leaving it. After the fix it's 71/71 in production and 67/67 in a StrictMode development build, with 24/24 mutants caught. It checks:
+  - opening with the keyboard, focus on open, and Tab and Shift+Tab wrapping twice round;
+  - Escape returning focus to the toggle, and `inert` on `#admin-main` (only the hook's own removed);
+  - the `<html>` scroll lock under a real mouse wheel, and closing at 768 px, on a link click, and on a route change (Back and Forward);
+  - `aria-current` at `/admin`, `/admin/products`, `/admin/products/x` and `/admin/productsx`;
+  - 0 unnamed controls, and no sideways scroll at 360 px.
+- **The leave guard with the real `AdminNav`:** Cancel keeps the page on a sidebar link, sidebar Sign Out, a phone-menu link and phone-menu Sign Out, and the menu stays open. Wave 4a's `guard-plus` is 86/86.
+- **Security:** the client boundary holds. No action body, Supabase client, `settings-read` code or env value is in any of the 49 static files. Both Sign Out copies post to `logoutAction`. The middleware and `src/lib/supabase/*` are 0-byte. SEC-INFO-48 is accepted.
+- **Design:** the current-page bar is 8.0–9.65:1, text 16.47:1, and focus rings 8.0–9.65:1. After the fix, the phone targets are 44 px and the group labels sit with their own group.
+- **Owner checklist (optional, after the deploy):**
+  - [ ] On a phone, open `/admin`, tap Menu, go to another page, and check the menu closed and the new page is marked.
+  - [ ] Open Menu again, then use the phone's Back: the menu closes.
+  - [ ] Sign Out from the menu.
+- **NOT VISUALLY VERIFIED:** the live signed-in admin, real phones, and a real screen reader.
+- **Verdict: PASS.**
