@@ -34,7 +34,7 @@ export function SettingsHeader({ title, tag, onSave, saving, error, saveLabel = 
                     <h1 className="mt-2 font-serif text-3xl font-bold text-foreground md:text-4xl">{title}</h1>
                 </div>
                 <button onClick={onSave} disabled={saving}
-                    className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-black transition-all hover:bg-primary/90 disabled:opacity-50">
+                    className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-foreground transition-all hover:bg-primary/90 disabled:opacity-50">
                     {saving ? <Loader2 size={16} className="animate-spin" /> : <Save size={16} />}
                     {saving ? "Saving..." : saveLabel}
                 </button>

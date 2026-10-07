@@ -54,7 +54,7 @@ export default function Header() {
                         ))}
                         <Link
                             href={NAV_CTA.href}
-                            className="whitespace-nowrap rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-white transition-transform hover:-translate-y-0.5 hover:bg-secondary hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
+                            className="whitespace-nowrap rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
                         >
                             {NAV_CTA.label}
                         </Link>

@@ -591,7 +591,7 @@ function AddProductForm({ categorySlug, onCreated }: { categorySlug: string; onC
                     type="button"
                     onClick={handleAdd}
                     disabled={!canAdd}
-                    className="flex items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 py-2.5 text-xs font-bold text-black transition-colors hover:bg-primary/90 disabled:opacity-40"
+                    className="flex items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
                 >
                     {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                     {busy ? "Adding…" : "Add product"}

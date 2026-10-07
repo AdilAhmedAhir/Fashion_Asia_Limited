@@ -164,7 +164,7 @@ export default async function SustainabilityPage() {
                                                     href={report.file_url}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="mt-6 flex items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/5 py-3 text-xs font-bold uppercase tracking-widest text-primary transition-all hover:bg-primary hover:text-black"
+                                                    className="mt-6 flex items-center justify-center gap-2 rounded-lg border border-primary/30 bg-primary/5 py-3 text-xs font-bold uppercase tracking-widest text-accent transition-all hover:bg-primary hover:text-foreground"
                                                 >
                                                     <Download size={14} /> Download PDF
                                                 </a>
