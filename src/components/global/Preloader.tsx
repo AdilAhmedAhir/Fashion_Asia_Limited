@@ -5,12 +5,11 @@ import { motion, AnimatePresence } from "framer-motion";
 
 /**
  * Cinematic split-screen preloader.
- * 
- * MOBILE: Pure branding animation only (no frame preloading).
- * DESKTOP: Preloads frames while showing branding, 2s max.
+ *
+ * Pure branding animation at every screen width: the progress bar fills on a
+ * timer and the curtain opens after 1.5s. No hero frames are preloaded (T-017).
  */
 
-const TOTAL_FRAMES = 160;
 const COMPANY = "FASHION ASIA";
 
 export default function Preloader() {
@@ -41,42 +40,18 @@ export default function Preloader() {
         document.body.style.overflow = "hidden";
         window.scrollTo(0, 0);
 
-        const isMobile = window.innerWidth < 768;
-
-        if (isMobile) {
-            // Mobile: NO frame preloading — just branding animation, dismiss after 1.5s
-            const timer = setTimeout(finishLoading, 1500);
-            // Fake progress for visual feedback
-            let fakeProgress = 0;
-            const interval = setInterval(() => {
-                fakeProgress += 8;
-                setProgress(Math.min(fakeProgress, 100));
-                if (fakeProgress >= 100) clearInterval(interval);
-            }, 100);
-            return () => {
-                clearTimeout(timer);
-                clearInterval(interval);
-                document.body.style.overflow = "";
-            };
-        }
-
-        // Desktop: preload frames (2s safety net)
-        let loaded = 0;
-        for (let i = 1; i <= TOTAL_FRAMES; i++) {
-            const img = new Image();
-            img.src = `/sequence/hero/frame_${i}.webp`;
-            const onDone = () => {
-                loaded++;
-                setProgress(Math.round((loaded / TOTAL_FRAMES) * 100));
-                if (loaded >= TOTAL_FRAMES) finishLoading();
-            };
-            img.onload = onDone;
-            img.onerror = onDone;
-        }
-
-        const safety = setTimeout(finishLoading, 2000);
+        // Every width: no frame preloading, just the branding animation, dismissed after 1.5s
+        const timer = setTimeout(finishLoading, 1500);
+        // Fake progress for visual feedback
+        let fakeProgress = 0;
+        const interval = setInterval(() => {
+            fakeProgress += 8;
+            setProgress(Math.min(fakeProgress, 100));
+            if (fakeProgress >= 100) clearInterval(interval);
+        }, 100);
         return () => {
-            clearTimeout(safety);
+            clearTimeout(timer);
+            clearInterval(interval);
             document.body.style.overflow = "";
         };
     }, [finishLoading]);
