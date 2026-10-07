@@ -2739,3 +2739,23 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **Older failures found, not from this diff:** the homepage hero overlay (now scheduled in 5b), and the CTAs still on the browser's default focus ring (T-040).
 - **NOT VISUALLY VERIFIED:** the live admin, the live `FormStatusMessage` lines, 768 and 1024 px, and the hero across more than one video frame.
 - **Verdict: PASS.**
+
+## Static Pass — Wave 4c (T-011) — 2026-10-07 (`code-reviewer` light QA and `design-reviewer`, under the lean protocol)
+- **Target:** branch `wave-4c-a11y`. The commits are `b007771`, `a77ad46`, `bf72bfe` and the fix `43fd990`. Four files: `SettingsForm.tsx`, `ImageUploadField.tsx`, `SeedDefaultsPanel.tsx` and `admin/login/page.tsx`.
+- **The accessibility tree** (Chrome over CDP, on stand-ins with the real components and the production CSS, plus the real `/admin/login` with GET only):
+  - unnamed controls fell 6 → 0 on Products, 8 → 0 on Business and 2 → 0 on login;
+  - orphan labels fell 7 → 0 and 4 → 0;
+  - duplicate Move/Remove names fell 3 → 0.
+- **The builder's 4c suite:** 51/51, with 10/10 mutants caught, before and after the fix. The copy at `scratchpad/wave-4c/ax-fix/` expects the named drop-zone group.
+- **The regressions:**
+  - Wave 3b's UI suite is 600/600, with payloads byte-identical to `main`'s and the S13 focus checks at 90/90;
+  - Wave 4a's guard is 86/86;
+  - T-016 is 319/319 with current expectations (see the harness note under "Follow-ups found in Wave 4c").
+- **Invariants:** every logic block in `ImageUploadField`, `ObjectListEditor` and the Sync panel, the login form's action lines and Save's `onClick` have the same sha256 as on `main`; `CategoryProductsManager` is 0-byte. `tsc` passes on each commit's own tree (`git archive`).
+- **Contrast and layout** (`design-reviewer`):
+  - rings are 8.40–9.65:1 against their panels in 33 probes;
+  - labels and hints are 5.30–5.34:1;
+  - there's no sideways scroll at 360 px on Products, What We Do, Sync or login;
+  - after the fix, the Stats rows fit at 360 px.
+- **NOT VISUALLY VERIFIED:** the live signed-in admin, Safari and Firefox, Windows High Contrast, a real screen reader, and 768/1024 px.
+- **Verdict: PASS.**

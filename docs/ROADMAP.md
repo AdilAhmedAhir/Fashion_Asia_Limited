@@ -275,7 +275,16 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - It needs its own `/architect-review`, because it changes a shared admin component used in 6 places. Order: after T-016 and T-033.
   - **Notes:** Root cause (index-keyed list rows) predates T-002; T-002 made the consequence more visible by adding a second piece of per-row transient state. Not a hard dependency for T-004 — T-004's per-category product editor is a new, dedicated component per its own file list (this doc, T-004), not necessarily a reuse of `ObjectListEditor` itself — but landing this fix first is recommended if T-004 ends up extending `ObjectListEditor` directly.
 
-- [ ] **T-011** — Fix WCAG AA contrast and keyboard-focus visibility in shared admin upload/list components
+- [x] **T-011** — Fix WCAG AA contrast and keyboard-focus visibility in shared admin upload/list components
+  Done 2026-10-07 in **Wave 4c**:
+  - **Commits:** `b007771` (items 11–12: ids, names, list groups), `a77ad46` (items 13–15 plus the 4c additions), `bf72bfe` (items 16–17) and `43fd990` (fix round: Stats rows fit at 360 px and are named per card; the login page's raw values go; login errors are announced; the drop zone uses a named group).
+  - **What changed:** every control in the shared editor parts, the Sync panel and `/admin/login` has a name tied to its visible label (0 unnamed controls, from 6 on Products, 8 on Business and 2 on login); list headings name their group; Move/Remove names carry the row number and title; labels and hints are at least 5.3:1; every control has the house focus ring, the file input's on its drop zone; controls look disabled while saving; focus returns to Save after a keyboard save; the Sync checkboxes keep focus; the result regions are always mounted.
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: SHIP, with five minor notes; two were fixed in `43fd990`, which it re-checked SHIP. Every logic block matches `main` by sha256, and each commit typechecks on its own tree.
+    - `design-reviewer`: FIX FIRST (the Stats rows were cut off at 360 px, the homepage's Stats names repeated, and two raw values remained on the login page), then SHIP after `43fd990`.
+    - No `security-reviewer`: the recorded 4a–4c exception. `code-reviewer` confirmed its conditions, with React APIs from the existing `react` import counting as no new import (DECISIONS 2026-10-07).
+  - **NOT VISUALLY VERIFIED:** the live signed-in admin (stand-ins with the real components and CSS), Safari and Firefox, Windows High Contrast, a real screen reader, and 768/1024 px.
+  - **Follow-ups:** under "Follow-ups found in Wave 4c".
   - **Source:** ui-ux T-002 pass, 2026-09-26 (relayed by `/system-architect` — reported directly to `/pm`, not written to a doc)
   - **Files:** `src/components/admin/ImageUploadField.tsx` (label, currently `text-white/30`), `src/components/admin/SettingsForm.tsx` (`ObjectListEditor`'s `#{i+1}` row micro-label and per-field micro-labels, currently `text-white/30`)
   - **Flags:** schema-touching: **no** · sensitive: **no** · UI: **yes**
@@ -2344,6 +2353,16 @@ The owner asked for every open ticket to be finished, then one deploy at the end
 - **New tickets:** T-041 (the remaining banned defaults). T-040 gains Wave 4b's list of CTAs that still show the browser's default focus ring.
 - **`code-reviewer`, accepted:** after F4's `text-xs`, the "RMG Sustainability Council" caption runs 8 px into its white tile's padding at 360 px (11 px on `main`; 18 px at 320 px), and OEKO-TEX wraps to 3 lines. It stays inside the tile and nothing scrolls sideways; design approved F4.
 - **`code-reviewer`, for T-036:** `accent-primary` on the native checkboxes in `CareersClient.tsx:260` and `ReportsClient.tsx:338`.
+
+**Follow-ups found in Wave 4c (2026-10-07)**, for the backlog:
+- **`design-reviewer`, optional, for T-041:**
+  - a row's Remove dims to `disabled:opacity-20` while saving; `disabled:opacity-50` would match everything else;
+  - at 360 px the drop zone's hint wraps to about 14 lines; `flex-col items-start sm:flex-row sm:items-center` on the zone would fix it;
+  - in Windows High Contrast the drop zone's ring probably disappears; add `has-[input:focus-visible]:outline has-[input:focus-visible]:outline-2 has-[input:focus-visible]:outline-transparent`;
+  - the login error box uses `text-red-500` (about 5.2:1, which passes), while DESIGN.md §2's error colour is `text-red-400`.
+- **`code-reviewer`, tests:** add a homepage stand-in to the 4c suite (0 unnamed controls; the Stats names unique), and an "always refocus" mutant for item 17.
+- **Harness upkeep (scratchpad only):** T-016's harness needs `NOTICE_VARIANT=4a` since Wave 4a's notice copy, its path-box className pin predates 4c, and its mutation step's `ImageUploadField` anchor has been gone since Wave 3b. With current expectations it's 319/319.
+- **The builder's process slip:** commit 2's first attempt was committed with the gate's exit codes hidden, on a tree that didn't compile, then amended before anything built on it. Builders must read exit codes, never just log tails.
 
 ### Dependency Order
 
