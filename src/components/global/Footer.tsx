@@ -34,7 +34,7 @@ const footerLinks = [
 
 export default function Footer() {
     return (
-        <footer className="w-full border-t border-white/5 bg-[#050505]">
+        <footer id="site-footer" className="w-full border-t border-white/5 bg-[#050505]">
             {/* Main Footer */}
             <div className="container py-16 md:py-20">
                 <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-[2fr_1fr_1fr_1.2fr]">
