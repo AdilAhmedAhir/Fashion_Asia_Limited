@@ -117,6 +117,10 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
 
   **5b: T-028**
 
+  **5b addition, 2026-10-07** (orchestrator, on Wave 4b's design review; DECISIONS 2026-10-07). `HeroOverlay.tsx` is already on 5b's list:
+  - the hero tag (`HeroOverlay.tsx:41`, `text-accent` on `bg-background/90` over the video) and the "Legacy" stat label (`:62`, `text-white/70`) reach AA. Measured on one paused frame, they're 4.36:1 at the median (1.88:1 at worst) and 3.07:1.
+  - Class tokens only. `design-reviewer` measures across at least 3 video frames, and the motion rules above are unchanged.
+
   5. **framer-motion:** `MotionConfig reducedMotion="user"` goes inside `SmoothScrollProvider`, not in `layout.tsx`, so the layout stays a server component.
   6. **Lenis** isn't created when reduced motion is on. It's checked at mount, next to the touch check.
   7. **GSAP:**
@@ -1700,7 +1704,16 @@ The owner added a "View all products" button on `/what-we-do`. The owner's decis
 After T-026 this run also does **T-016** (above), by the owner's decision on 2026-10-03, because staff are about to use the product editor.
 
 **Follow-ups found in this run** (backlog; not part of the `/products` run):
-- [ ] **T-027** — Make `text-primary` micro-labels pass WCAG AA sitewide [app:site][design]
+- [x] **T-027** — Make `text-primary` micro-labels pass WCAG AA sitewide [app:site][design]
+  Done 2026-10-07 in **Wave 4b**:
+  - **Commits:** `84e4da3` (the token sweep: items 6–8 plus the 4b additions F2 and F4, 35 files), `684ed09` (item 9, the `scrim` token) and `647b2d5` (design fix: the "Secure Session" icon matches its label). Item 10's DESIGN.md §2 entries landed with the close-out docs.
+  - **What changed:** green text is `text-accent` everywhere (`text-primary` now colours only `aria-hidden` decoration and the mobile-menu numbers); every `h1`–`h4` uses `text-foreground`; the admin sidebar group and dashboard stat labels are `text-white/50`; text on solid green is `text-foreground`; the sustainability caption is `text-surface/70 text-xs`; the category cards use `bg-scrim`, pixel-identical. Every changed label measures at least 5.28:1.
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: SHIP. Class tokens only (123 changes, 0 outside `className`); the public HTML is identical apart from class tokens on 13 pages; the five conditions for skipping the security review hold.
+    - `design-reviewer`: FIX FIRST (the ShieldCheck icon), then SHIP; it approved the DESIGN.md draft with five recording edits.
+  - **Re-bind at 5a:** `products/[category]/page.tsx` is now `b6b09179…` and `ImportBuiltInGallery.tsx` is `acf7a662…` (class tokens only).
+  - **NOT VISUALLY VERIFIED:** the live admin (stand-in renders with the exact classes), live `FormStatusMessage` lines, and 768/1024 px.
+  - **Follow-ups:** under "Follow-ups found in Wave 4b".
   AC:
   - Every `text-primary` text label on a dark background reaches at least 4.5:1, or 3:1 where it's large text under DESIGN.md §3. Measured from pixels:
     - the "01. PRODUCT CATALOG" kicker and the category page's "ALL PRODUCTS" back link are 2.21:1;
@@ -2039,6 +2052,10 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
 
   **4c: T-011**
 
+  **4c additions, 2026-10-07** (orchestrator, on Wave 4b's reviews; DECISIONS 2026-10-07):
+  - **The stale comment** at `SettingsForm.tsx:70-71` becomes: "The tag is `text-accent`, the same as SettingsHeader's (T-027): `text-primary` as text on the dark admin fails AA (docs/DESIGN.md §2)."
+  - **`SeedDefaultsPanel.tsx:78`:** the native checkbox's `accent-primary` becomes `accent-accent`, because `primary` on the dark admin is under 3:1 for a control. The same fix in `CareersClient` and `ReportsClient` belongs to T-036.
+
   11. **Accessible names:**
       - **Where:** every control in `SettingsForm`'s shared parts, `ImageUploadField`, `SeedDefaultsPanel` and `/admin/login`.
       - **The rule:** each has a programmatic name containing its visible label (`useId` plus `htmlFor`/`id`).
@@ -2063,6 +2080,11 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   18. **Unchanged:** all of Wave 3's logic and `commitPathOnBlur`'s gated classes and behaviour.
 
   **4d: T-030 and the shared menu hook**
+
+  **4d additions, 2026-10-07** (orchestrator, on Wave 4b's design review; DECISIONS 2026-10-07). Class tokens only, in the files 4d already rewrites (`layout.tsx`, `AdminNav.tsx`):
+  - the nav links rise from `text-white/50` to `text-white/70`, so the `white/50` group labels stay below them;
+  - `text-[0.6rem]` (the group labels and "Secure Session") becomes `text-xs`;
+  - the layout's `bg-[#0a0a0a]` becomes `bg-surface`, which is the same colour.
 
   19. **The hook:** `useOverlayMenu({ open, onClose, toggleRef, panelRef, inertTargets, closeWhen })` in a new `src/lib/use-overlay-menu.ts`.
       - **On open:** focus goes to the panel's first focusable element.
@@ -2263,8 +2285,20 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - Every public control not covered by T-029 (the header and menu links) shows `focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background` on keyboard focus, instead of the browser's default outline. That includes the public forms' submit button, the 404 button and the report buttons.
   - Admin controls outside T-011's shared parts and T-036's forms use the same string ending in `focus-visible:ring-offset-surface`.
   - Wherever `transition-all` is present, add `focus-visible:transition-none`, so the ring appears at once (DESIGN.md §4).
+  - **Known sites** (Wave 4b's design review): `(website)/page.tsx:114`, `AboutSection.tsx:54`, `BusinessPreviewSection.tsx:39`, `ContactSection.tsx:40`, `MediaPreviewSection.tsx:141`, `SustainabilityPreviewSection.tsx:47,66`, `JobAccordion.tsx:109` and its toggle, "Apply for this Position", and `SubmitButton`. Match the ring offset to each section's background (`-background`, `-surface` or `-black`).
   - No change to layout, copy or colour at rest.
-  Source: `design-reviewer`, Wave 4a F1, 2026-10-07 (a banned default that predates the run).
+  Source: `design-reviewer`, Wave 4a F1 and Wave 4b, 2026-10-07 (a banned default that predates the run).
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
+
+- [ ] **T-041** — Sweep the remaining banned defaults in components [app:site][app:admin][design]
+  AC:
+  - **Plain white text:** the 45 remaining plain `text-white` (where `foreground` is meant) become `text-foreground`, unless design records why not.
+  - **Magic text sizes:** the 38 remaining `text-[…]` sizes become type-scale steps (`text-xs` and up), unless design records why not.
+  - **Raw hex:** none in components, for example the dashboard status dot's `bg-[#016138]` becomes `bg-primary`.
+  - **`FormStatusMessage`:** uses `role={state.ok ? "status" : "alert"}`, so errors are announced (DESIGN.md §6).
+  - **`JobAccordion`'s toggle** gets `type="button"`.
+  - No layout or copy change, and AA holds on every changed pair.
+  Source: Wave 4b's reviews, 2026-10-07 (DESIGN.md §7).
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
@@ -2304,6 +2338,12 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **Accepted gap (note 1):** OK on Sign Out while a follow-up save is waiting very likely loses that save. Next runs Server Actions one at a time, so the follow-up runs after the logout, signed out, and fails unseen. `main` loses it too, with no warning. The words now say the change "may not be saved", and the owner's checklist has a row for it.
   - **Watch only:** `new URL(link.href)` would throw on an href that won't parse, and `target="_self"` links are skipped because the contract says "no target". No admin link has either today.
 - **The builder's note:** a plain `<a href>` to another page in the admin would ask twice (the guard's confirm, then the browser's leave question). No such link exists today, because the admin shell uses only `<Link>` and the Sign Out form. If T-030's `AdminNav` adds one, give it a `<Link>`.
+
+**Follow-ups found in Wave 4b (2026-10-07)**, for the backlog:
+- **Folded into later sub-waves:** 4c (the stale comment, the checkbox accent), 4d (nav link opacity, `text-xs`, `bg-surface`) and 5b (the hero overlay). See each sub-wave's additions in the Wave 4 and Wave 5 contracts.
+- **New tickets:** T-041 (the remaining banned defaults). T-040 gains Wave 4b's list of CTAs that still show the browser's default focus ring.
+- **`code-reviewer`, accepted:** after F4's `text-xs`, the "RMG Sustainability Council" caption runs 8 px into its white tile's padding at 360 px (11 px on `main`; 18 px at 320 px), and OEKO-TEX wraps to 3 lines. It stays inside the tile and nothing scrolls sideways; design approved F4.
+- **`code-reviewer`, for T-036:** `accent-primary` on the native checkboxes in `CareersClient.tsx:260` and `ReportsClient.tsx:338`.
 
 ### Dependency Order
 

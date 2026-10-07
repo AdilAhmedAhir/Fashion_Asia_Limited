@@ -2721,3 +2721,21 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
   - [ ] On `/admin/products`, start a product save and click another sidebar page while it shows "Saving…". The confirm appears. Cancel stays; then wait for "Saved".
   - [ ] Do the same with Sign Out. The confirm appears. Press Cancel, wait for "Saved", then sign out.
 - **Verdict: PASS.**
+
+## Static Pass — Wave 4b (T-027) — 2026-10-07 (`code-reviewer` light QA and `design-reviewer`, under the lean protocol)
+- **Target:** branch `wave-4b-labels`.
+  - `84e4da3`: the token sweep (items 6–8, F2, F4), 35 files.
+  - `684ed09`: the `scrim` token, in `tailwind.config.ts` and `CategoryCardGrid.tsx`.
+  - `647b2d5`: the design fix, one class token.
+- **Class tokens only:** `code-reviewer` tokenised every changed line and found 123 changes, all planned and none outside `className`. `tsc` exit 0.
+- **The public HTML,** compared on 13 pages between a `main` build and the branch build: identical once class names are blanked, with the same number of class attributes per page. 118 class attributes changed, all planned.
+- **The rules:**
+  - item 6: `text-primary` went from 84 lines to 8, all allowed (3 `aria-hidden` icons, the menu numbers, 4 comments);
+  - item 7: 0 headings with `text-white` remain;
+  - F2: 13 strings fixed, and 0 `text-white` on solid `bg-primary` is left in about 1,000 class values;
+  - no new token apart from `scrim`, no fill change, and no light text on `secondary`.
+- **Contrast** (`design-reviewer`, pixels at DSF 2, at 360 and 1440 px): every changed label type is at least 5.28:1. The kickers are 7.69–9.65:1, F2's hover 7.18:1, the F4 caption 7.63:1, and the admin labels 8.40–9.44:1 on stand-ins. The scrim is 0 pixels different from `main`'s classes on the live card at both widths. There's no sideways scroll at 360 px on the 10 changed pages.
+- **The 4a–4c security skip:** all five conditions hold. No import changed. Handlers changed className only. `BusinessClient`, `ProductsClient`, `CategoryProductsManager` and `ImageUploadField` are 0-byte, and `SettingsForm`, `SeedDefaultsPanel` and the admin layout changed class tokens only.
+- **Older failures found, not from this diff:** the homepage hero overlay (now scheduled in 5b), and the CTAs still on the browser's default focus ring (T-040).
+- **NOT VISUALLY VERIFIED:** the live admin, the live `FormStatusMessage` lines, 768 and 1024 px, and the hero across more than one video frame.
+- **Verdict: PASS.**

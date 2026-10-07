@@ -99,7 +99,8 @@
 ## §7 — Design law pointer
 Read `docs/DESIGN.md` before any UI.
 - **Semantic Tailwind tokens only:** `background`, `foreground`, `primary`, `accent`,
-  `surface`, fonts `sans` (Inter) and `serif` (Playfair).
+  `surface`, `bg-scrim` (the photo-card gradient, Wave 4b), fonts `sans` (Inter) and `serif`
+  (Playfair). Green text is `text-accent`; text on solid `bg-primary` is `text-foreground`.
 - **WCAG AA, visible focus, reduced-motion guards.**
 - **UI isn't done from code alone:** it ends at `/design-review` screenshots.
 
