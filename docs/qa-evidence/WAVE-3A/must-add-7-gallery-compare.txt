@@ -1,0 +1,5 @@
+Wave 3a, MUST-ADD 7: the gallery's storage-image list, local production build vs production
+captured 2026-10-06T12:50:36Z (both fetched in the same minute)
+local:  http://localhost:3101/life-at-fashion-asia  (build 6281u-sw3YUF1H-cEAt0v = a42ddcb)  14 storage images
+prod:   https://www.fashionasialtd.com/life-at-fashion-asia  (e8eace1)  14 storage images
+result: identical list, same order (URLs omitted: they carry the Supabase project ref)

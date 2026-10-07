@@ -3,8 +3,12 @@
 import { useFormStatus } from "react-dom";
 import { cn } from "@/lib/utils";
 
-export function SubmitButton({ label }: { label: string }) {
-    const { pending } = useFormStatus();
+// `pending` is opt-in (T-019): a form sent from a transition rather than
+// <form action> passes its own state, which useFormStatus() can't see.
+// Without it, the button is exactly what it was.
+export function SubmitButton({ label, pending: pendingProp }: { label: string; pending?: boolean }) {
+    const { pending: formPending } = useFormStatus();
+    const pending = pendingProp ?? formPending;
 
     return (
         <button

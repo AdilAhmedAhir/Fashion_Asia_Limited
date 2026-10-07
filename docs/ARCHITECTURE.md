@@ -44,7 +44,7 @@ The generated index is `docs/INVENTORY.md`.
 ## §4 — Authorization model
 - **In the database:** RLS on every table (see `docs/DATA_MODEL.md` §3).
 - **On the server:** every writing Server Action calls `getUser()` before any read or
-  write. The two exceptions, `addMediaAction` and `deleteMediaAction`, are covered by T-019.
+  write. Since Wave 3a (2026-10-07) that includes `addMediaAction` and `deleteMediaAction` (T-019).
 - **Result contract:** actions return `{ ok, error }` for every expected failure and never
   throw. Next.js redacts thrown messages in production, which is the lesson of SEC-HIGH-4
   and SEC-HIGH-5.
@@ -57,7 +57,7 @@ The generated index is `docs/INVENTORY.md`.
 - **Supabase Storage:** bucket `media` holds images, uploaded through
   `uploadOptimizedImage`, which enforces the `upload-limits.ts` checks. Bucket `reports`
   holds PDFs, through `uploadFile`.
-  - The Media Center's `addMediaAction` **isn't validated** (T-019).
+  - The Media Center (Wave 3a, T-019) checks the session, validates the type, title and pasted address, inserts nothing after a failed upload, and on delete removes the row first. It removes the file only when it's this bucket's own root-level object and nothing else (the four URL columns or any `site_settings` value) refers to it. Any doubt keeps the file.
   - Server Action bodies are capped at 1 MB.
 - **No email, SMS, payments or analytics.** Form submissions land only in the admin inbox
   (Q07).

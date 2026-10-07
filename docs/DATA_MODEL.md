@@ -40,7 +40,7 @@ jobs · reports · leaders · media_assets · submissions   — independent, no 
 | `jobs` | SELECT `WHERE is_active` | ALL | `create`, `update` and `deleteJob`: `getUser()` (T-015) |
 | `reports` | SELECT `WHERE published` | writes (the live policy isn't in the file) | report CRUD and `uploadFile`: `getUser()` (T-015) |
 | `leaders` | SELECT | writes (the live policy isn't in the file) | leader CRUD: `getUser()` (T-015) |
-| `media_assets` | SELECT | writes (the live policy isn't in the file) | **`addMediaAction` / `deleteMediaAction`: no `getUser()` yet (T-019)** |
+| `media_assets` | SELECT | writes (the live policy isn't in the file) | `addMediaAction` / `deleteMediaAction`: `getUser()` first, plus validation (Wave 3a, T-019). A delete removes the row first; a row that RLS keeps is re-read and reported (MEDIA_DELETE_REFUSED); the file is removed only when it's ours and unused. The live DELETE policies are untested by agents (owner row O1). |
 | `submissions` | INSERT only; SELECT denied | SELECT (the live policy isn't in the file) | the forms insert through `form-actions.ts` |
 
 **Rule:** any new table gets RLS, explicit `GRANT`s and per-operation policies **before** it

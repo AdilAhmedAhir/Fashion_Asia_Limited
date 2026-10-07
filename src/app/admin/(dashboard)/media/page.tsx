@@ -1,10 +1,12 @@
 import { createClient } from "@/lib/supabase/server";
-import { addMediaAction, deleteMediaAction } from "@/app/actions/media-actions";
-import { SubmitButton } from "@/components/ui/SubmitButton";
-import { Trash2 } from "lucide-react";
 import ImportBuiltInGallery from "./ImportBuiltInGallery";
+import MediaPublishForm from "./MediaPublishForm";
+import MediaDeleteButton from "./MediaDeleteButton";
 
 export const revalidate = 0;
+
+// Where focus goes after a delete removes its card (T-019).
+const PUBLISHED_HEADING_ID = "published-assets";
 
 export default async function AdminMediaPage() {
     const supabase = await createClient();
@@ -23,46 +25,12 @@ export default async function AdminMediaPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
                 {/* Publish Form */}
                 <div className="lg:col-span-1">
-                    <form action={addMediaAction} className="flex flex-col gap-5 rounded-2xl border border-white/10 bg-black p-6 shadow-xl sticky top-8">
-                        <h2 className="font-serif text-xl font-bold text-white mb-2">Publish New Item</h2>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Title</label>
-                            <input name="title" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none" placeholder="e.g. Factory Floor" />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Category</label>
-                            <select name="type" required className="rounded-xl border border-white/10 bg-black px-4 py-3 text-sm text-white focus:border-primary focus:outline-none appearance-none">
-                                <option value="gallery">Photo Gallery</option>
-                                <option value="news">Press / News</option>
-                            </select>
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Image Upload</label>
-                            <input name="file" type="file" accept="image/*" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none file:mr-4 file:rounded-md file:border-0 file:bg-primary/20 file:px-4 file:py-2 file:text-xs file:font-semibold file:text-primary hover:file:bg-primary/30" />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Image URL (Fallback if no upload)</label>
-                            <input name="url" className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none" placeholder="/images/client/1.jpg or https://..." />
-                        </div>
-
-                        <div className="flex flex-col gap-2">
-                            <label className="text-[0.65rem] font-bold uppercase tracking-widest text-white/50">Text Content (For News)</label>
-                            <textarea name="content" rows={4} className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:border-primary focus:outline-none resize-none" />
-                        </div>
-
-                        <div className="mt-2 w-full">
-                            <SubmitButton label="Publish to Site" />
-                        </div>
-                    </form>
+                    <MediaPublishForm />
                 </div>
 
                 {/* Media Grid */}
                 <div className="lg:col-span-2 flex flex-col gap-4">
-                    <h2 className="font-serif text-xl font-bold text-white mb-2">Published Assets</h2>
+                    <h2 id={PUBLISHED_HEADING_ID} tabIndex={-1} className="font-serif text-xl font-bold text-white mb-2">Published Assets</h2>
                     {error ? (
                         <div className="p-6 text-red-400 bg-red-400/10 rounded-xl border border-red-500/20">Database error. Did you run the SQL script?</div>
                     ) : media?.length === 0 ? (
@@ -85,13 +53,7 @@ export default async function AdminMediaPage() {
                                         </div>
                                         <h3 className="font-serif text-lg font-bold text-white line-clamp-1">{post.title}</h3>
                                     </div>
-                                    <form action={deleteMediaAction} className="absolute right-2 top-2 opacity-0 transition-opacity group-hover:opacity-100">
-                                        <input type="hidden" name="id" value={post.id} />
-                                        <input type="hidden" name="url" value={post.url || ""} />
-                                        <button type="submit" className="rounded-full bg-red-500/80 p-2 text-white hover:bg-red-500 backdrop-blur-sm shadow-lg">
-                                            <Trash2 size={16} />
-                                        </button>
-                                    </form>
+                                    <MediaDeleteButton id={post.id} title={post.title} focusAfterDelete={PUBLISHED_HEADING_ID} />
                                 </div>
                             ))}
                         </div>
