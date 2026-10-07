@@ -82,6 +82,7 @@
   - `supabase-schema.sql` under-documents the live policies (`docs/WORKFLOW.md` §7 #2).
   - Test access *as another user*, read-only. Admin flows are verified from the owner's
     manual checklist.
+- **Response headers (Wave 5a, T-008):** `next.config.ts` `headers()` sends `nosniff`, `strict-origin-when-cross-origin`, a Permissions-Policy, `X-Frame-Options: DENY` and an enforcing structural CSP on every route, plus HSTS (`includeSubDomains`, no `preload`) in production builds. `poweredByHeader: false`. Next 16 drops these on config redirects. `includeSubDomains` is safe only while both bare domains are Vercel redirects.
 - **Every `"use server"` export is an anonymously reachable endpoint.** `settings-actions.ts`
   is imported by public pages, so every write must check the session itself.
 - **Secrets that must never reach a client bundle:** any Supabase service-role key. None
