@@ -18,3 +18,6 @@
 | Q09 | Should anyone besides FAL admins ever sign in, for example staff with limited rights? | [CONFIRM] | No: a single admin role, explicitly allow-listed (RISKS R1) | | |
 | Q10 | Is the staging repo (`AdilAhmedAhir/Fashion_Asia_Limited_staging`) still needed? | [CONFIRM] | Keep it, and never push to it automatically | | |
 | Q11 | Should company facts like "26 lines, 800,000 pieces/month" be editable in the admin? | [CONFIRM] | No: they stay in copy until they change | | |
+| Q12 | Small green labels across the site don't meet the contrast standard. Make them the brighter green already used for links (`text-accent`), or keep the dark green? Keeping it would need a new colour or a written accessibility waiver. | [CONFIRM] | Brighter green (T-027) | | |
+| Q13 | Should visitors be able to pause the moving marquee and the three looping videos? WCAG 2.2.2 (Level A) asks for it. | [CONFIRM] | Not in this release (T-037). Visitors who turn on reduced motion get still content (T-028) | | |
+| Q14 | After this release, no other site can show FAL's pages inside a frame (clickjacking protection). Is anything meant to embed them? | [CONFIRM] | Block framing (T-008) | | |

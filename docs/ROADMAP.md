@@ -75,6 +75,146 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Notes:** Independent of T-003/T-004/T-005. Does not block `deploy` — 🟡 Medium, non-blocking per `docs/SECURITY.md` §5.
 
 - [ ] **T-008** — Add sitewide security headers (`next.config.ts`)
+  **Wave 5 binding contract, covering T-008, T-022, T-017, T-028 and T-029** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim on 2026-10-07, so no second `/architect-review` is needed). It's split into **5a** (T-008, T-022, T-017; premortem first), **5b** (T-028) and **5c** (T-029), after Wave 4 merges. There's no SQL, middleware change or new dependency, so there's no HARD STOP. The facts behind it are under T-034's Wave 4 contract. Where older AC conflicts with this contract, the contract wins.
+
+  **Scope:**
+  - Code only: no SQL, no dependency, no middleware change.
+  - **Precondition:** Wave 4 has merged. T-029 needs 4d's hook, and 5b/5c build on 4a/4b's Header and menu classes.
+
+  **5a: T-008, T-022, T-017 (premortem first)**
+
+  1. **`next.config.ts` (T-008):**
+     - add `poweredByHeader: false`;
+     - add one `headers()` rule, `source: "/:path*"`, with exactly these static values:
+
+       | Header | Value |
+       |---|---|
+       | `X-Content-Type-Options` | `nosniff` |
+       | `Referrer-Policy` | `strict-origin-when-cross-origin` |
+       | `Permissions-Policy` | `camera=(), microphone=(), geolocation=(), payment=(), usb=()` |
+       | `X-Frame-Options` | `DENY` |
+       | `Content-Security-Policy` | `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'` |
+       | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains` |
+
+     - **Permissions-Policy** must never include `autoplay`, `fullscreen` or `picture-in-picture`: the hero autoplays.
+     - **The CSP** is enforcing but structural only. It has no fetch directive, so it can't block any script, style, image, font, video or request.
+     - **HSTS** is sent from production builds only (`NODE_ENV === "production"`) and never with `preload`.
+     - **Must not change:** `agentRules: false`, `logging.serverFunctions: false` and `redirects()` stay byte-identical.
+     - **Fallback:** if security-reviewer doesn't agree to the CSP going straight to enforcing, drop that line. X-Frame-Options still protects against clickjacking.
+  2. **Rejected for this run:**
+     - a nonce-based CSP: it edits the login gate, and a script-policy mistake breaks production, which can only be proven after a deploy;
+     - Report-Only.
+
+     Both go to T-038.
+  3. **Sitemap (T-022):**
+     - remove all 11 `lastModified` lines;
+     - keep all 18 entries, with the same `loc`, `changeFrequency`, `priority` and order;
+     - add a one-line comment saying why.
+  4. **Preloader (T-017):**
+     - **Delete:** the frame loop, `TOTAL_FRAMES` and the 2000 ms safety timer.
+     - **Every screen width** runs today's mobile path: progress +8% every 100 ms, finishing at 1500 ms.
+     - **Must not change:** `finishLoading`, the 800 ms exit, the scroll lock, `scrollTo`, the poster and `HeroSection`.
+
+  **5b: T-028**
+
+  5. **framer-motion:** `MotionConfig reducedMotion="user"` goes inside `SmoothScrollProvider`, not in `layout.tsx`, so the layout stays a server component.
+  6. **Lenis** isn't created when reduced motion is on. It's checked at mount, next to the touch check.
+  7. **GSAP:**
+     - HeroOverlay's timeline and ScaleSection's parallax run inside `gsap.matchMedia("(prefers-reduced-motion: no-preference)")`, reverted on unmount;
+     - with reduced motion on, they render in their final state.
+  8. **CSS:**
+     - the 26 hover transforms and 2 infinite animations the grep found get `motion-safe:`;
+     - opacity and colour transitions stay.
+  9. **Videos:**
+     - a new client component, `src/components/ui/AutoplayVideo.tsx`, renders byte-identical server markup;
+     - with reduced motion on, it pauses and shows the poster;
+     - it's used in Hero, About and what-we-do.
+     - **Cut:** if 5b runs long, this item moves to 5d.
+  10. **Preloader with reduced motion:**
+      - `motion-reduce:hidden` on its layers, so it never paints;
+      - its effect returns at once: no scroll lock, no `scrollTo`, no timers.
+  11. **Career page:** `scrollIntoView` uses `behavior: "auto"` when reduced motion is on.
+  12. **Must not change:**
+      - motion with no reduced-motion setting stays as it is;
+      - the admin is untouched;
+      - no global "kill all animations" rule.
+
+  **5c: T-029**
+
+  13. **The toggle:**
+      - `aria-expanded`, plus `aria-controls="mobile-menu"` pointing at a wrapper that's always in the page;
+      - a stable name, "Menu";
+      - the house focus ring.
+  14. **The shared hook, unchanged:**
+      - `inertTargets` = `#site-main` and `#site-footer`, with those ids added in `(website)/layout.tsx` and `Footer.tsx`;
+      - `closeWhen: "(min-width: 1280px)"`.
+  15. **Screen readers and focus:**
+      - the menu numbers get `aria-hidden="true"`;
+      - each `<nav>` gets a distinct name;
+      - every header and menu link gets the house ring.
+  16. **Must not change:** `data-lenis-prevent`, `overscroll-contain`, the body-scroll effect, the solid header while the menu is open, and `nav.ts`.
+
+  **Touches:**
+  - **5a:** `next.config.ts`, `sitemap.ts`, `Preloader.tsx`.
+  - **5b:**
+    - `SmoothScrollProvider`, `Preloader`, `HeroOverlay`, `ScaleSection`, `MarqueeSection`;
+    - `HeroSection`, `AboutSection` and `what-we-do/page.tsx`;
+    - the new `AutoplayVideo` and `CareerPageClient`;
+    - class tokens in item 8's files.
+  - **5c:** `Header`, `MobileOverlayMenu`, `Footer`, `(website)/layout.tsx`.
+
+  **Unchanged:**
+  - Wave 4's unchanged list, except the two files 5a touches;
+  - `nav.ts` (`507e5c62…`);
+  - every admin file and the hook;
+  - `ProductGrid`, `ProductCard` and `products/page.tsx`;
+  - the lockfile (`6a026457…`).
+
+  **Security sign-offs voided:** `next.config.ts` (T-025's `a44a56d9…`) and `sitemap.ts` (T-025's `105e1025…`). 5a re-binds both, plus 4b's `[category]` page.
+
+  **Verification:**
+  - **5a, local production build on :3101:**
+    - `curl -sI` on `/`, `/admin/login`, `/admin` (307), `/what-we-do/t-shirts` (308), `/sitemap.xml` and one static asset: exactly the header set above, and no `x-powered-by`;
+    - `/admin/login` is refused inside an iframe;
+    - 0 console errors on `/`, `/products` and `/contact`;
+    - `npm ls next` still reports 16.3.6;
+    - **sitemap:** two fetches are byte-identical, with 0 `<lastmod>` and 18 entries equal to the baseline;
+    - **preloader at 1440 px:** 0 frame requests, the bar reaches 100%, and it starts closing between 1200 and 2000 ms; at 360 px it matches `main`.
+  - **`/ship`:** the same `curl` on both `www` domains, the bare-domain redirects, and T-025's four checks.
+  - **5b:** emulated reduced motion at 360 and 1440 px on `/`, `/what-we-do` and `/products`:
+    - no `lenis` class;
+    - no transform or infinite animation in `getAnimations()`;
+    - no GSAP tween running;
+    - videos paused on their posters;
+    - the preloader hidden and the page scrollable at 200 ms;
+    - hovering a card leaves `transform: none`;
+    - with no reduced-motion setting, the same pages match `main`.
+  - **5c:** at 360 px:
+    - open, Tab wraps, Escape returns focus to the toggle;
+    - `inert` is set while open;
+    - no menu numbers in link names;
+    - resizing to 1280 px closes it;
+    - scrolling the open menu with a wheel doesn't scroll the page.
+
+  **Re-review triggers:**
+  - any header or value beyond item 1, a fetch directive in the CSP, Report-Only, nonces or middleware, or `preload`;
+  - serving the site from a bare domain with `includeSubDomains` (CLIENT_QUESTIONS Q01);
+  - touching `redirects()` or the two keep flags;
+  - any `lastmod` source;
+  - restoring the frames, or timings outside 1200–2000 ms;
+  - changes to motion for users without reduced motion, admin changes, or a global kill rule;
+  - `aria-modal` or a focus-trap package;
+  - editing the hook;
+  - an edit to an unchanged file;
+  - a sub-wave running past its cut.
+
+  **Split and reviewers:**
+
+  | Sub-wave | Ticket | Time | Reviewers |
+  |---|---|---|---|
+  | 5a | T-008, T-022, T-017 | about 3 h | premortem first, then code-reviewer and security-reviewer |
+  | 5b | T-028 | about 4 h | code-reviewer, design-reviewer |
+  | 5c | T-029 | about 2.5 h | code-reviewer, design-reviewer |
   - **Source:** `docs/SECURITY.md` SEC-MED-2, 2026-09-26
   - **Files:** `next.config.ts` (new `headers()` block, `poweredByHeader: false`)
   - **Flags:** schema-touching: **no** · sensitive: **yes** (`/cso`'s own jurisdiction per SEC-MED-2's mitigation note) · UI: **no**
@@ -1794,6 +1934,239 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   Source: T-016's contract (`architect-reviewer`, 2026-10-04), from T-026's reviews (QA F4, `code-reviewer`, `design-reviewer`, `security-reviewer`).
   Sequence: `/build` → `/design-review` → `/security-review` → `/qa` → `code-reviewer` → merge. After T-016; then T-010.
 - [ ] **T-034** — Warn before leaving `/admin/products` while a product save is still pending [app:admin][design]
+  **Wave 4 binding contract, covering T-034, T-020, T-027, T-011 and T-030** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim on 2026-10-07, so no second `/architect-review` is needed). It's split into **4a** (T-034, T-020), **4b** (T-027), **4c** (T-011) and **4d** (T-030), each with its own review stage. There's no SQL, database object or new dependency, so there's no HARD STOP. Where older AC conflicts with this contract, the contract wins. The facts below also ground the Wave 5 contract (under T-008).
+
+  **Verdict: both waves APPROVE, under the two binding contracts below.**
+  - Neither wave needs SQL, a migration, a database object or a new dependency, so neither has a HARD STOP.
+  - Where older ticket wording conflicts with a contract, the contract wins.
+  - Source was read at `main` `30edcb6`, plus the Wave 2 contract on `wave-2a-write-path` and the Wave 3 draft.
+  - The only network checks were read-only HEAD requests to production (no cookies) and public DNS lookups.
+
+  **Facts behind the rulings:**
+  - **What production sends today:**
+    - `www` sends only HSTS `max-age=63072000` and `x-powered-by`.
+    - Both bare domains (no `www`) are redirects handled by Vercel itself (307 and 308) before Next runs, so `next.config` headers never reach them.
+    - So `includeSubDomains` sent from `www` covers only subdomains of `www.*`. None exist; mail is Namecheap forwarding.
+  - **Why a script CSP is hard here:**
+    - The middleware already runs on every page. A nonce would mean editing the login gate's `updateSession`.
+    - Next's inline scripts, server-rendered `style=` attributes and the Marquee's `<style>` all need nonces or `'unsafe-inline'`.
+    - Wave 2 allows any `https:` image host, so `img-src` would have to allow all of `https:` anyway.
+  - **Why not Report-Only:** there's no reporting endpoint, and Chrome warns on every page load for a Report-Only policy without `report-uri`.
+  - **How leaving a page works:** in the App Router, a `<Link>` click never fires `beforeunload`, and same-page Back/Forward can't be cancelled.
+  - **Contrast, measured from the token hex values:**
+
+    | Pair | Ratio | AA (4.5:1) |
+    |---|---|---|
+    | `foreground` on `primary` | 7.18:1 | passes |
+    | light text on `secondary` (white / `foreground`) | 4.47 / 4.23:1 | fails; this is the Header "Connect" and mobile-menu button hover today |
+    | `accent` on `background` | 7.69:1 | passes |
+    | `accent` on `surface` | 9.10:1 | passes |
+    | `accent/70` on `background` | about 4.4:1 | fails |
+    | `FormStatusMessage` (the public forms' success line) | 2.2:1 | fails |
+
+  - **A focus bug:** `SeedDefaultsPanel` defines `Checkbox` inside render, so every toggle remounts it and keyboard focus is lost.
+  - **Motion still running on reduced-motion settings:** 26 hover transforms and 2 infinite animations in 18 public files aren't gated. All three videos are local autoplay loops.
+
+  **Scope:**
+  - Code plus DESIGN.md entries that record existing values only.
+  - No server file, Server Action, payload or save timing changes.
+  - **Preconditions:** Wave 3b has merged, and each sub-wave builds on the previous merge. If either isn't true, stop.
+
+  **4a: T-034 and T-020, plus every other Wave 4 change to `CategoryProductsManager.tsx`, so that file is opened once**
+
+  1. **Leave guard (T-034).** It's private in `CategoryProductsManager.tsx`, with no new export.
+     - It's on while any product's `SaveView.pending` is true. An effect adds the listeners only then and removes them afterwards.
+     - **Leaving the page:** `beforeunload` (`preventDefault` plus `returnValue = ""`) covers closing the tab, reloading, typing a URL, and hard navigations.
+     - **In-app links and forms** use capture-phase listeners on `window`:
+       - a `click` on a same-origin `<a href>` counts when it's a plain click or Enter, with no modifier keys, no `target` or `download`, and a URL that differs from the current one ignoring the hash;
+       - every `submit` counts (today only Sign Out);
+       - either one asks `confirm(LEAVE_WHILE_SAVING)`, a private constant whose words design-review sets.
+       - **Cancel:** `preventDefault()` plus `stopPropagation()`.
+       - **OK:** nothing. The queue keeps sending, because T-016's queue has no "still mounted" check.
+     - **Accepted gaps:**
+       - Back/Forward within the same page isn't covered.
+       - After a real unload, a save that was still waiting can't be sent. That's what the prompt protects.
+       - No `sendBeacon`, `keepalive` or flush on unload.
+     - **Must stay byte-identical:** `SaveQueue`, `changedFields`, `queueFor`, `send`, `runSave`, `settle`, `requestSave`, `commitField` and `retrySave`, plus T-016's invariants 1–5.
+  2. **T-034's two nits:**
+     - the label becomes `pending ? "Saving…" : "Deleting…"`;
+     - the notice changes "click away from a field" to "leave a field". Design-review may tune it.
+  3. **One treatment for green-filled buttons (T-020):**
+     - **The rule:**
+       - text on solid `bg-primary` is `text-foreground` in every state except disabled;
+       - light text never sits on `secondary`;
+       - outline or transparent states use `text-accent` or `text-foreground`;
+       - the fill colour doesn't change, and there's no new token.
+     - **Sites:**
+       - the ticket's 8;
+       - `globals.css` `::selection` (the same colour pair, written as raw hex);
+       - two hovers found while scoping: Header "Connect" and the mobile-menu button.
+  4. **`SubmitButton`:** classes only. Wave 3a's opt-in `pending` prop and the unconditional `useFormStatus()` stay as they are.
+  5. **`CategoryProductsManager` also gets two token changes here:**
+     - its 2 `hover:text-primary` become `hover:text-accent` (T-027's rule);
+     - `text-[11px]` becomes `text-xs` (T-011's rule).
+
+  **4b: T-027**
+
+  6. **The rule:** after 4b, no `text-primary` (any opacity, any state prefix) colours text or a control anywhere in `src/`.
+     - **Default replacement:** `text-accent` at full opacity. Any opacity variant must be re-measured.
+     - **Allowed to stay:** `aria-hidden` decorative graphics that aren't controls, and the mobile-menu numbers, which T-029 hides from screen readers.
+     - The builder prints whatever remains, with a reason for each.
+  7. **Headings:** every `h1`–`h4` with `text-white` becomes `text-foreground`, public and admin. That includes Wave 3a's media components, the Sync panel, the dashboard and login.
+  8. **Two low-contrast label sets reach at least 4.5:1:** the sidebar group labels (`white/25`) and the dashboard's three stat labels (`white/40`).
+  9. **`scrim`, recorded:** `theme.extend.backgroundImage.scrim` equals `CategoryCardGrid`'s current gradient, and `CategoryCardGrid` uses `bg-scrim`. It must be pixel-identical.
+  10. **DESIGN.md §2, recording only:**
+      - the scrim;
+      - the status colours already shipped, with their ratios (red-400, amber-300 on amber-400/10, accent);
+      - the item 3 rule;
+      - the known-failures list, updated.
+
+      **No `warning` token this run.**
+
+  **4c: T-011**
+
+  11. **Accessible names:**
+      - **Where:** every control in `SettingsForm`'s shared parts, `ImageUploadField`, `SeedDefaultsPanel` and `/admin/login`.
+      - **The rule:** each has a programmatic name containing its visible label (`useId` plus `htmlFor`/`id`).
+      - **`ObjectListEditor` ids:** the editor's id, plus Wave 3b's row key, plus the field key. Never an item field.
+      - **No orphan `<label>`:** a list heading labels its group (`role="group"` plus `aria-labelledby`).
+      - **Login:** `name`s, `loginAction` and `useActionState` stay unchanged.
+  12. **Icon-only buttons:**
+      - Move/Remove names are unique on the page and carry the row number, plus its title when it isn't blank;
+      - a chip's remove button reads "Remove <chip>";
+      - the `StatsList`/`ListEditor` remove buttons get names.
+  13. **Labels and text size:** labels and hints reach at least 4.5:1 on their real panel, measured. `text-[10px]`/`text-[11px]` become `text-xs`.
+  14. **Focus:**
+      - every control in these files gets the house focus ring (`focus-visible:ring-2 ring-accent`);
+      - the hidden file input shows its ring on the drop zone, through `has-[:focus-visible]:`.
+  15. **Saving looks like saving:** controls inside a disabled fieldset show disabled styles; the drop zone uses `has-[:disabled]:`.
+  16. **Small fixes:**
+      - the ChipList input gets `min-w-0`;
+      - in `SeedDefaultsPanel`, the checkbox gets `shrink-0`;
+      - `Checkbox` is hoisted out of render, so it no longer remounts;
+      - the result's live region is always mounted.
+  17. **`SettingsHeader` focus:** if Save had focus when a save started and focus is on `<body>` when it ends, focus returns to Save. `disabled` stays, so there's no new double-submit path.
+  18. **Unchanged:** all of Wave 3's logic and `commitPathOnBlur`'s gated classes and behaviour.
+
+  **4d: T-030 and the shared menu hook**
+
+  19. **The hook:** `useOverlayMenu({ open, onClose, toggleRef, panelRef, inertTargets, closeWhen })` in a new `src/lib/use-overlay-menu.ts`.
+      - **On open:** focus goes to the panel's first focusable element.
+      - **While open:**
+        - Escape calls `onClose()`;
+        - Tab and Shift+Tab wrap within the toggle plus the panel;
+        - the `inertTargets` elements get `inert` (only ones the hook added are removed on close);
+        - `closeWhen` (a media query) closes the menu once it matches.
+      - **On close:** if focus is inside the panel or on `<body>`, it moves to the toggle.
+      - **Limits:** no timers, no `aria-modal`, no dependency, safe under StrictMode.
+      - **The reuse ruling:** one behaviour with two looks. T-029 reuses it unchanged.
+  20. **The admin layout:**
+      - it stays a server component and keeps `logoutAction`; it passes the Sign Out form to the menu as a ReactNode prop;
+      - a new `src/app/admin/(dashboard)/AdminNav.tsx` (`"use client"`) holds `navItems` unchanged;
+      - `AdminNav` imports no Server Action, nothing from `@/lib/supabase/*` and nothing from `settings-read`.
+  21. **Current page:** `aria-current="page"` plus a visible current state that doesn't rely on colour alone.
+      - `/admin` matches exactly;
+      - every other link matches its own path or any path under it.
+  22. **Below 768 px:**
+      - a top bar with a "Menu" toggle (`aria-expanded`, plus `aria-controls` pointing at an element that's always in the page);
+      - the menu lists every sidebar link, in the same groups, plus Sign Out;
+      - it uses the hook with `inertTargets = #admin-main` and `closeWhen: "(min-width: 768px)"`;
+      - a link click closes it, and body scroll is locked while it's open;
+      - no sideways scroll at 360 px.
+
+  **Touches:**
+  - **4a:**
+    - `CategoryProductsManager.tsx` and `SubmitButton.tsx`;
+    - `SettingsForm.tsx` (only the Save button's classes);
+    - `admin/login/page.tsx` and `submissions/page.tsx` (tab classes);
+    - `not-found.tsx` and `sustainability/page.tsx`;
+    - `src/app/layout.tsx` and `globals.css`;
+    - `Header.tsx` and `MobileOverlayMenu.tsx` (button classes).
+  - **4b:**
+    - class tokens in the files item 6's grep and item 7 find;
+    - `CategoryCardGrid.tsx` and `tailwind.config.ts`;
+    - `docs/DESIGN.md`.
+  - **4c:**
+    - `SettingsForm.tsx`, `ImageUploadField.tsx` and `SeedDefaultsPanel.tsx`;
+    - `admin/login/page.tsx`;
+    - `ProductsClient.tsx`/`BusinessClient.tsx`, only if the shared parts can't carry the disabled look.
+  - **4d:** the new hook, the new `AdminNav.tsx`, and `admin/(dashboard)/layout.tsx`.
+
+  **Unchanged (0-byte):**
+  - **Server side:**
+    - every `src/app/actions/*` file and `action-errors.ts`;
+    - `site-content.ts`, `settings-read.ts`, `upload-limits.ts`, `nav.ts` and `category-draft.ts`;
+    - `middleware.ts` and `src/lib/supabase/*`;
+    - `next.config.ts`, `sitemap.ts`, `robots.ts` and `api/*`.
+  - **Page reads:** every server page's database reads; admin `page.tsx` files may change class tokens only.
+  - **Components:** `HomepageSettingsClient`, `ProductGrid`, `ProductCard` and `products/page.tsx`.
+  - **Everything else:** `db/`, `supabase-schema.sql`, `package.json` and the lockfile.
+
+  **Security sign-offs:**
+  - **Voided by sha256:** `products/[category]/page.tsx` (Wave 1's `bc243115…`) at 4b. Also `ImportBuiltInGallery.tsx`, if Wave 3a's sign-off binds it. Both are re-bound at 5a's security pass.
+  - **Invariants reopened (code-reviewer checks them):**
+    - T-016's invariants 1–5;
+    - Wave 3's restated invariant 4;
+    - T-026's 7 client invariants (`SettingsForm`, `SeedDefaultsPanel`, `BusinessClient`, `ProductsClient`, the admin layout);
+    - T-025's catalog invariants.
+
+  **Verification (targeted):**
+  - **Every commit:**
+    - `tsc` and `build`;
+    - the diff only touches files on the Touches list, and the unchanged files are 0-byte;
+    - rule greps for items 3, 6, 13 and 11.
+  - **4a:**
+    - re-run T-016's harness; the send sequence is byte-identical;
+    - **one guard harness** on a production bundle, with a save that never finishes:
+      - reload shows the browser's prompt;
+      - a link click shows the confirm;
+      - Cancel leaves the URL unchanged;
+      - OK navigates, and the queued follow-up is still sent;
+      - with nothing pending, there's no prompt;
+    - the changed button states at 360 and 1440 px.
+  - **4b:**
+    - one contrast sample per changed label type, at 360 and 1440 px;
+    - public HTML differs from the baseline only in class tokens;
+    - the scrim screenshot differs by 0 pixels.
+  - **4c:**
+    - the Chrome DevTools accessibility tree on stand-in renders of Products, Business and the Sync panel, plus the real `/admin/login`: 0 unnamed controls;
+    - keyboard: Tab through one row, Space on a Sync checkbox, Enter on Save;
+    - no sideways scroll at 360 px;
+    - Wave 3b's harness re-run, with payloads equal to `main`'s.
+  - **4d:** a stand-in layout at 360 and 1440 px:
+    - open with the keyboard;
+    - Tab wraps;
+    - Escape returns focus to the toggle;
+    - `inert` is set while open;
+    - `aria-current` is correct;
+    - resizing to 768 px closes it.
+
+  **Re-review triggers:**
+  - any SQL, database object or dependency, including a focus-trap or accessibility package;
+  - T-034 changing what or when the queue sends, calling an action, flushing on unload, using `popstate`/Navigation API blocking, or widening the guard;
+  - a new colour token (other than `scrim`), a fill colour change, or light text on `secondary`;
+  - changing `SubmitButton`'s `pending`/`useFormStatus` behaviour;
+  - touching Wave 3's logic or `commitPathOnBlur`'s gating;
+  - ids built from item fields;
+  - the admin layout becoming a client component, or a client file importing an action or Supabase;
+  - any change to nav links, their order or labels;
+  - the hook doing more than item 19;
+  - DESIGN.md edits beyond recording;
+  - an edit to an unchanged file;
+  - a sub-wave running past its cut.
+
+  **Split and reviewers:**
+
+  | Sub-wave | Ticket | Time | Pre-agreed cut | Reviewers |
+  |---|---|---|---|---|
+  | 4a | T-034, T-020 | about 3.5 h | — | code-reviewer, design-reviewer |
+  | 4b | T-027 | about 4 h | items 9–10 move to 4b-ii | code-reviewer, design-reviewer |
+  | 4c | T-011 | about 4 h | item 16 and login move to 4c-ii | code-reviewer, design-reviewer |
+  | 4d | T-030 | about 3 h | — | code-reviewer, design-reviewer, security-reviewer |
+
+  - **Security-reviewer at 4d only:** the admin shell renders Sign Out.
+  - **4a–4c skip security-review:** their admin diffs are classes, ARIA, copy and a client-side guard. Instead, code-reviewer checks: no new import, no changed handler, and the invariants above.
+  - That skip is an exception to WORKFLOW §3's `src/app/admin/**` rule, so it's recorded in DECISIONS (2026-10-06, "Wave 4 split and lean reviews").
   AC:
   - While any product on `/admin/products` shows "Saving…" (a save in flight or waiting), leaving the page (a link, the back button, closing or reloading the tab) first asks the browser's standard "leave site?" question. Once nothing is pending, it doesn't.
   - No change to what the save queue sends or when; the queued save still goes out if the person leaves anyway.
@@ -1847,6 +2220,29 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **Order:** signed out still answers SESSION_EXPIRED first. Wave 2a's harness `args-known-gaps-final.json` is the spec; it records 12 known-gap cases that must flip.
   Source: SEC-MED-16 (Medium; security Wave 2a), from Wave 2a's premortem MUST-ADD 10, which DECISIONS 2026-10-06 narrowed to the product writes.
   Sequence: `/build` → `/security-review` → `code-reviewer` → merge. Backlog.
+
+- [ ] **T-036** — Names, focus rings and AA labels on the hand-built admin forms [app:admin][design]
+  AC:
+  - The Careers, Reports, Who We Are leaders and Contact socials forms get what Wave 4c (T-011) gives the shared admin parts: every control has a programmatic name containing its visible label, the house focus ring (`focus-visible:ring-2 ring-accent`), and labels and hints at 4.5:1 or more on their real panel.
+  - No change to what any form sends, its handlers or its Server Actions.
+  Source: the Wave 4 architect review, 2026-10-06 (outside T-011's shared-component scope).
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
+
+- [ ] **T-037** — A pause control for the marquee and the three looping videos [app:site][design]
+  AC:
+  - Visitors can pause and resume the homepage marquee and each of the three autoplaying videos (WCAG 2.2.2 Pause, Stop, Hide; Level A).
+  - The control is keyboard-reachable, has a name, and passes AA on its background.
+  - Visitors with reduced motion turned on already get still content through T-028; this ticket is for everyone else.
+  Source: the Wave 5 architect review, 2026-10-06. Owner call Q13 took its default: not built in the autonomous run.
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
+
+- [ ] **T-038** — A script Content-Security-Policy, with a reporting decision [app:site][sec]
+  AC:
+  - Decide the script and style policy (nonces, or hashes and allow-lists) and where violation reports go (an endpoint, or none) before any code.
+  - A nonce has to come from the middleware, so this edits the login gate's `updateSession`; it needs its own premortem.
+  - A script-policy mistake breaks production, so the plan must say how it's proven before release.
+  Source: the Wave 5 architect review, 2026-10-06. A nonce CSP and Report-Only were both rejected for T-008 in this run.
+  Sequence: `premortem-planner` → `architect-reviewer` → `/build` → `/security-review` → `/qa` → `code-reviewer` → merge. Backlog.
 
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
