@@ -77,7 +77,7 @@ export default function SeedDefaultsPanel() {
                 type="checkbox"
                 checked={selected.includes(k)}
                 onChange={() => toggle(k)}
-                className="h-4 w-4 accent-primary"
+                className="h-4 w-4 accent-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
             />
             {LABELS[k] ?? k}
         </label>
@@ -95,13 +95,13 @@ export default function SeedDefaultsPanel() {
 
             <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
                 <div role="group" aria-labelledby={`${groupId}-pages`} className="flex flex-col gap-3">
-                    <span id={`${groupId}-pages`} className="text-xs font-bold uppercase tracking-widest text-white/40">Page content</span>
+                    <span id={`${groupId}-pages`} className="text-xs font-bold uppercase tracking-widest text-white/50">Page content</span>
                     {PAGE_KEYS.map(k => <Checkbox key={k} k={k} />)}
                 </div>
                 <div role="group" aria-labelledby={`${groupId}-config`} className="flex flex-col gap-3">
-                    <span id={`${groupId}-config`} className="text-xs font-bold uppercase tracking-widest text-white/40">Configuration</span>
+                    <span id={`${groupId}-config`} className="text-xs font-bold uppercase tracking-widest text-white/50">Configuration</span>
                     {CONFIG_KEYS.map(k => <Checkbox key={k} k={k} />)}
-                    <p className="mt-1 text-xs leading-relaxed text-white/30">
+                    <p className="mt-1 text-xs leading-relaxed text-white/50">
                         Off by default — these hold contact details and SEO text you maintain by hand.
                     </p>
                 </div>
@@ -118,7 +118,7 @@ export default function SeedDefaultsPanel() {
             <button
                 onClick={run}
                 disabled={isPending || !selected.length}
-                className="flex items-center gap-2 rounded-lg border border-amber-500/40 px-6 py-3 text-sm font-bold text-amber-300 transition-all hover:bg-amber-500/10 disabled:opacity-40 disabled:cursor-not-allowed"
+                className="flex items-center gap-2 rounded-lg border border-amber-500/40 px-6 py-3 text-sm font-bold text-amber-300 transition-colors hover:bg-amber-500/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:opacity-40 disabled:cursor-not-allowed"
             >
                 {isPending ? <Loader2 size={16} className="animate-spin" /> : <RefreshCw size={16} />}
                 {isPending ? "Syncing..." : `Sync ${selected.length} page(s) from code`}

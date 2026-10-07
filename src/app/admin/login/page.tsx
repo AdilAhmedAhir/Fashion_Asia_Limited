@@ -14,7 +14,7 @@ export default function LoginPage() {
                 <div className="mb-8 flex flex-col items-center text-center">
                     <BrandLogo className="h-16 w-16" />
                     <h1 className="mt-6 font-serif text-2xl font-bold tracking-wider text-foreground">FASHION ASIA CMS</h1>
-                    <p className="mt-2 text-xs uppercase tracking-widest text-white/40">Secure Access Portal</p>
+                    <p className="mt-2 text-xs uppercase tracking-widest text-white/50">Secure Access Portal</p>
                 </div>
 
                 {state?.error && (
@@ -26,16 +26,16 @@ export default function LoginPage() {
                 <form action={formAction} className="flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
                         <label htmlFor={`${id}-email`} className="text-xs font-bold uppercase tracking-widest text-white/50">Admin Email</label>
-                        <input id={`${id}-email`} name="email" type="email" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <input id={`${id}-email`} name="email" type="email" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent" />
                     </div>
                     <div className="flex flex-col gap-2">
                         <label htmlFor={`${id}-password`} className="text-xs font-bold uppercase tracking-widest text-white/50">Password</label>
-                        <input id={`${id}-password`} name="password" type="password" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <input id={`${id}-password`} name="password" type="password" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent" />
                     </div>
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-bold uppercase tracking-widest text-foreground transition-all hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(14,201,122,0.3)] disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-bold uppercase tracking-widest text-foreground transition-colors hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(14,201,122,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isPending ? "Authenticating..." : "Authenticate"}
                     </button>
