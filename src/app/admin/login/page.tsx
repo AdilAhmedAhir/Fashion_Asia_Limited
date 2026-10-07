@@ -1,11 +1,12 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useId } from "react";
 import { loginAction } from "@/app/actions/auth-actions";
 import { BrandLogo } from "@/components/ui/BrandLogo";
 
 export default function LoginPage() {
     const [state, formAction, isPending] = useActionState(loginAction, null);
+    const id = useId();
 
     return (
         <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] p-4">
@@ -24,12 +25,12 @@ export default function LoginPage() {
 
                 <form action={formAction} className="flex flex-col gap-5">
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-white/50">Admin Email</label>
-                        <input name="email" type="email" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <label htmlFor={`${id}-email`} className="text-xs font-bold uppercase tracking-widest text-white/50">Admin Email</label>
+                        <input id={`${id}-email`} name="email" type="email" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                     </div>
                     <div className="flex flex-col gap-2">
-                        <label className="text-xs font-bold uppercase tracking-widest text-white/50">Password</label>
-                        <input name="password" type="password" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
+                        <label htmlFor={`${id}-password`} className="text-xs font-bold uppercase tracking-widest text-white/50">Password</label>
+                        <input id={`${id}-password`} name="password" type="password" required className="rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-white transition-colors focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary" />
                     </div>
                     <button
                         type="submit"

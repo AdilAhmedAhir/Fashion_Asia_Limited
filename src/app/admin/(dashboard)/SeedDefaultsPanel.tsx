@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useId, useState, useTransition } from "react";
 import { seedSettingsFromDefaults } from "@/app/actions/settings-actions";
 import { AlertTriangle, Loader2, RefreshCw } from "lucide-react";
 
@@ -36,6 +36,8 @@ export default function SeedDefaultsPanel() {
     const [isPending, startTransition] = useTransition();
     const [selected, setSelected] = useState<string[]>(PAGE_KEYS);
     const [result, setResult] = useState<{ ok: boolean; message: string } | null>(null);
+    // Names (T-011): each heading names its group of checkboxes.
+    const groupId = useId();
 
     const toggle = (key: string) =>
         setSelected(prev => (prev.includes(key) ? prev.filter(k => k !== key) : [...prev, key]));
@@ -92,12 +94,12 @@ export default function SeedDefaultsPanel() {
             </p>
 
             <div className="mb-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
-                <div className="flex flex-col gap-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/40">Page content</span>
+                <div role="group" aria-labelledby={`${groupId}-pages`} className="flex flex-col gap-3">
+                    <span id={`${groupId}-pages`} className="text-xs font-bold uppercase tracking-widest text-white/40">Page content</span>
                     {PAGE_KEYS.map(k => <Checkbox key={k} k={k} />)}
                 </div>
-                <div className="flex flex-col gap-3">
-                    <span className="text-xs font-bold uppercase tracking-widest text-white/40">Configuration</span>
+                <div role="group" aria-labelledby={`${groupId}-config`} className="flex flex-col gap-3">
+                    <span id={`${groupId}-config`} className="text-xs font-bold uppercase tracking-widest text-white/40">Configuration</span>
                     {CONFIG_KEYS.map(k => <Checkbox key={k} k={k} />)}
                     <p className="mt-1 text-xs leading-relaxed text-white/30">
                         Off by default — these hold contact details and SEO text you maintain by hand.

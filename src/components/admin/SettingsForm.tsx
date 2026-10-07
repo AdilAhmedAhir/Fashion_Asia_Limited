@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { X, Plus, Save, Loader2, ChevronUp, ChevronDown, TriangleAlert } from "lucide-react";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 
@@ -99,10 +99,11 @@ export function SettingsCard({ title, children, className = "" }: {
 export function TextInput({ label, value, onChange, placeholder = "" }: {
     label: string; value: string; onChange: (v: string) => void; placeholder?: string;
 }) {
+    const id = useId();
     return (
         <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
-            <input type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
+            <label htmlFor={id} className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
+            <input id={id} type="text" value={value} onChange={e => onChange(e.target.value)} placeholder={placeholder}
                 className="rounded-lg border border-white/10 bg-black px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-primary/50 focus:outline-none transition-colors" />
         </div>
     );
@@ -111,10 +112,11 @@ export function TextInput({ label, value, onChange, placeholder = "" }: {
 export function TextArea({ label, value, onChange, rows = 4 }: {
     label: string; value: string; onChange: (v: string) => void; rows?: number;
 }) {
+    const id = useId();
     return (
         <div className="flex flex-col gap-2">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
-            <textarea value={value} onChange={e => onChange(e.target.value)} rows={rows}
+            <label htmlFor={id} className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
+            <textarea id={id} value={value} onChange={e => onChange(e.target.value)} rows={rows}
                 className="rounded-lg border border-white/10 bg-black px-4 py-3 text-sm text-white placeholder:text-white/20 focus:border-primary/50 focus:outline-none transition-colors resize-none" />
         </div>
     );
@@ -124,6 +126,8 @@ export function ChipList({ label, items, onChange }: {
     label: string; items: string[]; onChange: (items: string[]) => void;
 }) {
     const [input, setInput] = useState("");
+    // Names (T-011): the heading labels the type box and names the group.
+    const id = useId();
 
     const add = () => {
         if (input.trim() && !items.includes(input.trim())) {
@@ -133,20 +137,21 @@ export function ChipList({ label, items, onChange }: {
     };
 
     return (
-        <div className="flex flex-col gap-3">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
+        <div role="group" aria-labelledby={`${id}-label`} className="flex flex-col gap-3">
+            <label id={`${id}-label`} htmlFor={`${id}-input`} className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
             <div className="flex flex-wrap gap-2">
                 {items.map(item => (
                     <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold text-accent">
                         {item}
-                        <button onClick={() => onChange(items.filter(i => i !== item))} className="hover:text-red-400 transition-colors">
+                        <button onClick={() => onChange(items.filter(i => i !== item))} aria-label={`Remove ${item}`}
+                            className="hover:text-red-400 transition-colors">
                             <X size={12} />
                         </button>
                     </span>
                 ))}
             </div>
             <div className="flex gap-2">
-                <input type="text" value={input} onChange={e => setInput(e.target.value)}
+                <input id={`${id}-input`} type="text" value={input} onChange={e => setInput(e.target.value)}
                     onKeyDown={e => e.key === "Enter" && (e.preventDefault(), add())}
                     placeholder="Type and press Enter..."
                     className="flex-grow rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none" />
@@ -166,18 +171,23 @@ export function StatsList({ label, items, onChange }: {
         next[index] = { ...next[index], [field]: val };
         onChange(next);
     };
+    // Names (T-011): the heading names the group; each box and Remove names its row.
+    const id = useId();
 
     return (
-        <div className="flex flex-col gap-3">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
+        <div role="group" aria-labelledby={`${id}-label`} className="flex flex-col gap-3">
+            <span id={`${id}-label`} className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</span>
             <div className="flex flex-col gap-3">
                 {items.map((item, i) => (
                     <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-3 items-center">
                         <input type="text" value={item.value} onChange={e => update(i, "value", e.target.value)} placeholder="Value"
+                            aria-label={`Value, row ${i + 1} (${label})`}
                             className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm font-bold text-accent focus:border-primary/50 focus:outline-none" />
                         <input type="text" value={item.label} onChange={e => update(i, "label", e.target.value)} placeholder="Label"
+                            aria-label={`Label, row ${i + 1} (${label})`}
                             className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none" />
-                        <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 p-2"><X size={14} /></button>
+                        <button onClick={() => onChange(items.filter((_, j) => j !== i))} aria-label={`Remove row ${i + 1} (${label})`}
+                            className="text-red-400 hover:text-red-300 p-2"><X size={14} /></button>
                     </div>
                 ))}
             </div>
@@ -341,9 +351,21 @@ export function ObjectListEditor<T extends Record<string, string>>({
     const blank = () => Object.fromEntries(fields.map(f => [f.key, ""])) as T;
     const rowKeys = keysOf(items);
 
+    // Names (T-011). A field's id is this editor's id, the row's key and the
+    // field's key, never an item field. A row's Move and Remove names carry
+    // its number, its title when it isn't blank, and the list's label, so
+    // each is unique on the page. The title (the "title" field, else the
+    // first text field) is read for those names only.
+    const editorId = useId();
+    const titleField = fields.find(f => f.key === "title") ?? fields.find(f => !f.type || f.type === "text");
+    const rowName = (index: number, action: string) => {
+        const title = titleField ? String(items[index][titleField.key] ?? "").trim() : "";
+        return `${action}${title ? `: ${title}` : ""} (${label})`;
+    };
+
     return (
-        <div className="flex flex-col gap-3">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
+        <div role="group" aria-labelledby={`${editorId}-label`} className="flex flex-col gap-3">
+            <span id={`${editorId}-label`} className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</span>
             <div className="flex flex-col gap-4">
                 {items.map((item, i) => (
                     <div key={rowKeys[i]} ref={bindRow(rowKeys[i])} className="rounded-xl border border-white/10 bg-black/40 p-4">
@@ -353,17 +375,17 @@ export function ObjectListEditor<T extends Record<string, string>>({
                             </span>
                             <div className="flex items-center gap-1">
                                 <button type="button" onClick={() => move(rowKeys[i], -1)} disabled={i === 0}
-                                    aria-label="Move up"
+                                    aria-label={rowName(i, `Move row ${i + 1} up`)}
                                     className="p-1.5 text-white/40 hover:text-accent disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
                                     <ChevronUp size={14} />
                                 </button>
                                 <button type="button" onClick={() => move(rowKeys[i], 1)} disabled={i === items.length - 1}
-                                    aria-label="Move down"
+                                    aria-label={rowName(i, `Move row ${i + 1} down`)}
                                     className="p-1.5 text-white/40 hover:text-accent disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
                                     <ChevronDown size={14} />
                                 </button>
                                 <button type="button" onClick={() => remove(rowKeys[i])}
-                                    aria-label="Remove"
+                                    aria-label={rowName(i, `Remove row ${i + 1}`)}
                                     className="p-1.5 text-red-400 hover:text-red-300 transition-colors">
                                     <X size={14} />
                                 </button>
@@ -380,13 +402,13 @@ export function ObjectListEditor<T extends Record<string, string>>({
                                 />
                             ) : (
                                 <div key={f.key} className="flex flex-col gap-1.5">
-                                    <label className="text-[10px] font-bold uppercase tracking-widest text-white/30">{f.label}</label>
+                                    <label htmlFor={`${editorId}-${rowKeys[i]}-${f.key}`} className="text-[10px] font-bold uppercase tracking-widest text-white/30">{f.label}</label>
                                     {f.type === "textarea" ? (
-                                        <textarea rows={3} value={item[f.key] ?? ""}
+                                        <textarea id={`${editorId}-${rowKeys[i]}-${f.key}`} rows={3} value={item[f.key] ?? ""}
                                             onChange={e => update(rowKeys[i], f.key, e.target.value)}
                                             className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none resize-none" />
                                     ) : (
-                                        <input type="text" value={item[f.key] ?? ""}
+                                        <input id={`${editorId}-${rowKeys[i]}-${f.key}`} type="text" value={item[f.key] ?? ""}
                                             onChange={e => update(rowKeys[i], f.key, e.target.value)}
                                             className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none" />
                                     )}
@@ -407,16 +429,19 @@ export function ObjectListEditor<T extends Record<string, string>>({
 export function ListEditor({ label, items, onChange }: {
     label: string; items: string[]; onChange: (items: string[]) => void;
 }) {
+    // Names (T-011): the heading names the group; each box and Remove names its row.
+    const id = useId();
     return (
-        <div className="flex flex-col gap-3">
-            <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
+        <div role="group" aria-labelledby={`${id}-label`} className="flex flex-col gap-3">
+            <span id={`${id}-label`} className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</span>
             <div className="flex flex-col gap-3">
                 {items.map((item, i) => (
                     <div key={i} className="flex gap-3 items-start">
-                        <textarea value={item} rows={2}
+                        <textarea value={item} rows={2} aria-label={`Row ${i + 1} (${label})`}
                             onChange={e => { const next = [...items]; next[i] = e.target.value; onChange(next); }}
                             className="flex-grow rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none resize-none" />
-                        <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 p-2 mt-1"><X size={14} /></button>
+                        <button onClick={() => onChange(items.filter((_, j) => j !== i))} aria-label={`Remove row ${i + 1} (${label})`}
+                            className="text-red-400 hover:text-red-300 p-2 mt-1"><X size={14} /></button>
                     </div>
                 ))}
             </div>
