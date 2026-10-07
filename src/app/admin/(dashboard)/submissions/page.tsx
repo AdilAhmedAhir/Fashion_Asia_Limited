@@ -35,7 +35,7 @@ export default async function SubmissionsPage(props: Props) {
                         href={`/admin/submissions?type=${tab}`}
                         className={cn(
                             "rounded-lg px-6 py-2 text-sm font-bold uppercase tracking-widest transition-colors",
-                            currentType === tab ? "bg-primary text-black" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
+                            currentType === tab ? "bg-primary text-foreground" : "bg-white/5 text-white/50 hover:bg-white/10 hover:text-white"
                         )}
                     >
                         {tab}

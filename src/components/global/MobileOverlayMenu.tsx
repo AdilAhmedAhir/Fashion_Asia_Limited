@@ -68,7 +68,7 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
                         <Link
                             href={NAV_CTA.href}
                             onClick={onClose}
-                            className="rounded-full bg-primary px-8 py-3.5 font-sans text-sm font-semibold uppercase tracking-widest text-white transition-colors hover:bg-secondary"
+                            className="rounded-full bg-primary px-8 py-3.5 font-sans text-sm font-semibold uppercase tracking-widest text-foreground transition-colors hover:bg-primary/90"
                         >
                             {NAV_CTA.label}
                         </Link>

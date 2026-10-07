@@ -23,6 +23,12 @@ const GENERIC_ERROR = "Something went wrong. Check your connection and try again
 // only: nothing in the save queue below uses a timer.
 const SAVED_VISIBLE_MS = 2000;
 
+// What staff see if they try to leave this page or sign out while a product
+// is still saving (T-034). "May not be saved" covers Sign Out: a follow-up
+// save that is still waiting then runs signed out and fails unseen.
+const LEAVE_WHILE_SAVING =
+    "A product is still saving. If you leave this page or sign out now, your latest change may not be saved.\n\nPress OK to leave anyway, or Cancel to stay until it says “Saved”.";
+
 // Each category's products, keyed by category slug. A Map, never a plain
 // object (T-016, SEC-INFO-37): a category slugged "constructor" is just
 // another key. Read-only, so every change builds a new Map.
@@ -149,6 +155,9 @@ export function CategoryProductsManager({
     // upload captured when it started) acts exactly like the current one.
     const queues = useRef(new Map<string, SaveQueue>()).current;
     const [saveViews, setSaveViews] = useState<ReadonlyMap<string, SaveView>>(() => new Map());
+
+    // While any product is still saving, leaving the page asks first (T-034).
+    useLeaveGuard(Array.from(saveViews.values()).some(view => view.pending));
 
     const registerControlRef = (productId: string, kind: "up" | "down" | "delete", el: HTMLButtonElement | null) => {
         const entry = controlRefs.current.get(productId) ?? {};
@@ -399,7 +408,7 @@ export function CategoryProductsManager({
                 <Zap size={16} className="mt-0.5 flex-none text-accent" aria-hidden="true" />
                 <span>
                     <strong className="font-bold text-accent">Products save automatically.</strong> The moment you
-                    add, reorder or delete a product below, or click away from a field you&apos;ve edited,
+                    add, reorder or delete a product below, or leave a field you&apos;ve edited,
                     it&apos;s live on the public site — there&apos;s no Save button down here. That&apos;s
                     different from the categories above, which only take effect
                     once you click <strong className="font-bold text-foreground">Save categories</strong>.
@@ -540,12 +549,12 @@ function AddProductForm({ categorySlug, onCreated }: { categorySlug: string; onC
 
     return (
         <div className="rounded-xl border border-dashed border-primary/30 bg-primary/[0.03] p-4">
-            <p className="mb-3 text-[11px] font-bold uppercase tracking-widest text-white/50">Add a product</p>
+            <p className="mb-3 text-xs font-bold uppercase tracking-widest text-white/50">Add a product</p>
             <div className="flex flex-col gap-3">
                 <ImageUploadField label="Product image" value={image} onChange={setImage} />
 
                 <div className="flex flex-col gap-1.5">
-                    <label htmlFor="new-product-name" className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+                    <label htmlFor="new-product-name" className="text-xs font-bold uppercase tracking-widest text-white/50">
                         Name
                     </label>
                     <input
@@ -559,7 +568,7 @@ function AddProductForm({ categorySlug, onCreated }: { categorySlug: string; onC
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <label htmlFor="new-product-description" className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+                    <label htmlFor="new-product-description" className="text-xs font-bold uppercase tracking-widest text-white/50">
                         Description (optional)
                     </label>
                     <textarea
@@ -583,7 +592,7 @@ function AddProductForm({ categorySlug, onCreated }: { categorySlug: string; onC
                     type="button"
                     onClick={handleAdd}
                     disabled={!canAdd}
-                    className="flex items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 py-2.5 text-xs font-bold text-black transition-colors hover:bg-primary/90 disabled:opacity-40"
+                    className="flex items-center justify-center gap-2 self-start rounded-lg bg-primary px-5 py-2.5 text-xs font-bold text-foreground transition-colors hover:bg-primary/90 disabled:opacity-40"
                 >
                     {busy ? <Loader2 size={14} className="animate-spin" /> : <Plus size={14} />}
                     {busy ? "Adding…" : "Add product"}
@@ -673,22 +682,22 @@ function ProductRow({
     return (
         <div className="rounded-xl border border-white/10 bg-black/40 p-4">
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 gap-y-1">
-                <span className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+                <span className="text-xs font-bold uppercase tracking-widest text-white/50">
                     Product {index + 1} of {total}
                 </span>
                 <div className="flex items-center gap-2">
                     {/* Persistent live region (docs/ROADMAP.md T-004 /ui-ux pass): kept
                         mounted at all times so screen readers pick up busy→saved as an
                         in-place content change, not a region appearing from nothing.
-                        text-white/50, not /40 — this is real 11px body text (not an
+                        text-white/50, not /40 — this is real 12px body text (not an
                         aria-hidden decorative icon), so it needs the 4.5:1 text floor,
                         not the 3:1 UI-component floor; /50 is the same shade already
                         used for every other muted label in this file. */}
-                    <div role="status" aria-live="polite" className="flex items-center gap-1 text-[11px] font-bold">
+                    <div role="status" aria-live="polite" className="flex items-center gap-1 text-xs font-bold">
                         {controlsLocked && (
                             <span className="flex items-center gap-1 text-white/50">
                                 <Loader2 size={14} className="animate-spin" aria-hidden="true" />
-                                {deleting ? "Deleting…" : "Saving…"}
+                                {pending ? "Saving…" : "Deleting…"}
                             </span>
                         )}
                         {/* Only once nothing is waiting and the latest attempt
@@ -706,7 +715,7 @@ function ProductRow({
                         onClick={() => onMove(-1)}
                         disabled={index === 0 || reorderBusy || controlsLocked}
                         aria-label={`Move ${productLabel} up`}
-                        className="rounded-md p-1.5 text-white/40 transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-20 disabled:hover:text-white/40"
+                        className="rounded-md p-1.5 text-white/40 transition-colors hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-20 disabled:hover:text-white/40"
                     >
                         <ChevronUp size={14} />
                     </button>
@@ -716,7 +725,7 @@ function ProductRow({
                         onClick={() => onMove(1)}
                         disabled={index === total - 1 || reorderBusy || controlsLocked}
                         aria-label={`Move ${productLabel} down`}
-                        className="rounded-md p-1.5 text-white/40 transition-colors hover:text-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-20 disabled:hover:text-white/40"
+                        className="rounded-md p-1.5 text-white/40 transition-colors hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface disabled:opacity-20 disabled:hover:text-white/40"
                     >
                         <ChevronDown size={14} />
                     </button>
@@ -746,7 +755,7 @@ function ProductRow({
                 {/* Editable while a save is in flight, so nothing typed after
                     tabbing out mid-save is dropped. Only a delete locks them. */}
                 <div className="flex flex-col gap-1.5">
-                    <label htmlFor={`product-name-${product.id}`} className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+                    <label htmlFor={`product-name-${product.id}`} className="text-xs font-bold uppercase tracking-widest text-white/50">
                         Name
                     </label>
                     <input
@@ -761,7 +770,7 @@ function ProductRow({
                 </div>
 
                 <div className="flex flex-col gap-1.5">
-                    <label htmlFor={`product-description-${product.id}`} className="text-[11px] font-bold uppercase tracking-widest text-white/50">
+                    <label htmlFor={`product-description-${product.id}`} className="text-xs font-bold uppercase tracking-widest text-white/50">
                         Description (optional)
                     </label>
                     <textarea
@@ -825,4 +834,54 @@ function useSavedFlash(saved: { at: number } | null): boolean {
         return () => clearTimeout(timer);
     }, [saved]);
     return saved !== null && expired !== saved;
+}
+
+/**
+ * While `active`, asks before this page is left (T-034). Closing the tab,
+ * reloading, typing a URL or any hard navigation gets the browser's own
+ * prompt. An in-app link or a form submit (Sign Out) never fires
+ * `beforeunload`, so those ask LEAVE_WHILE_SAVING first: Cancel stops the
+ * click or submit before the app sees it, and OK lets it through. It only
+ * asks: it never sends, flushes or cancels a save, so after OK the save
+ * queue keeps sending.
+ */
+function useLeaveGuard(active: boolean) {
+    useEffect(() => {
+        if (!active) return;
+        const onBeforeUnload = (event: BeforeUnloadEvent) => {
+            event.preventDefault();
+            event.returnValue = "";
+        };
+        const stayUnlessConfirmed = (event: Event) => {
+            if (confirm(LEAVE_WHILE_SAVING)) return;
+            event.preventDefault();
+            event.stopPropagation();
+        };
+        const onClick = (event: MouseEvent) => {
+            if (leavesByLink(event)) stayUnlessConfirmed(event);
+        };
+        window.addEventListener("beforeunload", onBeforeUnload);
+        window.addEventListener("click", onClick, true);
+        window.addEventListener("submit", stayUnlessConfirmed, true);
+        return () => {
+            window.removeEventListener("beforeunload", onBeforeUnload);
+            window.removeEventListener("click", onClick, true);
+            window.removeEventListener("submit", stayUnlessConfirmed, true);
+        };
+    }, [active]);
+}
+
+// A plain click (or Enter) on a same-origin link to another page in this
+// tab. Modifier-clicks, `target` and `download` links, and links that only
+// change the hash don't leave the page, so they're never asked about.
+function leavesByLink(event: MouseEvent): boolean {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return false;
+    const link = event.target instanceof Element ? event.target.closest("a[href]") : null;
+    if (!(link instanceof HTMLAnchorElement) || link.target || link.hasAttribute("download")) return false;
+    const to = new URL(link.href);
+    const here = new URL(window.location.href);
+    if (to.origin !== here.origin) return false;
+    to.hash = "";
+    here.hash = "";
+    return to.href !== here.href;
 }

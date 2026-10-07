@@ -2706,3 +2706,18 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **`security-reviewer`:** static. `upload-limits.ts` is re-bound at `3bff92b6…`, all of T-016's and T-026's client invariants hold, and only the five listed files changed.
 - **Not run:** `/design-review` and any screenshot (DECISIONS 2026-10-07). The admin is NOT VISUALLY VERIFIED against the live login.
 - **Verdict: PASS.**
+
+## Static Pass — Wave 4a (T-034, T-020) — 2026-10-07 (`code-reviewer` light QA and `design-reviewer`, under the lean protocol)
+- **Target:** branch `wave-4a-leave-guard`.
+  - `3d6f745` (T-034): `CategoryProductsManager.tsx`.
+  - `82067bd` (T-020): 11 class-only files.
+  - `40d4424`: a copy-only fix to LEAVE_WHILE_SAVING.
+- **The guard harness:** a production bundle with the actions stubbed and a save that never finishes, driven in real Chrome on a harness origin, with no port opened and no request leaving it. The builder's run was 74/74 in each commit, with 17/17 mutants caught. `code-reviewer` added 6 checks (clicks on a link's icon and inner label, Sign Out and links once the save lands, OK on Sign Out, typing then clicking a link at once) and 3 mutants that the builder's suite missed. **The evidence is that extended suite (`guard-plus`): 86/86 after the fix, with all 20 mutants caught.**
+- **The queue:** all 9 queue functions, plus `publish`, `editableFieldsOf` and `useSavedFlash`, are byte-identical to `main` (a parser proof against `git show 9549130`). T-016's harness: server 117/117, serializer 14/14, `hasVisibleText` 111/111, UI 319/319. Its send log matches `main` byte for byte in both modes.
+- **The 4a–4c security skip (DECISIONS 2026-10-06), all four conditions hold:** no new import; no existing handler changed; T-026's client invariants hold where only classes changed; `ImageUploadField.tsx` is a 0-byte diff.
+- **Contrast (T-020):** `design-reviewer` sampled pixels on real backgrounds at 360 and 1440 px, from a local production build for public pages and a stand-in render for the admin. Every non-disabled state is at least 7.18:1. The log is `docs/qa-evidence/T-020/contrast-log.md`. There's no sideways scroll at 360 px in 6 views.
+- **NOT VISUALLY VERIFIED:** the live admin (no agent signs in) and the two browser dialogs themselves, whose words the harness checks.
+- **Owner checklist (optional, after the deploy):**
+  - [ ] On `/admin/products`, start a product save and click another sidebar page while it shows "Saving…". The confirm appears. Cancel stays; then wait for "Saved".
+  - [ ] Do the same with Sign Out. The confirm appears. Press Cancel, wait for "Saved", then sign out.
+- **Verdict: PASS.**

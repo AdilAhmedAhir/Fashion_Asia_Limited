@@ -32,8 +32,8 @@
   }
 
   ::selection {
-    background-color: #016138;
-    color: #000;
+    background-color: theme('colors.primary');
+    color: theme('colors.foreground');
   }
 
   ::-webkit-scrollbar {
