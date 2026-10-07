@@ -32,7 +32,7 @@ export default function Header() {
                     <Link href="/" className="group relative z-[1001] flex items-center gap-3" onClick={() => setMenuOpen(false)}>
                         <BrandLogo className="w-10 h-10 transition-transform duration-700 group-hover:rotate-180" />
                         <div className="flex flex-col">
-                            <span className="font-serif text-xl font-bold leading-none tracking-wide text-foreground transition-colors group-hover:text-primary">
+                            <span className="font-serif text-xl font-bold leading-none tracking-wide text-foreground transition-colors group-hover:text-accent">
                                 FASHION ASIA
                             </span>
                             <span className="text-[0.65rem] uppercase tracking-[0.2em] text-foreground/50">

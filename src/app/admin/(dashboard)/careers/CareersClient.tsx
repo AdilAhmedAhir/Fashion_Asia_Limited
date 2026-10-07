@@ -99,10 +99,10 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
         <div className="flex flex-col gap-8 max-w-5xl">
             <header className="flex items-start justify-between gap-4">
                 <div>
-                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Management</span>
-                    <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">Career / Job Postings</h1>
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Management</span>
+                    <h1 className="mt-2 font-serif text-3xl font-bold text-foreground md:text-4xl">Career / Job Postings</h1>
                 </div>
-                <button onClick={openNew} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors">
+                <button onClick={openNew} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-foreground hover:bg-primary/90 transition-colors">
                     <Plus size={16} /> Post New Job
                 </button>
             </header>
@@ -140,7 +140,7 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                                     <td className="px-6 py-4 text-white/50">{j.department || "—"}</td>
                                     <td className="px-6 py-4 text-white/50">{j.deadline || "Open"}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.65rem] uppercase tracking-widest font-bold ${j.is_active ? "bg-primary/20 text-primary" : "bg-white/10 text-white/40"}`}>
+                                        <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[0.65rem] uppercase tracking-widest font-bold ${j.is_active ? "bg-primary/20 text-accent" : "bg-white/10 text-white/40"}`}>
                                             {j.is_active ? <><Eye size={10} /> Active</> : <><EyeOff size={10} /> Closed</>}
                                         </span>
                                     </td>
@@ -183,7 +183,7 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm overflow-y-auto py-8" onClick={closeModal}>
                     <div className="w-full max-w-2xl rounded-2xl border border-white/10 bg-[#111] p-8 my-auto max-h-[90vh] overflow-y-auto" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-8">
-                            <h2 className="font-serif text-xl font-bold text-white">{isNew ? "Post New Job" : "Edit Job"}</h2>
+                            <h2 className="font-serif text-xl font-bold text-foreground">{isNew ? "Post New Job" : "Edit Job"}</h2>
                             <button onClick={closeModal} disabled={isPending} aria-label="Close" className="text-white/40 enabled:hover:text-white disabled:opacity-40"><X size={18} /></button>
                         </div>
                         <div className="flex flex-col gap-5">
@@ -219,7 +219,7 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                             </div>
 
                             <div className="border-t border-white/5 pt-5 mt-2">
-                                <span className="text-xs font-bold uppercase tracking-widest text-primary mb-4 block">Job Details</span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-accent mb-4 block">Job Details</span>
                             </div>
 
                             <Field label="Job Responsibilities (one per line)">
@@ -239,7 +239,7 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                             </Field>
 
                             <div className="border-t border-white/5 pt-5 mt-2">
-                                <span className="text-xs font-bold uppercase tracking-widest text-primary mb-4 block">Compensation</span>
+                                <span className="text-xs font-bold uppercase tracking-widest text-accent mb-4 block">Compensation</span>
                             </div>
 
                             <div className="grid grid-cols-2 gap-4">
@@ -272,7 +272,7 @@ export default function CareersClient({ initial }: { initial: Job[] }) {
                                 </p>
                             )}
                             <button onClick={handleSave} disabled={isPending || !modal.title}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors">
                                 {isPending ? <Loader2 size={16} className="motion-safe:animate-spin" /> : null}
                                 {isPending ? "Saving..." : isNew ? "Post Job" : "Save Changes"}
                             </button>

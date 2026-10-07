@@ -83,10 +83,10 @@ export default function SeedDefaultsPanel() {
 
     return (
         <div className="rounded-2xl border border-amber-500/20 bg-white/[0.02] p-8 shadow-lg">
-            <h2 className="font-serif text-2xl font-bold mb-2 text-white">Sync Content From Code</h2>
+            <h2 className="font-serif text-2xl font-bold mb-2 text-foreground">Sync Content From Code</h2>
             <p className="mb-6 max-w-2xl text-sm leading-relaxed text-white/50">
                 Replaces stored page content with the defaults defined in
-                <code className="mx-1 text-primary">src/lib/site-content.ts</code>.
+                <code className="mx-1 text-accent">src/lib/site-content.ts</code>.
                 Use this once after a redesign, when the database still holds copy written for the
                 previous page structure. It is not needed for day-to-day editing.
             </p>

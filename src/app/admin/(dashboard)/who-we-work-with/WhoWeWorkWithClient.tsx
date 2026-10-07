@@ -39,9 +39,9 @@ export default function WhoWeWorkWithClient({ initial }: { initial: WhoWeWorkWit
             <SettingsCard title="Buyer Logos">
                 <p className="text-xs leading-relaxed text-white/40">
                     The brand logos on this page come from the{" "}
-                    <code className="text-primary">CLIENT_LOGOS</code> array in{" "}
-                    <code className="text-primary">src/lib/site-content.ts</code>, because each entry
-                    needs an image file in <code className="text-primary">public/images/client/logos/</code>.
+                    <code className="text-accent">CLIENT_LOGOS</code> array in{" "}
+                    <code className="text-accent">src/lib/site-content.ts</code>, because each entry
+                    needs an image file in <code className="text-accent">public/images/client/logos/</code>.
                     Add the file first, then the entry.
                 </p>
             </SettingsCard>

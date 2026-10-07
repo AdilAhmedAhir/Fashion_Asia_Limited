@@ -34,7 +34,7 @@ export default function PillarsSection() {
             <div className="container flex flex-col items-center">
 
                 <ScrollReveal delay={0} className="text-center">
-                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Framework</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Our Framework</span>
                     <h2 className="mt-4 font-serif text-[clamp(2.5rem,4vw,3.5rem)] font-bold text-foreground">Three Pillars of Excellence</h2>
                 </ScrollReveal>
 
@@ -52,7 +52,7 @@ export default function PillarsSection() {
                                         {pillar.num}
                                     </div>
                                     {pillar.featured && (
-                                        <div className="absolute left-4 top-4 rounded-full bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-white">LEED GOLD</div>
+                                        <div className="absolute left-4 top-4 rounded-full bg-primary px-4 py-1.5 text-xs font-bold uppercase tracking-widest text-foreground">LEED GOLD</div>
                                     )}
                                 </div>
 

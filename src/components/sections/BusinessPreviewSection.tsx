@@ -23,7 +23,7 @@ export default function BusinessPreviewSection({ tag, title, description, produc
             <div className="container grid grid-cols-1 gap-16 lg:grid-cols-2 lg:gap-24">
                 <div className="flex flex-col justify-center">
                     <ScrollReveal delay={0}>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{tag || "What We Do"}</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{tag || "What We Do"}</span>
                     </ScrollReveal>
                     <ScrollReveal delay={0.1}>
                         <h2 className="mt-4 font-serif text-[clamp(2.5rem,5vw,4rem)] font-bold leading-tight text-foreground">
@@ -36,7 +36,7 @@ export default function BusinessPreviewSection({ tag, title, description, produc
                         </p>
                     </ScrollReveal>
                     <ScrollReveal delay={0.3} className="mt-10 w-fit">
-                        <Link href="/what-we-do" className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]">
+                        <Link href="/what-we-do" className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]">
                             Explore Our Business
                             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
                         </Link>
@@ -46,7 +46,7 @@ export default function BusinessPreviewSection({ tag, title, description, produc
                 <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
                     {finalProducts.map((product, i) => (
                         <ScrollReveal key={product} delay={0.1 + i * 0.08}>
-                            <div className="flex h-28 items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] text-center font-serif text-base text-white/80 transition-all duration-500 hover:border-primary/50 hover:bg-primary/5 hover:text-primary hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(14,201,122,0.08)]">
+                            <div className="flex h-28 items-center justify-center rounded-xl border border-white/5 bg-white/[0.02] text-center font-serif text-base text-white/80 transition-all duration-500 hover:border-primary/50 hover:bg-primary/5 hover:text-accent hover:-translate-y-1 hover:shadow-[0_10px_30px_rgba(14,201,122,0.08)]">
                                 {product}
                             </div>
                         </ScrollReveal>

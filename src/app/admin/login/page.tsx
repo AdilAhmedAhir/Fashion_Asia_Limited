@@ -12,7 +12,7 @@ export default function LoginPage() {
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black p-8 shadow-2xl">
                 <div className="mb-8 flex flex-col items-center text-center">
                     <BrandLogo className="h-16 w-16" />
-                    <h1 className="mt-6 font-serif text-2xl font-bold tracking-wider text-white">FASHION ASIA CMS</h1>
+                    <h1 className="mt-6 font-serif text-2xl font-bold tracking-wider text-foreground">FASHION ASIA CMS</h1>
                     <p className="mt-2 text-xs uppercase tracking-widest text-white/40">Secure Access Portal</p>
                 </div>
 

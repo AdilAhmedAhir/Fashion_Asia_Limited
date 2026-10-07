@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <nav className="flex flex-col gap-1 flex-grow overflow-y-auto">
                     {navItems.map(group => (
                         <div key={group.group}>
-                            <span className="mb-2 mt-4 block text-[0.6rem] font-bold uppercase tracking-widest text-white/25 first:mt-0">
+                            <span className="mb-2 mt-4 block text-[0.6rem] font-bold uppercase tracking-widest text-white/50 first:mt-0">
                                 {group.group}
                             </span>
                             {group.items.map(item => (
@@ -74,7 +74,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                         <ShieldCheck size={16} className="text-primary" />
                         <div className="flex flex-col">
                             <span className="text-xs font-bold text-white">Super Admin</span>
-                            <span className="text-[0.6rem] text-primary">Secure Session</span>
+                            <span className="text-[0.6rem] text-accent">Secure Session</span>
                         </div>
                     </div>
                     <form action={logoutAction}>

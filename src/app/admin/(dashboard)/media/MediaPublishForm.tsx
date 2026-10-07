@@ -63,7 +63,7 @@ export default function MediaPublishForm() {
 
     return (
         <form onSubmit={onSubmit} className="flex flex-col gap-5 rounded-2xl border border-white/10 bg-black p-6 shadow-xl sticky top-8">
-            <h2 className="font-serif text-xl font-bold text-white mb-2">Publish New Item</h2>
+            <h2 className="font-serif text-xl font-bold text-foreground mb-2">Publish New Item</h2>
 
             <fieldset disabled={isPending} className="contents">
                 <div className="flex flex-col gap-2">

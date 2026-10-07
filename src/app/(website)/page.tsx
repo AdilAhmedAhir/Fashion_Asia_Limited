@@ -31,7 +31,7 @@ export default async function Home() {
             <section className="bg-black py-24 text-center">
                 <div className="container max-w-3xl flex flex-col items-center">
                     <ScrollReveal>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Cinematic Experience</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Cinematic Experience</span>
                     </ScrollReveal>
                     <ScrollReveal delay={0.1}>
                         <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-5xl">{hp.heroTagline || "Innovation in Motion"}</h2>
@@ -80,7 +80,7 @@ export default async function Home() {
             <section className="bg-background py-20 md:py-28">
                 <div className="container text-center">
                     <ScrollReveal>
-                        <span className="text-xs font-bold uppercase tracking-[0.3em] text-primary">Who We Work With</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.3em] text-accent">Who We Work With</span>
                     </ScrollReveal>
                     <ScrollReveal delay={0.1}>
                         <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
@@ -111,7 +111,7 @@ export default async function Home() {
                         <div className="mt-12 flex justify-center">
                             <Link
                                 href="/global-partner"
-                                className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
+                                className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                             >
                                 See All Partners
                                 <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />

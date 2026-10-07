@@ -50,7 +50,7 @@ export default async function BusinessPage() {
                     <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-[1.3fr_1fr] lg:gap-16">
                         <ScrollReveal>
                             <div>
-                                <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Craft</span>
+                                <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Our Craft</span>
                                 <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
                                     {data.processTitle || "A complete solution from start to finish."}
                                 </h2>
@@ -104,7 +104,7 @@ export default async function BusinessPage() {
             <section className="container py-24 border-b border-white/5">
                 <ScrollReveal>
                     <div className="max-w-3xl mb-16">
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">01. Product Catalog</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">01. Product Catalog</span>
                         <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Comprehensive Range</h2>
                         <div className="mt-6 flex flex-col gap-5">
                             {craftParagraphs.map((para, i) => (

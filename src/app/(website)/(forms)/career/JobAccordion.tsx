@@ -9,7 +9,7 @@ function Section({ title, text, list = false }: { title: string; text: string | 
     if (!text?.trim()) return null;
     return (
         <div className="mb-6">
-            <h4 className="text-xs font-bold uppercase tracking-widest text-primary mb-3">{title}</h4>
+            <h4 className="text-xs font-bold uppercase tracking-widest text-accent mb-3">{title}</h4>
             {list ? (
                 <ul className="flex flex-col gap-2">
                     {text.split("\n").filter(Boolean).map((line, i) => (
@@ -53,11 +53,11 @@ export default function JobAccordion({ jobs, onApply }: { jobs: Job[]; onApply: 
                             className={`w-full flex items-center gap-4 px-6 py-5 text-left transition-colors ${isOpen ? "bg-primary/10" : "bg-white/[0.02] hover:bg-white/[0.04]"
                                 }`}
                         >
-                            <span className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors ${isOpen ? "border-primary bg-primary/20 text-primary" : "border-white/10 text-white/30"
+                            <span className={`flex-shrink-0 flex items-center justify-center w-7 h-7 rounded-full border transition-colors ${isOpen ? "border-primary bg-primary/20 text-accent" : "border-white/10 text-white/30"
                                 }`}>
                                 {isOpen ? <Minus size={14} /> : <Plus size={14} />}
                             </span>
-                            <span className={`flex-grow font-medium text-sm md:text-base transition-colors ${isOpen ? "text-primary" : "text-white"
+                            <span className={`flex-grow font-medium text-sm md:text-base transition-colors ${isOpen ? "text-accent" : "text-white"
                                 }`}>
                                 {job.title}
                             </span>
@@ -76,14 +76,14 @@ export default function JobAccordion({ jobs, onApply }: { jobs: Job[]; onApply: 
                             }`}>
                             <div className="px-6 py-8 bg-white/[0.01] border-t border-white/5">
                                 {/* Header */}
-                                <h3 className="text-lg font-bold text-white mb-1">{job.title}</h3>
+                                <h3 className="text-lg font-bold text-foreground mb-1">{job.title}</h3>
                                 <p className="text-sm text-white/50 mb-1">Fashion Asia Limited</p>
                                 {job.vacancy > 1 && <p className="text-sm text-white/50 mb-4">Vacancy: {String(job.vacancy).padStart(2, "0")}</p>}
 
                                 {/* Meta badges */}
                                 <div className="flex flex-wrap gap-2 mb-8">
                                     {job.department && (
-                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs text-primary font-medium">
+                                        <span className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 border border-primary/20 px-3 py-1 text-xs text-accent font-medium">
                                             {job.department}
                                         </span>
                                     )}
@@ -106,7 +106,7 @@ export default function JobAccordion({ jobs, onApply }: { jobs: Job[]; onApply: 
                                 {/* Apply button */}
                                 <button
                                     onClick={() => onApply(job.title)}
-                                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-bold text-white hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/20"
+                                    className="mt-6 inline-flex items-center gap-2 rounded-full bg-primary px-8 py-3 text-sm font-bold text-foreground hover:bg-primary/90 hover:-translate-y-0.5 transition-all shadow-lg shadow-primary/20"
                                 >
                                     <Send size={14} /> Apply for this Position
                                 </button>
