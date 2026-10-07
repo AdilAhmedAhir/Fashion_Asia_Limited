@@ -51,7 +51,7 @@ export default function HeroOverlay({ kicker, titleTop, titleAccent, facts, stat
                 </span>
                 <h1 className="hero-title mb-8 font-serif text-[clamp(3rem,8vw,7rem)] font-extrabold leading-[1.1] text-foreground" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.6), 0 0px 8px rgba(0,0,0,0.4)' }}>
                     {titleTop || "Green Powered"} <br className="hidden md:block" />
-                    <span className="text-gradient" style={{ textShadow: '0 2px 30px rgba(14,201,122,0.3), 0 0px 60px rgba(14,201,122,0.15)' }}>{titleAccent || "Innovation"}</span>
+                    <span className="text-accent">{titleAccent || "Innovation"}</span>
                 </h1>
                 <div className="hero-subtitle flex flex-wrap items-center justify-center gap-3 font-sans text-sm md:text-lg text-white/80">
                     {heroFacts.map((fact, i) => (
@@ -66,7 +66,7 @@ export default function HeroOverlay({ kicker, titleTop, titleAccent, facts, stat
             <div className="hero-stats mt-16 flex flex-row gap-6 pointer-events-auto md:absolute md:right-16 md:top-32 md:mt-0 md:flex-col md:gap-8">
                 {heroStats.map((stat) => (
                     <div key={stat.label} className="stat-item flex flex-col items-center md:items-end">
-                        <span className="text-3xl md:text-4xl font-bold text-gradient">{stat.value}</span>
+                        <span className="text-3xl md:text-4xl font-bold text-accent">{stat.value}</span>
                         <span className="text-[0.65rem] uppercase tracking-widest text-foreground">{stat.label}</span>
                     </div>
                 ))}

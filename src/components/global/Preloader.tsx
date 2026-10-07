@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
  * Pure branding animation at every screen width: the progress bar fills on a
  * timer and the curtain opens after 1.5s. No hero frames are preloaded (T-017).
  * With reduced motion on, its layers are display:none (motion-reduce:hidden), so
- * it never paints, and its effect does nothing (T-028).
+ * it never paints, and its effect unmounts them at once (T-028).
  */
 
 const COMPANY = "FASHION ASIA";
@@ -39,8 +39,12 @@ export default function Preloader() {
     }, []);
 
     useEffect(() => {
-        // Reduced motion: no scroll lock, no scrollTo and no timers (T-028)
-        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+        // Reduced motion: no scroll lock, no scrollTo and no timers (T-028). The hidden
+        // layers are unmounted, so clearing the preference mid-visit can't uncover them.
+        if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+            setDismissed(true);
+            return;
+        }
 
         document.body.style.overflow = "hidden";
         window.scrollTo(0, 0);
