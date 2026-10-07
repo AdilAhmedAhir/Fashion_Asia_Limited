@@ -44,7 +44,9 @@ export default function HeroOverlay({ kicker, titleTop, titleAccent, facts, stat
         <div ref={overlayRef} className="container relative flex h-full w-full flex-col items-center justify-center pt-20">
 
             <div className="flex flex-col items-center text-center pointer-events-auto">
-                <span className="hero-tag mb-6 text-xs font-bold uppercase tracking-[0.3em] text-accent" style={{ textShadow: '0 1px 8px rgba(0,0,0,0.5)' }}>
+                {/* An opaque pill, so the tag keeps AA (7.7:1) over any video frame. pr-4
+                    rather than pr-5 balances the tracking after the last letter. */}
+                <span className="hero-tag mb-6 rounded-full border border-primary/60 bg-background py-2 pl-5 pr-4 text-xs font-bold uppercase tracking-[0.3em] text-accent">
                     {kicker || "Northern Tosrifa Group"}
                 </span>
                 <h1 className="hero-title mb-8 font-serif text-[clamp(3rem,8vw,7rem)] font-extrabold leading-[1.1] text-foreground" style={{ textShadow: '0 2px 20px rgba(0,0,0,0.6), 0 0px 8px rgba(0,0,0,0.4)' }}>
@@ -65,7 +67,7 @@ export default function HeroOverlay({ kicker, titleTop, titleAccent, facts, stat
                 {heroStats.map((stat) => (
                     <div key={stat.label} className="stat-item flex flex-col items-center md:items-end">
                         <span className="text-3xl md:text-4xl font-bold text-gradient">{stat.value}</span>
-                        <span className="text-[0.65rem] uppercase tracking-widest text-white/50">{stat.label}</span>
+                        <span className="text-[0.65rem] uppercase tracking-widest text-foreground">{stat.label}</span>
                     </div>
                 ))}
             </div>
