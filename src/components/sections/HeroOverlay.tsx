@@ -73,7 +73,7 @@ export default function HeroOverlay({ kicker, titleTop, titleAccent, facts, stat
             <div className="scroll-indicator absolute bottom-12 flex flex-col items-center gap-4">
                 <span className="text-[0.65rem] uppercase tracking-widest text-white/50">Scroll to explore</span>
                 <div className="relative h-12 w-[1px] overflow-hidden bg-white/10">
-                    <div className="absolute inset-0 h-full w-full origin-top animate-[pulse_2s_ease-in-out_infinite] bg-gradient-to-b from-accent to-transparent" />
+                    <div className="absolute inset-0 h-full w-full origin-top motion-safe:animate-[pulse_2s_ease-in-out_infinite] bg-gradient-to-b from-accent to-transparent" />
                 </div>
             </div>
 

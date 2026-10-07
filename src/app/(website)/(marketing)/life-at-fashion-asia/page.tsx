@@ -66,7 +66,7 @@ export default async function MediaPage() {
                                 <div className="group flex h-full flex-col overflow-hidden rounded-2xl border border-white/10 bg-white/[0.02] hover:border-primary/50 transition-colors">
                                     {news.url && (
                                         <div className="aspect-video w-full overflow-hidden bg-black">
-                                            <img src={news.url} alt={news.title} className="h-full w-full object-cover opacity-80 transition-transform duration-700 group-hover:scale-105" />
+                                            <img src={news.url} alt={news.title} className="h-full w-full object-cover opacity-80 transition-transform duration-700 motion-safe:group-hover:scale-105" />
                                         </div>
                                     )}
                                     <div className="flex flex-col flex-grow p-6">
@@ -96,7 +96,7 @@ export default async function MediaPage() {
                         {galleryItems.map((img, i) => (
                             <ScrollReveal key={img.id} delay={(i % 3) * 0.1}>
                                 <div className="group relative overflow-hidden rounded-2xl border border-white/10 bg-surface break-inside-avoid">
-                                    <img src={img.url} alt={img.title} loading="lazy" decoding="async" className="w-full object-cover transition-transform duration-700 group-hover:scale-105" />
+                                    <img src={img.url} alt={img.title} loading="lazy" decoding="async" className="w-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-105" />
                                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100 flex items-end p-6">
                                         <span className="font-serif text-lg font-bold text-white">{img.title}</span>
                                     </div>

@@ -13,7 +13,7 @@ export default function MarqueeSection() {
 
     return (
         <section className="relative flex overflow-hidden border-y border-primary/20 bg-[#1a1f1a] py-12">
-            <div className="flex w-fit animate-[marqueeScroll_30s_linear_infinite] items-center whitespace-nowrap">
+            <div className="flex w-fit motion-safe:animate-[marqueeScroll_30s_linear_infinite] items-center whitespace-nowrap">
                 {content.map((text, i) => (
                     <div key={i} className="flex items-center">
                         <span className="mx-8 font-serif text-xl font-semibold text-foreground md:text-2xl">

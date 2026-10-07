@@ -98,7 +98,7 @@ export default function MediaPreviewSection({
                                         src={item.image}
                                         alt={item.title}
                                         loading="lazy"
-                                        className="h-full w-full object-cover transition-transform duration-700 group-hover:scale-105"
+                                        className="h-full w-full object-cover transition-transform duration-700 motion-safe:group-hover:scale-105"
                                     />
                                     <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/60 to-transparent" />
                                 </div>
@@ -141,14 +141,14 @@ export default function MediaPreviewSection({
                         className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                     >
                         Life at Fashion Asia
-                        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+                        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover:rotate-45" />
                     </Link>
                     <Link
                         href="/career"
                         className="group flex items-center gap-3 rounded-full border-2 border-white/15 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white/80 transition-all duration-300 hover:border-white/40 hover:text-white"
                     >
                         Join the Team
-                        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+                        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover:rotate-45" />
                     </Link>
                 </ScrollReveal>
             </div>

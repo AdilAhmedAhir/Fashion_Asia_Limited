@@ -54,7 +54,7 @@ export default function SustainabilityPreviewSection({ tag, title, description, 
                 <div className="mt-16 grid grid-cols-2 gap-4 md:grid-cols-4 md:gap-6 w-full max-w-3xl">
                     {finalHighlights.map((item, i) => (
                         <ScrollReveal key={item.label} delay={0.4 + i * 0.08}>
-                            <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-500 hover:border-primary/30 hover:-translate-y-1">
+                            <div className="flex flex-col items-center gap-3 rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-500 hover:border-primary/30 motion-safe:hover:-translate-y-1">
                                 <span className="text-2xl">{item.icon}</span>
                                 <span className="text-[0.65rem] uppercase tracking-widest text-white/60">{item.label}</span>
                             </div>
@@ -65,7 +65,7 @@ export default function SustainabilityPreviewSection({ tag, title, description, 
                 <ScrollReveal delay={0.6} className="mt-12">
                     <Link href="/sustainability" className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]">
                         Our Sustainability Story
-                        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+                        <ArrowUpRight className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover:rotate-45" />
                     </Link>
                 </ScrollReveal>
             </div>

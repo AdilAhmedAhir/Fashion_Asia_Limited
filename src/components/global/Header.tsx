@@ -30,7 +30,7 @@ export default function Header() {
             >
                 <div className="container flex items-center justify-between">
                     <Link href="/" className="group relative z-[1001] flex items-center gap-3" onClick={() => setMenuOpen(false)}>
-                        <BrandLogo className="w-10 h-10 transition-transform duration-700 group-hover:rotate-180" />
+                        <BrandLogo className="w-10 h-10 transition-transform duration-700 motion-safe:group-hover:rotate-180" />
                         <div className="flex flex-col">
                             <span className="font-serif text-xl font-bold leading-none tracking-wide text-foreground transition-colors group-hover:text-accent">
                                 FASHION ASIA
@@ -54,7 +54,7 @@ export default function Header() {
                         ))}
                         <Link
                             href={NAV_CTA.href}
-                            className="whitespace-nowrap rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-foreground transition-transform hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
+                            className="whitespace-nowrap rounded-full bg-primary px-6 py-2.5 font-sans text-sm font-semibold text-foreground transition-transform motion-safe:hover:-translate-y-0.5 hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(14,201,122,0.4)]"
                         >
                             {NAV_CTA.label}
                         </Link>

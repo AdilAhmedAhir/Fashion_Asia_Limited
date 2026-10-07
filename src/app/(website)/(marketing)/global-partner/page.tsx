@@ -44,7 +44,7 @@ export default async function WhoWeWorkWithPage() {
                 <div className="mt-16 grid grid-cols-2 gap-4 sm:grid-cols-3 md:gap-6 lg:grid-cols-4">
                     {CLIENT_LOGOS.map((brand, i) => (
                         <ScrollReveal key={brand.name} delay={0.05 + (i % 4) * 0.08}>
-                            <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-md md:h-28">
+                            <div className="flex h-24 items-center justify-center rounded-xl bg-white px-6 py-5 shadow-sm transition-transform duration-300 motion-safe:hover:-translate-y-1 hover:shadow-md md:h-28">
                                 <img
                                     src={brand.src}
                                     alt={brand.name}

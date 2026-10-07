@@ -41,7 +41,7 @@ export default function Footer() {
                     {/* Brand Column */}
                     <div className="flex flex-col gap-6">
                         <Link href="/" className="flex items-center gap-3 group">
-                            <BrandLogo className="w-10 h-10 transition-transform duration-700 group-hover:rotate-180" />
+                            <BrandLogo className="w-10 h-10 transition-transform duration-700 motion-safe:group-hover:rotate-180" />
                             <div className="flex flex-col">
                                 <span className="font-serif text-xl font-bold tracking-wide text-foreground">FASHION ASIA</span>
                                 <span className="text-[0.6rem] uppercase tracking-[0.2em] text-foreground/40">Limited</span>

@@ -40,7 +40,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
                     <div className="mt-12 grid grid-cols-2 gap-8 sm:grid-cols-3">
                         {finalStats.map((stat, i) => (
                             <ScrollReveal key={stat.label} delay={0.3 + i * 0.1}>
-                                <div className="group flex flex-col items-start gap-2 rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-500 hover:-translate-y-2 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_10px_30px_rgba(14,201,122,0.1)]">
+                                <div className="group flex flex-col items-start gap-2 rounded-2xl border border-white/5 bg-white/[0.02] p-6 transition-all duration-500 motion-safe:hover:-translate-y-2 hover:border-primary/30 hover:bg-primary/5 hover:shadow-[0_10px_30px_rgba(14,201,122,0.1)]">
                                     <span className="text-3xl font-bold text-gradient">{stat.value}</span>
                                     <span className="text-[0.65rem] uppercase tracking-wider text-white/50">{stat.label}</span>
                                 </div>
@@ -54,7 +54,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
                             className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                         >
                             Discover Our Story
-                            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
+                            <ArrowUpRight className="h-4 w-4 transition-transform duration-300 motion-safe:group-hover:rotate-45" />
                         </Link>
                     </ScrollReveal>
                 </div>
@@ -69,7 +69,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
                         loop
                         playsInline
                         aria-label="Fashion Asia Manufacturing Facility"
-                        className="absolute inset-0 z-10 h-full w-full object-cover opacity-[0.78] transition-all duration-1000 hover:scale-105 hover:opacity-100"
+                        className="absolute inset-0 z-10 h-full w-full object-cover opacity-[0.78] transition-all duration-1000 motion-safe:hover:scale-105 hover:opacity-100"
                     />
                     <div className="absolute bottom-6 right-6 z-20 rounded-full border border-primary bg-background/90 px-6 py-3 font-sans text-xs font-semibold uppercase tracking-widest text-accent backdrop-blur-md">
                         01 — Manufacturing Excellence
