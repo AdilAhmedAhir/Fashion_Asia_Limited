@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
+import { createContext, useContext, useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { X, Plus, Save, Loader2, ChevronUp, ChevronDown, TriangleAlert } from "lucide-react";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 
@@ -103,13 +103,17 @@ export function SettingsLoadError({ title, tag, message }: { title: string; tag:
     );
 }
 
+// The enclosing card's title, so a list that repeats its label across cards
+// (the homepage's three "Stats") still gives each control a unique name (T-011).
+const CardTitle = createContext<string | null>(null);
+
 export function SettingsCard({ title, children, className = "" }: {
     title: string; children: React.ReactNode; className?: string;
 }) {
     return (
         <div className={`rounded-2xl border border-white/5 bg-white/[0.02] p-8 ${className}`}>
             <h2 className="mb-6 text-sm font-bold uppercase tracking-widest text-accent">{title}</h2>
-            {children}
+            <CardTitle.Provider value={title}>{children}</CardTitle.Provider>
         </div>
     );
 }
@@ -189,8 +193,11 @@ export function StatsList({ label, items, onChange }: {
         next[index] = { ...next[index], [field]: val };
         onChange(next);
     };
-    // Names (T-011): the heading names the group; each box and Remove names its row.
+    // Names (T-011): the heading names the group; each box and Remove names its
+    // row, with the card's title so the names stay unique on the page.
     const id = useId();
+    const card = useContext(CardTitle);
+    const listName = card ? `${card}: ${label}` : label;
 
     return (
         <div role="group" aria-labelledby={`${id}-label`} className="flex flex-col gap-3">
@@ -199,12 +206,12 @@ export function StatsList({ label, items, onChange }: {
                 {items.map((item, i) => (
                     <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-3 items-center">
                         <input type="text" value={item.value} onChange={e => update(i, "value", e.target.value)} placeholder="Value"
-                            aria-label={`Value, row ${i + 1} (${label})`}
-                            className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm font-bold text-accent focus:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50" />
+                            aria-label={`Value, row ${i + 1} (${listName})`}
+                            className="min-w-0 rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm font-bold text-accent focus:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50" />
                         <input type="text" value={item.label} onChange={e => update(i, "label", e.target.value)} placeholder="Label"
-                            aria-label={`Label, row ${i + 1} (${label})`}
-                            className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50" />
-                        <button onClick={() => onChange(items.filter((_, j) => j !== i))} aria-label={`Remove row ${i + 1} (${label})`}
+                            aria-label={`Label, row ${i + 1} (${listName})`}
+                            className="min-w-0 rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50" />
+                        <button onClick={() => onChange(items.filter((_, j) => j !== i))} aria-label={`Remove row ${i + 1} (${listName})`}
                             className="rounded-md p-2 text-red-400 hover:text-red-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent disabled:cursor-not-allowed disabled:opacity-50"><X size={14} /></button>
                     </div>
                 ))}

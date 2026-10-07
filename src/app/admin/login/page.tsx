@@ -9,7 +9,7 @@ export default function LoginPage() {
     const id = useId();
 
     return (
-        <div className="flex min-h-screen items-center justify-center bg-[#0a0a0a] p-4">
+        <div className="flex min-h-screen items-center justify-center bg-surface p-4">
             <div className="w-full max-w-md rounded-2xl border border-white/10 bg-black p-8 shadow-2xl">
                 <div className="mb-8 flex flex-col items-center text-center">
                     <BrandLogo className="h-16 w-16" />
@@ -18,7 +18,7 @@ export default function LoginPage() {
                 </div>
 
                 {state?.error && (
-                    <div className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-center text-sm font-medium text-red-500">
+                    <div role="alert" className="mb-6 rounded-lg border border-red-500/20 bg-red-500/10 p-4 text-center text-sm font-medium text-red-500">
                         {state.error}
                     </div>
                 )}
@@ -35,7 +35,7 @@ export default function LoginPage() {
                     <button
                         type="submit"
                         disabled={isPending}
-                        className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-bold uppercase tracking-widest text-foreground transition-colors hover:bg-primary/90 hover:shadow-[0_0_20px_rgba(14,201,122,0.3)] focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="mt-4 w-full rounded-xl bg-primary px-4 py-4 text-sm font-bold uppercase tracking-widest text-foreground transition-colors hover:bg-primary/90 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-black disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         {isPending ? "Authenticating..." : "Authenticate"}
                     </button>

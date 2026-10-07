@@ -264,7 +264,7 @@ export function ImageUploadField({
                     const file = e.dataTransfer.files?.[0];
                     if (file) void handleFile(file);
                 }}
-                className={`group flex items-center gap-4 rounded-xl border border-dashed p-3 transition-colors has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 ${
+                className={`group/zone flex items-center gap-4 rounded-xl border border-dashed p-3 transition-colors has-[input:focus-visible]:ring-2 has-[input:focus-visible]:ring-accent has-[:disabled]:cursor-not-allowed has-[:disabled]:opacity-50 ${
                     dragging ? "border-primary bg-primary/10" : "border-white/15 bg-black/40"
                 }`}
             >
@@ -283,7 +283,7 @@ export function ImageUploadField({
                     <div className="flex flex-wrap items-center gap-2">
                         <label
                             htmlFor={inputId}
-                            className="cursor-pointer rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-primary/10 group-has-[:disabled]:cursor-not-allowed"
+                            className="cursor-pointer rounded-lg border border-primary/40 px-3 py-1.5 text-xs font-bold text-accent transition-colors hover:bg-primary/10 group-has-[:disabled]/zone:cursor-not-allowed"
                         >
                             {busy ? "Uploading…" : value ? "Replace image" : "Choose image"}
                         </label>
