@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { X, Plus, Save, Loader2, ChevronUp, ChevronDown, TriangleAlert } from "lucide-react";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 
@@ -194,52 +194,175 @@ export function StatsList({ label, items, onChange }: {
 export type ObjectField = { key: string; label: string; type?: "text" | "textarea" | "image" };
 
 export function ObjectListEditor<T extends Record<string, string>>({
-    label, items, fields, onChange, addLabel = "Add Item"
+    label, items, fields, onChange, addLabel = "Add Item", onUploadingChange
 }: {
     label: string;
     items: T[];
     fields: ObjectField[];
     onChange: (items: T[]) => void;
     addLabel?: string;
+    // Opt-in (T-010): whether an image is still uploading on a row of the
+    // current list, so the page can hold its Save until the image lands.
+    onUploadingChange?: (uploading: boolean) => void;
 }) {
-    const update = (index: number, key: string, val: string) => {
-        const next = [...items];
-        next[index] = { ...next[index], [key]: val };
-        onChange(next);
+    // Row keys (T-010): a per-instance WeakMap from item object to key,
+    // assigned lazily on first sight, which is idempotent under StrictMode.
+    // The key moves to the object that replaces an item, a new row gets a
+    // new key, and a non-object entry gets a positional one. No item field
+    // is read or written for keying, so every page saves what it did before.
+    const [keyStore] = useState(() => ({ byItem: new WeakMap<object, string>(), next: 0 }));
+    const keysOf = (list: readonly T[]): string[] => {
+        const seen = new Set<string>();
+        return list.map((item: unknown, index) => {
+            let key = `p${index}`;
+            if (typeof item === "object" && item !== null) {
+                key = keyStore.byItem.get(item) ?? "";
+                if (!key) {
+                    key = `k${++keyStore.next}`;
+                    keyStore.byItem.set(item, key);
+                }
+            }
+            // The same object listed twice can't share a key.
+            if (seen.has(key)) key = `d${index}`;
+            seen.add(key);
+            return key;
+        });
     };
 
-    const move = (index: number, delta: number) => {
+    // The latest list and callbacks (T-010): set after each commit and moved
+    // forward by every change emitted here, so an edit, a move, a remove or
+    // a finished upload names its row by key and builds on the newest list,
+    // never on the list its row rendered with.
+    const latest = useRef({ items, onChange, onUploadingChange });
+    const rowEls = useRef(new Map<string, HTMLDivElement>());
+    const addButton = useRef<HTMLButtonElement>(null);
+    const pendingFocus = useRef<{ key: string | null; control: "up" | "down" | "remove" } | null>(null);
+    const busyFields = useRef(new Map<string, Set<string>>());
+    const reportedUploading = useRef(false);
+
+    // `uploading` is true only while a row of the current list has an image
+    // field that last reported busy; a row that leaves the list stops
+    // counting at once. Changes only.
+    const reportUploading = () => {
+        const report = latest.current.onUploadingChange;
+        if (!report) return;
+        const current = new Set(keysOf(latest.current.items));
+        let uploading = false;
+        busyFields.current.forEach((busy, key) => {
+            if (busy.size && current.has(key)) uploading = true;
+        });
+        if (uploading === reportedUploading.current) return;
+        reportedUploading.current = uploading;
+        report(uploading);
+    };
+
+    // Focus (T-010, C5) is restored explicitly once the list has committed:
+    // React moves the node of a row that moves down, and Chrome drops focus
+    // from a moved node. It's never left on <body>.
+    useLayoutEffect(() => {
+        latest.current = { items, onChange, onUploadingChange };
+        reportUploading();
+        const focus = pendingFocus.current;
+        if (!focus) return;
+        pendingFocus.current = null;
+        const row = focus.key === null ? undefined : rowEls.current.get(focus.key);
+        const [up, down, remove] = row ? Array.from(row.querySelectorAll<HTMLButtonElement>(":scope > div:first-child button")) : [];
+        const usable = (button?: HTMLButtonElement) => (button && !button.disabled ? button : undefined);
+        const target =
+            focus.control === "remove" ? remove
+            : focus.control === "up" ? usable(up) ?? usable(down)
+            : usable(down) ?? usable(up);
+        (target ?? addButton.current)?.focus();
+    });
+
+    useEffect(() => () => {
+        if (!reportedUploading.current) return;
+        reportedUploading.current = false;
+        latest.current.onUploadingChange?.(false);
+    }, []);
+
+    const emit = (next: T[]) => {
+        latest.current.items = next;
+        latest.current.onChange(next);
+        reportUploading();
+    };
+
+    const update = (key: string, field: string, val: string) => {
+        const list = latest.current.items;
+        const index = keysOf(list).indexOf(key);
+        // The row has gone (removed, or replaced after a save): a late
+        // upload is dropped, never written to another row.
+        if (index === -1) return;
+        const next = [...list];
+        next[index] = { ...list[index], [field]: val };
+        keyStore.byItem.set(next[index], key);
+        emit(next);
+    };
+
+    const move = (key: string, delta: number) => {
+        const list = latest.current.items;
+        const index = keysOf(list).indexOf(key);
         const target = index + delta;
-        if (target < 0 || target >= items.length) return;
-        const next = [...items];
+        if (index === -1 || target < 0 || target >= list.length) return;
+        const next = [...list];
         [next[index], next[target]] = [next[target], next[index]];
-        onChange(next);
+        // The pressed button keeps focus, or the row's other move button.
+        pendingFocus.current = { key, control: delta < 0 ? "up" : "down" };
+        emit(next);
+    };
+
+    const remove = (key: string) => {
+        const list = latest.current.items;
+        const keys = keysOf(list);
+        const index = keys.indexOf(key);
+        if (index === -1) return;
+        // Focus goes to the next row's Remove, else the previous row's, else Add.
+        pendingFocus.current = { key: keys[index + 1] ?? keys[index - 1] ?? null, control: "remove" };
+        emit(list.filter((_, j) => j !== index));
+    };
+
+    const setFieldBusy = (key: string, field: string, busy: boolean) => {
+        let busyHere = busyFields.current.get(key);
+        if (busy) {
+            if (!busyHere) busyFields.current.set(key, (busyHere = new Set()));
+            busyHere.add(field);
+        } else if (busyHere) {
+            busyHere.delete(field);
+            if (!busyHere.size) busyFields.current.delete(key);
+        }
+        reportUploading();
+    };
+
+    const bindRow = (key: string) => (el: HTMLDivElement | null) => {
+        if (el) rowEls.current.set(key, el);
+        else rowEls.current.delete(key);
     };
 
     const blank = () => Object.fromEntries(fields.map(f => [f.key, ""])) as T;
+    const rowKeys = keysOf(items);
 
     return (
         <div className="flex flex-col gap-3">
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
             <div className="flex flex-col gap-4">
                 {items.map((item, i) => (
-                    <div key={i} className="rounded-xl border border-white/10 bg-black/40 p-4">
+                    <div key={rowKeys[i]} ref={bindRow(rowKeys[i])} className="rounded-xl border border-white/10 bg-black/40 p-4">
                         <div className="mb-3 flex items-center justify-between">
                             <span className="text-[10px] font-bold uppercase tracking-widest text-white/30">
                                 #{i + 1}
                             </span>
                             <div className="flex items-center gap-1">
-                                <button type="button" onClick={() => move(i, -1)} disabled={i === 0}
+                                <button type="button" onClick={() => move(rowKeys[i], -1)} disabled={i === 0}
                                     aria-label="Move up"
                                     className="p-1.5 text-white/40 hover:text-primary disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
                                     <ChevronUp size={14} />
                                 </button>
-                                <button type="button" onClick={() => move(i, 1)} disabled={i === items.length - 1}
+                                <button type="button" onClick={() => move(rowKeys[i], 1)} disabled={i === items.length - 1}
                                     aria-label="Move down"
                                     className="p-1.5 text-white/40 hover:text-primary disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
                                     <ChevronDown size={14} />
                                 </button>
-                                <button type="button" onClick={() => onChange(items.filter((_, j) => j !== i))}
+                                <button type="button" onClick={() => remove(rowKeys[i])}
                                     aria-label="Remove"
                                     className="p-1.5 text-red-400 hover:text-red-300 transition-colors">
                                     <X size={14} />
@@ -252,18 +375,19 @@ export function ObjectListEditor<T extends Record<string, string>>({
                                     key={f.key}
                                     label={f.label}
                                     value={item[f.key] ?? ""}
-                                    onChange={v => update(i, f.key, v)}
+                                    onChange={v => update(rowKeys[i], f.key, v)}
+                                    onBusyChange={onUploadingChange ? busy => setFieldBusy(rowKeys[i], f.key, busy) : undefined}
                                 />
                             ) : (
                                 <div key={f.key} className="flex flex-col gap-1.5">
                                     <label className="text-[10px] font-bold uppercase tracking-widest text-white/30">{f.label}</label>
                                     {f.type === "textarea" ? (
                                         <textarea rows={3} value={item[f.key] ?? ""}
-                                            onChange={e => update(i, f.key, e.target.value)}
+                                            onChange={e => update(rowKeys[i], f.key, e.target.value)}
                                             className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none resize-none" />
                                     ) : (
                                         <input type="text" value={item[f.key] ?? ""}
-                                            onChange={e => update(i, f.key, e.target.value)}
+                                            onChange={e => update(rowKeys[i], f.key, e.target.value)}
                                             className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none" />
                                     )}
                                 </div>
@@ -272,7 +396,7 @@ export function ObjectListEditor<T extends Record<string, string>>({
                     </div>
                 ))}
             </div>
-            <button type="button" onClick={() => onChange([...items, blank()])}
+            <button ref={addButton} type="button" onClick={() => emit([...latest.current.items, blank()])}
                 className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
                 <Plus size={14} /> {addLabel}
             </button>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useRef, useState } from "react";
+import { useEffect, useId, useLayoutEffect, useRef, useState } from "react";
 import { ImageUp, Info, Loader2, TriangleAlert } from "lucide-react";
 import { uploadOptimizedImage } from "@/app/actions/media-actions";
 import {
@@ -28,17 +28,23 @@ import {
  * itself and call `onChange` once, on blur or Enter, instead of on every
  * keystroke. Only a product row sets it, because each of its changes is an
  * immediate save. Without it, the path box behaves exactly as before.
+ *
+ * `onBusyChange` (opt-in, T-010) tells a list editor whether the latest pick
+ * is still running, so its page can hold Save until the image has landed.
+ * Without it, nothing is reported and nothing else changes.
  */
 export function ImageUploadField({
     label,
     value,
     onChange,
     commitPathOnBlur = false,
+    onBusyChange,
 }: {
     label: string;
     value: string;
     onChange: (url: string) => void;
     commitPathOnBlur?: boolean;
+    onBusyChange?: (busy: boolean) => void;
 }) {
     const inputId = useId();
     const inputRef = useRef<HTMLInputElement>(null);
@@ -49,6 +55,30 @@ export function ImageUploadField({
     // T-009: numbers every pick (file input or drop), so only the latest one
     // is applied. Private: never rendered, never sent.
     const pickCount = useRef(0);
+
+    // onBusyChange (T-010): changes only, never during render, and only for
+    // the latest pick. True once it passes the synchronous checks; false once
+    // it settles in any way (applied, refused at any stage, or thrown), and
+    // false on unmount if it last reported true. An overtaken pick never
+    // reports, so "A uploading, then B refused" ends false at B's refusal.
+    const busyReport = useRef({ onBusyChange, reported: false });
+    useLayoutEffect(() => {
+        busyReport.current.onBusyChange = onBusyChange;
+    });
+    useEffect(() => {
+        const report = busyReport.current;
+        return () => {
+            if (!report.reported) return;
+            report.reported = false;
+            report.onBusyChange?.(false);
+        };
+    }, []);
+    const reportBusy = (busy: boolean) => {
+        const report = busyReport.current;
+        if (!report.onBusyChange || report.reported === busy) return;
+        report.reported = busy;
+        report.onBusyChange(busy);
+    };
 
     // commitPathOnBlur only: the path box's own text. `pathTyped` says the
     // user has typed since the text last matched `value`. Until they do, the
@@ -154,13 +184,16 @@ export function ImageUploadField({
         const hardProblem = wrongType(file) ?? tooLarge(file);
         if (hardProblem) {
             setError(hardProblem);
+            reportBusy(false);
             return;
         }
+        reportBusy(true);
 
         const dimensions = await readDimensions(file);
         if (!isLatest()) return;
         if (!dimensions) {
             setError("That file could not be read as an image.");
+            reportBusy(false);
             return;
         }
 
@@ -168,6 +201,7 @@ export function ImageUploadField({
         const longest = Math.max(width, height);
         if (longest > MAX_UPLOAD_DIMENSION) {
             setError(describeDimensionLimit(width, height));
+            reportBusy(false);
             return;
         }
 
@@ -199,6 +233,7 @@ export function ImageUploadField({
             if (isLatest()) {
                 setBusy(false);
                 if (inputRef.current) inputRef.current.value = "";
+                reportBusy(false);
             }
         }
     };
@@ -212,12 +247,16 @@ export function ImageUploadField({
             <div
                 onDragOver={e => {
                     e.preventDefault();
+                    // T-010: a disabled field (inside a saving fieldset)
+                    // shows no highlight and takes no drop.
+                    if (inputRef.current?.matches(":disabled")) return;
                     setDragging(true);
                 }}
                 onDragLeave={() => setDragging(false)}
                 onDrop={e => {
                     e.preventDefault();
                     setDragging(false);
+                    if (inputRef.current?.matches(":disabled")) return;
                     const file = e.dataTransfer.files?.[0];
                     if (file) void handleFile(file);
                 }}
