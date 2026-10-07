@@ -59,7 +59,8 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/architect` (confirm the version target; flag any 16.1.6→16.3.6 breaking changes) → `/lead-dev` → `/qa static` → `/qa live` → `/cso review` → `/git Merge` (order per `docs/SECURITY.md` SEC-HIGH-1's own prescribed sequence)
   - **Notes:** Blocks the next `deploy` (push to `origin`/`client`) per `docs/SECURITY.md` §5 and `docs/WORKFLOW.md` §6 — does **not** block any local `/git Merge`, including this sprint's. Independent of T-003/T-004/T-005; can run in parallel with the feature chain at any point before the next `deploy`. `docs/SECURITY.md` SEC-HIGH-2 (Supabase Dashboard "allow new user signups" toggle) also blocks the next deploy but is explicitly **not** a ticket — it's a Dashboard setting only the user can check (`docs/SECURITY.md` §5: "User action, not a code ticket — no `/pm` ticket needed"). **Addendum 2026-09-28 (fourth `/pm` pass):** Sprint 1 deployed on 2026-09-28 without this fix. The advisory range, including the null-origin Server Actions CSRF bypass (`GHSA-mq59-m269-xvcx`), now fronts every live Server Action, T-004's product create/update/delete/reorder included. The "blocks the next deploy" framing above is superseded: the exposure is live now, and the fix reaches production only on the next user-typed "deploy". Ranked #1 in the refreshed Dependency Order. `16.3.6` was npm's latest on 2026-09-26; `/architect` confirms the current patched release within `^16` when the ticket starts.
 
-- [ ] **T-007** — Add a server-side pixel-dimension re-check to `uploadOptimizedImage`
+- [x] **T-007** — Add a server-side pixel-dimension re-check to `uploadOptimizedImage`
+  Done 2026-10-07 in **Wave 3a** (commit `a42ddcb`; reviews under T-019's done note). `readImageDimensions` walks the JPEG segments and reads the WebP chunk header with no dependency; an unreadable image, or one over 2400 px on its longest edge, is refused before any storage write, with the browser's wording.
   **Built in Wave 3a with T-019 under one binding contract** (`architect-reviewer`, 2026-10-06): see T-019, items 5–6 plus the amendments. Where this ticket's AC differs, the contract wins.
   - **Source:** `docs/SECURITY.md` SEC-MED-1, 2026-09-26
   - **Files:** `src/lib/upload-limits.ts` (header-based width/height reader for the already-sniffed WebP/JPEG bytes), `src/app/actions/media-actions.ts` (`uploadOptimizedImage` — call the new check, reject before the storage write)
@@ -654,7 +655,16 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - T-016's partial `updateCategoryProduct` adds two branches that return the raw database message: the stored-slug read and the update. They're covered here (SEC-MED-8, extended).
     - QA T-016 I1: `createCategoryProduct(null)` or `(undefined)` throws a `TypeError` instead of returning `{ ok: false }`, so a crafted call gets Next's generic error. The editor always sends an object. Guard the argument here, or in T-014, which already edits `sanitizeInput`.
 
-- [ ] **T-019** — Make Media Center add and delete report their failures, stop a failed upload from publishing a broken item, and add the session check
+- [x] **T-019** — Make Media Center add and delete report their failures, stop a failed upload from publishing a broken item, and add the session check
+  Done 2026-10-07, in **Wave 3a** with T-007:
+  - **Commits:** `b7a4e8f` (the contract, rulings and premortem folded in), `fb34d7d` (T-019), `a42ddcb` (T-007), `4abe008` (design fix: AA status, a visible busy delete, focus rings).
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: SHIP.
+    - `security-reviewer`: CLEARED. The delete held, including a crafted row carrying a live category URL. SEC-MED-1 and SEC-MED-9 closed; SEC-MED-10 is at 12/12; SEC-INFO-46 and 47 are new. The two components are re-bound after the fix.
+    - `design-reviewer`: FIX FIRST (F1–F5), then fixed in `4abe008`. The orchestrator confirmed the classes compile. This used a SYNTHETIC harness: the admin is NOT VISUALLY VERIFIED against the live login.
+    - MUST-ADD 7, run by the orchestrator: the gallery list is identical on the local build and production, 14 images in the same order.
+  - **Not run:** MUST-ADD 8's Chrome canvas exports and MUST-ADD 9's Chrome natural sizes (the weekly usage limit; DECISIONS 2026-10-07). The reader matched `sips` on all 80 real files (58 in `public/`, plus 22 live), with 0 disagreements.
+  - **After the deploy (optional, owner):** row O1 is the only live check of the DELETE policies. Use a ZZ-TEST photo.
   **Wave 3 binding contract, covering T-019, T-007, T-009 and T-010** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim, so no second `/architect-review` is needed). It's split under the ½-day line: **Wave 3a** is T-019 then T-007, and **Wave 3b** is T-009 then T-010. Each has its own review stage. There's no schema change, database object, storage-policy or bucket change, or new dependency, so there's no HARD STOP. Where older AC conflicts with this contract, the contract wins.
   - **Scope guard:**
     - Code only. Every file on the unchanged lists stays byte-identical.
@@ -842,7 +852,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
     - SECURITY: SEC-MED-1, SEC-MED-9, and the last 2 functions of SEC-MED-10;
     - QA_REPORT: T-002 WARN-1 to WARN-4.
   - **Sequence:**
-    - **3a (about 4 hours):** `/build` → `/design-review` → `/security-review` → `/qa` (read-only; production build on :3101; an anonymous `/admin/media` answers 307) → `code-reviewer` → merge.
+    - **3a (about 4 hours):** `/build` ✅ → `/design-review` ✅ FIX FIRST → fixed (`4abe008`) → `/security-review` ✅ CLEARED → `/qa` (folded into `code-reviewer`'s light QA plus the orchestrator's MUST-ADD 7 check, under the lean protocol) → `code-reviewer` ✅ SHIP → merge ✅ (2026-10-07).
     - **3b (about 4 hours):** the same stages.
     - **Pre-agreed cuts, with no new architect review:** if 3a runs past ½ day, items 5–6 become Wave 3c. Wave 3c runs after 3b and also switches T-009's dimension-message line. If 3b runs past ½ day, item 12 becomes Wave 3d, and T-010 stays open until then.
   - **Re-review triggers:**
@@ -1832,6 +1842,23 @@ The owner asked for every open ticket to be finished, then one deploy at the end
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
 - **`code-reviewer` Y1, test only:** assert that the reorder's refresh comes after its last write. Today's `return await` is correct, but a "clean-up" that drops the `await` would pass the current suite.
+
+**Follow-ups found in Wave 3a (2026-10-07)**, for the backlog:
+- **`code-reviewer`:**
+  - an insert whose reply is lost still removes its file (skip the removal on `status === 0`, or check first for a row with that `url`);
+  - tests are missing for the throwing-insert branch, the VP8L alpha bit, and a frame header 1 byte past the end;
+  - a submit before the page hydrates sends a GET (an optional mount gate).
+- **`design-reviewer`:**
+  - a "Publishing…" status line (needs an architect ruling: it's a new string);
+  - show the delete button on touch below `md`;
+  - a chevron on the category select;
+  - "Image URL (Fallback if no upload)" → "Or paste an image address";
+  - heading order on `/admin/media`;
+  - `ring-accent` on the "Published Assets" heading's focus;
+  - T-027 should also cover `media/page.tsx:18` and `:51`.
+- **`security-reviewer`:**
+  - **SEC-INFO-46:** `isAllowedImageUrl` accepts `"<>()` inside an https address. It's harmless while every sink is React-escaped; ban them before adding any CSS or raw-HTML sink.
+  - **SEC-INFO-47:** the clean-up can remove a file named only in an unsaved draft. That's accepted.
 
 ### Dependency Order
 

@@ -2682,3 +2682,16 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **Untouched:** item 11's messages are byte-identical, and `CategoryProductsManager.tsx` is 0-byte.
 - **Security** (`security-reviewer`): CLEARED. 228/228 probes, plus the builder's 1,582 checks from a private copy.
 - **Verdict: PASS.**
+
+## Static Pass — Wave 3a (T-019, T-007) — 2026-10-07 (`code-reviewer` light QA, `security-reviewer` probes and orchestrator checks, under the lean protocol)
+- **Target:** branch `wave-3a-media`.
+  - `fb34d7d` (T-019): `media-actions.ts`, the new `MediaPublishForm.tsx` and `MediaDeleteButton.tsx`, `media/page.tsx`, `SubmitButton.tsx`.
+  - `a42ddcb` (T-007): `upload-limits.ts`.
+  - `4abe008`: design fix, class-only.
+- **The builder's suites:** T-019 server 202/202, run through the real supabase-js with an injected `fetch`; UI 74/74 in production and StrictMode; T-007 153/153; mutants 44/44; the T-016 harness copies green. `code-reviewer` re-ran them once, added 43 edge cases of its own, and caught 13 of its 16 mutants (the 3 survivors are backlog test gaps).
+- **The reader against `sips`:** all 80 real files agree (58 in `public/`, plus the 22 live storage images downloaded read-only to the scratchpad, never committed), with 0 accept/refuse disagreements.
+- **Security probes:** 180/180. The delete keeps any file with a reference, including a crafted gallery row carrying a live category URL. The RLS-refused re-read makes 0 storage calls. 180,000 fuzzed buffers threw 0 times in the reader. The admin gate held, with `/admin/media` → 307.
+- **MUST-ADD 7** (orchestrator): the gallery list is identical on the local build and production, fetched in the same minute (`docs/qa-evidence/WAVE-3A/`).
+- **Not run:** MUST-ADD 8's Chrome canvas exports and MUST-ADD 9's Chrome natural sizes (the weekly usage limit; DECISIONS 2026-10-07).
+- **Design fix `4abe008`:** class-only, matching `design-reviewer`'s exact strings. The orchestrator confirmed `file:text-accent`, `motion-safe:transition-opacity` and `focus-visible:ring-accent` are in the built CSS; design had confirmed F1–F4 in an in-memory re-render.
+- **Verdict: PASS.**

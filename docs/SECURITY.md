@@ -106,6 +106,18 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
   - It never inserts or upserts, and it writes at most one row per stored product. So a crafted list can't create a row, reach another category, or drive an unbounded write loop.
   - It's still not atomic: SEC-INFO-16's accepted residual, and SEC-INFO-45.
 
+*Amended 2026-10-06 (Wave 3a CSO review, T-019 + T-007; appended, rows above left as written):*
+- **File uploads:**
+  - `uploadOptimizedImage` now re-checks pixel dimensions on the server and fails closed (SEC-MED-1 closed in code).
+  - `addMediaAction` still has no size, type or dimension check (Known Trap #9, kept by the Wave 3 contract). Its storage key now takes only a 1–5 character extension from the file name.
+  - `uploadFile` is unchanged.
+- **Data deletion (new):** deleting a Media Center item now also removes its Storage file, which is irreversible. That happens only when all of these hold:
+  - the row delete has already succeeded;
+  - the stored URL is exactly the bucket-root public URL of a name that starts with a letter or digit;
+  - no `media_assets`, `products`, `leaders` or `reports` address, and no `site_settings` value, mentions it.
+  - Any error or doubt keeps the file. The live DELETE policies are untested by agents (owner row O1).
+
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -2220,6 +2232,190 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 - Ran offline tests in the session scratchpad only.
 - No sign-in, no Server Action call, no request to any server, no write to the live database, no build, no server started or stopped.
 
+### 🔒 CSO Audit — 2026-10-06 — ticket-review:Wave 3a (T-019 + T-007)
+
+**Scope:** Dispatched by `/system-architect` (the 2026-10-06 run, Wave 3a). It covers **T-019** (Media Center add and delete: results, the session check, no broken item after a failed upload, and a Storage clean-up on delete) and **T-007** (the server re-checks pixel dimensions), under the Wave 3 binding contract's items 1–6, the architect's C1–C10 amendments and premortem MUST-ADDs 1–3 (`docs/ROADMAP.md`, top of T-019).
+- **The diff under review:** `git diff main...wave-3a-media` at HEAD `a42ddcb`, merge base `7edafb0` (= `main`). The code is in `fb34d7d` (T-019: `media-actions.ts`, the new `MediaPublishForm.tsx` and `MediaDeleteButton.tsx`, `media/page.tsx` and `SubmitButton.tsx`) and `a42ddcb` (T-007: `upload-limits.ts` and the check in `uploadOptimizedImage`); `b7a4e8f` is docs only.
+- **Commit names:** all three commits authored and committed by `happierbangladesh`, each with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+
+**Method.**
+- **Static:** a full read of `media-actions.ts`, the two new components, the page and `SubmitButton` diffs, the reader diff, `action-errors.ts` and `isAllowedImageUrl`.
+- **The builder's suites (`scratchpad/wave-3a/`), run once from a private copy (`scratchpad/cso-w3a/suite/`).** Isolation was reviewed first:
+  - the global `fetch` is a trap; `@/lib/supabase/server` is stubbed to the real supabase-js 2.112.2 with an injected `fetch`, a dummy origin and a dummy key, and the loader refuses any other `@/lib/supabase/*` or `@supabase/*`;
+  - the only child processes are `node`, `sips -g` (read only), headless Chrome over a pipe on `file://`, and read-only `git cat-file`;
+  - writes land in the copy's `out/` and a temporary Chrome profile; there's no `.env`, no port and no server.
+- **Results:** server 202/202, UI 72/72 (production, and development/StrictMode), T-007 reader and server check 153/153, and 44/44 mutants killed (MA1–7, MD1–12, U1–11, R1–14). There were 0 global-`fetch` attempts, no Chrome was left running, and the repo stayed clean.
+  - The first server run scored 135/136: my copy sat one directory deeper, so the baseline path didn't resolve. With a symlink to the same read-only baseline, a re-run of that suite alone passed 202/202, the 22 real URLs included. Its baseline comparison of the public forms' prerendered buttons is guarded by an existence check and may have been skipped in this copy; the builder's own run and `/qa` cover it, and the `SubmitButton` change was read in full (no markup change without the new prop).
+- **This office's own probe** (`cso-w3a/cso/probe-w3a.mjs`): **180/180** on HEAD, with expectations written from the contract, not from the builder's fixtures. It runs the real files through the builder's loader and the real supabase-js.
+  - **Positive controls:** the same delete checks fail against `main`'s file (121 of 121) and against each of 7 single weakenings: dropping the `site_settings` match, dropping the exact `getPublicUrl` match, reading the browser `url`, admitting a leading `.`/`-`/`_`, skipping the C3 re-read answer, accepting 0 settings rows, and ignoring a positive count. All are killed.
+- **Read-only gate probes on `:3101`,** which serves the production build of `a42ddcb` (BUILD_ID `6281u-sw3YUF1H-cEAt0v`, in `.next/BUILD_ID` and in the served HTML).
+- **Not done:** no sign-in, no Server Action call, no live Storage call, no write, no build, no server started or stopped, nothing on `:3001`. `.env*` was never read.
+
+**1. Re-binds by sha256: ✅ these match the builder's report.**
+
+| File | `main` `7edafb0` | `a42ddcb` |
+|---|---|---|
+| `src/app/actions/media-actions.ts` | `36dcce2aa4831ae7…` | `dba76e48cac79f61…` |
+| `src/lib/upload-limits.ts` | `8f03c970e6e76c88…` | `265e9a835b03d62e…` |
+| `src/app/admin/(dashboard)/media/MediaPublishForm.tsx` | new | `c3a78ff781108702…` |
+| `src/app/admin/(dashboard)/media/MediaDeleteButton.tsx` | new | `85fafb072396ee17…` |
+| `media/page.tsx` and `SubmitButton.tsx` (recorded, not bound) | `dff651eee713eb4c…`, `d0589387ce75f404…` | `bc0ec56874397b22…`, `2d4b89ea5cc0e4bf…` |
+
+- **`git diff --name-only main HEAD` lists only the six contract files** plus `docs/ROADMAP.md` and `docs/DECISIONS.md`, and the working tree was clean. So every other binding stands, re-hashed in this pass:
+  - `products-actions.ts` `7e8a1069828c472e…`, `settings-actions.ts` `b4c3da2ec3c0a894…`, `jobs-actions.ts` `bd4387b1df2eb4c7…`, `site-content.ts` `9939d4f36731bd7f…` and `action-errors.ts` `b0be0a48a81ce6a8…`;
+  - `settings-read.ts` `cc5c8a2c06d9acb0…`, `business/page.tsx` `87071736c1516fcb…`, the admin `products/page.tsx` `969a00dea762e782…`, and the public products pages `238f87491891667b…` and `bc243115a2583eba…`;
+  - `nav.ts` `507e5c62c5f6347f…`, `sitemap.ts` `105e10253fdd12fb…`, `next.config.ts` `a44a56d9f997bb13…`, `package.json` `26068c14d0df4a0c…` and `package-lock.json` `6a026457868784a9…`;
+  - `ProductGrid.tsx` `407c3a38fec9b7b2…` and `ProductCard.tsx` `7c2f81e96140ad02…`;
+  - and 0 bytes for `middleware.ts`, `src/lib/supabase/*`, `form-actions.ts`, `auth-actions.ts`, `src/components/admin/*` (`ImageUploadField`, `SettingsForm`, `ImportBuiltInGallery`), the public pages, `db/`, `supabase-schema.sql` and `.env.example`.
+- **No new audit:** the lockfile is unchanged.
+- **Secrets:** 0 hits in the added `src` lines for the 10 `stack.json` patterns plus a JWT shape, and no `process.env` was added.
+  - No Supabase storage URL is hard-coded anywhere in `src/`, so every saved reference to a bucket file is in the database, where the clean-up looks.
+
+**2. Authorization: ✅**
+- **`getUser()` is the first await after `createClient()` in both actions** (the `requireUser()` shape), and the argument check follows it. Signed out, the answer is SESSION_EXPIRED, `getUser` is the only call, and 0 requests are made (the builder 3 times, this probe twice).
+- **The browser's `url` is never read on delete.** `deleteMediaAction` reads only `id`; the file comes from the row that `delete().select("url")` returns. `MediaDeleteButton` sends only `id`, and the page no longer renders the old hidden `url` input. A planted `url` naming a real, unreferenced key made 0 Storage calls.
+- **Exports:** the module's runtime exports are `main`'s five functions, and the only new export is the type `MediaActionResult`. There are still 34 public Server Actions (media 5).
+- **The boundary is unchanged:** the same anon-key session client, no service role and no SQL. A signed-in account could already delete rows and objects directly with its own token. So the checks below are integrity controls for the staff path; the boundary is SEC-HIGH-2's.
+
+**3. The irreversible Storage delete: ✅ it fails safe in every case tried.**
+- **Order, on the wire for each of the 22 real URLs:** `getUser` → `delete().eq("id").select("url")` → both refreshes → 4 counts and 1 settings read, together → `remove([name])` once.
+- **Ours only:** `name` is the last `/`-segment and must match `^[A-Za-z0-9][A-Za-z0-9._-]*$`, and `getPublicUrl(name).data.publicUrl` must equal the stored URL exactly.
+  - With every reference removed, so that this check is the last line, 28 hostile stored URLs made 0 Storage calls. They were:
+    - a foreign host carrying a real key (as a path and at the root), and a look-alike host suffix;
+    - `?width=800`, `#x`, `/render/image/`, a subfolder and a double slash;
+    - `.`, `..`, `%2E%2E`, `..%2F<key>`, and a leading `.`, `-` or `_`;
+    - `/images/client/…`, a bare key, and a trailing `/`, space or newline;
+    - `http://`, upper case, an explicit `:443`, another bucket, `/object/authenticated/` and `/object/sign/…?token=`;
+    - `""` and `null`.
+- **The live category images are safe.**
+  - The 8 category URLs and 14 life-page URLs scraped from the `7edafb0` baseline all count as ours: each is removed exactly once when nothing references it (the positive control).
+  - Each was kept when a crafted gallery row carried the exact same URL and the only reference was in `site_settings` (`business.categories[].image` or `homepage.lifeFacilities[].image`).
+  - A file was also kept for a reference in `products.image`, `leaders.photo_url`, `reports.file_url` or a second `media_assets` row, in a `/render/image/` form, as a bare-string settings value, and nested deep in one.
+- **`site_settings` is read in full** (`select("value")`, no filter) and searched with `JSON.stringify(value).includes(name)` in code. `JSON.stringify` never escapes the characters a name may contain, so a saved reference can't hide. There's no `ilike` on jsonb and no `value->>…`.
+- **Any doubt keeps the file:**
+  - an error or a `null` count on any of the four;
+  - a settings error, 0 settings rows, or a row with no value;
+  - a network failure on the counts or on the settings read.
+  - In every case: 0 Storage calls, the answer still ok, and no throw.
+- **C3, with 0 Storage calls in each case:**
+  - an RLS-refused delete (0 rows, the row still there) answers MEDIA_DELETE_REFUSED with no refresh, logged with `{ id }` only;
+  - a re-read error, and a delete error, answer the fixed delete text;
+  - a row that's already gone answers MEDIA_NOT_FOUND.
+- **A `remove` that returns `[]` or an error** is logged, and the answer stays ok because the item is gone (item 3).
+
+**4. Add: ✅**
+- **A pasted URL must pass `isAllowedImageUrl` before any call.** `javascript:`, `//host`, `/\host`, `http://`, `https:host`, `https:/host` and `data:` were refused with MEDIA_URL_INVALID, with 0 requests (but see SEC-INFO-46).
+- **The key is `<13 digits>_<[a-z0-9]*>` plus a lowercased `\.[A-Za-z0-9]{1,5}$` extension,** and nothing else from the file name.
+  - `../../etc/passwd.JPG` and `a.php%00.jpg` give `.jpg`, and `a b/c\d.WebP` gives `.webp`.
+  - `.htaccess`, `x.toolongext`, `noext` and a trailing newline give no extension.
+  - Every upload sends `x-upsert: false`, and the inserted `url` is the uploaded key's own public URL, never the URL box.
+- **Failures:** a failed upload inserts nothing (the fixed upload text). A failed insert removes exactly its own key, once (the fixed save text), and a failed clean-up after that is logged.
+- **Known Trap #9 is carried, as the contract states.** There's no size, type or dimension check on this path, the browser's content type is stored, and any 1–5 character extension (`.svg`, `.exe`) is kept. It's signed-in only, it's served from the Supabase storage origin rather than the site's, and it's already in the contract's backlog.
+
+**5. No raw database or storage text, and clean logs: ✅**
+- **Every result** is one of the module's private constants or `actionFailure`'s fixed copy. MARKER text planted in every error (the Postgres message, details and hint, the Storage error and message, and the network failure) never reached a result.
+- **Logs** carry a literal context label plus the error object, or `{ id }` for C3. The user id, the anon key, `Bearer`, the title and a planted URL never appeared in any captured log, on add or on delete.
+
+**6. T-007: ✅ it fails closed, it's pure, and its message is byte-identical to the browser's.**
+- **`readImageDimensions` checks bounds before every read** and always moves forward (at least 2 bytes per segment), so it can't loop.
+  - **JPEG:** the first SOFn wins (libjpeg rejects a second). An APP1/EXIF thumbnail is skipped by its length. SOS, EOI or SOI before a frame header, a bad length or a zero side returns null.
+  - **WebP:** there's a 30-byte floor, and the VP8, VP8L and VP8X offsets match the format.
+- **Fuzz:** 180,000 crafted buffers (JPEG and RIFF prefixes, random tags and lengths) gave 0 throws and 0 out-of-range answers. Five 400 KB worst-case walks (all `FF`, `FF 01`, `FF 00`, zero-length APP0s and RST runs) stay linear.
+- **`uploadOptimizedImage`,** with 0 Storage calls on every refusal:
+  - an unreadable file returns IMAGE_DIMENSIONS_UNREADABLE;
+  - 2401×10, 10×2401, 65535×65535 and a 2²⁴ VP8X canvas are refused;
+  - 2400×2400 is accepted.
+  - The dimension check runs after the 400 KB and format checks and before the write.
+- **`describeDimensionLimit(w, h)` is byte-identical** to `ImageUploadField.tsx`'s literal (4 pairs, compared byte for byte).
+
+**7. Gate probes on `:3101`: ✅**
+- **An anonymous `GET /admin/media` answers 307 to `/admin/login`, with no Set-Cookie.** So do the variants: `RSC: 1`, `?_rsc=`, a trailing slash (308 to `/admin/media` first) and four `x-middleware-subrequest` values.
+- **`/admin/login`** answers 200 with no Set-Cookie. **`/life-at-fashion-asia`** answers 200 with the same 14 storage URLs as the baseline.
+
+**Findings:**
+- 🟢 **SEC-INFO-46 (new) — `isAllowedImageUrl` (Wave 2a, unchanged) admits `"`, `'`, `<`, `>`, `(` and `)` inside an `https://` address.** For example, `https://evil.example/x".jpg` publishes.
+  - **No sink today:** every render is a React-escaped attribute, the only `dangerouslySetInnerHTML` in `src/` is `MarqueeSection`'s static `<style>`, and nothing puts an image address into a CSS `url()`.
+  - The Media Center now inherits the rule (on `main` it took any string), so this is a narrowing.
+  - **Hardening:** if a CSS or raw-HTML sink for image addresses is ever added, forbid those characters first.
+- 🟢 **SEC-INFO-47 (new) — the clean-up sees saved references only.** A gallery file can still lose its file if its address sits in an unsaved draft (a category or facility path box in another tab), or is saved in the milliseconds between the checks and `remove`.
+  - It takes two staff acting at once, it's signed-in only, and it's recoverable by re-uploading. The harm is a broken image, not a disclosure.
+  - Accepted as a residual. An owner checklist line can say: don't reuse a gallery photo's address elsewhere while deleting it.
+- **Note (no finding):** `action-errors.ts`'s header still says three files import it; there are now four. C10 keeps that file byte-identical, and STACK §4 and INVENTORY record the fourth at close. Its rule, that no client component imports it, still holds.
+- **Not done by this office:** premortem MUST-ADDs 8–10 (the client's 17 live image files through the reader) need those files' bytes, which means a live Storage read. They're `/qa`'s.
+
+**On O1 (the live DELETE policies on `media_assets` and on Storage, untested by agents):**
+- **Not a merge or deploy condition from this office.** Agents are barred from exercising an irreversible live delete, and no read-only probe can reveal a policy.
+- **Offline, every live state was driven through the real client, and each fails safe:**
+  - **No table policy:** 0 rows, then the C3 re-read, then MEDIA_DELETE_REFUSED. The item stays listed, with 0 Storage calls. Today's `main` fails silently in that state, so this is strictly more honest.
+  - **No Storage policy:** Storage answers `[]`, which is logged, and the file is kept as an orphan. Nothing in use can be removed.
+  - The guarantee against removing the wrong file doesn't depend on any policy.
+- **A policy broader than intended** is SEC-HIGH-2's scope (any signed-in account is an admin), and that's unchanged.
+- **Recommended:** the owner runs O1 after the deploy, on a ZZ-TEST photo published for it (never a real gallery item), and confirms the item leaves the list and its file leaves the bucket.
+  - If MEDIA_DELETE_REFUSED shows instead, the fix is an owner SQL step (a DELETE policy for `authenticated` on `media_assets`), which is a HARD STOP. Record the outcome here.
+
+**Authz-as-other-user:**
+- **Signed out** (the only other user this model has; RISKS R1): both actions answer SESSION_EXPIRED, with 0 requests. Pass.
+- **Signed in, aiming at files the item doesn't own** (a planted browser URL, crafted row URLs, another surface's file under a shared key): 0 Storage calls. Pass.
+- **Live:** not attempted. Owner law bars sign-in, Server Action calls and writes. The data-layer policy is O1.
+
+**Status changes** (in code, pending merge): SEC-MED-1 closed (T-007), SEC-MED-9 closed (T-019), and SEC-MED-10 at 12 of 12 (T-019 closes the last 2). **New:** 🟢 SEC-INFO-46 and SEC-INFO-47.
+
+**Overall verdict this pass:** ✅ **Wave 3a (T-019 + T-007) cleared.**
+- No 🔴, 🟠 or 🟡.
+- It adds one irreversible surface, the Storage clean-up, and this pass shows it can't remove a file that's foreign, crafted or still in use.
+- It closes three open findings.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** Wave 3a may proceed to `/qa` → `code-reviewer` → merge. Conditions:
+- **Bound by sha256 at `a42ddcb`:**
+  - `media-actions.ts` `dba76e48cac79f61e0b5d6b2d582552a962c609b75337ac701b2abd2e1b04193`;
+  - `upload-limits.ts` `265e9a835b03d62ef6ad4dcd8bd1222b519c89fe99946b7e966e7ed447f7f5d6`;
+  - `MediaPublishForm.tsx` `c3a78ff7811087027ad145cba0580efd269c2b2a6b2153dba74633e86c9fd296` (superseded at `4abe008` by `e569e6c0f2bf1ab9…`; see the 2026-10-07 re-bind below);
+  - `MediaDeleteButton.tsx` `85fafb072396ee17331ef884375b0ec23e7da83f5eedf4856f8c14b45ef050b7` (superseded at `4abe008` by `e1042edbc5b8ec4d…`; see the 2026-10-07 re-bind below).
+- **Every other binding in item 1 stands.** If a bound file changes before merge, the clearance lapses for that file until `/cso` re-reviews it. Wave 3b re-binds `upload-limits.ts` (item 7) under its own review, as the contract says.
+- **These come back to `/cso`:**
+  - an insert after a failed upload;
+  - removing a file before the row delete, by a browser-sent URL, or without item 3's checks;
+  - a reference set narrower than the four columns plus `site_settings`, a `site_settings` search other than reading every row and searching `JSON.stringify` in code, or a name rule that admits a leading `.`, `-` or `_`;
+  - a zero-row delete answered without the re-read, or raw text in a result;
+  - T-007 decoding, byte-scanning or failing open, or a message that differs from the browser's.
+
+**Pre-deploy position:**
+- A `main` holding Wave 3a at these hashes adds no authorization surface. Its one irreversible path is proven fail-safe offline.
+- SEC-HIGH-2 is unchanged. It still blocks the next deploy until the owner confirms that sign-ups are OFF; the project checkpoint (2026-10-05) still records them as ON.
+- **`/ship` additions (from the contract):** an anonymous `/admin/media` answers 307 on both domains, and `/life-at-fashion-asia` answers 200 with the same gallery images. O1 is recommended right after the deploy.
+- Deploying still needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md`: this entry, plus its §3, §5 and §7 rows. Left uncommitted, for the orchestrator.
+- Ran offline tests in the session scratchpad only, plus read-only GETs on `:3101`.
+- No sign-in, no Server Action call, no live Storage call, no write to the live database, no build, no server started or stopped, nothing on `:3001`.
+
+
+### 🔒 CSO Audit — 2026-10-07 — ticket-review:Wave 3a re-bind (design fix `4abe008`)
+
+**Scope:** the `/design-review` fix commit `4abe008` on `wave-3a-media` ("fix(media): AA status, visible busy delete, focus rings (T-019)"). It's authored and committed by `happierbangladesh`, with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+
+**Result: ✅ class names only.**
+- **`git diff --name-only a42ddcb 4abe008`** lists only `MediaPublishForm.tsx` and `MediaDeleteButton.tsx`.
+- **With every `className` value blanked, both files are byte-identical to `a42ddcb`'s,** and the number of `className` attributes is unchanged (21 and 3). So no handler, import, prop, text or logic changed.
+- **What changed:**
+  - "Published." and the file button use `text-accent`.
+  - The fields use a `focus-visible` accent ring instead of `focus:border-primary`.
+  - The delete wrapper is `opacity-100` while its delete runs, with `motion-safe:transition-opacity`. That's the only new expression, and it reads the existing `isPending`. The button is still `disabled={isPending}`.
+  - The delete button gets a `focus-visible` accent ring.
+- **`media-actions.ts` and `upload-limits.ts` are unchanged,** so every server-side result in the 2026-10-06 entry stands. The suites weren't re-run: no handler, server or data path changed. The UI harness is `/qa`'s to re-run.
+
+**Re-bound by sha256 at `4abe008`** (replacing the two component bindings above):
+- `MediaPublishForm.tsx` `e569e6c0f2bf1ab9b7bf34c4048a5271d15a954d9d1d4650c5d35aab483d03dd`
+- `MediaDeleteButton.tsx` `e1042edbc5b8ec4dee0ad8f997cc55659362823eae54ccd46d4b2f23dc5ac1b2`
+- **Unchanged:** `media-actions.ts` `dba76e48cac79f61e0b5d6b2d582552a962c609b75337ac701b2abd2e1b04193`, `upload-limits.ts` `265e9a835b03d62ef6ad4dcd8bd1222b519c89fe99946b7e966e7ed447f7f5d6`, and every other binding in the 2026-10-06 entry.
+
+**Verdict:** ✅ **Wave 3a stays cleared at `4abe008`.** There's no new finding. The conditions and the pre-deploy position are unchanged: SEC-HIGH-2 still blocks the deploy, and O1 is recommended right after it.
+
+**Actions taken:** edited only `docs/SECURITY.md` (this entry, plus a pointer on the two binding lines it supersedes), and left it uncommitted. No build, no server, no test run, no request to any server.
+
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -2308,6 +2504,12 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-16 — status update, 2026-10-06 (Wave 2b CSO entry) | **T-013** (`48fc3d7`) | 🟢 **Narrowed in code, pending merge; open only as the contract's accepted residual.** Put-backs now undo a failed write (REORDER_FAILED or REORDER_STALE). A mixed order is left only if a write and its put-back both fail, and then REORDER_PARTIAL says so. All-or-nothing needs a database function, which waits for the owner. Bound to `products-actions.ts` sha256 `7e8a1069…` |
 | SEC-INFO-45 — two more edges of the same non-atomic reorder: (a) a write that commits but whose reply is lost is answered REORDER_FAILED ("nothing changed"), though that row moved, because only confirmed rows are put back; (b) two reorders of one category at once can interleave, with no compare-and-swap on `sort_order`, so the order can end mixed while both tabs report it saved | The owner's database-function follow-up, with SEC-INFO-16. Optional without one: also put back the failing row after an error, and add `.eq("sort_order", from)` to writes and `.eq("sort_order", to)` to put-backs (an item 9 change, back to `/cso`) | Open — informational. One category's display order only, signed-in only (R1), with no cross-category write and no row created. It self-heals at the next successful reorder. (b) predates Wave 2b |
 | Wave 2a carry-over: the unbounded `orderedIds` loop — status update, 2026-10-06 (Wave 2b CSO entry) | **T-013** | ✅ **Closed in code, pending merge.** Writes are capped at the category's stored row count. A 1,000,000-entry list is refused by the length check, with no write |
+| SEC-MED-1 — status update, 2026-10-06 (Wave 3a CSO entry) | **T-007** (`a42ddcb`) | ✅ **Closed in code, pending merge.** `uploadOptimizedImage` reads width and height from the JPEG or WebP header (no decoding, no dependency). It refuses an unreadable file, and a longest edge over 2400 px, before the Storage write, in the browser's exact words. Residuals accepted by the contract: no pixel-area limit, EXIF orientation isn't applied (C8), and the Media Center path still has no dimension check (Known Trap #9) |
+| SEC-MED-9 — status update, 2026-10-06 (Wave 3a CSO entry) | **T-019** (`fb34d7d`) | ✅ **Closed in code, pending merge.** Both actions return `MediaActionResult`. Client wrappers show every failure that leaves the item listed, a throw included, in a `role="alert"`. The delete's error is checked and logged. A clean-up failure after the item is gone is logged only, per the contract |
+| SEC-MED-10 — status update, 2026-10-06 (Wave 3a CSO entry) | **T-019** | ✅ **12 of 12 closed in code, pending merge.** `addMediaAction` and `deleteMediaAction` check the session first, and make no table or Storage call when signed out |
+| SEC-INFO-46 — `isAllowedImageUrl` admits `"`, `'`, `<`, `>`, `(` and `)` in an `https://` address. No sink today: renders are React-escaped attributes only, and the one `dangerouslySetInnerHTML` is a static style | Not filed — hardening note | Open (info). Revisit if a CSS `url()` or raw-HTML sink for image addresses is added |
+| SEC-INFO-47 — the Media Center's Storage clean-up sees saved references only. An address in an unsaved draft, or saved during the gap between the checks and the removal, can lose its file | Not filed — accepted residual | Open (info). It needs concurrent signed-in staff, and it's recoverable by re-uploading |
+| O1 — the live DELETE policies on `media_assets` and on Storage have never been exercised by an agent (Wave 3a CSO entry) | Owner row **O1** | Open, not a merge condition. Recommended right after the deploy, on a ZZ-TEST photo. MEDIA_DELETE_REFUSED means an owner SQL step (HARD STOP) |
 
 ## 6. Secrets log
 
@@ -2379,3 +2581,12 @@ No committed secret was found this pass (see Secrets hygiene above). Nothing her
      1. The first means the list on screen no longer matches the stored rows: another tab added, deleted or moved a product. Reload and redo the move. If it repeats on a fresh page with no other tab open, read the category's rows back read-only and compare their ids with the page, as a Wave 2 incident.
      2. The second and third come with a server log line labelled `reorderCategoryProducts: …`. Read the logged error. After the third, reload: the category may show a mixed order until the next successful reorder (SEC-INFO-16's accepted residual).
      3. None of the three can move a product between categories or create one. A product appearing or vanishing on a reorder is a security incident, not this item.
+15. **Staff see "This item couldn't be deleted, because the database refused the change…" when they delete a Media Center item (T-019, Wave 3a, 2026-10-06).**
+    - **Meaning:** the live `media_assets` table has no DELETE policy for signed-in accounts, so RLS answered 0 rows. Nothing was deleted, and no file was touched. Not a breach.
+    - **Response:** an owner SQL step adds the policy (a HARD STOP, through `db/migrations/`). Then retry.
+16. **A category, facility, product or leader photo shows as broken after a gallery delete (T-019).**
+    - **Meaning:** this shouldn't happen, because the clean-up keeps any file that any saved address mentions. The likeliest cause is an address that was in an unsaved draft, or saved at the same moment (SEC-INFO-47). Otherwise treat it as a defect, and stop gallery deletes.
+    - **Response:** re-upload the photo where it broke, and check the server log for `deleteMediaAction:` lines. Storage has no undo.
+17. **Staff see "That image's width and height couldn't be read…" on an ordinary photo (T-007).**
+    - **Meaning:** the server's header reader refused the file, failing closed. Not a security event.
+    - **Response:** export it again as WebP or JPG and upload that. If many photos are refused, report it as a T-007 defect, with a sample file.
