@@ -25,13 +25,19 @@ export default function HeroOverlay({ kicker, titleTop, titleAccent, facts, stat
     const heroStats = stats?.length ? stats : FALLBACK_STATS;
 
     useGSAP(() => {
-        const tl = gsap.timeline({ delay: 0.5 });
+        // Only without a reduced-motion preference; otherwise the overlay renders
+        // in its final state. Reverted on unmount (T-028).
+        const mm = gsap.matchMedia();
+        mm.add("(prefers-reduced-motion: no-preference)", () => {
+            const tl = gsap.timeline({ delay: 0.5 });
 
-        tl.from(".hero-tag", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" })
-            .from(".hero-title", { y: 80, opacity: 0, duration: 1, ease: "power3.out" }, "-=0.6")
-            .from(".hero-subtitle", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.6")
-            .from(".hero-stats .stat-item", { y: 20, opacity: 0, duration: 0.8, stagger: 0.1, ease: "power3.out" }, "-=0.4")
-            .from(".scroll-indicator", { opacity: 0, duration: 1 }, "-=0.2");
+            tl.from(".hero-tag", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" })
+                .from(".hero-title", { y: 80, opacity: 0, duration: 1, ease: "power3.out" }, "-=0.6")
+                .from(".hero-subtitle", { y: 30, opacity: 0, duration: 0.8, ease: "power3.out" }, "-=0.6")
+                .from(".hero-stats .stat-item", { y: 20, opacity: 0, duration: 0.8, stagger: 0.1, ease: "power3.out" }, "-=0.4")
+                .from(".scroll-indicator", { opacity: 0, duration: 1 }, "-=0.2");
+        });
+        return () => mm.revert();
     }, { scope: overlayRef });
 
     return (
