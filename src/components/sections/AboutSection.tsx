@@ -1,4 +1,5 @@
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import AutoplayVideo from "@/components/ui/AutoplayVideo";
 import Link from "next/link";
 import { ArrowUpRight } from "lucide-react";
 
@@ -61,13 +62,9 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
 
                 <ScrollReveal delay={0.4} className="relative aspect-[4/5] w-full overflow-hidden rounded-2xl border border-white/5 md:aspect-auto">
                     <div className="absolute inset-0 bg-gradient-to-br from-[#1a1f1a] to-black z-0"></div>
-                    <video
+                    <AutoplayVideo
                         src="/videos/about.mp4"
                         poster="/images/client/about-poster.webp"
-                        autoPlay
-                        muted
-                        loop
-                        playsInline
                         aria-label="Fashion Asia Manufacturing Facility"
                         className="absolute inset-0 z-10 h-full w-full object-cover opacity-[0.78] transition-all duration-1000 motion-safe:hover:scale-105 hover:opacity-100"
                     />

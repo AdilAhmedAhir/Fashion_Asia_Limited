@@ -1,5 +1,6 @@
 import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
+import AutoplayVideo from "@/components/ui/AutoplayVideo";
 import CategoryCardGrid, { toCategoryCards } from "@/components/catalog/CategoryCardGrid";
 import { getSettings } from "@/app/actions/settings-actions";
 import { normalizeProducts } from "@/lib/site-content";
@@ -76,16 +77,13 @@ export default async function BusinessPage() {
 
                         {/* Cutting-room clip. Muted + playsInline so it can
                             autoplay on mobile; the poster covers the gap before
-                            the file arrives. */}
+                            the file arrives. Held on the poster with reduced
+                            motion on. */}
                         <ScrollReveal delay={0.2}>
                             <div className="relative mx-auto aspect-[9/16] w-full max-w-[300px] overflow-hidden rounded-2xl border border-white/10 bg-surface lg:max-w-[360px]">
-                                <video
+                                <AutoplayVideo
                                     src="/videos/cutting.mp4"
                                     poster="/images/client/cutting-poster.webp"
-                                    autoPlay
-                                    muted
-                                    loop
-                                    playsInline
                                     preload="metadata"
                                     aria-label="Automated fabric cutting on the production floor"
                                     className="h-full w-full object-cover"

@@ -1,4 +1,5 @@
 import HeroOverlay from "./HeroOverlay";
+import AutoplayVideo from "@/components/ui/AutoplayVideo";
 
 interface HeroSectionProps {
     kicker?: string;
@@ -11,14 +12,10 @@ interface HeroSectionProps {
 export default function HeroSection({ kicker, titleTop, titleAccent, facts, stats }: HeroSectionProps) {
     return (
         <section className="relative h-screen min-h-[680px] w-full overflow-hidden bg-black">
-            {/* Background video */}
-            <video
+            {/* Background video: held on its poster with reduced motion on */}
+            <AutoplayVideo
                 src="/videos/hero.mp4"
                 poster="/sequence/hero/poster.webp"
-                autoPlay
-                muted
-                loop
-                playsInline
                 aria-hidden="true"
                 className="absolute inset-0 z-0 h-full w-full object-cover"
             />
