@@ -75,13 +75,19 @@
 - **Admin panels:** `text-white/30` and `text-white/40` labels and hints are about 2.6:1 and 3.8:1 on an admin card (computed; T-011, Wave 4c).
 - **`accent` below full opacity:** `accent/70` on `background` is about 4.4:1.
 - **Light text on `secondary`:** see above.
-- **The homepage hero overlay** (one paused video frame; text-shadow not counted): the tag (`text-accent` on `bg-background/90` over the video) is 4.36:1 at the median and 1.88:1 at worst, and the "Legacy" stat label (`text-white/70`) is 3.07:1. Scheduled with Wave 5b.
 - **`FormStatusMessage` errors** use `role="status"`, not `role="alert"` (T-041).
 - **Fixed in Wave 4.** Kept here so they aren't reintroduced:
   - `text-black` on `bg-primary`, 2.77:1 (T-020);
   - `text-primary` as text, 2.0–2.6:1 (T-027);
   - `FormStatusMessage`'s success line, 2.2:1, now `text-accent` (T-027);
   - `text-white/25` sidebar labels (2.03:1) and `text-white/40` stat labels (about 3.8:1), now `text-white/50` (T-027).
+- **Fixed in Wave 5b: the homepage hero overlay (T-028).** Measured on `01245bf` across 6 frames (the poster plus 5) at 360 and 1440 px, with text-shadows counted.
+  - **Tag:** it was bare `text-accent` with an inline text-shadow and no background. It's now an opaque `bg-background` pill with `border-primary/60`, at 7.69:1.
+  - **Stat labels:** they were `text-white/50`, at 2.86–2.96:1 at 1440. They're now `text-foreground`, at 8.14:1 or more at the worst 5%.
+  - **Headline word and stat values:** they were `.text-gradient`, at 1.4–1.9:1 at the worst 5%. They're now `text-accent` over a `bg-background/30` layer, and the word inherits the h1's dark text-shadow instead of the green glow. They measure 5.16:1 or more on the word and 3.85:1 or more on the values.
+  - **Facts line** (`text-white/80`): 6.58:1 or more.
+  - **"Scroll to explore"** (`text-white/50`): 4.95:1 at the worst 5% and 4.77:1 at the lowest pixel. `white/50` tops out at 5.24:1 even on black, so the `bg-background/30` layer must stay.
+  - **Rule:** `.text-gradient` stays off photography and video. Its `secondary` end needs a background darker than about `#2f2f2f` to reach 3:1.
 
 ## §3 — Type & numerals
 Serif (Playfair) for headings and display; sans (Inter) for body and UI. Micro-labels are
@@ -95,6 +101,13 @@ uppercase with wide tracking, at ≥ 4.5:1 contrast.
   - `prefers-reduced-motion` guards on new motion (`motion-safe:`);
   - no motion in admin tables;
   - focus rings appear instantly, with no transition.
+- **Reduced motion, as shipped in Wave 5b (T-028), recorded:**
+  - Framer Motion follows the setting through `MotionConfig reducedMotion="user"` in `SmoothScrollProvider`.
+  - Lenis isn't created with the setting on, and GSAP timelines and parallax run inside `gsap.matchMedia("(prefers-reduced-motion: no-preference)")`, so they render in their final state.
+  - Hover transforms and infinite animations carry `motion-safe:`; opacity and colour transitions stay.
+  - Videos use `AutoplayVideo`, which holds them on their posters. The preloader never renders, and in-page jumps use `behavior: "auto"`.
+  - There's no global "kill all animations" rule. Without the setting, motion is unchanged.
+- **Overlay menus, as shipped in Wave 4d (T-030), recorded:** they use `src/lib/use-overlay-menu.ts`: focus moves in on open, Tab wraps, Escape closes and returns focus to the toggle, the page behind is `inert`, and a media query closes the menu when the layout changes. The page's scroll lock goes on `<html>`, and any route change closes the menu. There's no `aria-modal`.
 
 ## §5 — Breakpoints (for `/design-review` screenshots)
 360 · 768 · 1024 · 1440. The admin must not scroll sideways at 360; wide tables scroll

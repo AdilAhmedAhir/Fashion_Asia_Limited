@@ -157,6 +157,10 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
 
   **5c: T-029**
 
+  **5c additions** (orchestrator; DECISIONS 2026-10-08). Same files, class tokens and one small behaviour:
+  - the public menu closes on any route change, Back and Forward included, with Wave 4d's `menuPath` pattern;
+  - `motion-reduce:transition-colors` on the header's padding and border transition (`Header.tsx:24`), and `motion-reduce:transition-none` on the hamburger's bar spans (`:68`), so nothing moves with reduced motion on (Wave 5b's design review).
+
   13. **The toggle:**
       - `aria-expanded`, plus `aria-controls="mobile-menu"` pointing at a wrapper that's always in the page;
       - a stable name, "Menu";
@@ -1902,7 +1906,15 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
     - `SettingsLoadError`'s tag already uses `text-accent`, so the same page's tag changes color between its normal and failed-load states.
     - The Careers, Reports, Submissions and Media admin pages have hand-written `text-white` h1s, which DESIGN.md §7 bans (the builder's note on T-026's `e201aca`).
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Rank it with T-020 and T-011.
-- [ ] **T-028** — Respect `prefers-reduced-motion` sitewide [app:site][design]
+- [x] **T-028** — Respect `prefers-reduced-motion` sitewide [app:site][design]
+  Done 2026-10-08 in **Wave 5b**:
+  - **Commits:** `2f5b093` (items 5, 6, 7, 10 and 11), `0a5bf42` (item 8, `motion-safe:` on 26 hover transforms and 2 infinite animations), `1768926` (item 9, `AutoplayVideo`), `f65a8c2` (the hero overlay AA addition) and `01245bf` (fix round: the preloader unmounts under reduced motion; the hero's accent word and stats become `text-accent` over a `bg-background/30` layer; the static marquee wraps and centres).
+  - **What changed:** with the setting on, there's no smooth scroll, no GSAP motion (final states render), no hover transforms or infinite animations, videos hold on their posters, the preloader never renders, and the career page jumps instantly. Without it, motion is unchanged. Every hero text element passes AA on 6 video frames at both widths.
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: FIX FIRST (turning the setting off mid-visit brought the preloader curtain back for good), then SHIP after `01245bf`. Mutants 8/8, with M8 re-killed; the preference-flip probe passes.
+    - `design-reviewer`: FIX FIRST (the gradient hero word and stat values failed 3:1; the static marquee was clipped), then SHIP after `01245bf`.
+  - **Accepted:** `autoPlay` stays in the server markup (the byte-identical rule), so a reduced-motion visitor may see up to about 50 ms of the hero video before hydration pauses it.
+  - **Follow-ups:** under "Follow-ups found in Wave 5b".
   AC:
   - With reduced motion set:
     - `ScrollReveal` content shows without sliding (`MotionConfig reducedMotion="user"` in `src/app/(website)/layout.tsx`);
@@ -2499,6 +2511,13 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: Wave 5a's builder and `code-reviewer`, 2026-10-08. It's pre-existing: on `main` the preloader's lock is cleared 1 ms after it's set (`MobileOverlayMenu.tsx:15-21`). The Wave 5 contract freezes both effects, so this is its own ticket.
   Sequence: `architect-reviewer` (it reopens two frozen effects and the preloader's JSX) → `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
+- [ ] **T-043** — Lighten the homepage hero video [app:site][perf]
+  AC:
+  - `public/videos/hero.mp4` (28.4 MB today) gets a compressed rendition at the same look, and a smaller source for phones if that helps (for example `<source media>`), with the poster unchanged.
+  - The hero's markup, `AutoplayVideo`'s reduced-motion behaviour and the AA overlay stay as they are.
+  Source: `design-reviewer`, Wave 5b, 2026-10-08.
+  Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
+
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
 - **`code-reviewer` Y1, test only:** assert that the reorder's refresh comes after its last write. Today's `return await` is correct, but a "clean-up" that drops the `await` would pass the current suite.
@@ -2570,6 +2589,12 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **The comment at `next.config.ts:38`** says the CSP "has no fetch directive"; `object-src` is one. Change it to "its only fetch directive is object-src 'none', which blocks <object> and <embed> (the site has none), so it can't block any script, style, image, font, video or request" the next time the file opens (T-038 will), because any edit voids the security binding.
   - **For T-042:** the scroll-lock race, `finishLoading`'s wall-clock timing, and the curtain staying up with JavaScript off.
 - **Redirects:** Next's built-in trailing-slash redirect (`/contact/`) also carries none of the six headers. Same ruling as the config redirects.
+
+**Follow-ups found in Wave 5b (2026-10-08)**, for the backlog:
+- **`design-reviewer`:**
+  - **`hero.mp4` is 28.4 MB,** heavy on mobile. It needs a compressed rendition, and possibly a smaller mobile source (new T-043).
+  - **For T-041, optional:** each line of the static marquee ends with a dot, which nudges it slightly off centre at 360 px. Add `motion-reduce:hidden` on the dot span (`MarqueeSection.tsx:22`).
+- **`code-reviewer`:** the builder's harness lacked a preference-flip probe. The review's `rv.mjs` P1 now covers it, and any future motion work should run it.
 
 ### Dependency Order
 
