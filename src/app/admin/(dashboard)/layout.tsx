@@ -52,7 +52,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 <nav className="flex flex-col gap-1 flex-grow overflow-y-auto">
                     {navItems.map(group => (
                         <div key={group.group}>
-                            <span className="mb-2 mt-4 block text-[0.6rem] font-bold uppercase tracking-widest text-white/25 first:mt-0">
+                            <span className="mb-2 mt-4 block text-[0.6rem] font-bold uppercase tracking-widest text-white/50 first:mt-0">
                                 {group.group}
                             </span>
                             {group.items.map(item => (
@@ -71,10 +71,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
                 <div className="mt-auto border-t border-white/5 pt-4">
                     <div className="mb-4 flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
-                        <ShieldCheck size={16} className="text-primary" />
+                        <ShieldCheck size={16} className="text-accent" />
                         <div className="flex flex-col">
                             <span className="text-xs font-bold text-white">Super Admin</span>
-                            <span className="text-[0.6rem] text-primary">Secure Session</span>
+                            <span className="text-[0.6rem] text-accent">Secure Session</span>
                         </div>
                     </div>
                     <form action={logoutAction}>

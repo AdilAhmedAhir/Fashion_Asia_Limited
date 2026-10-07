@@ -102,7 +102,7 @@ function CategoryCard({ category, href }: { category: CategoryCardData; href: st
                 decoding="async"
                 className="absolute inset-0 h-full w-full object-cover opacity-70 transition-all duration-700 group-hover:scale-105 group-hover:opacity-90"
             />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/40 to-transparent" />
+            <div className="absolute inset-0 bg-scrim" />
             {/* Title and description share one bottom block so the card
                 looks right whether or not a description is set. */}
             <div className="absolute inset-x-0 bottom-0 flex flex-col gap-1.5 p-4">

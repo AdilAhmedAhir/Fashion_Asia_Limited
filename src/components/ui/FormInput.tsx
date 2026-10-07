@@ -15,7 +15,7 @@ export function FormInput({ label, name, type = "text", required = true, textare
     return (
         <div className={cn("flex flex-col", className)}>
             <label htmlFor={name} className="font-sans text-xs font-bold uppercase tracking-widest text-white/50">
-                {label} {required && <span className="text-primary">*</span>}
+                {label} {required && <span className="text-accent">*</span>}
             </label>
             {textarea ? (
                 <textarea id={name} name={name} required={required} rows={5} className={cn(baseClasses, "resize-none")} />

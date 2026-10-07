@@ -12,7 +12,7 @@ export default function GrievanceForm() {
     return (
         <form action={formAction} className="flex flex-col gap-6 rounded-3xl border border-red-500/20 bg-white/[0.02] p-8 md:p-12 backdrop-blur-sm">
             <div className="flex flex-col gap-2">
-                <label htmlFor="category" className="font-sans text-xs font-bold uppercase tracking-widest text-white/50">Nature of Grievance <span className="text-primary">*</span></label>
+                <label htmlFor="category" className="font-sans text-xs font-bold uppercase tracking-widest text-white/50">Nature of Grievance <span className="text-accent">*</span></label>
                 <select required id="category" name="category" defaultValue="" className="mt-2 w-full rounded-xl border border-white/10 bg-black/50 px-4 py-4 font-sans text-white focus:border-primary focus:outline-none appearance-none">
                     <option value="" disabled>Select category...</option>
                     <option value="compliance">Compliance Issue</option>

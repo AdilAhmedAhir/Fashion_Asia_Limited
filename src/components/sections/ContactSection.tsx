@@ -18,7 +18,7 @@ export default function ContactSection({ cards }: Props) {
 
                 <div className="flex flex-col justify-center">
                     <ScrollReveal delay={0}>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Let&apos;s Talk</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Let&apos;s Talk</span>
                     </ScrollReveal>
 
                     <ScrollReveal delay={0.1}>
@@ -37,7 +37,7 @@ export default function ContactSection({ cards }: Props) {
                     <ScrollReveal delay={0.3} className="mt-12 w-fit">
                         <a
                             href="mailto:admin@fashionasialtd.com"
-                            className="group flex items-center gap-4 rounded-full border-2 border-primary bg-transparent px-8 py-4 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
+                            className="group flex items-center gap-4 rounded-full border-2 border-primary bg-transparent px-8 py-4 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                         >
                             Start a Conversation
                             <ArrowUpRight className="h-5 w-5 transition-transform duration-300 group-hover:rotate-45" />
@@ -49,7 +49,7 @@ export default function ContactSection({ cards }: Props) {
                     {infoCards.map((card, i) => (
                         <ScrollReveal key={card.label} delay={0.4 + (i * 0.1)}>
                             <div className="flex w-full flex-col gap-2 rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm transition-colors hover:border-primary/30 hover:bg-white/[0.05]">
-                                <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-primary">
+                                <span className="text-[0.65rem] font-bold uppercase tracking-[0.2em] text-accent">
                                     {card.label}
                                 </span>
                                 <span className="font-serif text-xl md:text-2xl text-white/90">

@@ -103,7 +103,7 @@ export default async function CategoryDetailPage(
                 <ScrollReveal>
                     <Link
                         href={PRODUCTS_PATH}
-                        className="inline-flex items-center gap-2 rounded-sm text-xs font-bold uppercase tracking-[0.2em] text-primary transition-colors duration-300 hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
+                        className="inline-flex items-center gap-2 rounded-sm text-xs font-bold uppercase tracking-[0.2em] text-accent transition-colors duration-300 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
                     >
                         <ArrowLeft className="h-3.5 w-3.5" aria-hidden="true" />
                         All Products
@@ -123,7 +123,7 @@ export default async function CategoryDetailPage(
                                 meantime,{" "}
                                 <Link
                                     href="/contact"
-                                    className="rounded-sm text-primary underline underline-offset-4 hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+                                    className="rounded-sm text-accent underline underline-offset-4 hover:text-foreground focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
                                 >
                                     contact us
                                 </Link>{" "}

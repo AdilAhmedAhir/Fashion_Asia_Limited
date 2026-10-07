@@ -22,7 +22,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
 
                 <div className="flex flex-col justify-center">
                     <ScrollReveal delay={0}>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{tag || "About Fashion Asia Limited"}</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{tag || "About Fashion Asia Limited"}</span>
                     </ScrollReveal>
 
                     <ScrollReveal delay={0.1}>
@@ -51,7 +51,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
                     <ScrollReveal delay={0.5} className="mt-10 w-fit">
                         <Link
                             href="/who-we-are"
-                            className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
+                            className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                         >
                             Discover Our Story
                             <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />
@@ -71,7 +71,7 @@ export default function AboutSection({ tag, title, description, stats }: Props) 
                         aria-label="Fashion Asia Manufacturing Facility"
                         className="absolute inset-0 z-10 h-full w-full object-cover opacity-[0.78] transition-all duration-1000 hover:scale-105 hover:opacity-100"
                     />
-                    <div className="absolute bottom-6 right-6 z-20 rounded-full border border-primary bg-background/90 px-6 py-3 font-sans text-xs font-semibold uppercase tracking-widest text-primary backdrop-blur-md">
+                    <div className="absolute bottom-6 right-6 z-20 rounded-full border border-primary bg-background/90 px-6 py-3 font-sans text-xs font-semibold uppercase tracking-widest text-accent backdrop-blur-md">
                         01 — Manufacturing Excellence
                     </div>
                 </ScrollReveal>

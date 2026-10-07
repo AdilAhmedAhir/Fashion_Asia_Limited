@@ -44,7 +44,7 @@ export default function ScaleSection({ stats }: Props) {
                 <ScrollReveal delay={0}>
                     <div className="flex flex-col items-center leading-none">
                         <span className="font-serif text-[clamp(5rem,15vw,12rem)] font-black text-gradient drop-shadow-2xl">
-                            800<span className="text-[clamp(3rem,8vw,6rem)] text-primary">K</span>
+                            800<span className="text-[clamp(3rem,8vw,6rem)] text-accent">K</span>
                         </span>
                         <span className="mt-4 font-sans text-xl font-bold uppercase tracking-[0.2em] text-white">
                             Pieces Monthly
@@ -62,7 +62,7 @@ export default function ScaleSection({ stats }: Props) {
                         ].map((stat, i) => (
                             <ScrollReveal key={stat.lbl} delay={0.2 + (i * 0.1)}>
                                 <div className="flex flex-col items-center gap-2">
-                                    <span className="text-3xl font-bold text-primary">{stat.val}</span>
+                                    <span className="text-3xl font-bold text-accent">{stat.val}</span>
                                     <span className="text-[0.65rem] uppercase tracking-widest text-white/50">{stat.lbl}</span>
                                 </div>
                             </ScrollReveal>

@@ -30,7 +30,7 @@ export function SettingsHeader({ title, tag, onSave, saving, error, saveLabel = 
         <header className="mb-10 flex flex-col gap-3">
             <div className="flex items-start justify-between">
                 <div>
-                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">{tag}</span>
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">{tag}</span>
                     <h1 className="mt-2 font-serif text-3xl font-bold text-foreground md:text-4xl">{title}</h1>
                 </div>
                 <button onClick={onSave} disabled={saving}
@@ -90,7 +90,7 @@ export function SettingsCard({ title, children, className = "" }: {
 }) {
     return (
         <div className={`rounded-2xl border border-white/5 bg-white/[0.02] p-8 ${className}`}>
-            <h2 className="mb-6 text-sm font-bold uppercase tracking-widest text-primary">{title}</h2>
+            <h2 className="mb-6 text-sm font-bold uppercase tracking-widest text-accent">{title}</h2>
             {children}
         </div>
     );
@@ -137,7 +137,7 @@ export function ChipList({ label, items, onChange }: {
             <label className="text-xs font-bold uppercase tracking-widest text-white/40">{label}</label>
             <div className="flex flex-wrap gap-2">
                 {items.map(item => (
-                    <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold text-primary">
+                    <span key={item} className="inline-flex items-center gap-1.5 rounded-full border border-primary/30 bg-primary/10 px-4 py-1.5 text-xs font-bold text-accent">
                         {item}
                         <button onClick={() => onChange(items.filter(i => i !== item))} className="hover:text-red-400 transition-colors">
                             <X size={12} />
@@ -150,7 +150,7 @@ export function ChipList({ label, items, onChange }: {
                     onKeyDown={e => e.key === "Enter" && (e.preventDefault(), add())}
                     placeholder="Type and press Enter..."
                     className="flex-grow rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none" />
-                <button onClick={add} className="flex items-center gap-1.5 rounded-lg border border-primary/30 px-4 py-2.5 text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
+                <button onClick={add} className="flex items-center gap-1.5 rounded-lg border border-primary/30 px-4 py-2.5 text-xs font-bold text-accent hover:bg-primary/10 transition-colors">
                     <Plus size={14} /> Add
                 </button>
             </div>
@@ -174,7 +174,7 @@ export function StatsList({ label, items, onChange }: {
                 {items.map((item, i) => (
                     <div key={i} className="grid grid-cols-[1fr_2fr_auto] gap-3 items-center">
                         <input type="text" value={item.value} onChange={e => update(i, "value", e.target.value)} placeholder="Value"
-                            className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm font-bold text-primary focus:border-primary/50 focus:outline-none" />
+                            className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm font-bold text-accent focus:border-primary/50 focus:outline-none" />
                         <input type="text" value={item.label} onChange={e => update(i, "label", e.target.value)} placeholder="Label"
                             className="rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none" />
                         <button onClick={() => onChange(items.filter((_, j) => j !== i))} className="text-red-400 hover:text-red-300 p-2"><X size={14} /></button>
@@ -182,7 +182,7 @@ export function StatsList({ label, items, onChange }: {
                 ))}
             </div>
             <button onClick={() => onChange([...items, { value: "", label: "" }])}
-                className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
+                className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-accent hover:bg-primary/10 transition-colors">
                 <Plus size={14} /> Add Row
             </button>
         </div>
@@ -354,12 +354,12 @@ export function ObjectListEditor<T extends Record<string, string>>({
                             <div className="flex items-center gap-1">
                                 <button type="button" onClick={() => move(rowKeys[i], -1)} disabled={i === 0}
                                     aria-label="Move up"
-                                    className="p-1.5 text-white/40 hover:text-primary disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
+                                    className="p-1.5 text-white/40 hover:text-accent disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
                                     <ChevronUp size={14} />
                                 </button>
                                 <button type="button" onClick={() => move(rowKeys[i], 1)} disabled={i === items.length - 1}
                                     aria-label="Move down"
-                                    className="p-1.5 text-white/40 hover:text-primary disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
+                                    className="p-1.5 text-white/40 hover:text-accent disabled:opacity-20 disabled:hover:text-white/40 transition-colors">
                                     <ChevronDown size={14} />
                                 </button>
                                 <button type="button" onClick={() => remove(rowKeys[i])}
@@ -397,7 +397,7 @@ export function ObjectListEditor<T extends Record<string, string>>({
                 ))}
             </div>
             <button ref={addButton} type="button" onClick={() => emit([...latest.current.items, blank()])}
-                className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
+                className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-accent hover:bg-primary/10 transition-colors">
                 <Plus size={14} /> {addLabel}
             </button>
         </div>
@@ -421,7 +421,7 @@ export function ListEditor({ label, items, onChange }: {
                 ))}
             </div>
             <button onClick={() => onChange([...items, ""])}
-                className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
+                className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-accent hover:bg-primary/10 transition-colors">
                 <Plus size={14} /> Add Item
             </button>
         </div>

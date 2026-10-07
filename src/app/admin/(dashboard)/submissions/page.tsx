@@ -22,8 +22,8 @@ export default async function SubmissionsPage(props: Props) {
     return (
         <div className="flex max-w-6xl flex-col gap-10">
             <header className="flex flex-col gap-2">
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Data Management</span>
-                <h1 className="font-serif text-3xl font-bold text-white md:text-4xl">Form Submissions</h1>
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Data Management</span>
+                <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">Form Submissions</h1>
                 <p className="text-white/50">Review inquiries, applications, and reports securely.</p>
             </header>
 
@@ -66,7 +66,7 @@ export default async function SubmissionsPage(props: Props) {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-2">
                                 {Object.entries(sub.payload as Record<string, string>).map(([key, value]) => (
                                     <div key={key} className={cn("flex flex-col gap-1 bg-white/[0.02] p-4 rounded-xl border border-white/5", key === "message" || key === "details" ? "md:col-span-2" : "")}>
-                                        <span className="text-[0.65rem] font-bold uppercase tracking-widest text-primary/70">
+                                        <span className="text-[0.65rem] font-bold uppercase tracking-widest text-accent">
                                             {key.replace("_", " ")}
                                         </span>
                                         <p className="text-sm text-white/90 whitespace-pre-wrap">{value || "N/A"}</p>

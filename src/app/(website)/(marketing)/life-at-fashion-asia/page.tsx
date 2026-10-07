@@ -70,8 +70,8 @@ export default async function MediaPage() {
                                         </div>
                                     )}
                                     <div className="flex flex-col flex-grow p-6">
-                                        <span className="text-xs font-bold uppercase tracking-widest text-primary/70 mb-3">{new Date(news.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
-                                        <h3 className="font-serif text-xl font-bold text-white mb-4 line-clamp-2">{news.title}</h3>
+                                        <span className="text-xs font-bold uppercase tracking-widest text-accent mb-3">{new Date(news.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                        <h3 className="font-serif text-xl font-bold text-foreground mb-4 line-clamp-2">{news.title}</h3>
                                         <p className="text-white/60 text-sm whitespace-pre-wrap leading-relaxed">{news.content}</p>
                                     </div>
                                 </div>

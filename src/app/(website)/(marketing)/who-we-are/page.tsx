@@ -56,7 +56,7 @@ export default async function WhoWeArePage() {
                                 alt="Fashion Asia Limited knitwear"
                                 className="h-full w-full object-cover transition-transform duration-700 hover:scale-105"
                             />
-                            <div className="absolute bottom-5 left-5 rounded-full border border-primary/60 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-primary backdrop-blur-md">
+                            <div className="absolute bottom-5 left-5 rounded-full border border-primary/60 bg-background/80 px-4 py-2 text-xs font-semibold uppercase tracking-widest text-accent backdrop-blur-md">
                                 Knitwear Craftsmanship
                             </div>
                         </div>
@@ -70,7 +70,7 @@ export default async function WhoWeArePage() {
                 <section className="container pb-24 md:pb-32">
                     <ScrollReveal>
                         <div className="mx-auto mb-16 max-w-3xl text-center">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
                                 The Numbers
                             </span>
                             <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
@@ -98,7 +98,7 @@ export default async function WhoWeArePage() {
                 <div className="container grid grid-cols-1 gap-16 md:grid-cols-2 max-w-6xl mx-auto">
                     <ScrollReveal delay={0.1}>
                         <div className="p-8 md:p-12 rounded-3xl border border-white/10 bg-black/50 h-full hover:border-primary/30 transition-colors">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Vision</span>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Our Vision</span>
                             <h3 className="mt-4 font-serif text-2xl md:text-3xl font-bold text-foreground">{data.visionTitle || "A Globally Recognized Leader"}</h3>
                             <p className="mt-6 text-white/60 leading-relaxed text-lg">
                                 {data.visionDescription || "To be a globally recognized knitwear manufacturer known for sustainable practices, technological advancement, and excellence in product quality."}
@@ -107,7 +107,7 @@ export default async function WhoWeArePage() {
                     </ScrollReveal>
                     <ScrollReveal delay={0.2}>
                         <div className="p-8 md:p-12 rounded-3xl border border-white/10 bg-black/50 h-full hover:border-primary/30 transition-colors">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Mission</span>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Our Mission</span>
                             <h3 className="mt-4 font-serif text-2xl md:text-3xl font-bold text-foreground">{data.missionTitle || "Responsible Manufacturing"}</h3>
                             <ul className="mt-6 flex flex-col gap-4">
                                 {(data.missionPoints || []).map((point: string, i: number) => (
@@ -127,7 +127,7 @@ export default async function WhoWeArePage() {
                 <section className="container py-24 md:py-32 border-b border-white/5">
                     <div className="mx-auto max-w-3xl text-center mb-16">
                         <ScrollReveal>
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Our Journey</span>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Our Journey</span>
                             <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Milestones &amp; Achievements</h2>
                             <p className="mt-4 text-white/70 text-lg">From the founding of the group in 1967 to a LEED-certified green facility serving buyers worldwide.</p>
                         </ScrollReveal>
@@ -169,7 +169,7 @@ export default async function WhoWeArePage() {
             <section className="container py-24 md:py-32 border-b border-white/5">
                 <div className="mx-auto max-w-3xl text-center mb-16">
                     <ScrollReveal>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">What Drives Us</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">What Drives Us</span>
                         <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Our Values</h2>
                     </ScrollReveal>
                 </div>
@@ -203,12 +203,12 @@ export default async function WhoWeArePage() {
                                         {leader.photo_url ? (
                                             <img src={leader.photo_url} alt={leader.name} className="h-24 w-24 rounded-full object-cover border-2 border-primary/30" />
                                         ) : (
-                                            <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-primary">
+                                            <div className="h-24 w-24 rounded-full bg-primary/10 flex items-center justify-center text-2xl font-bold text-accent">
                                                 {leader.name.charAt(0)}
                                             </div>
                                         )}
-                                        <h3 className="font-serif text-xl font-bold text-white">{leader.name}</h3>
-                                        <span className="text-xs uppercase tracking-widest text-primary font-bold">{leader.title}</span>
+                                        <h3 className="font-serif text-xl font-bold text-foreground">{leader.name}</h3>
+                                        <span className="text-xs uppercase tracking-widest text-accent font-bold">{leader.title}</span>
                                         {leader.bio && <p className="text-white/60 text-sm leading-relaxed mt-2">{leader.bio}</p>}
                                     </div>
                                 </ScrollReveal>

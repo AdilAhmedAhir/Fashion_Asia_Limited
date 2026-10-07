@@ -15,8 +15,8 @@ export default async function AdminMediaPage() {
     return (
         <div className="flex max-w-6xl flex-col gap-10">
             <header className="flex flex-col gap-2">
-                <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Content Management</span>
-                <h1 className="font-serif text-3xl font-bold text-white md:text-4xl">Media &amp; News Center</h1>
+                <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Content Management</span>
+                <h1 className="font-serif text-3xl font-bold text-foreground md:text-4xl">Media &amp; News Center</h1>
                 <p className="text-white/50">Publish photo galleries and press releases to the live website.</p>
             </header>
 
@@ -30,7 +30,7 @@ export default async function AdminMediaPage() {
 
                 {/* Media Grid */}
                 <div className="lg:col-span-2 flex flex-col gap-4">
-                    <h2 id={PUBLISHED_HEADING_ID} tabIndex={-1} className="font-serif text-xl font-bold text-white mb-2">Published Assets</h2>
+                    <h2 id={PUBLISHED_HEADING_ID} tabIndex={-1} className="font-serif text-xl font-bold text-foreground mb-2">Published Assets</h2>
                     {error ? (
                         <div className="p-6 text-red-400 bg-red-400/10 rounded-xl border border-red-500/20">Database error. Did you run the SQL script?</div>
                     ) : media?.length === 0 ? (
@@ -48,10 +48,10 @@ export default async function AdminMediaPage() {
                                     </div>
                                     <div className="p-4">
                                         <div className="mb-2 flex items-center justify-between">
-                                            <span className="text-[0.65rem] font-bold uppercase tracking-widest text-primary">{post.type}</span>
+                                            <span className="text-[0.65rem] font-bold uppercase tracking-widest text-accent">{post.type}</span>
                                             <span className="text-xs text-white/40">{new Date(post.created_at).toLocaleDateString()}</span>
                                         </div>
-                                        <h3 className="font-serif text-lg font-bold text-white line-clamp-1">{post.title}</h3>
+                                        <h3 className="font-serif text-lg font-bold text-foreground line-clamp-1">{post.title}</h3>
                                     </div>
                                     <MediaDeleteButton id={post.id} title={post.title} focusAfterDelete={PUBLISHED_HEADING_ID} />
                                 </div>

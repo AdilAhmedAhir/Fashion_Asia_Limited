@@ -58,7 +58,7 @@ export default async function SustainabilityPage() {
                 <div className="container max-w-5xl mx-auto">
                     <ScrollReveal>
                         <div className="mb-16">
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Environmental &amp; Social</span>
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Environmental &amp; Social</span>
                             <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">Key Sustainability Initiatives</h2>
                             <p className="mt-4 text-white/70 text-lg">We believe sustainable growth is only possible when business success aligns with social and environmental well-being.</p>
                         </div>
@@ -81,7 +81,7 @@ export default async function SustainabilityPage() {
             <section className="container py-24">
                 <div className="mx-auto mb-16 max-w-4xl text-center">
                     <ScrollReveal>
-                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Global Recognition</span>
+                        <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Global Recognition</span>
                         <h2 className="mt-4 mb-6 font-serif text-3xl font-bold md:text-4xl">Certifications &amp; Audits</h2>
                         <p className="text-lg leading-relaxed text-white/70">
                             These certifications demonstrate our commitment to ethical business conduct, responsible sourcing, environmental management, and international labor standards.
@@ -104,7 +104,7 @@ export default async function SustainabilityPage() {
                                         className="max-h-16 w-auto max-w-full object-contain md:max-h-20"
                                     />
                                 </div>
-                                <figcaption className="text-center text-[0.65rem] font-bold uppercase tracking-widest text-black/50">
+                                <figcaption className="text-center text-xs font-bold uppercase tracking-widest text-surface/70">
                                     {cert.name}
                                 </figcaption>
                             </figure>
@@ -120,7 +120,7 @@ export default async function SustainabilityPage() {
                 <div className="container">
                     <div className="mx-auto max-w-3xl text-center mb-16">
                         <ScrollReveal>
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
                                 Transparency &amp; Governance
                             </span>
                             <h2 className="mt-4 font-serif text-3xl font-bold text-foreground md:text-4xl">
@@ -151,7 +151,7 @@ export default async function SustainabilityPage() {
                                         </div>
                                         <div className="flex flex-grow flex-col justify-between p-6">
                                             <div>
-                                                <h3 className="mb-3 font-serif text-lg font-bold text-white">{report.title}</h3>
+                                                <h3 className="mb-3 font-serif text-lg font-bold text-foreground">{report.title}</h3>
                                                 <div className="flex items-center gap-3">
                                                     <span className={`inline-block rounded-full border px-3 py-1 text-[0.6rem] font-bold uppercase tracking-widest ${CATEGORY_COLORS[report.category] || ""}`}>
                                                         {report.category}

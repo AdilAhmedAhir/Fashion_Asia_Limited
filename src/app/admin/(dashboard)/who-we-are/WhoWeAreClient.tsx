@@ -248,7 +248,7 @@ export default function WhoWeAreClient({ settings: init, leaders: initLeaders }:
                         Error: text-red-400 on this card's #0f0f0f, 6.93:1. */}
                     <div className="flex flex-col gap-3">
                         <button onClick={addLeader} disabled={isPending}
-                            className="flex items-center gap-2 self-start rounded-lg border border-primary/30 px-5 py-2.5 text-xs font-bold text-primary enabled:hover:bg-primary/10 disabled:opacity-50 transition-colors">
+                            className="flex items-center gap-2 self-start rounded-lg border border-primary/30 px-5 py-2.5 text-xs font-bold text-accent enabled:hover:bg-primary/10 disabled:opacity-50 transition-colors">
                             <Plus size={14} /> Add Leader
                         </button>
                         {addLeaderError && (

@@ -93,7 +93,7 @@ export default function ContactSettingsClient({ contact: initContact, general: i
                         </div>
                     ))}
                     <button onClick={() => setC("socialLinks", [...(contact.socialLinks || []), { platform: "", url: "" }])}
-                        className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-primary hover:bg-primary/10 transition-colors">
+                        className="flex items-center gap-1.5 self-start rounded-lg border border-primary/30 px-4 py-2 text-xs font-bold text-accent hover:bg-primary/10 transition-colors">
                         <Plus size={14} /> Add Social Link
                     </button>
                 </div>

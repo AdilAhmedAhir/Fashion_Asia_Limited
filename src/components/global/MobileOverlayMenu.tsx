@@ -51,7 +51,7 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
                             >
                                 <Link href={link.href} onClick={onClose} className="group flex items-baseline gap-4 w-full">
                                     <span className="font-sans text-sm text-primary/30">{link.num}</span>
-                                    <span className="font-serif text-[clamp(1.75rem,7vw,3.25rem)] font-bold leading-tight text-foreground transition-all duration-300 group-hover:translate-x-2 group-hover:text-primary">
+                                    <span className="font-serif text-[clamp(1.75rem,7vw,3.25rem)] font-bold leading-tight text-foreground transition-all duration-300 group-hover:translate-x-2 group-hover:text-accent">
                                         {link.label}
                                     </span>
                                 </Link>
@@ -73,10 +73,10 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
                             {NAV_CTA.label}
                         </Link>
                         <div>
-                            <a href="mailto:admin@fashionasialtd.com" className="block font-sans text-sm text-white/50 transition-colors hover:text-primary">
+                            <a href="mailto:admin@fashionasialtd.com" className="block font-sans text-sm text-white/50 transition-colors hover:text-accent">
                                 admin@fashionasialtd.com
                             </a>
-                            <a href="tel:+8801711691366" className="block font-sans text-sm text-white/50 transition-colors hover:text-primary">
+                            <a href="tel:+8801711691366" className="block font-sans text-sm text-white/50 transition-colors hover:text-accent">
                                 +880 1711 691 366
                             </a>
                         </div>

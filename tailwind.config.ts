@@ -20,6 +20,13 @@ const config: Config = {
                 accent: "#0EC97A",
                 surface: "#0a0a0a",
             },
+            backgroundImage: {
+                // The photo-card scrim (T-027): the same gradient as
+                // bg-gradient-to-t from-black/90 via-black/40 to-transparent.
+                // 360deg is "to top". The CSS minifier rewrites "to top" and 0deg
+                // as a reversed "to bottom", which rounds some pixels differently.
+                scrim: "linear-gradient(360deg, rgb(0 0 0 / 0.9), rgb(0 0 0 / 0.4), transparent)",
+            },
             fontFamily: {
                 sans: ["var(--font-inter)", "sans-serif"],
                 serif: ["var(--font-playfair)", "serif"],

@@ -32,8 +32,8 @@ export default function SustainabilityClient({ initial }: { initial: Sustainabil
             <SettingsCard title="Certifications & Audits">
                 <p className="text-xs leading-relaxed text-white/40">
                     Certifications are no longer a text list — the page renders the certification
-                    artwork instead. To add or remove one, edit the <code className="text-primary">CERTIFICATIONS</code>{" "}
-                    array in <code className="text-primary">src/lib/site-content.ts</code> and supply the mark image.
+                    artwork instead. To add or remove one, edit the <code className="text-accent">CERTIFICATIONS</code>{" "}
+                    array in <code className="text-accent">src/lib/site-content.ts</code> and supply the mark image.
                 </p>
             </SettingsCard>
 

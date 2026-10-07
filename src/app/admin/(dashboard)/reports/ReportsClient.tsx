@@ -153,10 +153,10 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
         <div className="flex flex-col gap-8 max-w-5xl">
             <header className="flex items-start justify-between gap-4">
                 <div>
-                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">Management</span>
-                    <h1 className="mt-2 font-serif text-3xl font-bold text-white md:text-4xl">Reports & Publications</h1>
+                    <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">Management</span>
+                    <h1 className="mt-2 font-serif text-3xl font-bold text-foreground md:text-4xl">Reports & Publications</h1>
                 </div>
-                <button onClick={openNew} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-white hover:bg-primary/90 transition-colors">
+                <button onClick={openNew} className="flex items-center gap-2 rounded-lg bg-primary px-6 py-3 text-sm font-bold text-foreground hover:bg-primary/90 transition-colors">
                     <Plus size={16} /> Publish New Report
                 </button>
             </header>
@@ -198,7 +198,7 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
                                     </td>
                                     <td className="px-6 py-4 text-white/50">{r.year}</td>
                                     <td className="px-6 py-4">
-                                        <span className={`inline-block rounded-full px-3 py-1 text-[0.65rem] uppercase tracking-widest font-bold ${r.published ? "bg-primary/20 text-primary" : "bg-white/10 text-white/40"}`}>
+                                        <span className={`inline-block rounded-full px-3 py-1 text-[0.65rem] uppercase tracking-widest font-bold ${r.published ? "bg-primary/20 text-accent" : "bg-white/10 text-white/40"}`}>
                                             {r.published ? "Published" : "Draft"}
                                         </span>
                                     </td>
@@ -246,7 +246,7 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
                 <div className="fixed inset-0 z-50 flex items-center justify-center overflow-y-auto bg-black/70 backdrop-blur-sm" onClick={closeModal}>
                     <div className="my-auto w-full max-w-lg rounded-2xl border border-white/10 bg-[#111] p-8" onClick={e => e.stopPropagation()}>
                         <div className="flex items-center justify-between mb-8">
-                            <h2 className="font-serif text-xl font-bold text-white">{isNew ? "Add Report" : "Edit Report"}</h2>
+                            <h2 className="font-serif text-xl font-bold text-foreground">{isNew ? "Add Report" : "Edit Report"}</h2>
                             <button onClick={closeModal} disabled={isPending || uploading} aria-label="Close" className="text-white/40 enabled:hover:text-white disabled:opacity-40"><X size={18} /></button>
                         </div>
                         <div className="flex flex-col gap-5">
@@ -310,7 +310,7 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
                                     >
                                         {uploading ? (
                                             <>
-                                                <Loader2 size={18} className="motion-safe:animate-spin text-primary" />
+                                                <Loader2 size={18} className="motion-safe:animate-spin text-accent" />
                                                 <span>Uploading...</span>
                                             </>
                                         ) : (
@@ -349,7 +349,7 @@ export default function ReportsClient({ initial }: { initial: Report[] }) {
                                 </p>
                             )}
                             <button onClick={handleSave} disabled={isPending || uploading}
-                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-white hover:bg-primary/90 disabled:opacity-50 transition-colors">
+                                className="flex w-full items-center justify-center gap-2 rounded-lg bg-primary py-3.5 text-sm font-bold text-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors">
                                 {isPending ? <Loader2 size={16} className="motion-safe:animate-spin" /> : null}
                                 {isPending ? "Saving..." : isNew ? "Publish Report" : "Save Changes"}
                             </button>

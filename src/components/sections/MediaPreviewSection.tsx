@@ -50,7 +50,7 @@ export default function MediaPreviewSection({
                 <div className="grid grid-cols-1 gap-12 lg:grid-cols-[1.1fr_1fr] lg:items-end lg:gap-20">
                     <div>
                         <ScrollReveal>
-                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-primary">
+                            <span className="text-xs font-bold uppercase tracking-[0.2em] text-accent">
                                 {tag || "Life at Fashion Asia"}
                             </span>
                         </ScrollReveal>
@@ -138,7 +138,7 @@ export default function MediaPreviewSection({
                 <ScrollReveal delay={0.3} className="mt-16 flex flex-wrap justify-center gap-4">
                     <Link
                         href="/life-at-fashion-asia"
-                        className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-white transition-all duration-300 hover:bg-primary hover:text-white hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
+                        className="group flex items-center gap-3 rounded-full border-2 border-primary/50 bg-transparent px-7 py-3.5 font-sans text-sm font-bold uppercase tracking-widest text-foreground transition-all duration-300 hover:bg-primary hover:text-foreground hover:shadow-[0_0_30px_rgba(14,201,122,0.3)]"
                     >
                         Life at Fashion Asia
                         <ArrowUpRight className="h-4 w-4 transition-transform duration-300 group-hover:rotate-45" />

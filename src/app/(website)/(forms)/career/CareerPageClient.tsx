@@ -29,7 +29,7 @@ export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
             {jobs.length > 0 && (
                 <section className="container max-w-4xl py-16 md:py-24">
                     <ScrollReveal>
-                        <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">Open Positions</h2>
+                        <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-2">Open Positions</h2>
                         <p className="text-sm text-white/40 mb-8">Click on a position to view details and apply</p>
                         <JobAccordion jobs={jobs} onApply={handleApply} />
                     </ScrollReveal>
@@ -39,7 +39,7 @@ export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
             {/* Application Form */}
             <section ref={formSectionRef} id="apply" className="container max-w-3xl pb-24 pt-8 scroll-mt-24">
                 <ScrollReveal>
-                    <h2 className="font-serif text-2xl md:text-3xl font-bold text-white mb-2">Submit Your Application</h2>
+                    <h2 className="font-serif text-2xl md:text-3xl font-bold text-foreground mb-2">Submit Your Application</h2>
                     <p className="text-sm text-white/40 mb-8">Don&apos;t see a position that fits? Send us your CV and we&apos;ll keep it on file.</p>
                     <form action={formAction} className="flex flex-col gap-6 rounded-3xl border border-white/5 bg-white/[0.02] p-8 md:p-12 backdrop-blur-sm">
                         <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -48,7 +48,7 @@ export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
                         </div>
                         <div className="flex flex-col gap-2">
                             <label htmlFor="position" className="font-sans text-xs font-bold uppercase tracking-widest text-white/50">
-                                Position Applied For <span className="text-primary">*</span>
+                                Position Applied For <span className="text-accent">*</span>
                             </label>
                             <input
                                 required
@@ -61,7 +61,7 @@ export default function CareerPageClient({ jobs }: { jobs: Job[] }) {
                                 className="w-full rounded-xl border border-white/10 bg-black/50 px-4 py-4 font-sans text-white focus:border-primary focus:outline-none"
                             />
                             {position && (
-                                <p className="text-xs text-primary mt-1">Applying for: {position}</p>
+                                <p className="text-xs text-accent mt-1">Applying for: {position}</p>
                             )}
                         </div>
                         <FormInput label="Link to CV (Google Drive, LinkedIn, etc.)" name="cv_link" type="url" />
