@@ -2615,6 +2615,175 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 - Did not: build, start a server, sign in, submit Sign Out, call a Server Action, or send any request to the live site or Supabase; nothing on `:3001`.
 - Never read `.env*`: env var names came from the `process.env.*` references in `src`.
 
+### 🔒 CSO Audit — 2026-10-08 — ticket-review:Wave 5a (T-008 + T-022 + T-017)
+
+**Scope:** Dispatched by the orchestrator (Wave 5a) under the lean protocol: static, plus the builder's saved evidence. It covers `git diff bb8c29f..2db0af9` on `wave-5a-headers`, where `bb8c29f` is `main` with Wave 4d merged.
+- **Commits:** `edd1c6c` (the premortem fold), `b4c01e8` (T-008), `b8558c3` (T-022) and `2db0af9` (T-017). All four are authored and committed by `happierbangladesh`, each with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+- **Files:** exactly 5a's Touches list (`next.config.ts`, `src/app/sitemap.ts` and `src/components/global/Preloader.tsx`), plus `docs/ROADMAP.md`, `docs/DECISIONS.md` and `CLIENT_QUESTIONS.md`. Across `src/`, `db/`, `public/`, `next.config.ts`, `package*.json`, `supabase-schema.sql`, `tailwind.config.ts` and `vercel.json`, `git diff --name-status main` lists only those three.
+- **Method:**
+  - the diff and the files at `2db0af9`;
+  - the compiled build on disk (`BUILD_ID` `dlZUFOVTl2TJUgu89DV0F`), built 2026-10-08 00:30 (+0600), after `2db0af9`'s 00:24 commit;
+  - the builder's evidence in the session scratchpad (`wave-5a/final/`, `wave-5a/baseline/` and `pm3.mjs`), captured at 00:30:48, after that build.
+  - This pass ran no server, build, sign-in or request. `:3101` belongs to `code-reviewer`.
+
+**1. The six values: ✅ byte-exact in source and in the build (PM1, PM2)**
+- **Source:** one rule, `source: "/:path*"`, with no `has` or `missing`, and six `{ key, value }` string literals. All six match the contract table byte for byte. The file has no non-ASCII byte, so no curly quote or no-break space can hide inside a keyword.
+- **The CSP** is exactly `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'`, with every keyword quoted. PM1's grep, plus `nonce`, returns nothing: no fetch directive, no Report-Only and no `preload`.
+- **HSTS** is the only conditional, on `process.env.NODE_ENV === "production"`. That's the only `process.env` reference the diff adds. R-3's comment is on the line above it.
+- **HSTS scope:** sent from `www`, `includeSubDomains` covers only names under `www.`, and none exist. It can't reach `mail.`, cPanel or a bare domain while the app serves only `www`; PM13's bare-domain STOP guards the rest. R-2's preview case is moot too: `.app` is an HSTS-preloaded TLD, so `*.vercel.app` is HTTPS-only already.
+- **`poweredByHeader: false`** is added.
+- **The keep flags and `redirects()` are untouched (PM2).** `git diff -U0` removes no line, and lines 1–33 (`agentRules: false`, `logging: { serverFunctions: false }` and all of `redirects()`) are byte-identical to `main`'s (`cmp`).
+- **The build agrees.**
+  - `.next/routes-manifest.json` has exactly one header rule, `/:path*`, with the six values byte-exact. HSTS is present, as R-2 expects of any `next build`.
+  - Its five user redirects are unchanged, and every destination is a same-origin relative path.
+  - `required-server-files.json` reads `poweredByHeader: false`, `agentRules: false` and `logging.serverFunctions: false`.
+
+**2. What :3101 sends (the builder's PM3, PM5, PM6 and PM7, re-read): ✅, except the two 308s ruled in item 4**
+- **PM3** (`final/pm3-rebuilt.txt` and the raw `headers-rebuilt/*.txt`): 10 of 12 responses carry each of the six exactly once, byte-exact, with no `x-powered-by` and no Report-Only. They are `/`, `/admin/login`, the middleware's `/admin` 307, the `/no-such-page` 404, `/sitemap.xml`, `/robots.txt`, `/logo.png`, `/_next/static/chunks/3s6nzrbk-8mnv.js`, `/videos/hero.mp4` and `/api/keep-alive`. I re-read the raw `/` and `/admin` captures myself.
+- **Against the baseline:** `main`'s `/` sends `X-Powered-By: Next.js` and none of the six. None of the 12 rebuilt captures has `x-powered-by`.
+- **The two 308s** (`/what-we-do/t-shirts` and `/reports`) carry none of the six. Apart from `Date`, each is identical to its `main` capture (`location` and `Refresh`), so T-025's redirects are unchanged.
+- **PM5** (`framing-rebuilt.json`): `/admin/login` was framed from `about:blank` and from `http://localhost:3101/`. Both times it ends on `chrome-error://chromewebdata/` with `unreachableUrl` set, and the console shows the `frame-ancestors 'none'` refusal.
+- **PM6 and PM7** (`final/pages.json`): 0 `securitypolicyviolation` events, 0 console errors, and 0 CSP or Permissions-Policy messages on `/`, `/products`, `/contact`, `/career`, `/grievance`, `/admin/login` and `/products/t-shirts`. The DevTools issue counts (14, 0, 4, 4, 2, 2, 0) equal the baseline's page for page, so none is new.
+
+**3. SEC-MED-2: the PM12 agreement for T-008's AC #2. ✅ AGREED: the CSP ships enforcing, and the contract's fallback (dropping the line) is not invoked.**
+- **It can't block a resource.** It has no fetch directive, so nothing governs scripts, styles, images, fonts, media or `fetch`. With JavaScript on, every Server Action submit is a `fetch`, which no directive here covers. So Report-Only would teach nothing, and the contract sends it to T-038 anyway.
+- **Each directive refuses only something this site doesn't do:**
+  - **`frame-ancestors 'none'`** is the same as `X-Frame-Options: DENY`, for browsers that read CSP. Nothing in `src/` or `public/` embeds the site, and the owner default refuses iframes (DECISIONS 2026-10-07, CLIENT_QUESTIONS Q14). PM5 shows it refusing both a cross-origin and a same-origin parent.
+  - **`base-uri 'self'`:** there's no `<base>` in `src/` or `public/` (re-grepped this pass), and Next emits none. If HTML is ever injected, it stops a `<base href>` from re-pointing relative script URLs.
+  - **`object-src 'none'`:** there's no `<object>` or `<embed>`, and no PDF in `public/` (0 files). Reports are Supabase links opened in a new tab, a top-level navigation that `object-src` doesn't govern.
+  - **`form-action 'self'`:** all five Server Action forms post to their own origin, and `src/` has no absolute `action=` and no `.submit(` (re-grepped). Every redirect after a POST stays same-origin, and `auth-actions.ts` (`b8b822df…`) and the middleware are 0-byte. So even a browser that checks `form-action` on each redirect hop stays inside `'self'`. PM6 shows 0 violations on all six pages it loaded.
+- **The keywords are quoted** (item 1), so `'self'` and `'none'` can't be read as host names (failure mode 1).
+- **The agreement holds while** the CSP has no fetch directive, no page posts a form to or embeds another origin, and no `<base>`, `<object>` or `<embed>` is added. Each of those is already a contract re-review trigger, and it comes back to `/cso` too.
+- **The residual is the 5a premortem's owner row O1:** sign in and out on `:3101` with the headers on, saving nothing. Static and headless checks can't do that without a session. It isn't a merge condition here, because every hop on that path is same-origin and unchanged. Run it before the deploy.
+
+**4. Ruling on the two 308s: ✅ ACCEPTED as a Next 16.3.6 limitation under `next start`. No re-review is needed.**
+- **The mechanism, verified in the installed 16.3.6:** `next/dist/server/lib/router-utils/resolve-routes.js:524-541` returns `resHeaders: null` for a matched `redirects()` route. `router-server.js:395` applies headers only when `resHeaders !== null`. So the values `headers()` collected for that request are dropped. The middleware's 307 takes a different path and keeps them (item 2).
+- **No header's protection is lost.**
+  - A 308 with a `Location` never becomes a document, and its body is never used as a resource. Every navigation, `<script>`, `<link>` and `fetch` follows it to the destination. A `redirect: "manual"` fetch gets an opaque response with no readable body.
+  - Both destinations, like all five in `redirects()`, are same-origin relative paths whose responses carry all six.
+  - Per header:
+  - **`X-Frame-Options` and `frame-ancestors`:** a framing check can only refuse. Whatever a browser does on a redirect hop, a frame pointed at `/reports` still ends on `/sustainability`'s 200, which carries both and is refused. The 308 itself renders nothing that could be clickjacked.
+  - **`base-uri`, `object-src` and `form-action`:** they apply only to a document, and a redirect response creates none. `form-action`'s check on redirect hops is made by the submitting page's policy, which our 200s carry, not by the 308's. No form posts to these paths.
+  - **`X-Content-Type-Options`:** it only governs how a browser reads a body it consumes. No browser consumes a 3xx body that has a `Location`, and the destination's response carries `nosniff`. The body here is only Next's destination string.
+  - **`Strict-Transport-Security`:** it's pinned per host, not per URL.
+    - Over HTTPS, the 308's destination is on the same host, and its 200 sets the pin in the same navigation.
+    - A response without the header doesn't clear a pin; only `max-age=0` does.
+    - Plain HTTP is redirected to HTTPS at Vercel's edge, and browsers ignore HSTS over plain HTTP anyway (RFC 6797 §8.1).
+    - Only a client that fetches the 308 and never follows it misses the pin. That's a scanner, not a visitor.
+  - **`Referrer-Policy`:** it's the one header a redirect response can change in flight (the Fetch standard's HTTP-redirect fetch). Without it, the next hop keeps the referring page's policy. That's ours if the link was on our site, the same `strict-origin-when-cross-origin`. Otherwise it's Chromium's and Firefox's default, which is the same value. Either way the next hop is our own origin, so no third party receives a referrer through these 308s.
+  - **`Permissions-Policy`:** it's set on the document made from a response, so it comes from the destination's 200.
+- **Why not make the 308s carry them:**
+  - It needs `redirects()` or the middleware, which are both re-review triggers. The middleware is the bound auth gate (`6d2c7757…` and `7693ad81…`).
+  - T-025's 308s are permanent and cached by browsers, R-4's one-way door.
+  - It would close a gap that only a scanner sees.
+- **Amendments, for the orchestrator to fold into ROADMAP** (this office writes only `docs/SECURITY.md`):
+  - **PM3:** the six-header check applies to every response except a `redirects()` match under `next start`. For each of the two 308s, assert that the status, `location` and `Refresh` equal `main`'s baseline, ignoring `Date`, and that there's no `x-powered-by`. So PM3 passes as 10 of 12, plus 2 ruled N/A (SEC-INFO-49).
+  - **The contract's 5a verification line:** for `/what-we-do/t-shirts` (308), "exactly the header set above" reads as "N/A under `next start` (SEC-INFO-49)". It still applies to the middleware's 307.
+  - **PM13 (`/ship`):** record what Vercel sends on the two live 308s.
+    - The six exactly once: record it.
+    - None of them: record it under SEC-INFO-49; the same ruling applies.
+    - A partial set, or a doubled line: record it and file a follow-up.
+    - None of these is a STOP or a rollback (PM14). PM13's other assertions are unchanged.
+- **The ruling holds while** every `redirects()` destination stays a same-origin relative path, and a redirect carries no renderable body. If either changes, it comes back to `/cso`. So does a later Next that applies `headers()` to redirects; 12 of 12 then becomes the bar. Touching `redirects()` is already a re-review trigger.
+
+**5. Sitemap and preloader: ✅ no security effect**
+- **`sitemap.ts` (T-022):**
+  - The diff removes only the 11 `lastModified: new Date()` lines, and adds one comment line. 0 `lastModified` or `new Date` remain.
+  - Every `url`, `changeFrequency` and `priority` is unchanged and in the same order.
+  - `normalizeProducts()` (`site-content.ts` `9939d4f3…`) and `categoryPath()` (`nav.ts` `507e5c62…`) still build the category entries, so SEC-INFO-19's slug gate and SEC-MED-15's encoding still apply.
+  - **The evidence:** four fetches after 5a (two per build) are byte-identical to each other and to the `lastmod`-stripped `main` baseline (sha256 `30a72399fe4ee271…`). Each has 18 `<url>`, 0 `<lastmod>` and 0 `/admin`. The 18 are the home page, 3 section pages, 8 `/products/<slug>` pages and 6 more public pages, all public.
+  - The build still lists `/sitemap.xml` as `ƒ` (dynamic), so the category list isn't frozen (PM8).
+- **`Preloader.tsx` (T-017):**
+  - The diff deletes `TOTAL_FRAMES`, the 160-image `new Image()` loop and the 2000 ms timer.
+  - Every width now runs the former mobile path: one `setTimeout(finishLoading, 1500)` outside any `if`, plus the 8%-per-100 ms interval. The cleanup clears both and resets `body.style.overflow`.
+  - Its imports (`react` and `framer-motion`) are unchanged. It has no HTML sink, network, storage, cookie, navigation or `process.env` access.
+  - The only thing that leaves is the 160 frame requests per desktop view.
+
+**6. As another user: N/A, by construction.**
+- 5a changes no authorization surface: no gate, action, policy, data read or session path.
+- The middleware, `src/lib/supabase/*`, every action file and `auth-actions.ts` are 0-byte against `main` (hashes under Bindings). The last live gate result (T-026's 49 anonymous probes) stays bound to those files.
+- A second signed-in user is still N/A: there's one role (R1 / SEC-HIGH-2).
+- No live test was run, by the owner's rules (no sign-in, no server, no request).
+
+**7. Secrets and the client boundary: ✅**
+- **The diff:** its 45 added lines outside `docs/` have 0 hits on the 10 `stack.json` `secretPatterns`. The only `process.env` they add is `NODE_ENV`, in server config.
+- **SEC-INFO-32's guardrail holds at this build.** The 49 files in `.next/static` have 0 hits for:
+  - a JWT shape (`eyJhbGciOi`), `sb_publishable_` or `sb_secret_`;
+  - `supabase.co`, `supabase.in` or `NEXT_PUBLIC_SUPABASE`;
+  - `service_role`, `/auth/v1` or `/rest/v1`.
+- **SEC-HIGH-1's closure stands.** `next` is `16.3.6` in `node_modules`, and the lockfile is unchanged (`6a026457…`). `npm audit` wasn't re-run this pass (static, no network).
+
+**8. New finding**
+- 🟢 **SEC-INFO-49 — under `next start`, `redirects()` 308s carry none of the six headers.** Next 16.3.6 drops `headers()` on a matched redirect (item 4). It affects `/reports`, `/what-we-do/:slug` and the three rename redirects.
+  - **Why it's informational:** a browser loses nothing. Each header's effect comes from the same-origin destination or from the per-host HSTS pin, or doesn't apply to a redirect. Only a header scanner pointed at a 308 sees the gap.
+  - **Accepted; no ticket.** PM13 records what Vercel sends live. Revisit it under item 4's "holds while" conditions.
+
+**Bindings (sha256 at `2db0af9`):**
+- **Re-bound** (voided by the Wave 5 contract or at 4b). All four match the builder's report:
+  - `next.config.ts` `d1af850cf9899d4ad78e64844a7e414409581d23ed817ed531273b1b7942521d` (T-025's `a44a56d9f997bb13…`).
+  - `src/app/sitemap.ts` `bdfd411287e9f034b4f60a18b711a155564b45d0760f0b1c6936e79a9e02b2fa` (T-025's `105e10253fdd12fb…`).
+  - `src/app/(website)/(marketing)/products/[category]/page.tsx` `b6b09179ca14894722359ee38165224e8923af5ed3b9c61ba2e9da75c6c085d3`, 0-byte here.
+    - Wave 1 bound it as `bc243115a2583eba…`. Its only change since is 4b's `84e4da3` (T-027).
+    - That change is class-only: byte-identical once every `className` value is blanked, with 9 `className` attributes before and after.
+  - `src/app/admin/(dashboard)/media/ImportBuiltInGallery.tsx` `acf7a662a24b041ec0e533a932821ceadc2ddd9de3ee51991fb96b0178002466`, 0-byte here.
+    - Before 4b it was `b3a7f3ad93ed28a2…`. Its only change since is `84e4da3`.
+    - That change is class-only by the same check, with 6 `className` attributes before and after.
+- **Recorded, not bound:** `src/components/global/Preloader.tsx` `697c3e0cd80c6698b23dfd80a921680d0f9328af16647b52887e1648e9352f23` (`main`: `2c9881ebdf666f00…`). It isn't sensitive surface, but a network call, storage access or HTML sink added to it comes back to `/cso`.
+- **Unchanged.** Each standing binding re-hashes equal at `2db0af9`, and each equals `main`:
+  - **actions:** `settings-actions.ts` `b4c3da2ec3c0a894…`, `jobs-actions.ts` `bd4387b1df2eb4c7…`, `products-actions.ts` `7e8a1069828c472e…`, `media-actions.ts` `dba76e48cac79f61…` and `auth-actions.ts` `b8b822df5be42905…`;
+  - **lib:** `action-errors.ts` `b0be0a48a81ce6a8…`, `site-content.ts` `9939d4f36731bd7f…`, `settings-read.ts` `cc5c8a2c06d9acb0…`, `upload-limits.ts` `3bff92b6df8f005d…`, `nav.ts` `507e5c62c5f6347f…` and `use-overlay-menu.ts` `3bbc4bd3bb821ebc…`;
+  - **pages:** the admin `products/page.tsx` `969a00dea762e782…`, `business/page.tsx` `87071736c1516fcb…` and `(dashboard)/layout.tsx` `817b002d29f68034…`, and the public `products/page.tsx` `238f87491891667b…`;
+  - **components:** `AdminNav.tsx` `dd00bffb9aaa484b…`, `ProductGrid.tsx` `407c3a38fec9b7b2…`, `ProductCard.tsx` `7c2f81e96140ad02…`, `MediaDeleteButton.tsx` `e1042edbc5b8ec4d…` and `MediaPublishForm.tsx` `1402beb299415bbb…`;
+  - **the gate:** `src/middleware.ts` `6d2c77576d75d389…`, and `src/lib/supabase/client.ts` `089fde0659be6581…`, `middleware.ts` `7693ad81921b0165…` and `server.ts` `e0d8444a65660aef…`; plus `robots.ts` `1c283fdb3e3b24a0…` and `api/keep-alive/route.ts` `bbba775344720107…`;
+  - **packages:** `package.json` `26068c14d0df4a0c…` and `package-lock.json` `6a026457868784a9…`.
+  - **Noted, unchanged:** `SubmitButton.tsx` `0e97d9c059750928…`.
+
+**Verdict:** ✅ **Wave 5a (T-008, T-022, T-017) cleared at `2db0af9`.** There's no 🔴, 🟠 or 🟡, and one new 🟢 (SEC-INFO-49, accepted). **SEC-MED-2 is closed in code, pending merge.** It closes in production only when PM13 passes.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** Wave 5a may merge once `code-reviewer` clears. Conditions:
+- **The four re-bound files are bound at the hashes above.** A change to one before merge lapses that file's clearance until `/cso` re-reviews it.
+- **Item 4's 308 amendments are folded** into PM3, the contract's verification line and PM13 before `/ship` runs them. Then a 10-of-12 PM3 isn't read as a failure, and SEC-INFO-49 isn't "fixed" through `redirects()` or the middleware.
+- **These come back to `/cso`:**
+  - the contract's security re-review triggers:
+    - any header or value beyond item 1, a fetch directive, Report-Only, nonces, middleware or `preload`;
+    - a bare domain served with `includeSubDomains`;
+    - `redirects()` or the two keep flags;
+    - `Referrer-Policy: no-referrer` (R-6);
+  - any origin added to `frame-ancestors` (O3);
+  - loosening or removing a header so that a preview pane works (O2 and R-5: use a top-level tab);
+  - item 3's or item 4's "holds while" conditions failing.
+- **Pre-deploy position:**
+  - **SEC-HIGH-2 (🟠) still blocks the deploy.** It closes only when the owner has turned sign-ups OFF, a read-only `GET /auth/v1/settings` reads `disable_signup: true`, and the owner has reviewed Authentication → Users. The latest checkpoint (2026-10-07) still says sign-ups are ON. This pass sent no request to check.
+  - **5a doesn't raise it.** SEC-INFO-32's guardrail holds at this build (item 7), so SEC-HIGH-2 stays 🟠, not 🔴.
+  - **What the deploy would close in production:**
+    - **Production is still at `e8eace1`,** going by the local `origin/main` and `client/main` (not fetched), and `e8eace1` is an ancestor of `main`. So production lacks all of the fixes below, and each is now on `main`. That was checked with `git merge-base --is-ancestor` for `f1bd94d`, `48fc3d7`, `a42ddcb` and `fb34d7d`, and T-006, T-015, T-018 and T-026 each have their commits on `main`.
+    - **SEC-HIGH-1:** `next@16.1.6` to `16.3.6`, by T-006.
+    - **SEC-MED-2:** this wave, once PM13 passes. If Vercel's own HSTS line wins or doubles, SEC-MED-2 stays open and a follow-up is filed, with no rollback.
+    - **SEC-MED-15:** the sitemap XSS sink, `f1bd94d`.
+    - **SEC-INFO-19:** the slug gate, T-026.
+    - **SEC-HIGH-5:** T-015.
+    - **SEC-MED-8:** T-018.
+    - **SEC-MED-1:** T-007, `a42ddcb`.
+    - **SEC-MED-9 and SEC-MED-10:** T-019, `fb34d7d`.
+    - **T-013 (`48fc3d7`):** the `orderedIds` cap, and SEC-INFO-16 narrowed.
+    - **Every other §5 row marked "closed in code, pending merge".**
+    - **5a also** ends `X-Powered-By` and the 160 frame 404s per desktop page view.
+  - **5a's `/ship` duties** (owner "deploy" only):
+    - PM13 on both `www` domains, including the bare-domain STOP that guards `includeSubDomains`, and item 4's 308 row;
+    - PM14 and R-4: a rollback is a revert-and-ship to both remotes, never Instant Rollback to `e8eace1` or any build before T-025.
+  - **Recommended at `/ship`:** re-run `npm audit --omit=dev`. The lockfile hasn't changed since 2026-09-28, but this pass would miss any advisory published since then.
+  - **After the deploy:** Wave 3a's O1 (one live ZZ-TEST publish-and-delete) stays recommended. Deploying needs the owner's typed "deploy".
+
+**Actions taken:**
+- Edited only `docs/SECURITY.md` (this entry, plus two §5 rows: the SEC-MED-2 status update and SEC-INFO-49), and left it uncommitted.
+- Ran read-only `git` and `shasum`, file reads, and greps over the existing `.next`, `node_modules/next` and the builder's scratchpad evidence.
+- Did not:
+  - build, or start or query a server (`:3101` belongs to `code-reviewer`, and nothing touched `:3001`);
+  - sign in;
+  - send any request to the live site or Supabase.
+- Never read `.env*`.
+
 
 ## 5. Mitigations / open items
 
@@ -2711,6 +2880,8 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-47 — the Media Center's Storage clean-up sees saved references only. An address in an unsaved draft, or saved during the gap between the checks and the removal, can lose its file | Not filed — accepted residual | Open (info). It needs concurrent signed-in staff, and it's recoverable by re-uploading |
 | O1 — the live DELETE policies on `media_assets` and on Storage have never been exercised by an agent (Wave 3a CSO entry) | Owner row **O1** | Open, not a merge condition. Recommended right after the deploy, on a ZZ-TEST photo. MEDIA_DELETE_REFUSED means an owner SQL step (HARD STOP) |
 | SEC-INFO-48 — T-030 (Wave 4 contract item 20) puts `navItems`, the 12 admin paths and their labels, in the public AdminNav client chunk (`08ttrkoaxemcr.js` at `edff562`; the name changes with each build). `_next/static` is outside the middleware matcher (Wave 4d CSO entry) | No ticket; accepted | Open (info). Route names only, with no data, action id or key, and every path stays gated. Guardrail: nothing secret, user-specific or role-specific in `AdminNav`/`navItems`, and no admin path that relies on being unlisted |
+| SEC-MED-2 — status update, 2026-10-08 (Wave 5a CSO entry) | **T-008** (`b4c01e8`) | ✅ **Closed in code, pending merge; it closes in production only when PM13 passes.** One `/:path*` rule sends the six byte-exact static values, and `X-Powered-By` is off. PM12 is recorded: the CSP ships enforcing, and the fallback is not invoked. Verified on :3101 for 10 of 12 PM3 responses; the two `redirects()` 308s are ruled N/A (SEC-INFO-49). Bound to `next.config.ts` sha256 `d1af850c…`. **Production is still exposed** until a user-typed deploy. If Vercel's own HSTS line wins or doubles there, SEC-MED-2 stays open and a follow-up is filed, with no rollback (PM13) |
+| SEC-INFO-49 — under `next start`, Next 16.3.6 drops `headers()` on a matched `redirects()` route (`resolve-routes.js:524-541` returns `resHeaders: null`), so `/reports`, `/what-we-do/:slug` and the three rename 308s carry none of the six headers (Wave 5a CSO entry) | No ticket; accepted | Open (info). A browser loses nothing: each header's effect comes from the same-origin destination or the per-host HSTS pin, or doesn't apply to a redirect. PM13 records what Vercel sends. Revisit if a `redirects()` destination stops being a same-origin relative path, or if Next starts applying headers to redirects |
 
 ## 6. Secrets log
 

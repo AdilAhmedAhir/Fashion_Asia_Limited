@@ -2777,3 +2777,14 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
   - [ ] Sign Out from the menu.
 - **NOT VISUALLY VERIFIED:** the live signed-in admin, real phones, and a real screen reader.
 - **Verdict: PASS.**
+
+## Static and Local Live Pass — Wave 5a (T-008, T-022, T-017) — 2026-10-08 (`premortem-planner` MUST-ADDs, `code-reviewer` light QA and `security-reviewer`)
+- **Target:** branch `wave-5a-headers`, commits `b4c01e8`, `b8558c3` and `2db0af9`, one file each. Baselines were taken from `main`'s build before any edit.
+- **Headers (PM1–PM3,** on a local production build with `curl -sI`): all six headers appear exactly once, with no `x-powered-by` and no Report-Only, on `/`, `/admin/login`, `/admin` (307), a 404, `/sitemap.xml`, `/robots.txt`, `/logo.png`, a `/_next/static` chunk, `/videos/hero.mp4` and `/api/keep-alive`. The two config 308s and the trailing-slash 308 carry none; see security's ruling. The config's keep flags and `redirects()` are unchanged; the diff is one additions-only hunk.
+- **Framing and forms (PM5–PM7):** `/admin/login` is refused inside a frame from both a cross-origin and a same-origin parent. All 4 forms post to their own page. On 7 pages: 0 CSP violations, 0 console errors and 0 policy warnings (`main` had 160 frame-404 errors on every public page).
+- **Sitemap (PM8):** two fetches are identical, and identical to `main`'s minus `<lastmod>`: 18 entries, valid XML, still rendered per request.
+- **Preloader (PM9–PM10),** at 1440, 1024 and 360 px on 3 pages: 0 frame requests. The curtain starts opening 1563–1585 ms after mount, the unlock follows 720–740 ms later, "100%" shows first, and 360 px matches `main` within 10 ms. `finishLoading` and the JSX match `main` by sha256.
+- **Unchanged files (PM11):** 8 files are 0-byte; `nav.ts` and the lockfile hashes match; `next` is 16.3.6.
+- **Mutants:** 25/25 caught by the source checks. In a runtime mutant build, an unquoted `form-action` fails every header row, and keeping the `isMobile` gate leaves desktop behind the curtain forever.
+- **Owner checks (optional; O1 needs a sign-in):** O1 sign in and sign out on :3101; O2 and O3 framing; O4 the curtain on real devices after the deploy; O5 sign-ups OFF.
+- **Verdict: PASS.**

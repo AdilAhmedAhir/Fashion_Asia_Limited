@@ -11,6 +11,7 @@ import { PRODUCTS_PATH, categoryPath } from '@/lib/nav';
 // string, matching the typed MetadataRoute.Sitemap shape Next.js itself
 // serializes (docs/SECURITY.md SEC-MED-4, T-005 half) rather than any
 // hand-built XML.
+// No entry sets a modified date: a request-time one marked every URL as changed on every fetch (T-022).
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://fashionasialtd.com';
 
@@ -21,7 +22,6 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // /what-we-do/<slug> URLs only redirect, so they're no longer listed.
     const categoryEntries: MetadataRoute.Sitemap = categories.map((category) => ({
         url: `${baseUrl}${categoryPath(category.slug)}`,
-        lastModified: new Date(),
         changeFrequency: 'monthly',
         priority: 0.6,
     }));
@@ -29,62 +29,52 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     return [
         {
             url: baseUrl,
-            lastModified: new Date(),
             changeFrequency: 'weekly',
             priority: 1,
         },
         {
             url: `${baseUrl}/who-we-are`,
-            lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
         },
         {
             url: `${baseUrl}/what-we-do`,
-            lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
         },
         {
             url: `${baseUrl}${PRODUCTS_PATH}`,
-            lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
         },
         ...categoryEntries,
         {
             url: `${baseUrl}/global-partner`,
-            lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
         },
         {
             url: `${baseUrl}/sustainability`,
-            lastModified: new Date(),
             changeFrequency: 'monthly',
             priority: 0.8,
         },
         {
             url: `${baseUrl}/life-at-fashion-asia`,
-            lastModified: new Date(),
             changeFrequency: 'daily',
             priority: 0.7,
         },
         {
             url: `${baseUrl}/contact`,
-            lastModified: new Date(),
             changeFrequency: 'yearly',
             priority: 0.5,
         },
         {
             url: `${baseUrl}/career`,
-            lastModified: new Date(),
             changeFrequency: 'yearly',
             priority: 0.5,
         },
         {
             url: `${baseUrl}/grievance`,
-            lastModified: new Date(),
             changeFrequency: 'yearly',
             priority: 0.3,
         },

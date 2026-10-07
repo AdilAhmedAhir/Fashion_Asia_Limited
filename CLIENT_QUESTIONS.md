@@ -21,3 +21,4 @@
 | Q12 | Small green labels across the site don't meet the contrast standard. Make them the brighter green already used for links (`text-accent`), or keep the dark green? Keeping it would need a new colour or a written accessibility waiver. | [CONFIRM] | Brighter green (T-027) | | |
 | Q13 | Should visitors be able to pause the moving marquee and the three looping videos? WCAG 2.2.2 (Level A) asks for it. | [CONFIRM] | Not in this release (T-037). Visitors who turn on reduced motion get still content (T-028) | | |
 | Q14 | After this release, no other site can show FAL's pages inside a frame (clickjacking protection). Is anything meant to embed them? | [CONFIRM] | Block framing (T-008) | | |
+| Q15 | `public/layout-preview.html`, a design-comparison page, is publicly reachable on the live site (marked noindex). Should it be removed from the site? | [CONFIRM] | Leave it; after this release it can't be shown inside a frame | | |

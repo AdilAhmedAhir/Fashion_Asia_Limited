@@ -74,7 +74,19 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/cso review` → `/qa static` → `/qa live` (read-only) → `/git Merge`
   - **Notes:** Independent of T-003/T-004/T-005. Does not block `deploy` — 🟡 Medium, non-blocking per `docs/SECURITY.md` §5.
 
-- [ ] **T-008** — Add sitewide security headers (`next.config.ts`)
+- [x] **T-008** — Add sitewide security headers (`next.config.ts`)
+  Done 2026-10-08, in **Wave 5a** with T-022 and T-017:
+  - **Commits:** `edd1c6c` (the premortem folded in), `b4c01e8` (T-008), `b8558c3` (T-022) and `2db0af9` (T-017).
+  - **What changed:**
+    - every response except a config redirect now carries `X-Content-Type-Options: nosniff`, `Referrer-Policy: strict-origin-when-cross-origin`, a Permissions-Policy that turns off camera, microphone, location, payment and USB, `X-Frame-Options: DENY`, and an enforcing structural CSP (`frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'`);
+    - production builds also send `Strict-Transport-Security: max-age=63072000; includeSubDomains`, never with `preload`;
+    - `X-Powered-By` is gone, and `/admin/login` can't be framed.
+  - **Redirects:** Accepted as a framework limitation (SEC-INFO-49, `security-reviewer`). A redirect never becomes a page, the destination's 200 carries all six, and every redirect stays on our own origin, so a browser loses nothing. Under `next start`, PM3 counts the 308s as N/A, though they must still match `main`'s status, `location` and `Refresh`. PM13 records what Vercel sends on the live 308s, and neither outcome is a STOP or a rollback.
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: SHIP, with no defect in the diff. It re-ran PM1–PM11: 29/29 source checks, 25/25 mutants, 9/9 timing runs and 7/7 pages with 0 CSP violations.
+    - `security-reviewer`: CLEARED. It agreed the CSP ships enforcing (PM12, under SEC-MED-2), accepted the 308s as a framework limitation (SEC-INFO-49), and bound `next.config.ts` `d1af850c…`, `sitemap.ts` `bdfd4112…`, `[category]/page.tsx` `b6b09179…` and `ImportBuiltInGallery.tsx` `acf7a662…`. It recommends `npm audit --omit=dev` at `/ship`.
+  - **`/ship` binds:** PM13's live header assertions and the bare-domain STOP, and PM14's rollback rule (DECISIONS 2026-10-07).
+  - **Follow-ups:** under "Follow-ups found in Wave 5a".
   **Wave 5 binding contract, covering T-008, T-022, T-017, T-028 and T-029** (`architect-reviewer`, 2026-10-06: APPROVE; folded verbatim on 2026-10-07, so no second `/architect-review` is needed). It's split into **5a** (T-008, T-022, T-017; premortem first), **5b** (T-028) and **5c** (T-029), after Wave 4 merges. There's no SQL, middleware change or new dependency, so there's no HARD STOP. The facts behind it are under T-034's Wave 4 contract. Where older AC conflicts with this contract, the contract wins.
 
   **Scope:**
@@ -97,7 +109,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
        | `Strict-Transport-Security` | `max-age=63072000; includeSubDomains` |
 
      - **Permissions-Policy** must never include `autoplay`, `fullscreen` or `picture-in-picture`: the hero autoplays.
-     - **The CSP** is enforcing but structural only. It has no fetch directive, so it can't block any script, style, image, font, video or request.
+     - **The CSP** is enforcing but structural only. It has no fetch directive, so it can't block any script, style, image, font, video or request. *(Note, 2026-10-08: in CSP Level 3 `object-src` counts as a fetch directive. It's the only one here, set to `'none'`, which blocks `<object>` and `<embed>`; the site has none.)*
      - **HSTS** is sent from production builds only (`NODE_ENV === "production"`) and never with `preload`.
      - **Must not change:** `agentRules: false`, `logging.serverFunctions: false` and `redirects()` stay byte-identical.
      - **Fallback:** if security-reviewer doesn't agree to the CSP going straight to enforcing, drop that line. X-Frame-Options still protects against clickjacking.
@@ -179,6 +191,7 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   **Verification:**
   - **5a, local production build on :3101:**
     - `curl -sI` on `/`, `/admin/login`, `/admin` (307), `/what-we-do/t-shirts` (308), `/sitemap.xml` and one static asset: exactly the header set above, and no `x-powered-by`;
+      *(Amended 2026-10-08, SEC-INFO-49: under `next start` the 308 is N/A for the header set, because Next 16 drops `headers()` on config redirects. It must still match `main`'s status, `location` and `Refresh`. PM13 records what Vercel sends on the live 308s.)*
     - `/admin/login` is refused inside an iframe;
     - 0 console errors on `/`, `/products` and `/contact`;
     - `npm ls next` still reports 16.3.6;
@@ -219,6 +232,156 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   | 5a | T-008, T-022, T-017 | about 3 h | premortem first, then code-reviewer and security-reviewer |
   | 5b | T-028 | about 4 h | code-reviewer, design-reviewer |
   | 5c | T-029 | about 2.5 h | code-reviewer, design-reviewer |
+
+  **Premortem — Wave 5a (T-008, T-022, T-017) — 2026-10-07** (`premortem-planner`: GO WITH ADDITIONS; folded verbatim). Its MUST-ADDs PM1–PM15 bind the 5a builder and reviewers; PM13 and PM14 bind `/ship`; its rulings R-1 to R-6 are adopted (DECISIONS 2026-10-07). It ran without a shell, so its production facts come from the contract and `docs/SECURITY.md`; PM13 re-checks them at `/ship`.
+
+  TOP FAILURE MODES (most likely first, max 5):
+  1. **A header value, or which responses it reaches, drifts from the contract without anyone noticing.** The typecheck and the build don't check the six hand-typed strings. The worst slips:
+     - any fetch directive (`default-src`, `script-src`) blocks Next's scripts, so the preloader painted by the server never lifts;
+     - a keyword without quotes (`self`, `none`) is read as a host name, so `form-action self` refuses every form POST sent before the page's JavaScript loads, or with JavaScript off;
+     - HSTS is gated on the wrong variable, or sent with `preload`;
+     - a narrowed `source` misses the 308s, the middleware's 307 or static files.
+
+     — likelihood L-M × impact H
+     SHOWS UP AS: at worst, every page stuck on the black "FASHION ASIA" curtain. Otherwise, contact, career and grievance posts from slow phones fail, or a later scan finds SEC-MED-2 still open.
+     CATCH BEFORE MERGE: PM1 and PM2 (agent, source), then PM3, PM6 and PM7 (production build on :3101).
+  2. **The preloader rewrite leaves desktop with no way to finish.** If the builder deletes the desktop block but keeps the `if (isMobile)` gate (`Preloader.tsx:44-61`), widths of 768 px and up get no timer at all, because the 2000 ms safety timer (`:77`) is gone too. Dropping the cleanup's `overflow = ""` would also leave the body locked after a fast navigation away. — likelihood L-M × impact H
+     SHOWS UP AS: desktop visitors see the curtain forever and can't scroll. Phones are fine, so a 360 px spot check passes.
+     CATCH BEFORE MERGE: PM9 (agent, source) and PM10 (headless Chrome at 1440, 1024 and 360 px on :3101).
+  3. **Production behaves differently from `next start`.** Vercel already adds its own HSTS (`max-age=63072000`, the only security header `www` sends today). Ours may replace it, or the response may carry two lines. Browsers obey only the first (RFC 6797 §8.1), so `includeSubDomains` could be silently lost. Whether our headers reach the middleware's 307 on Vercel can also only be proven live. — likelihood M × impact M
+     SHOWS UP AS: SEC-MED-2 recorded as closed while production still sends Vercel's HSTS, or no headers on `/admin`.
+     CATCH BEFORE MERGE: write PM13's exact line-count assertions into the `/ship` checklist now. They run only under an owner "deploy".
+  4. **Something legitimate frames the site and goes blank.** Only HSTS is gated, so `X-Frame-Options: DENY` and `frame-ancestors 'none'` also apply under `next dev`, from the moment 5a merges locally. Candidates:
+     - the preview pane behind `.claude/launch.json` (the repo doesn't show whether it uses an iframe);
+     - VS Code's Simple Browser, which is iframe-based;
+     - responsive-preview sites, and Teams or Notion embeds;
+     - any review harness that frames pages to screenshot several widths. 5b and 5c's design reviews are next.
+
+     — likelihood M × impact L-M
+     SHOWS UP AS: a "refused to connect" pane, or blank frames accepted as screenshots, followed by pressure to loosen the header. Visitors are unaffected: nothing in `src/` or `public/` uses an `<iframe>`, `<embed>`, `<object>` or `<base>`.
+     CATCH BEFORE MERGE: PM5 (agent), PM15 (a rule for reviewers), O2 and O3 (owner).
+  5. **A header scare after the deploy is "fixed" with Vercel's Instant Rollback.** This is the first deploy since `e8eace1`, so it also ships T-025's permanent 308s (`/what-we-do/:slug` to `/products/:slug`), and browsers cache those. Rolling back to `e8eace1` brings back a build with no `/products/[category]`. No rollback can withdraw HSTS either; that's harmless while it's sent only from `www`. — likelihood L × impact H
+     SHOWS UP AS: category pages 404 for every visitor who came after the deploy.
+     CATCH BEFORE MERGE: PM14, written into the `/ship` runbook.
+
+  HARD STOPS THIS TICKET TOUCHES: none for the build (no schema, no data deletion, no writes). PM13 and PM14 run only inside an owner message containing "deploy". For R5, nothing unusual is needed: no force push, both remotes, normal commit names.
+
+  MUST-ADD ACCEPTANCE CRITERIA:
+  - **PM1 — source literals (agent).**
+    - The six values in `next.config.ts` match the contract byte for byte. The CSP is exactly `frame-ancestors 'none'; base-uri 'self'; object-src 'none'; form-action 'self'`.
+    - `grep -nE "default-src|script-src|style-src|img-src|connect-src|frame-src|upgrade-insecure|report-|Report-Only|preload" next.config.ts` returns nothing.
+    - All values are static literals. The only conditional is HSTS, on `process.env.NODE_ENV === "production"`.
+    - There's one rule, `source: "/:path*"`, with no `has` or `missing`.
+  - **PM2 — keep flags (agent).** `git diff -U0 main -- next.config.ts | grep -E '^-[^-]'` is empty (additions only), and no added line falls inside `async redirects()` (`:11-33`). That proves `agentRules: false` (`:7`) and `logging: { serverFunctions: false }` (`:10`) are untouched.
+  - **PM3 — header check on :3101 (agent; `curl -sI`, no cookies).**
+    - URLs:
+      - `/`, `/admin/login`, `/admin` (307) and `/no-such-page` (404);
+      - `/what-we-do/t-shirts` and `/reports` (308);
+      - `/sitemap.xml` and `/robots.txt`;
+      - `/logo.png` and one `/_next/static/chunks/*.js` taken from `/`'s HTML (both skip the middleware);
+      - `/videos/hero.mp4` (goes through the middleware);
+      - `/api/keep-alive` (a HEAD request runs its GET handler, one read-only `select id … limit 1`).
+    - On each response: each of the six headers appears exactly once (name case-insensitive, value byte-exact), with no `x-powered-by` and no `content-security-policy-report-only`.
+    - HSTS shows here too. The gate is evaluated by `next build`, and browsers ignore HSTS over plain HTTP.
+    - Don't sample `/_next/image`: Next's image optimizer may add its own CSP and a second `nosniff`.
+  - **PM4 — dev gate (agent, optional).** Only if a dev server is already running on :3000 (don't start one): `curl -sI http://localhost:3000/` shows the five other headers and no `strict-transport-security`.
+  - **PM5 — framing (agent; headless Chrome, page loads only).** Frame `http://localhost:3101/admin/login` from (a) `about:blank`, a cross-origin parent, and (b) `http://localhost:3101/`, a same-origin parent, with the iframe injected via `Runtime.evaluate`.
+    - In both cases, the child frame ends on an error page (`Page.getFrameTree` shows `unreachableUrl` or `chrome-error://`) and the console shows the `frame-ancestors 'none'` refusal.
+    - Use a separate tab, so this expected error doesn't count against PM7.
+  - **PM6 — forms stay same-origin (agent, no submit).**
+    - In the server-rendered HTML (`curl -s`) of `/contact`, `/career`, `/grievance` and `/admin/login`, every `<form` has `method="POST"` and `action=""` or a relative path. A `javascript:` action would be an older no-JavaScript gap: report it, but don't block on it.
+    - `src/` has no absolute `action=` and no `.submit(` call (true today).
+    - Install a `securitypolicyviolation` listener with `Page.addScriptToEvaluateOnNewDocument` on `/`, `/products`, `/contact`, `/career`, `/grievance` and `/admin/login`. Load each page, wait 5 s and scroll to the bottom: 0 violations.
+  - **PM7 — console (agent).** Extend the contract's "0 console errors" to `/admin/login` and one `/products/<slug>`. Also require 0 messages mentioning `Content Security Policy` or `Permissions-Policy`: Chrome may report quote-less keywords and unknown features as warnings or Issues, not errors.
+  - **PM8 — sitemap (agent).**
+    - **Baseline:** from a `main` build on :3101, before 5a is built, save `curl -s …/sitemap.xml | sed '/<lastmod>/d'` to the scratchpad. Production can't be the baseline: it predates T-025 and lists 17 URLs under `/what-we-do/<slug>`.
+    - **After 5a:**
+      - two fetches are identical (`cmp`), and identical to the baseline;
+      - `<lastmod>` count is 0, and `<url>` count equals the baseline's (18 today). If the live category count moved, re-take the baseline; don't change code.
+      - `xmllint --noout` passes.
+    - **Source:**
+      - 0 `lastModified` and 0 `new Date`;
+      - one comment line added;
+      - every removed line is a `lastModified` line.
+    - **Build output:** the `npm run build` route table shows `/sitemap.xml` with the same render mode as `main`. A flip to static would freeze the category list and break T-005's AC.
+  - **PM9 — preloader source (agent).**
+    - `grep -nE "frame_|TOTAL_FRAMES|new Image|innerWidth|isMobile|2000" src/components/global/Preloader.tsx` returns nothing.
+    - `setTimeout(finishLoading, 1500)` appears exactly once, outside any `if`.
+    - The cleanup still clears the timer and the interval and resets `document.body.style.overflow`.
+    - `finishLoading` (`:23-38`) and the JSX return (`:84-171`) match `main` by sha256.
+    - The header comment (`:6-11`) is updated.
+    - `git diff --stat main` lists only the three Touches files, plus docs.
+  - **PM10 — preloader in the browser (agent; headless Chrome, page loads only).**
+    - Run at 1440×900, 1024×768 and 360×800, on `/`, `/what-we-do` and one `/products/<slug>`.
+    - **Network:** 0 requests matching `/sequence/hero/frame_`. `/` still requests `poster.webp` and `/videos/hero.mp4`.
+    - **Timing:** a small logger injected into the page records three moments:
+      - t0, when `body.style.overflow` first becomes `"hidden"`;
+      - t1, when the top panel first moves;
+      - t2, when overflow returns to `""`.
+    - **Pass if:**
+      - t1 − t0 is between 1200 and 2000 ms (about 1500 expected);
+      - t2 − t1 is about 800 ms (± 150);
+      - "100%" shows before t1;
+      - the overlay is gone about 1 s after t2;
+      - a scroll-wheel event after t2 moves the page.
+    - At 360 px, the times match `main` within ±100 ms.
+    - Optional: a background tab unlocks within 5 s. Chrome throttles timers in hidden tabs, so the bar may stop short of 100% there, which is only cosmetic.
+  - **PM11 — unchanged files (agent).**
+    - 0-byte diff against `main` for:
+      - `HeroSection.tsx`, `poster.webp` and `SmoothScrollProvider.tsx`;
+      - both middleware files and `vercel.json`;
+      - `nav.ts` (`507e5c62…`) and the lockfile (`6a026457…`).
+    - `npm ls next` still reports 16.3.6.
+  - **PM12 — paper trail (security-reviewer).** Record the explicit agreement to an enforcing CSP (or to the fallback of dropping it) under SEC-MED-2 in `docs/SECURITY.md`. T-008's AC #2 still requires that written agreement. Re-bind the hashes of `next.config.ts`, `sitemap.ts` and 4b's `[category]` page.
+  - **PM13 — `/ship` assertions (owner "deploy" only).**
+    - Run PM3 on both `www` domains. Skip `/api/keep-alive`, and take the `_next/static` URL from freshly fetched HTML: during the switch-over (Skew Protection), old-deployment files lack the headers.
+    - `strict-transport-security` appears exactly once, as `max-age=63072000; includeSubDomains`. If there are two lines, or Vercel's value wins, mark SEC-MED-2 as still open and file a follow-up. Don't roll back.
+    - The bare domains `https://fashionasialtd.com/` and `https://fal.com.bd/` still answer 307 or 308 to their own `www` host, with none of our headers. If either returns 200 or carries our headers, **STOP**: the app is serving a bare domain, and `includeSubDomains` would force HTTPS on every one of its subdomains for 2 years.
+  - **PM14 — rollback rule (`/ship` runbook).** If a 5a header misbehaves live, revert 5a's commits and ship again (both remotes, no force). Never use Instant Rollback to `e8eace1` or any build before T-025.
+  - **PM15 — review rule (applies from 5a; 5b and 5c inherit it).** No screenshot or evidence from a page rendered inside an `<iframe>`. Use one top-level tab per width, with the browser's device emulation.
+
+  GO / NO-GO: GO WITH ADDITIONS. Fold in PM1–PM15 and rulings R-1 to R-6 below. None of them needs an owner decision before building.
+
+  **Lower-ranked failure modes**
+  6. **Wrong baselines cause false failures, then out-of-contract "fixes".** Examples: comparing the sitemap with production, a category edited mid-run, preloader timing measured from navigation start instead of from mount, or "exactly the header set" read as "no other headers", which would flag Next's own `vary` and `cache-control`. M × L-M. PM3, PM8 and PM10 define these.
+  7. **`form-action 'self'` blocks a real submission.** L × H.
+     - All five Server Action forms post to their own origin: `ContactForm.tsx:13`, `CareerPageClient.tsx:44`, `GrievanceForm.tsx:13`, `admin/login/page.tsx:26` and `(dashboard)/layout.tsx:12`. `MediaPublishForm` is JavaScript-only.
+     - Every redirect is relative (`auth-actions.ts:19,25`) or built with `nextUrl.clone()` (`supabase/middleware.ts:25-33`).
+     - Submissions with JavaScript on are `fetch` calls, which no directive here covers.
+     - PM6 and O1 cover it.
+  8. **`includeSubDomains` later reaches a bare domain.** That happens if the site moves to the bare domain (CLIENT_QUESTIONS Q01; `NEXT_PUBLIC_SITE_URL` already defaults to bare `fashionasialtd.com`). Webmail, cPanel or any HTTP-only subdomain would then fail for 2 years in every browser that visited. L today × H. PM13's STOP and R-3 cover it.
+  9. **A local HSTS pin.** If the :3101 build were ever served over HTTPS on `localhost`, the 2-year pin would apply to every localhost port, including the other project on :3001. L × M. R-2 covers it.
+  10. **The sitemap turns static at build time** and freezes the category list. L × M. PM8 covers it.
+  11. **`nosniff` blocks a script or stylesheet with the wrong content type.** `public/` has no `.js` or `.css`, so the risk is effectively nil.
+  12. **Background tabs** open the curtain late, or with the bar under 100%. Today's phone path already behaves this way. L × L.
+
+  **Owner-only checks**
+  - **O1.** On `http://localhost:3101`, sign in at `/admin/login`, open one admin page and sign out. Don't save anything. This proves sign-in and sign-out (cookies and redirects) still work with all the headers on. It's the only 5a check that needs a session.
+  - **O2.** Open the dev server and :3101 in whatever preview pane you use. If it says "refused to connect", that's the clickjacking protection working: use a normal browser tab, and don't ask for the header to be loosened.
+  - **O3.** Before the deploy: does anything show the site inside a frame? For example an FAL intranet page, a buyer or compliance portal, a Teams tab, or a Notion or Figma embed of `/layout-preview.html`. If so, it needs named origins added to `frame-ancestors`, which goes back to review. Removing the header isn't the fix.
+  - **O4.** After the deploy, on a real desktop and a phone, on both `www` domains: the curtain opens in about 1.5 s and the page scrolls. Within a day, Vercel's 404s for `/sequence/hero/frame_` should drop to near zero (today about 160 per desktop page view).
+  - **O5.** A `/ship` precondition rather than a 5a check: Supabase sign-ups are OFF (R1). The checkpoint memory says they're still on.
+
+  **Rulings to make before building**
+  - **R-1. No header in item 1 is unsafe here; go straight to an enforcing CSP.**
+    - There's no `<iframe>`, `<embed>`, `<object>` or `<base>` in `src/`, and no PDF in `public/`. Reports are Supabase links that open in a new tab (`sustainability/page.tsx:163-170`).
+    - Nothing uses the camera, microphone, location, payments or USB.
+    - The hero is a muted autoplay `<video>` with no fullscreen (`HeroSection.tsx:15-24`).
+    - Record the agreement as PM12.
+  - **R-2. Keep the `NODE_ENV` gate, but write down what it means.** `headers()` is resolved during `next build`, so every build sends HSTS: :3101 (ignored over plain HTTP) and any `*.vercel.app` preview (harmless). The local production check stays on plain `http://`.
+  - **R-3. Put a one-line comment beside the HSTS entry, plus a DECISIONS line:** `includeSubDomains` is safe only while both bare domains are Vercel redirects, and must be removed before the site is ever served from one.
+  - **R-4. A rollback means reverting and shipping again** (PM14).
+  - **R-5. Accept that the framing headers also apply under `next dev`,** so dev matches production. PM15 becomes the rule for reviewers.
+  - **R-6. Add `Referrer-Policy: no-referrer` to the re-review triggers.** With it, form posts sent without JavaScript carry `Origin: null`, which Next 16.3.6 rejects (`docs/SECURITY.md`, 2026-09-28 amendment). Every no-JavaScript submission would then fail.
+  - **Two older AC lines the contract already overrides:**
+    - T-022's AC says there are 10 `lastModified` lines; the file has 11 (`sitemap.ts:24,32,38,44,50,57,63,69,75,81,87`).
+    - T-017's "mobile branch unchanged" is satisfied, since every width now runs that branch.
+
+  **Other findings in the code (not 5a; for the backlog)**
+  - `public/layout-preview.html` is a design-comparison page that production serves publicly. It's marked noindex, loads Google Fonts and has an inline script. 5a doesn't break it, but after 5a it can't be embedded in a frame. Whether it should ship at all is an owner question.
+  - The `/reports` redirect goes to `/sustainability#reports`, but the preloader's `scrollTo(0,0)` and scroll lock probably undo the jump, so visitors likely land at the top. This predates 5a, and `scrollTo` is frozen for this wave.
+  - The middleware matcher (`src/middleware.ts:10`) doesn't skip `.mp4`, `.xml`, `.txt` or `.html`, so the session check runs on hero-video requests, the sitemap and robots. This also predates 5a, and changing the middleware triggers a re-review.
+  - If report PDFs ever move onto this site's own domain, re-test Chrome's PDF viewer under `object-src 'none'` and `X-Frame-Options`.
   - **Source:** `docs/SECURITY.md` SEC-MED-2, 2026-09-26
   - **Files:** `next.config.ts` (new `headers()` block, `poweredByHeader: false`)
   - **Flags:** schema-touching: **no** · sensitive: **yes** (`/cso`'s own jurisdiction per SEC-MED-2's mitigation note) · UI: **no**
@@ -598,7 +761,8 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/cso review` → `/ui-ux` → `/qa static` → `/qa live` → `/git Merge` (WORKFLOW §3, Security-sensitive row, UI). `/qa` adds the WARN-1, WARN-2 and path-box repros as manual-checklist steps, which the user can run in the same sitting as the still-pending T-004 checklist.
   - **Notes:** Ranked #3. T-014 depends on this ticket: until the path box stops saving per keystroke, T-014's allow-list would reject every intermediate keystroke of a typed `https://` URL with a visible error. If the fix adds a prop to the shared `ImageUploadField`, T-009/T-010/T-011 (which also edit that file) come later in the order and rebase onto it. Not in scope: T-004 QA INFO-1, where a delete during a failing reorder briefly resurrects a row client-side; it self-heals and QA didn't file it as an action item.
 
-- [ ] **T-017** — Remove the dead hero frame-preload loop from the desktop Preloader without freezing its progress bar
+- [x] **T-017** — Remove the dead hero frame-preload loop from the desktop Preloader without freezing its progress bar
+  Done 2026-10-08 in **Wave 5a** (commit `2db0af9`; reviews under T-008's done note). Every width runs the timed path: the bar reaches 100% and the curtain starts opening at about 1.5 s (1563–1585 ms measured at 1440, 1024 and 360 px), with 0 frame requests instead of 160 per desktop page view. `finishLoading` and the JSX are byte-identical to `main`. Desktop now opens about 300 ms later than before, as item 4 intends.
   - **Source:** `docs/QA_REPORT.md` Live Pass — T-005 WARN-5, 2026-09-27 (`docs/MEMORY_BANK.md` T-005 entry: "For `/pm`: delete the dead loop ... or restore the missing frames")
   - **Files:** `src/components/global/Preloader.tsx` (desktop branch :63-81, `TOTAL_FRAMES` :13, header comment :6-11)
   - **Flags:** schema-touching: **no** · sensitive: **no** · UI: **yes** (global public component)
@@ -1403,7 +1567,8 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **2026-10-03:** folded into **T-024** (the shared catalog components rebuild both of these images). It closes when T-024 merges.
   - **Notes:** Ranked #11. It matters now because T-004 lets real products exist. If real products exist by the time `/qa live` runs, that pass also closes T-005 INFO-4 (the populated grid's variable-height cards were only ever reasoned through statically).
 
-- [ ] **T-022** — Stop `/sitemap.xml` from stamping every URL as modified on every request
+- [x] **T-022** — Stop `/sitemap.xml` from stamping every URL as modified on every request
+  Done 2026-10-08 in **Wave 5a** (commit `b8558c3`; reviews under T-008's done note). All 11 `lastModified` lines are gone, and the 18 entries are byte-identical to `main`'s minus `<lastmod>`. Two fetches match, and `/sitemap.xml` is still rendered per request.
   - **Source:** `docs/QA_REPORT.md` Static Pass — T-005 WARN-2, 2026-09-27 (live-confirmed in that ticket's Live Pass, Flow 4: `docs/qa-evidence/T-005/sitemap/lastmod-drift-check.log`)
   - **Files:** `src/app/sitemap.ts` (10 `lastModified: new Date()` sites)
   - **Flags:** schema-touching: **no** · sensitive: **no** · UI: **no**
@@ -2324,6 +2489,16 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: Wave 4b's reviews, 2026-10-07 (DESIGN.md §7).
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
+- [ ] **T-042** — Make the public scroll locks hold, and never leave the preloader curtain up [app:site][design]
+  AC:
+  - **One lock:** a single ref-counted helper in `src/lib` (for example `lockScroll(): () => void`) is the only code that sets or clears the page's overflow. It locks `<html>`, the element the page scrolls by here (`globals.css` clips `<html>`). The preloader and `MobileOverlayMenu` both use it, and the menu takes a lock only while it's open and never clears one on mount.
+  - **Design decides first** whether the preloader should really lock. A lock that holds would block scrolling for about 2.3 s on every first load, which production has never done.
+  - **`finishLoading`** stops depending on the wall clock: drop `minTime` and `remaining` (the 1500 ms timer already guarantees the minimum), or use `performance.now()`.
+  - **No JavaScript:** a page whose scripts don't run (JavaScript off, or a chunk that fails to load) is never left behind the curtain, for example with a `<noscript>` style or a CSS fail-safe.
+  - Motion without reduced-motion settings, `finishLoading`'s 800 ms exit and `HeroSection` stay as they are.
+  Source: Wave 5a's builder and `code-reviewer`, 2026-10-08. It's pre-existing: on `main` the preloader's lock is cleared 1 ms after it's set (`MobileOverlayMenu.tsx:15-21`). The Wave 5 contract freezes both effects, so this is its own ticket.
+  Sequence: `architect-reviewer` (it reopens two frozen effects and the preloader's JSX) → `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
+
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
 - **`code-reviewer` Y1, test only:** assert that the reorder's refresh comes after its last write. Today's `return await` is correct, but a "clean-up" that drops the `await` would pass the current suite.
@@ -2379,10 +2554,22 @@ The owner asked for every open ticket to be finished, then one deploy at the end
 - **The builder's process slip:** commit 2's first attempt was committed with the gate's exit codes hidden, on a tree that didn't compile, then amended before anything built on it. Builders must read exit codes, never just log tails.
 
 **Follow-ups found in Wave 4d (2026-10-07)**, for the backlog:
-- **For T-029 (Wave 5c), reusing the hook:** lock `<html>`, not `<body>`, while the menu is open (`globals.css` clips `<html>`, so a `<body>` lock doesn't stop wheel scrolling; the public menu's own comment says its lock doesn't hold). Close the public menu on any route change too, with the same `menuPath` pattern.
+- **For T-029 (Wave 5c), reusing the hook:** close the public menu on any route change too, with the same `menuPath` pattern (a 5c addition). The `<html>` scroll lock goes to T-042 instead, because 5c item 16 freezes the menu's body-scroll effect.
 - **`security-reviewer`, SEC-INFO-48 (accepted):** the 12 admin route names are now in a public static chunk. It's route names only, and every path stays gated. The guardrail: nothing secret, user-specific or role-specific may go into `AdminNav` or `navItems`.
 - **`code-reviewer` Y3:** the Careers and Reports modals, added to T-036.
 - **`design-reviewer`, minor:** about 42 more `text-white` lines in the admin predate 4d (T-041's sweep).
+
+**Follow-ups found in the Wave 5a premortem (2026-10-07)**, for the backlog:
+- **`/reports` anchor:** the redirect goes to `/sustainability#reports`, but the preloader's `scrollTo(0,0)` undoes the jump, so visitors land at the top. (Its scroll lock never holds; see T-042.) This predates 5a, and `scrollTo` is frozen in this run.
+- **The middleware matcher** (`src/middleware.ts:10`) doesn't skip `.mp4`, `.xml`, `.txt` or `.html`, so the session check runs on hero-video, sitemap and robots requests. A middleware change needs its own review.
+- **Report PDFs:** if they ever move onto this site's own domain, re-test Chrome's PDF viewer under `object-src 'none'` and `X-Frame-Options`.
+- **`public/layout-preview.html`** is publicly served (CLIENT_QUESTIONS Q15).
+
+**Follow-ups found in Wave 5a (2026-10-08)**, for the backlog:
+- **`code-reviewer`:**
+  - **The comment at `next.config.ts:38`** says the CSP "has no fetch directive"; `object-src` is one. Change it to "its only fetch directive is object-src 'none', which blocks <object> and <embed> (the site has none), so it can't block any script, style, image, font, video or request" the next time the file opens (T-038 will), because any edit voids the security binding.
+  - **For T-042:** the scroll-lock race, `finishLoading`'s wall-clock timing, and the curtain staying up with JavaScript off.
+- **Redirects:** Next's built-in trailing-slash redirect (`/contact/`) also carries none of the six headers. Same ruling as the config redirects.
 
 ### Dependency Order
 
