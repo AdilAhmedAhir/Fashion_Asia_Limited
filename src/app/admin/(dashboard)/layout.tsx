@@ -10,7 +10,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             <AdminNav
                 signOut={
                     <form action={logoutAction}>
-                        <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-4 py-2.5 text-sm font-medium text-red-400 hover:bg-red-400/10 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
+                        <button type="submit" className="flex w-full items-center gap-3 rounded-lg px-4 py-3 md:py-2.5 text-sm font-medium text-red-400 hover:bg-red-400/10 motion-safe:transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent">
                             <LogOut size={16} /> Sign Out
                         </button>
                     </form>

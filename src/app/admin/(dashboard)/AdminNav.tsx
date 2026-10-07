@@ -60,18 +60,18 @@ function isCurrent(href: string, pathname: string): boolean {
 // doesn't rely on colour alone. The focus ring is inset because the sidebar's
 // link list scrolls, and a scrolling box clips a ring drawn outside the link.
 function linkClass(current: boolean): string {
-    const base = "relative flex items-center gap-3 rounded-lg px-4 py-2.5 text-sm transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent";
+    const base = "relative flex items-center gap-3 rounded-lg px-4 py-3 md:py-2.5 text-sm motion-safe:transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-accent";
     return current
         ? `${base} bg-white/10 font-semibold text-foreground before:absolute before:inset-y-2 before:left-0 before:w-1 before:rounded-full before:bg-accent`
-        : `${base} font-medium text-white/70 hover:bg-white/5 hover:text-white`;
+        : `${base} font-medium text-white/70 hover:bg-white/5 hover:text-foreground`;
 }
 
 function NavGroups({ pathname, onNavigate }: { pathname: string; onNavigate?: () => void }) {
     return (
         <>
             {navItems.map(group => (
-                <div key={group.group}>
-                    <span className="mb-2 mt-4 block text-xs font-bold uppercase tracking-widest text-white/50 first:mt-0">
+                <div key={group.group} className="mt-4 first:mt-0">
+                    <span className="mb-2 block text-xs font-bold uppercase tracking-widest text-white/50">
                         {group.group}
                     </span>
                     {group.items.map(item => {
@@ -98,6 +98,13 @@ function NavGroups({ pathname, onNavigate }: { pathname: string; onNavigate?: ()
 export default function AdminNav({ signOut }: { signOut: ReactNode }) {
     const pathname = usePathname();
     const [open, setOpen] = useState(false);
+    // Any route change closes the menu, Back and Forward included. A link
+    // click closes it too, for a link to the page already shown.
+    const [menuPath, setMenuPath] = useState(pathname);
+    if (menuPath !== pathname) {
+        setMenuPath(pathname);
+        setOpen(false);
+    }
     const toggleRef = useRef<HTMLButtonElement>(null);
     const panelRef = useRef<HTMLDivElement>(null);
     const close = useCallback(() => setOpen(false), []);
@@ -132,7 +139,7 @@ export default function AdminNav({ signOut }: { signOut: ReactNode }) {
             <div className="sticky top-0 z-40 flex h-16 items-center justify-between border-b border-white/5 bg-black px-4 md:hidden">
                 <div className="flex items-center gap-3">
                     <BrandLogo className="h-8 w-8" />
-                    <span className="font-serif text-lg font-bold tracking-widest text-white">FA CMS</span>
+                    <span className="font-serif text-lg font-bold tracking-widest text-foreground">FA CMS</span>
                 </div>
                 <button
                     ref={toggleRef}
@@ -163,7 +170,7 @@ export default function AdminNav({ signOut }: { signOut: ReactNode }) {
             <aside className="sticky top-0 h-screen w-64 flex-shrink-0 border-r border-white/5 bg-black p-6 flex-col hidden md:flex">
                 <div className="mb-8 flex items-center gap-3">
                     <BrandLogo className="h-8 w-8" />
-                    <span className="font-serif text-lg font-bold tracking-widest text-white">FA CMS</span>
+                    <span className="font-serif text-lg font-bold tracking-widest text-foreground">FA CMS</span>
                 </div>
 
                 <nav aria-label="Admin" className="flex flex-col gap-1 flex-grow overflow-y-auto">
@@ -174,7 +181,7 @@ export default function AdminNav({ signOut }: { signOut: ReactNode }) {
                     <div className="mb-4 flex items-center gap-3 rounded-lg border border-primary/20 bg-primary/5 px-4 py-2.5">
                         <ShieldCheck size={16} className="text-accent" />
                         <div className="flex flex-col">
-                            <span className="text-xs font-bold text-white">Super Admin</span>
+                            <span className="text-xs font-bold text-foreground">Super Admin</span>
                             <span className="text-xs text-accent">Secure Session</span>
                         </div>
                     </div>

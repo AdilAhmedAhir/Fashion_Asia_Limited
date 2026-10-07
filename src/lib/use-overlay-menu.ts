@@ -34,7 +34,8 @@ function focusablesIn(panel: HTMLElement): HTMLElement[] {
  *   - Tab and Shift+Tab wrap within the toggle plus the panel;
  *   - the `inertTargets` elements are `inert`, and on close only the ones this hook made inert are released;
  *   - once `closeWhen` matches, `onClose` is called.
- * - On close, if focus is inside the panel or on `<body>`, it moves to the toggle.
+ * - On close, if focus is inside the panel or on `<body>`, it moves to the toggle. If the toggle can't take focus
+ *   (hidden at that width, for example after `closeWhen`), focus stays on `<body>`.
  * It has no timers and doesn't set `aria-modal`. Each effect undoes exactly what it did, so StrictMode's extra run leaves nothing behind.
  */
 export function useOverlayMenu({ open, onClose, toggleRef, panelRef, inertTargets, closeWhen }: OverlayMenuOptions): void {
