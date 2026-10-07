@@ -88,7 +88,15 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/architect` (confirm CSP shape: report-only vs. enforcing) → `/lead-dev` → `/cso review` → `/qa static` → `/qa live` → `/git Merge` (order per `docs/SECURITY.md` SEC-MED-2's own mitigation note)
   - **Notes:** Independent of T-003/T-004/T-005. Does not block `deploy` — 🟡 Medium, non-blocking per `docs/SECURITY.md` §5 — but good hygiene to land before the next production push given SEC-HIGH-1/2 are already being addressed this cycle.
 
-- [ ] **T-009** — Harden `ImageUploadField`'s advisory/error state: 0×0 NaN guard, re-entrant upload race, stale warning after manual path edit
+- [x] **T-009** — Harden `ImageUploadField`'s advisory/error state: 0×0 NaN guard, re-entrant upload race, stale warning after manual path edit
+  Done 2026-10-07, in **Wave 3b** with T-010:
+  - **Commits:** `f8e29ed` (T-009) and `367a6ab` (T-010). 5 files, +248/−25: `upload-limits.ts` (item 7), `ImageUploadField.tsx`, `SettingsForm.tsx` (`ObjectListEditor`), `ProductsClient.tsx` and `HomepageSettingsClient.tsx`. `CategoryProductsManager.tsx` and every server file have a 0-byte diff.
+  - **What changed:** a zero or non-finite side now warns instead of passing silently; only the latest pick is applied, through the `onChange` captured at that pick; a hand edit in the path box clears stale notices; list rows are keyed by a per-instance `WeakMap`, so an edit or upload lands on its own row (a result for a removed row is dropped); focus stays on a moved row and goes to a neighbour after a remove; Save on Products and Homepage waits for uploads (UPLOAD_IN_PROGRESS).
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: FIX FIRST for missing tests only (no bug found), then SHIP. It added 11 scenarios itself (save-then-edit, an overtaken pick that throws or fails, two picks in the same task). HEAD passed them all, and its surviving mutants R8, R2 and R1 are now caught.
+    - `security-reviewer`: CLEARED. `upload-limits.ts` is re-bound at `3bff92b6…`, the four client files are bound by the restated invariants, and there's no new finding.
+    - No `/design-review` (DECISIONS 2026-10-07). The admin is NOT VISUALLY VERIFIED against the live login.
+  - **Follow-ups:** under "Follow-ups found in Wave 3b" (UPLOAD_IN_PROGRESS staying up goes to T-034; the focus selector note goes to T-011).
   **Built in Wave 3b with T-010 under the Wave 3 contract** (`architect-reviewer`, 2026-10-06): see T-019, items 7–8 plus the amendments. Where this ticket's AC differs, the contract wins.
   - **Source:** `docs/QA_REPORT.md` T-002 Static Pass WARN-1, WARN-2, WARN-3, 2026-09-26
   - **Files:** `src/lib/upload-limits.ts` (`checkImageSizeAdvisory` — guard the divide-by-zero), `src/components/admin/ImageUploadField.tsx` (`handleFile` re-entrancy guard; the path `<input>`'s `onChange` clears stale `error`/`warning`)
@@ -102,7 +110,8 @@ T-014 is #4, behind T-016 (a real dependency) rather than behind a High. T-017 i
   - **Sequence:** `/git Start` → `/lead-dev` → `/qa static` → `/qa live` → `/git Merge`
   - **Notes:** All three are pre-existing patterns T-002 extended rather than originated (per `/qa`'s own framing) — this is the fast-follow `/qa` recommended, not a re-open of T-002.
 
-- [ ] **T-010** — Stop a reordered/deleted `ObjectListEditor` row from inheriting a sibling's stale upload warning/error
+- [x] **T-010** — Stop a reordered/deleted `ObjectListEditor` row from inheriting a sibling's stale upload warning/error
+  Done 2026-10-07 in **Wave 3b** (commit `367a6ab`; reviews and evidence under T-009's done note). WARN-4's repro is fixed by stable row keys: a moved or neighbouring row no longer shows another row's notice, and the shared upload race is closed on every `ObjectListEditor` image list.
   **Built in Wave 3b under the Wave 3 contract** (`architect-reviewer`, 2026-10-06): see T-019, items 9–12 plus the amendments. These replace this ticket's interim fix with stable row keys, uploads that land on their own row, and Save waiting for uploads.
   - **Source:** `docs/QA_REPORT.md` T-002 Static Pass WARN-4, 2026-09-26
   - **Files:** `src/components/admin/SettingsForm.tsx` (`ObjectListEditor`), `src/components/admin/ImageUploadField.tsx` (interim fix — reset local `error`/`warning` when its `value` prop changes for a reason other than its own completed `handleFile` call)
@@ -1859,6 +1868,13 @@ The owner asked for every open ticket to be finished, then one deploy at the end
 - **`security-reviewer`:**
   - **SEC-INFO-46:** `isAllowedImageUrl` accepts `"<>()` inside an https address. It's harmless while every sink is React-escaped; ban them before adding any CSS or raw-HTML sink.
   - **SEC-INFO-47:** the clean-up can remove a file named only in an unsaved draft. That's accepted.
+
+**Follow-ups found in Wave 3b (2026-10-07)**, for the backlog:
+- **`code-reviewer`:**
+  - **For T-034:** UPLOAD_IN_PROGRESS stays up after the upload finishes, until the next Save click (DECISIONS 2026-10-07). Decide whether it should clear on its own.
+  - **For T-011:** `ObjectListEditor` finds its focus targets with `:scope > div:first-child button` (`SettingsForm.tsx:269`), so they depend on the row header's DOM order. If T-011 changes those buttons, re-run the focus scenarios (S13).
+  - **Untested, accepted:** the same object listed twice (the duplicate-key guard, mutant R5). No page can produce that today.
+- **`security-reviewer`, no finding:** an overtaken pick still uploads its file, which then sits unused in the public bucket. It's the same kind of orphan an abandoned pick leaves on `main`, and it's signed-in only.
 
 ### Dependency Order
 

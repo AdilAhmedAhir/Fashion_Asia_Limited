@@ -2416,6 +2416,62 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 **Actions taken:** edited only `docs/SECURITY.md` (this entry, plus a pointer on the two binding lines it supersedes), and left it uncommitted. No build, no server, no test run, no request to any server.
 
 
+### 🔒 CSO Audit — 2026-10-07 — ticket-review:Wave 3b (T-009 + T-010)
+
+**Scope:** Dispatched by `/system-architect` (Wave 3b). It covers `git diff main..367a6ab` on `wave-3b-editors`, merge base `3f3f3c5` (= `main`, which holds Wave 3a).
+- **Commits:** `f8e29ed` (T-009) and `367a6ab` (T-010), both authored and committed by `happierbangladesh`, each with exactly one `Co-Authored-By: Claude Opus 5.5` line.
+- **Files:** five, all on 3b's list: `upload-limits.ts` (item 7), `ImageUploadField.tsx`, `SettingsForm.tsx` (`ObjectListEditor` only), `ProductsClient.tsx` and `HomepageSettingsClient.tsx`.
+- **Method:** static, from the diff and the files at `367a6ab`. No suite was run (a token budget), and there was no build, no server and no request.
+
+**1. `upload-limits.ts` re-bind: ✅**
+- **The diff is item 7's five-line guard** in `checkImageSizeAdvisory`: a side that isn't a finite number above 0 returns `{ tooSmall: true, offProportion: true }`.
+- **Everything before the advisory section is byte-identical to `main`'s,** including the T-007 block (`readImageDimensions`, `describeDimensionLimit` and their private helpers). The 14 exports are the same, and the file still has no imports.
+- **`265e9a835b03d62e…` → `3bff92b6df8f005d6cc8a784bf241b55f533df71240eb55db40baeecaea8989f`.** The advisory is guidance only and never blocks an upload, so this has no security effect: a NaN side now warns instead of passing silently.
+
+**2. Client invariants: ✅ all hold.**
+- **Imports and sinks:**
+  - The only changed import lines add React hooks (in `ImageUploadField` and `SettingsForm`), plus `describeDimensionLimit` from `@/lib/upload-limits`, a module with no imports.
+  - There's no new Server Action, nothing from `@/lib/supabase/*` or `@/lib/settings-read`, and no import between `products/*` and `business/*`.
+  - The added lines hold no `dangerouslySetInnerHTML`, `innerHTML`, `insertAdjacentHTML`, `srcdoc`, `eval` or `new Function`.
+- **T-016's restated invariant 4 (`ImageUploadField`):**
+  - `commitPathOnBlur` still defaults to false, and `onBusyChange` is a new opt-in prop.
+  - Each accepted pick (one that passes the type, size and dimension checks) makes exactly one `uploadOptimizedImage` call, with a fresh `FormData` holding one `file` field. A pick refused earlier makes none.
+  - `isLatest()` gates every step after an await: the dimension read, the upload, the catch and the finally.
+  - Only the latest pick calls `applyUrl`, which is the `onChange` captured at that pick, never a newer one. It still applies after an unmount, as on `main`.
+- **T-016's other conditions:**
+  - `CategoryProductsManager.tsx` has a 0-byte diff, so product payloads still come only from `changedFields`.
+  - The products map is still read only through `Map.get`; no lookup line changed.
+  - No timer, effect or render path calls a Server Action. The new effects only update refs, report busy or uploading to a state setter, and restore focus.
+  - The one upload call stays in `handleFile`, which runs only from the file input or a drop.
+- **T-026's 7 (`SettingsForm`, `ProductsClient`):**
+  - 1, 2, 4 and 7 as above.
+  - 3: the two new `UPLOAD_IN_PROGRESS` messages are constants, shown as JSX text through the existing error display.
+  - 5: `categories={confirmed}` is untouched.
+  - 6: the fail-closed load block is untouched. The new Save guard only adds a refusal that sends nothing.
+- **T-012's `.ok` rule (`HomepageSettingsClient`):** the save body is only renamed `send`, and its `.ok` branch is outside the diff. The new `save` refuses while an upload runs, and otherwise calls `send`.
+- **Saved data:**
+  - `ObjectListEditor` keys rows in a per-instance `WeakMap` from item object to key. No item field is read or written for keying.
+  - `update` still writes only `{ ...item, [field]: value }`, with `field` taken from the code's field list. So no key ever reaches `site_settings` or a public page.
+  - A late upload for a row that has gone is dropped, never written to another row.
+
+**Note (no finding):** a pick that's overtaken still uploads its file, which then sits unused in the public bucket. That's the same kind of orphan an abandoned pick leaves on `main`, and it's signed-in only.
+
+**Bindings:**
+- **Re-bound:** `upload-limits.ts` `3bff92b6df8f005d6cc8a784bf241b55f533df71240eb55db40baeecaea8989f`.
+- **Bound by the invariants above** (T-016's convention), with hashes recorded only: `ImageUploadField.tsx` `1e71d3d8f00bbfcf…`, `SettingsForm.tsx` `c3f190cbe8e0edaa…`, `ProductsClient.tsx` `514ac971cdf89d59…` and `HomepageSettingsClient.tsx` `01841539c29af401…`.
+- **Unchanged:** `git diff --name-only main 367a6ab` lists only the five files. Re-hashed at `367a6ab`, these equal their bindings: `media-actions.ts` `dba76e48…`, `MediaPublishForm.tsx` `e569e6c0…`, `MediaDeleteButton.tsx` `e1042edb…`, `products-actions.ts` `7e8a1069…`, `settings-actions.ts` `b4c3da2e…`, `action-errors.ts` `b0be0a48…` and `site-content.ts` `9939d4f3…`. Every other Wave 2 and 3a binding stands.
+
+**Verdict:** ✅ **Wave 3b (T-009 + T-010) cleared.** No 🔴, 🟠 or 🟡, and no new finding. It changes no server file and no authorization surface.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared.** Wave 3b may proceed to `/qa` → `code-reviewer` → merge. Conditions:
+- **`upload-limits.ts`** is bound at `3bff92b6…`. **The four client files** are bound by the invariants in item 2.
+- **These come back to `/cso`:** any 3b re-review trigger. That means keys taken from or stored in item fields, the field calling its latest `onChange` or dropping a result on unmount, any change to what a consumer saves, a non-zero diff on `CategoryProductsManager.tsx`, or a change to `ProductsClient`'s draft/confirmed logic or to `commitPathOnBlur`.
+- **Pre-deploy position, unchanged:** SEC-HIGH-2 still blocks the deploy until the owner confirms that sign-ups are OFF. O1 is recommended right after the deploy, and deploying needs the owner's typed "deploy".
+
+**Actions taken:** edited only `docs/SECURITY.md` (this entry) and left it uncommitted. No build, no server, no test run and no request to any server.
+
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |

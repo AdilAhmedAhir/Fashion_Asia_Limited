@@ -45,15 +45,20 @@ export interface HomepageData {
     contactCards: { label: string; value: string }[];
 }
 
+const UPLOAD_IN_PROGRESS =
+    "An image is still uploading. Wait for it to finish, then click Save Changes.";
+
 export default function HomepageSettingsClient({ initial }: { initial: HomepageData }) {
     const [data, setData] = useState<HomepageData>(initial);
     const [isPending, startTransition] = useTransition();
     const [error, setError] = useState<string | null>(null);
+    // T-010: true while a facility photo is still uploading.
+    const [uploading, setUploading] = useState(false);
 
     const set = <K extends keyof HomepageData>(key: K, val: HomepageData[K]) =>
         setData(prev => ({ ...prev, [key]: val }));
 
-    const save = () => startTransition(async () => {
+    const send = () => startTransition(async () => {
         setError(null);
         try {
             const result = await updateSettings("homepage", data as unknown as Record<string, unknown>);
@@ -62,6 +67,16 @@ export default function HomepageSettingsClient({ initial }: { initial: HomepageD
             setError("Something went wrong saving these changes. Check your connection and try again.");
         }
     });
+
+    // An upload still running would land after this save and be left out of
+    // it, so Save waits for it. Nothing is sent.
+    const save = () => {
+        if (uploading) {
+            setError(UPLOAD_IN_PROGRESS);
+            return;
+        }
+        send();
+    };
 
     return (
         <div className="flex flex-col gap-8 max-w-4xl">
@@ -138,6 +153,7 @@ export default function HomepageSettingsClient({ initial }: { initial: HomepageD
                         label="Facilities"
                         items={data.lifeFacilities}
                         onChange={v => set("lifeFacilities", v)}
+                        onUploadingChange={setUploading}
                         addLabel="Add Facility"
                         fields={[
                             { key: "title", label: "Title" },

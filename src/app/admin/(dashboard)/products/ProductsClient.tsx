@@ -27,6 +27,9 @@ const PRODUCTS_LOAD_FAILED =
 const SAVE_THREW =
     "Something went wrong saving the categories. Check your connection, then click Save categories again.";
 
+const UPLOAD_IN_PROGRESS =
+    "An image is still uploading. Wait for it to finish, then click Save categories.";
+
 /**
  * @purpose The /admin/products editor: the category list, saved together by "Save categories", above the per-category product manager, whose products save on their own.
  *
@@ -48,6 +51,8 @@ export default function ProductsClient({ load }: { load: ProductsLoad }) {
     const [error, setError] = useState<string | null>(null);
     const [justSaved, setJustSaved] = useState(false);
     const [isPending, startTransition] = useTransition();
+    // T-010: true while a category image is still uploading.
+    const [uploading, setUploading] = useState(false);
 
     // Fail closed: no editor and no Save button without a successful read.
     if (!initial.ok) {
@@ -63,6 +68,12 @@ export default function ProductsClient({ load }: { load: ProductsLoad }) {
     };
 
     const save = () => {
+        // An upload still running would land after this save and be left
+        // out of it, so Save waits for it. Nothing is sent.
+        if (uploading) {
+            setError(UPLOAD_IN_PROGRESS);
+            return;
+        }
         setError(null);
         setJustSaved(false);
 
@@ -153,6 +164,7 @@ export default function ProductsClient({ load }: { load: ProductsLoad }) {
                             label="Categories, in the order the site shows them"
                             items={draft}
                             onChange={edit}
+                            onUploadingChange={setUploading}
                             addLabel="Add category"
                             fields={[
                                 { key: "title", label: "Title" },
