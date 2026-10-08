@@ -5,13 +5,14 @@ Multi-agent engineering framework for **this project**. This file is always load
 ## This project: Fashion Asia hard rules (owner law; they override anything generic below)
 Installed 2026-09-28 by GENESIS, replacing A-Team V5. The details and reasons are in
 `docs/WORKFLOW.md` §2/§4/§6.
-- **Commit names:**
-  - Every commit is authored `happierbangladesh <happierbangladesh@users.noreply.github.com>`.
-  - Every commit ends with exactly one `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` line, with no other co-author, whichever agent or model made it.
+- **Commit names (owner ruling 2026-10-08, replacing 2026-09-28's): each GitHub repo shows only its own account.**
+  - `client` (happierbangladesh/Fashion_Asia_Limited): every commit is authored and committed by `happierbangladesh <happierbangladesh@users.noreply.github.com>`. Local `main` is this history.
+  - `origin` (AdilAhmedAhir/Fashion_Asia_Limited, public): every commit is authored and committed by `AdilAhmedAhir <90372976+AdilAhmedAhir@users.noreply.github.com>`, his GitHub private address. It's a copy of `main` with the same files, made by `node .claude/scripts/mirror-authorship.mjs --identity origin main:publish/origin-main`.
+  - No commit carries a `Co-Authored-By` line or any other co-author, whichever agent or model made it.
   - Enforced by `.githooks/` (`git config core.hooksPath .githooks`). Never use `--no-verify`.
 - **Deploy = `/ship`, only when the owner's current message contains "deploy".**
-  - It pushes `main` to **both** `origin` (AdilAhmedAhir) and `client` (happierbangladesh) at the same commit.
-  - Never force, and never push only one of the two.
+  - It pushes `main` to `client` and its mirror `publish/origin-main` to `origin`. Both tips hold the same files; their commit ids differ.
+  - Never push only one of the two. Never force, except the one-time history rewrite the owner ordered on 2026-10-08 (DECISIONS).
   - `staging` is never pushed unless the owner asks for it in that same message.
 - **The local dev server is the LIVE database.**
   - No agent writes during testing: no form submits, admin saves, uploads or deletes.
@@ -61,7 +62,7 @@ The locked stack is whatever `/adapt` recorded in `docs/STACK.md`. Skills read g
 - **No policy number hard-coded.** Thresholds, cutoffs, fees, limits live in config/DB (see DOMAIN.md / STACK.md §6).
 - Errors: friendly user state + structured server log; no swallowed promises; no debug prints in shipped code.
 - Secrets stay server-only — a server-only secret reachable from a client bundle is a release-blocking bug (guarded by the post-edit hook).
-- Conventional commits; branch `t-###-slug` per ticket; never force-push shared branches.
+- Conventional commits; branch `t-###-slug` per ticket; never force-push shared branches (the 2026-10-08 authorship rewrite is the one owner-ordered exception).
 
 ## Data & schema discipline (applies to whatever DB STACK.md names)
 - Schema changes go through the project's declared migration flow (STACK.md §5), reviewed before applying — never mutate schema out-of-band (dashboard/manual).

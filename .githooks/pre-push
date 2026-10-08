@@ -1,40 +1,44 @@
 #!/bin/sh
 # Fashion Asia push guard (docs/WORKFLOW.md §2). Enabled with:
 #   git config core.hooksPath .githooks
-# Refuses a push if any commit being pushed is authored by anyone but happierbangladesh, or
-# lacks exactly one "Co-Authored-By: Claude Opus 5.5" line, or carries any other co-author.
-# Commits already on the remote are never re-checked, so older history doesn't block pushes.
+# Owner ruling 2026-10-08: each GitHub repo shows only its own account.
+#   client          every pushed commit authored and committed by happierbangladesh
+#   origin, staging every pushed commit authored and committed by AdilAhmedAhir (GitHub private address)
+# No pushed commit may carry a co-author line. Commits already on the remote are never re-checked.
 
 remote="$1"
-required_name="happierbangladesh"
-required_email="happierbangladesh@users.noreply.github.com"
-required_trailer="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+case "$remote" in
+  client) want="happierbangladesh <happierbangladesh@users.noreply.github.com>" ;;
+  origin|staging) want="AdilAhmedAhir <90372976+AdilAhmedAhir@users.noreply.github.com>" ;;
+  *)
+    echo "push guard: unknown remote '$remote'. Push to a named remote: client, origin or staging (docs/WORKFLOW.md §2)." >&2
+    exit 1
+    ;;
+esac
 zero=0000000000000000000000000000000000000000
 bad=0
 
 while read -r local_ref local_sha remote_ref remote_sha; do
   [ "$local_sha" = "$zero" ] && continue  # deleting a remote ref: nothing to check
-  if [ "$remote_sha" = "$zero" ]; then
+  if [ "$remote_sha" = "$zero" ] || ! git cat-file -e "$remote_sha^{commit}" 2>/dev/null; then
     commits=$(git rev-list "$local_sha" --not --remotes="$remote")
   else
     commits=$(git rev-list "$remote_sha..$local_sha")
   fi
   for c in $commits; do
-    name=$(git log -1 --format='%an' "$c")
-    email=$(git log -1 --format='%ae' "$c")
-    body=$(git log -1 --format='%B' "$c")
-    total=$(printf '%s\n' "$body" | grep -ci '^co-authored-by:')
-    exact=$(printf '%s\n' "$body" | grep -cFx "$required_trailer")
-    if [ "$name" != "$required_name" ] || [ "$email" != "$required_email" ] || [ "$total" -ne 1 ] || [ "$exact" -ne 1 ]; then
+    a=$(git log -1 --format='%an <%ae>' "$c")
+    m=$(git log -1 --format='%cn <%ce>' "$c")
+    n=$(git log -1 --format='%B' "$c" | grep -ci '^[[:space:]]*co-authored-by:')
+    if [ "$a" != "$want" ] || [ "$m" != "$want" ] || [ "$n" -ne 0 ]; then
       echo "push guard: $(git log -1 --format='%h %s' "$c")" >&2
-      echo "  author '$name <$email>', $total co-author line(s)" >&2
+      echo "  author '$a', committer '$m', $n co-author line(s)" >&2
       bad=1
     fi
   done
 done
 
 if [ "$bad" -ne 0 ]; then
-  echo "push guard: refusing to push to '$remote': commits above carry other names (docs/WORKFLOW.md §2)." >&2
+  echo "push guard: refusing to push to '$remote': it takes '$want' only, with no co-author lines (docs/WORKFLOW.md §2)." >&2
   exit 1
 fi
 exit 0

@@ -66,7 +66,7 @@ The generated index is `docs/INVENTORY.md`.
 - **Target:** Vercel builds production from GitHub `main`. There's no preview-promote step
   in this workflow.
 - **Remotes:** `origin` (`AdilAhmedAhir/Fashion_Asia_Limited`) and `client`
-  (`happierbangladesh/Fashion_Asia_Limited`) must always hold the same `main` commit.
+  (`happierbangladesh/Fashion_Asia_Limited`) must always hold the same `main` files. Since 2026-10-08 each repo's commits are authored only by its own account, so their commit ids differ (`docs/WORKFLOW.md` §2).
   `staging` is separate and never auto-pushed.
 - **Release:** only `/ship`, only on the owner's "deploy". It runs the gates, checks commit
   names, pushes both remotes and verifies both domains live (`docs/WORKFLOW.md` §6).

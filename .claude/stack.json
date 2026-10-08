@@ -31,7 +31,7 @@
     "authzNote": "RLS policies: anon has SELECT (plus INSERT on submissions); authenticated has ALL. Every writing Server Action also calls supabase.auth.getUser() first (app layer). There is no admin role: ANY authenticated account is an admin (RISKS R1), so Supabase sign-ups must stay OFF."
   },
   "deployTarget": "vercel",
-  "deployNote": "Vercel builds production from GitHub main. main must be pushed to BOTH remotes, origin (AdilAhmedAhir/Fashion_Asia_Limited) and client (happierbangladesh/Fashion_Asia_Limited), at the same commit, only via /ship on an owner 'deploy'. Live on www.fal.com.bd = www.fashionasialtd.com.",
+  "deployNote": "Vercel builds production from GitHub main. Both remotes are pushed together, only via /ship on an owner 'deploy': client (happierbangladesh/Fashion_Asia_Limited) gets main, authored by happierbangladesh; origin (AdilAhmedAhir/Fashion_Asia_Limited) gets its mirror publish/origin-main, authored by AdilAhmedAhir (.claude/scripts/mirror-authorship.mjs). Same files, different commit ids, no co-author lines. Live on www.fal.com.bd = www.fashionasialtd.com.",
   "designSystem": "tailwind",
   "secretPatterns": [
     "SERVICE_ROLE",

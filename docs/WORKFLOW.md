@@ -34,12 +34,17 @@
 - **Conventional Commits:** `type(scope): subject (T-###)`, where type is `feat`, `fix`,
   `refactor`, `chore`, `docs` or `test`. Imperative mood, ≤72 characters.
 - **No:** "wip", secrets, debug prints, commented-out code, or unrelated lockfile churn.
-- **Names (owner rule, 2026-09-28; no exceptions):**
-  - **Author:** `happierbangladesh <happierbangladesh@users.noreply.github.com>` (the
-    repo-level identity).
-  - **Co-author:** the message ends with **exactly one**
-    `Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>` line, with **no other**
-    co-author line, whichever agent or model made the commit.
+- **Names (owner rule, 2026-10-08, replacing 2026-09-28's; no exceptions): each GitHub repo
+  shows only its own account.**
+  - **`client`** (`happierbangladesh/Fashion_Asia_Limited`): author **and** committer
+    `happierbangladesh <happierbangladesh@users.noreply.github.com>`. Local `main` is this
+    history, so every local commit uses this identity.
+  - **`origin`** (`AdilAhmedAhir/Fashion_Asia_Limited`, public): author **and** committer
+    `AdilAhmedAhir <90372976+AdilAhmedAhir@users.noreply.github.com>`. It's a copy of `main`
+    with the same files, made by `.claude/scripts/mirror-authorship.mjs`, which is
+    deterministic, so the mirror always lines up with what's already on `origin`.
+  - **No co-author line** (`Co-Authored-By` or any other), whichever agent or model made the
+    commit.
   - **Enforced by versioned git hooks.** `.githooks/commit-msg` checks every commit, and
     `.githooks/pre-push` checks every pushed commit. They're enabled once per clone with
     `git config core.hooksPath .githooks`.
@@ -133,10 +138,12 @@ status).
 
 **Deploy = `/ship`.** This is an owner-only hard stop.
 - It runs **only when the owner's current message contains "deploy"**.
-- It pushes `main` to **both** `origin` (`AdilAhmedAhir/Fashion_Asia_Limited`) and `client`
-  (`happierbangladesh/Fashion_Asia_Limited`), at the **same commit**, as a fast-forward.
-- **Never force. Never push only one of the two.**
-- It verifies both SHAs, then the live site (`www.fal.com.bd` = `www.fashionasialtd.com`).
+- It pushes `main` to `client` (`happierbangladesh/Fashion_Asia_Limited`) and the mirror
+  `publish/origin-main` to `origin` (`AdilAhmedAhir/Fashion_Asia_Limited`), both as
+  fast-forwards. The two tips hold the same files; their commit ids differ (§2).
+- **Never push only one of the two. Never force**, except the one-time history rewrite the
+  owner ordered on 2026-10-08.
+- It verifies both tips' trees match, then the live site (`www.fal.com.bd` = `www.fashionasialtd.com`).
 - `staging` (`AdilAhmedAhir/Fashion_Asia_Limited_staging`) is never pushed unless the owner
   asks for it in that same message.
 
@@ -156,4 +163,5 @@ status).
 |---|---|
 | 2026-09-26 | V5 initial lock-in: branching, deploy gating, commit identity, pre-commit checks, live-database testing safety, the schema hard stop and sensitive-surface triggers. |
 | 2026-09-28 | V5 §2: the owner pinned the commit trailer to `Claude Opus 5.5`, with `happierbangladesh` as the only author and no other name. All V5 role agents moved to `model: opus`. |
+| 2026-10-08 | §2 and §6: the owner ruled that each GitHub repo shows only its own account. `client` is happierbangladesh only and `origin` AdilAhmedAhir only, with no co-author lines; both repos' whole history was rewritten once to match (DECISIONS 2026-10-08). The hooks and `/ship` changed with it. |
 | 2026-09-28 | **Migrated to A-Team V7 + genesis.** The V5 20-role agents, commands and `AGENTS.md` were retired (the rollback branch `backup-a-team-v5` holds them). The V7 skills, reviewers, scripts and hooks were installed and adapted: the lint and format hook is off while lint is broken, and the secret patterns were tuned. The custom two-repo `/ship` and the commit-name git hooks were added. |

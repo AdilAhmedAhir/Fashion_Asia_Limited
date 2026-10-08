@@ -1,12 +1,13 @@
 #!/bin/sh
 # Fashion Asia commit-name guard (docs/WORKFLOW.md §2). Enabled with:
 #   git config core.hooksPath .githooks
-# Every commit must be authored by happierbangladesh and carry exactly one
-# "Co-Authored-By: Claude Opus 5.5" line, with no other co-author line.
+# Owner ruling 2026-10-08: each GitHub repo shows only its own account. Local main is the
+# client (happierbangladesh) history, so every local commit is authored and committed by
+# happierbangladesh, and no commit carries a co-author line. The origin (AdilAhmedAhir) copy is
+# made by .claude/scripts/mirror-authorship.mjs at deploy time.
 
 msg_file="$1"
-required_author="happierbangladesh <happierbangladesh@users.noreply.github.com>"
-required_trailer="Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>"
+required="happierbangladesh <happierbangladesh@users.noreply.github.com>"
 
 fail() {
   echo "commit-name guard: $1" >&2
@@ -15,13 +16,12 @@ fail() {
 }
 
 author=$(git var GIT_AUTHOR_IDENT | sed -E 's/ [0-9]+ [+-][0-9]{4}$//')
-[ "$author" = "$required_author" ] || fail "author is '$author', expected '$required_author'."
+committer=$(git var GIT_COMMITTER_IDENT | sed -E 's/ [0-9]+ [+-][0-9]{4}$//')
+[ "$author" = "$required" ] || fail "author is '$author', expected '$required'."
+[ "$committer" = "$required" ] || fail "committer is '$committer', expected '$required'."
 
 # Ignore comment lines, which git strips from the final message.
 body=$(grep -v '^#' "$msg_file")
-total=$(printf '%s\n' "$body" | grep -ci '^co-authored-by:')
-exact=$(printf '%s\n' "$body" | grep -cFx "$required_trailer")
-if [ "$total" -ne 1 ] || [ "$exact" -ne 1 ]; then
-  fail "the message needs exactly one '$required_trailer' line and no other co-author line (found $total co-author line(s))."
-fi
+total=$(printf '%s\n' "$body" | grep -ci '^[[:space:]]*co-authored-by:')
+[ "$total" -eq 0 ] || fail "remove the co-author line(s) (found $total): the account owner is the only author."
 exit 0
