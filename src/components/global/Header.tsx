@@ -63,7 +63,7 @@ export default function Header() {
                 )}
             >
                 <div className="container flex items-center justify-between">
-                    <Link href="/" className={cn("group relative z-[1001] flex items-center gap-3", FOCUS_RING)} onClick={() => setMenuOpen(false)}>
+                    <Link href="/" aria-label="Fashion Asia Limited home" className={cn("group relative z-[1001] flex items-center gap-3", FOCUS_RING)} onClick={() => setMenuOpen(false)}>
                         <BrandLogo className="w-10 h-10 transition-transform duration-700 motion-safe:group-hover:rotate-180" />
                         <div className="flex flex-col">
                             <span className="font-serif text-xl font-bold leading-none tracking-wide text-foreground transition-colors group-hover:text-accent">
@@ -80,7 +80,7 @@ export default function Header() {
                             <Link
                                 key={item.href}
                                 href={item.href}
-                                className={cn("group relative whitespace-nowrap font-sans text-sm font-medium text-foreground py-6", FOCUS_RING)}
+                                className="group relative whitespace-nowrap font-sans text-sm font-medium text-foreground py-6 focus:outline-none before:pointer-events-none before:absolute before:-inset-x-2 before:inset-y-4 focus-visible:before:ring-2 focus-visible:before:ring-accent focus-visible:before:ring-offset-2 focus-visible:before:ring-offset-background"
                             >
                                 {item.label}
                                 <span className="absolute bottom-4 left-0 h-[1px] w-0 bg-primary transition-all duration-300 group-hover:w-full"></span>
@@ -110,7 +110,8 @@ export default function Header() {
                     </button>
                 </div>
             </header>
-            <div id={MENU_ID} ref={panelRef}>
+            {/* Inert while closed, so the fading links can't take focus or taps during the close animation. */}
+            <div id={MENU_ID} ref={panelRef} inert={!menuOpen}>
                 <MobileOverlayMenu isOpen={menuOpen} onClose={closeMenu} />
             </div>
         </>

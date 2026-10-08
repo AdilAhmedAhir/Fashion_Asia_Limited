@@ -40,7 +40,7 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.4 }}
-                    className="fixed inset-0 z-[999] flex flex-col justify-start bg-background px-6 sm:px-12 overflow-y-auto overscroll-contain pt-28 pb-12"
+                    className="fixed inset-0 z-[999] flex flex-col justify-start bg-background px-6 sm:px-12 overflow-y-auto overscroll-contain pt-28 pb-12 scroll-pt-28 scroll-pb-12"
                 >
                     <nav aria-label="Menu" className="flex flex-col gap-4">
                         {menuLinks.map((link, i) => (
@@ -77,10 +77,10 @@ export default function MobileOverlayMenu({ isOpen, onClose }: { isOpen: boolean
                             {NAV_CTA.label}
                         </Link>
                         <div>
-                            <a href="mailto:admin@fashionasialtd.com" className={`block font-sans text-sm text-white/50 transition-colors hover:text-accent ${FOCUS_RING}`}>
+                            <a href="mailto:admin@fashionasialtd.com" className="block w-fit font-sans text-sm text-white/50 transition-colors hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                                 admin@fashionasialtd.com
                             </a>
-                            <a href="tel:+8801711691366" className={`block font-sans text-sm text-white/50 transition-colors hover:text-accent ${FOCUS_RING}`}>
+                            <a href="tel:+8801711691366" className="block w-fit font-sans text-sm text-white/50 transition-colors hover:text-accent focus:outline-none focus-visible:ring-2 focus-visible:ring-accent">
                                 +880 1711 691 366
                             </a>
                         </div>
