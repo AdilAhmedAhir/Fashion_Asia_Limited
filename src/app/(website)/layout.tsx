@@ -8,7 +8,8 @@ export default function WebsiteLayout({ children }: { children: React.ReactNode 
         <SmoothScrollProvider>
             <Preloader />
             <Header />
-            <main className="flex-grow flex flex-col">
+            {/* #site-main and #site-footer are made inert while the mobile menu is open (Header). */}
+            <main id="site-main" className="flex-grow flex flex-col">
                 {children}
             </main>
             <Footer />
