@@ -1924,7 +1924,15 @@ After T-026 this run also does **T-016** (above), by the owner's decision on 202
   - Default motion is unchanged.
   Source: `design-reviewer` and `code-reviewer`, T-024 review, 2026-10-03. It breaks the a11y floor in CLAUDE.md; it isn't an AA failure (WCAG 2.3.3 is AAA).
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge.
-- [ ] **T-029** — Make the mobile menu keyboard- and screen-reader-safe [app:site][design]
+- [x] **T-029** — Make the mobile menu keyboard- and screen-reader-safe [app:site][design]
+  Done 2026-10-08 in **Wave 5c**, the autonomous run's last wave:
+  - **Commits:** `00f6105` (T-029) and `0924597` (fix round: focus stays visible under the header, tidier rings, the closing menu inert, the logo link named).
+  - **What changed:** the public "Menu" toggle has `aria-expanded`, `aria-controls` and the house ring. It reuses Wave 4d's `useOverlayMenu` unchanged: focus moves in, Tab wraps, Escape closes and returns focus to the toggle, and `#site-main` and `#site-footer` are `inert` while it's open. The menu numbers are hidden from screen readers, the navs are named "Main" and "Menu", and every header and menu link has the ring. Any route change closes the menu, and with reduced motion on the header's height and the hamburger bars don't animate. Without reduced motion, it looks and moves as on `main`. The menu wrapper is `inert` while closed, so fading links can't take focus or taps during the close animation. The logo link is named "Fashion Asia Limited home".
+  - **Reviews** (lean protocol):
+    - `code-reviewer`, with light QA: SHIP, with four minor notes: the closing-menu gap (fixed in `0924597`), the 1280 px focus gap (accepted), the copied ring string (for T-040) and a 150 ms colour fade under reduced motion. It re-checked `0924597` SHIP: 24/24 control checks and 16/16 mutants, with new ones for the `before:` ring and the wrapper's `inert`.
+    - `design-reviewer`: FIX FIRST (focus hidden under the header at 360×640, tall desktop ring boxes, overlapping contact rings), then SHIP after `0924597`: 0 of 21 focus steps hidden, 44 px desktop ring boxes, and no overlap.
+  - **Accepted gaps:** widening to 1280 px with the menu open leaves focus on `<body>`, as in T-030. The scroll lock stays with T-042.
+  - **NOT VISUALLY VERIFIED:** real phones, a real screen reader, and the iOS scroll lock.
   AC:
   - While the menu is open, focus stays inside it; today Tab moves into page cards hidden behind the overlay.
   - Escape closes the menu and returns focus to the toggle.
@@ -2590,11 +2598,28 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **For T-042:** the scroll-lock race, `finishLoading`'s wall-clock timing, and the curtain staying up with JavaScript off.
 - **Redirects:** Next's built-in trailing-slash redirect (`/contact/`) also carries none of the six headers. Same ruling as the config redirects.
 
+**Follow-ups found in Wave 5c (2026-10-08)**, for the backlog:
+- **`code-reviewer`, for T-040:** the 122-character focus-ring string is defined in `Header.tsx` and `MobileOverlayMenu.tsx`, and inlined in 14 other files. T-040's sweep should export one constant from `src/lib` and import it everywhere.
+- **`code-reviewer`, note only:** with reduced motion on, `transition-colors` shortens the header's colour fade from 300 ms to 150 ms. Nothing moves, so the 5c addition is met.
+- **Not verified by agents:** real phones (does a tapped menu link show a ring?) and a real screen reader.
+
 **Follow-ups found in Wave 5b (2026-10-08)**, for the backlog:
 - **`design-reviewer`:**
   - **`hero.mp4` is 28.4 MB,** heavy on mobile. It needs a compressed rendition, and possibly a smaller mobile source (new T-043).
   - **For T-041, optional:** each line of the static marquee ends with a dot, which nudges it slightly off centre at 360 px. Add `motion-reduce:hidden` on the dot span (`MarqueeSection.tsx:22`).
 - **`code-reviewer`:** the builder's harness lacked a preference-flip probe. The review's `rv.mjs` P1 now covers it, and any future motion work should run it.
+
+**Autonomous run status (2026-10-08): every agent-buildable ticket in Waves 1–5 is merged into local `main`; nothing is deployed.**
+- **Production is still `e8eace1`** (2026-09-28). Local `main` holds T-006 through T-034 as listed in the waves above.
+- **`/ship` needs two things from the owner:**
+  - Supabase sign-ups OFF: SEC-HIGH-2 blocks the deploy, and they read ON live on 2026-10-08;
+  - a new owner message containing "deploy" (CLAUDE.md law).
+- **At `/ship`:**
+  - PM13's live header assertions and the bare-domain STOP, plus PM14's rollback rule (revert and ship again, never Instant Rollback to `e8eace1`);
+  - T-025's four checks and Wave 3a's gallery comparison;
+  - `npm audit --omit=dev`, security's recommendation.
+- **Still with the owner:** T-023 (the admin allowlist; LAW and SQL), T-031 (grants SQL), the CLIENT_QUESTIONS confirmations (Q01–Q15), rotating the GitHub token stored in plaintext in `.git/config`, and the optional owner checklist rows (O1, the admin's phone menu, the leave prompts).
+- **Backlog filed during the run:** T-035 to T-043.
 
 ### Dependency Order
 

@@ -2805,3 +2805,17 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **Mutants:** 8/8 killed (MotionConfig, Lenis, both `matchMedia` calls, two `motion-safe:` prefixes, the video pause, the preloader's early return). The review also killed them again by rewriting the served bundles, with no repo edit.
 - **NOT VISUALLY VERIFIED:** 768 and 1024 px, and a warm video cache with cold JavaScript.
 - **Verdict: PASS.**
+
+## Static and Local Live Pass — Wave 5c (T-029) — 2026-10-08 (`code-reviewer` light QA and `design-reviewer`)
+- **Target:** branch `wave-5c-menu`, commit `00f6105` and any fix listed under T-029. Four files: `Header.tsx`, `MobileOverlayMenu.tsx`, `Footer.tsx` and `(website)/layout.tsx`. The shared hook's sha256 is unchanged (`3bbc4bd3…`).
+- **The harness** (a local production build, one top-level tab per scenario, GET only): 33/33 checks pass; `main` fails 19 of them. At 360 px, it covers:
+  - opening with the keyboard, focus on the first link, and Tab and Shift+Tab wrapping;
+  - Escape returning focus to the toggle;
+  - `inert` on exactly `#site-main` and `#site-footer`;
+  - no numbers in link names, and 0 unnamed controls, with navs named "Main" and "Menu";
+  - closing on a resize to 1280, a link click, Back and Forward;
+  - the open menu's wheel not moving the page, at 360 and at 1024 with Lenis.
+- **Reduced motion on:** the header's height and the hamburger bars don't animate. **Without it:** the header's and menu's computed styles match `main`, and the open-menu screenshot is byte-identical.
+- **Mutants:** 14/14 caught, each applied by rewriting the served code with no repo edit.
+- **NOT VISUALLY VERIFIED:** real phones, a real screen reader, and the iOS scroll lock (T-042).
+- **Verdict: PASS.**
