@@ -2526,6 +2526,15 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: `design-reviewer`, Wave 5b, 2026-10-08.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
+- [ ] **T-044** — Bump Next.js to 16.3.8 and clear the tooling advisories [app:site][sec]
+  AC:
+  - `next` goes from 16.3.6 to 16.3.8 (patch only), which fixes GHSA-cjq9-62q9-8jv4, mcj8-r9mp-w47p, 4jqv-mc3x-m676, 3w37-wq28-93x7, f87g-xv8r-7p7x and 39w2-rjm5-chcv. None applies to this site as deployed (no `images.remotePatterns`, Vercel-hosted, no catch-all, no `use cache`/draftMode, static icons), so this is hygiene, not an incident.
+  - `npm audit fix` (no `--force`) for the build-tooling advisories (tailwindcss's chokidar/fast-glob/micromatch, eslint-config-next, brace-expansion, browserslist, flatted, js-yaml, picomatch, source-map-js), with no major-version jumps.
+  - The gates pass, a production-build smoke test passes (Wave 5a's header and preloader checks, the public pages), and `npm audit --omit=dev` shows no high items left that can be fixed.
+  - `npm run dev` binds to this computer only (`next dev -H 127.0.0.1`), because the dev server talks to the live database (SEC-MED-17's note).
+  Source: `/ship` preflight, 2026-10-11; SECURITY.md SEC-MED-17.
+  Sequence: `/build` → `/security-review` → `code-reviewer` → merge, then deploy on the owner's "deploy".
+
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
 - **`code-reviewer` Y1, test only:** assert that the reorder's refresh comes after its last write. Today's `return await` is correct, but a "clean-up" that drops the `await` would pass the current suite.
@@ -2609,7 +2618,10 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **For T-041, optional:** each line of the static marquee ends with a dot, which nudges it slightly off centre at 360 px. Add `motion-reduce:hidden` on the dot span (`MarqueeSection.tsx:22`).
 - **`code-reviewer`:** the builder's harness lacked a preference-flip probe. The review's `rv.mjs` P1 now covers it, and any future motion work should run it.
 
-**Autonomous run status (2026-10-08): every agent-buildable ticket in Waves 1–5 is merged into local `main`; nothing is deployed.**
+**DEPLOYED 2026-10-11:** client `4c10234` / origin `318e73b` (the same files), live on both domains, with 0 failed live checks (LOG 2026-10-11). Sign-ups were confirmed OFF first. The one-time authorship rewrite is pushed. **Staff next:** Admin → Products → **Save categories** once, then add products.
+- **Owner, before the next deploy (SEC-HIGH-2, still open):** in Supabase, review Authentication → Users and remove any account you don't recognise. Sign-ups were open until 2026-10-11, and every account is an admin.
+
+**Autonomous run status (2026-10-08, kept for history): every agent-buildable ticket in Waves 1–5 is merged into local `main`; nothing is deployed.**
 - **Production is still `e8eace1`** (2026-09-28). Local `main` holds T-006 through T-034 as listed in the waves above.
 - **`/ship` needs two things from the owner:**
   - Supabase sign-ups OFF: SEC-HIGH-2 blocks the deploy, and they read ON live on 2026-10-08;

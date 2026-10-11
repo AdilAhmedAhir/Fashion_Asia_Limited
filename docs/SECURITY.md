@@ -2785,6 +2785,125 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 - Never read `.env*`.
 
 
+### 🔒 CSO Audit — 2026-10-11 — deploy-record: production at `4c10234` (client) and `318e73b` (origin)
+
+**Scope:** The orchestrator dispatched this pass to record the security outcome of the 2026-10-11 production deploy, which the owner ordered by typing "deploy".
+- **The live facts** are the orchestrator's own read-only checks (2026-10-11, about 11:00Z), recorded as given.
+- **Items marked "verified here"** come from this pass's own checks on local git objects.
+- **This pass did not** send any request to the live site or Supabase, build, start a server or sign in. It read no `.env*` file and didn't touch `:3001`.
+
+**1. What shipped**
+- **The tips:** `client` main is `4c1023426aea1b838873fac2144c559a3af8a527`, and `origin` main is `318e73bcf51777c2959849a36b4c70e9ad56501b`. Both trees are `eaeca5fa35a395bb9836d2f76e566a95afebc7b9`. Verified here: the two `^{tree}`s are equal, and the local tracking refs `client/main` and `origin/main` hold those ids.
+- **What changed:** production moved from `e8eace1` to this tree. Verified here: the lockfile's `next` is `16.1.6` at `e8eace1` and `16.3.6` at `main`, and `src/` changed by 74 files (+4,705/−1,277).
+- **The push** was the owner-ordered one-time history rewrite (DECISIONS 2026-10-08), with `--force-with-lease` on exact ids. Verified here: each history has 224 commits, each authored and committed by that repo's one account, with 0 `Co-Authored-By` lines.
+- **The rewrite isn't a scrub.** `origin` is public, and GitHub keeps replaced commits fetchable by id. Nothing needed scrubbing (item 7), but no one should count on a rewrite to remove anything (runbook §7 item 5).
+
+**2. The deployed tree carries every reviewed fix (verified here)**
+- **All 32 files bound in the Wave 5a sign-off re-hash equal at `main`.**
+  - They include the gate (`src/middleware.ts` `6d2c7757…` and `src/lib/supabase/*`), the five action files, the lib files, the bound pages and components, `next.config.ts` `d1af850c…`, `sitemap.ts` `bdfd4112…`, `package.json` `26068c14…` and `package-lock.json` `6a026457…`.
+  - The noted `SubmitButton.tsx` re-hashes equal too.
+  - `uploadOptimizedImage` (SEC-MED-1) is in `media-actions.ts`, bound at `dba76e48…`.
+- **After 5a, Waves 5b (T-028) and 5c (T-029) changed 25 public UI files and added `src/components/ui/AutoplayVideo.tsx`.** None of them is bound.
+  - **No risky additions:** every line they add to `src/` has 0 hits for storage, `fetch`, XHR, beacons, WebSockets, `innerHTML`, cookies, absolute URLs, `process.env`, `supabase`, `"use server"`, `target=`, iframes and scripts.
+  - **No sink changes:** where a changed line holds an `<img src>`, a `<Link href>` or a `mailto:` or `tel:` link, only its `className` or `aria-label` changed. No `href`, `src`, slug or `categoryPath` expression changed, and no CSS `url()` was added, so SEC-INFO-19's and SEC-INFO-46's conditions hold.
+  - **`AutoplayVideo`** passes its caller's `src` and `poster` straight to `<video>`.
+  - **`Preloader.tsx`** is now `cfb01f3050c2c5ce…` (+12/−3), and its only imports are still `react` and `framer-motion`. So 5a's return-to-`/cso` condition for it (a network call, storage access or HTML sink) isn't met.
+  - **`.claude/stack.json`** changed only its `deployNote`; `secretPatterns` and `clientReachableGlobs` are unchanged. The rest is `.githooks/` and the mirror script, which are tooling.
+- So no sensitive surface reached production without a CSO entry.
+
+**3. SEC-HIGH-2: the sign-up flag is off, but the finding isn't closed**
+- **The flag:** the orchestrator read `GET /auth/v1/settings` as `disable_signup: true` at 2026-10-11T10:47:01Z and again at 10:59:46Z, with the email provider enabled. It had read `false` on 2026-10-08, at 2026-10-08T18:45Z and at 2026-10-11T05:00Z.
+- **The second condition:** this office's closure condition (set 2026-09-28 and restated at 5a) also needs the owner's review of Authentication → Users. Nothing records that review: not the facts given to this pass, and not `docs/LOG.md`, `DECISIONS.md`, `ROADMAP.md`, `QA_REPORT.md`, `CLIENT_QUESTIONS.md` or the checkpoint memory (grepped).
+- **Why the review matters:**
+  - Every check from 2026-09-28 to 2026-10-11T05:00Z found sign-ups open, probably since the project was created (Supabase's default).
+  - Turning them off stops new accounts. It doesn't remove any account made in the meantime, and under R1 such an account is a full admin whose sessions stay valid.
+  - SEC-INFO-32 found the anon key in no browser bundle, no production response and no git history, so a stranger's account is unlikely. It's still unverified.
+  - The review must happen after 10:47:01Z; an earlier look misses the end of the window.
+- **What the owner does:**
+  1. List every account in Authentication → Users.
+  2. Treat any account the client doesn't recognize under runbook §7 item 6: delete it, then audit writes since its `created_at`.
+  3. On the next read-only settings check, also record `external.anonymous_users`. An anonymous sign-in gets an `authenticated` session, which R1 treats as an admin. This office expects `disable_signup` to refuse anonymous sign-ups too, but hasn't verified it.
+- **Status:** 🟠, mitigated and still open. Record the review before the next deploy.
+
+**4. SEC-MED-2: PM13 passed, so it's closed in production**
+- **The `www` hosts:** on `www.fal.com.bd` and `www.fashionasialtd.com`, `/` and `/admin/login` send each of the six headers exactly once. HSTS is exactly `max-age=63072000; includeSubDomains`, and there's no `x-powered-by`. So Vercel's own HSTS line neither wins nor doubles, which is 5a's condition for closing in production.
+- **The bare-domain STOP holds.**
+  - `fashionasialtd.com` (307) and `fal.com.bd` (308) redirect to their `www` host with none of our headers.
+  - So `includeSubDomains` never reaches a bare domain, and `mail.` and cPanel names stay out of the pin.
+  - `next.config.ts:55` records the rule: if the app ever serves a bare domain, `includeSubDomains` goes first, and that comes back to `/cso` (a 5a trigger).
+- **The 308 row:** on Vercel, the eight `/what-we-do/<slug>` 308s carry all six headers.
+  - So SEC-INFO-49 doesn't arise in production. It stays an accepted note for `next start` only.
+  - Headers were recorded only on those eight. `/reports` and the old category URLs take the same `redirects()` path, but only their status was recorded.
+
+**5. SEC-HIGH-1 and the rows 5a said this deploy closes: closed in production**
+- **SEC-HIGH-1:** production runs `next` 16.3.6 (the orchestrator). The deployed lockfile is T-006's `6a026457…`, at `16.3.6` (verified here).
+- **The rest close on item 2's hash match and the live checks:**
+  - **SEC-MED-15 and SEC-INFO-19:** `nav.ts` `507e5c62…` and `site-content.ts` `9939d4f3…`. Live, the sitemap has 18 entries and 0 `<lastmod>`, and an unknown category returns 404.
+  - **SEC-HIGH-5 (T-015) and SEC-MED-8 (T-018):** the action files and `action-errors.ts` `b0be0a48…`.
+  - **SEC-MED-1 (T-007), SEC-MED-9 and SEC-MED-10 (T-019):** `media-actions.ts` `dba76e48…`, `MediaDeleteButton.tsx` `e1042edb…` and `MediaPublishForm.tsx` `1402beb2…`.
+  - **T-013:** `products-actions.ts` `7e8a1069…`. The `orderedIds` cap is closed; SEC-INFO-16 is narrowed, with only its accepted residual left.
+  - **Every other "closed in code, pending merge" row:** SEC-MED-7/13, SEC-MED-11, SEC-INFO-15, SEC-INFO-20, SEC-INFO-36, SEC-INFO-37, SEC-INFO-41, SEC-INFO-42, SEC-INFO-43 and QA T-016 I1. Live, `/products` and its 8 category pages return 200, with 0 UUIDs in their HTML.
+- **The anonymous gate holds live.** `/admin`, `/admin/products` and `/admin/media` 307 to `/admin/login` on both domains, and `/admin/login` returns 200.
+- **The write paths weren't exercised live,** by the owner's no-writes rule. Their production closure rests on tree identity plus each wave's offline verification.
+- **Now due on production:**
+  - Wave 3a's O1: one ZZ-TEST publish-and-delete, by the owner.
+  - 5a's owner row O1: the owner's next sign-in and sign-out, with the headers on.
+  - If sign-in fails or loops, the response is PM14's revert-and-ship to both remotes, never Instant Rollback to `e8eace1`.
+
+**6. The Next.js advisories: new 🟡 SEC-MED-17, ticketed as T-044**
+- **The finding:** the orchestrator's `npm audit --omit=dev` before the deploy puts `next` 16.3.6 in range of six advisories fixed in 16.3.8:
+  - GHSA-cjq9-62q9-8jv4 (high: SSRF in Image Optimization);
+  - GHSA-mcj8-r9mp-w47p, GHSA-4jqv-mc3x-m676, GHSA-3w37-wq28-93x7, GHSA-f87g-xv8r-7p7x and GHSA-39w2-rjm5-chcv.
+- **The orchestrator's assessment is that none applies.** This pass re-checked the code-side premises at `main`. It didn't read the advisory texts (no network).
+  - **cjq9:** `next.config.ts` has no `images` key at all, so there's no `remotePatterns` or `domains` (verified here). The two `src/` files that use `next/image` can only optimize local images.
+  - **4jqv** doesn't affect Vercel, where production runs.
+  - **mcj8, 3w37 and f87g** need a root catch-all page, `use cache`, `draftMode` or generated icons. Verified here:
+    - there's no catch-all route under `src/app`;
+    - `src/` has no `use cache`, `draftMode` or `unstable_cache`;
+    - the icons are static PNGs (`src/app/icon.png`, `src/app/apple-icon.png` and `public/icon.png`).
+  - **39w2 is dev-only, but dev here isn't data-free.**
+    - The dev server is wired to the live database (CLAUDE.md).
+    - `npm run dev` is plain `next dev`, which listens on every interface unless given `-H`.
+    - Until T-044 is live, run it on loopback (`next dev -H 127.0.0.1`), and stop it when it isn't in use.
+    - T-044's review confirms what 39w2 reaches.
+- **Why 🟡 and not 🟢:** nothing is reachable today, but each advisory is one ordinary change away. Adding `images.remotePatterns` to optimize the Supabase gallery photos is the likeliest; a catch-all page, `use cache`, `draftMode` or a generated icon would do it too.
+- **Guardrail:** none of those merges before T-044 is live. Each one comes back to `/cso`.
+- **T-044** (filed in ROADMAP) bumps `next` to 16.3.8 and runs `npm audit fix` on the tooling, taking SEC-INFO-31's lockfile ticket with it.
+  - The lockfile change voids the `package.json` and `package-lock.json` bindings, so T-044 needs `/security-review`: `npm ls next` must read 16.3.8, and `npm audit --omit=dev` must list no `next` advisory.
+  - `package.json` still reads `"next": "^16.1.6"` (verified here), so only the lockfile holds the floor (SEC-INFO-30). T-044 should raise the range to `^16.3.8`.
+  - Once T-044 is live, runbook §7 item 7's floor becomes 16.3.8.
+
+**7. Secrets (verified here)**
+- **The configured patterns:** the public history (`publish/origin-main`) has 0 hits on the four value-shaped `secretPatterns` (`ghp_`, `github_pat_`, `AKIA` and PEM private keys).
+  - The six name patterns hit only bare words, each match exactly as long as its literal. The hits are in docs, in tooling (the pattern lists themselves), and in `db/migrations/0001_products-within-category.sql`, where `service_role` is the Postgres role name.
+  - The only env-like file ever committed is `.env.example`.
+- **New 🟢 SEC-INFO-50:** the 10 patterns have no value shape for this stack's own keys: a Supabase JWT (`eyJ….eyJ….…`), `sb_secret_…` or `sb_publishable_…`. So each wave's "0 hits on the 10 patterns" couldn't have caught a pasted Supabase key.
+  - This pass scanned the public history and every local ref for those three shapes, plus Postgres URLs with a password and Google, Slack and Stripe live keys: 0 hits.
+  - Add the three shapes to `stack.json` and the hooks that read it.
+- **SEC-MED-14 (count-only; no value printed):** local `.git/config` still has 1 remote URL with embedded credentials and 6 `credential.*` entries. A token that can push to the branch Vercel builds from is a production-deploy credential. The rotation is still with the owner (ROADMAP).
+
+**8. As another user: N/A, by construction**
+- This pass records a deploy. It adds no authorization surface, and the gate, actions and policies are byte-identical to what was reviewed (item 2).
+- Every signed-in account is an admin (R1), so there's no second-user boundary to test yet. T-023 creates one, and its review is where as-another-user testing starts.
+- Live: anonymous requests to `/admin*` get a 307 (item 5). Nothing signed in or wrote, by the owner's rules.
+
+**R1 and T-023: unchanged.**
+- Any signed-in account is still an admin.
+- Turning sign-ups off narrows who can get an account. It doesn't limit what an account can do, and one dashboard toggle reopens it.
+- **T-023** (the admin allowlist) stays open.
+- SEC-INFO-32's guardrail stands: nothing may ship the anon key to a browser while T-023 is open.
+
+**Verdict:** ✅ **CLEARED as deployed. There's no 🔴.**
+- **Closed in production:** SEC-HIGH-1, SEC-MED-2, SEC-MED-15, SEC-INFO-19, SEC-HIGH-5, SEC-MED-8, SEC-MED-1, SEC-MED-9, SEC-MED-10, T-013's cap, and every "closed in code, pending merge" row.
+- **Still open:** SEC-HIGH-2 (🟠, mitigated, waiting on the Users review), R1 with T-023, the new 🟡 SEC-MED-17 (T-044) and the new 🟢 SEC-INFO-50.
+- **Before the next deploy:** the owner's Authentication → Users review, recorded here (SEC-HIGH-2). T-044 is the natural content of that deploy, after its own `/security-review`.
+- **Owner actions now:** the Users review, the two O1 rows (item 5) and the PAT rotation (SEC-MED-14).
+
+**Actions taken:**
+- **Edited:** only `docs/SECURITY.md` (this entry, the §5 rows and a §6 note), left uncommitted.
+- **Ran:** read-only `git`, `shasum` and greps, plus two `node` scans over local git objects. The scans printed no matched value.
+- **Did not:** send any request, build, start a server or sign in. `.env*` wasn't read, and `:3001` wasn't touched.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -2882,6 +3001,20 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-48 — T-030 (Wave 4 contract item 20) puts `navItems`, the 12 admin paths and their labels, in the public AdminNav client chunk (`08ttrkoaxemcr.js` at `edff562`; the name changes with each build). `_next/static` is outside the middleware matcher (Wave 4d CSO entry) | No ticket; accepted | Open (info). Route names only, with no data, action id or key, and every path stays gated. Guardrail: nothing secret, user-specific or role-specific in `AdminNav`/`navItems`, and no admin path that relies on being unlisted |
 | SEC-MED-2 — status update, 2026-10-08 (Wave 5a CSO entry) | **T-008** (`b4c01e8`) | ✅ **Closed in code, pending merge; it closes in production only when PM13 passes.** One `/:path*` rule sends the six byte-exact static values, and `X-Powered-By` is off. PM12 is recorded: the CSP ships enforcing, and the fallback is not invoked. Verified on :3101 for 10 of 12 PM3 responses; the two `redirects()` 308s are ruled N/A (SEC-INFO-49). Bound to `next.config.ts` sha256 `d1af850c…`. **Production is still exposed** until a user-typed deploy. If Vercel's own HSTS line wins or doubles there, SEC-MED-2 stays open and a follow-up is filed, with no rollback (PM13) |
 | SEC-INFO-49 — under `next start`, Next 16.3.6 drops `headers()` on a matched `redirects()` route (`resolve-routes.js:524-541` returns `resHeaders: null`), so `/reports`, `/what-we-do/:slug` and the three rename 308s carry none of the six headers (Wave 5a CSO entry) | No ticket; accepted | Open (info). A browser loses nothing: each header's effect comes from the same-origin destination or the per-host HSTS pin, or doesn't apply to a redirect. PM13 records what Vercel sends. Revisit if a `redirects()` destination stops being a same-origin relative path, or if Next starts applying headers to redirects |
+| SEC-HIGH-2 — status update, 2026-10-11 (deploy record) | Owner action: review Authentication → Users after 2026-10-11T10:47:01Z, and handle any unrecognized account under runbook §7 item 6. Structural fix: **T-023** | **Mitigated, still open (🟠).** `disable_signup: true` was read twice (10:47:01Z and 10:59:46Z), with the email provider on. The second closure condition, the owner's Users review, isn't recorded anywhere. An account made while sign-ups were open keeps full admin rights (R1). Record the review before the next deploy, and record `external.anonymous_users` on the next settings read |
+| SEC-HIGH-2 structural fix (T-023) and R1 — status, 2026-10-11 (deploy record) | **T-023**, the admin allowlist (LAW, `/debate`, hand-applied SQL) | Open, unchanged. Any signed-in account is still an admin. Sign-ups OFF limits who can get an account, not what an account can do, and one dashboard toggle reopens it. SEC-INFO-32's guardrail stands while T-023 is open |
+| SEC-HIGH-1 — status update, 2026-10-11 (deploy record) | **T-006**, now live | ✅ **Closed in production.** Production runs `next` 16.3.6, up from 16.1.6 at `e8eace1`. The deployed lockfile is T-006's `6a026457…` (re-hashed at `main`). The 16.3.8 advisories are a new finding (SEC-MED-17), not a reopening |
+| SEC-MED-2 — status update, 2026-10-11 (deploy record) | **T-008**, now live | ✅ **Closed in production; PM13 passed.** On both `www` hosts, `/` and `/admin/login` send the six headers exactly once, HSTS is exactly `max-age=63072000; includeSubDomains`, and there's no `x-powered-by`. Both bare domains redirect to `www` with none of our headers, so the bare-domain STOP holds |
+| SEC-INFO-49 — status update, 2026-10-11 (deploy record) | No ticket | Doesn't arise in production: on Vercel, the eight `/what-we-do/<slug>` 308s carry all six headers. It stays an accepted note for `next start` only, under 5a's "holds while" conditions |
+| SEC-MED-15 / SEC-INFO-19 — status update, 2026-10-11 (deploy record) | T-025, T-026 and T-033's cut, now live | ✅ **Closed in production.** The deployed tree has `nav.ts` `507e5c62…` and `site-content.ts` `9939d4f3…`. Live, the sitemap has 18 entries and 0 `<lastmod>`, and an unknown category returns 404. No post-5a change touches a slug, `href` or `categoryPath` expression |
+| SEC-HIGH-5 / SEC-MED-8 / SEC-MED-1 / SEC-MED-9 / SEC-MED-10 — status update, 2026-10-11 (deploy record) | T-015, T-018, T-007 and T-019, now live | ✅ **Closed in production,** by tree identity: every bound action, lib and media file re-hashes equal at `main`. Not exercised live, by the no-writes rule. Wave 3a's O1 (one ZZ-TEST publish-and-delete, by the owner) is now due |
+| T-013 items (the `orderedIds` cap; SEC-INFO-16 narrowed) — status update, 2026-10-11 (deploy record) | T-013, now live | ✅ The cap is closed in production (`products-actions.ts` `7e8a1069…`). SEC-INFO-16 and SEC-INFO-45 stay open only as their accepted residual, waiting on the owner's database function |
+| Every "closed in code, pending merge" row — status update, 2026-10-11 (deploy record) | T-016 and Waves 1 to 5a, now live | ✅ **Closed in production:** SEC-MED-7/13, SEC-MED-11, SEC-INFO-15, SEC-INFO-20, SEC-INFO-36, SEC-INFO-37, SEC-INFO-41, SEC-INFO-42, SEC-INFO-43 and QA T-016 I1. Live, `/products` and its 8 category pages return 200, with 0 UUIDs in their HTML (SEC-INFO-36) |
+| SEC-MED-17 — `next` 16.3.6 is in range of six advisories fixed in 16.3.8: GHSA-cjq9-62q9-8jv4 (high, SSRF in Image Optimization), GHSA-mcj8-r9mp-w47p, GHSA-4jqv-mc3x-m676, GHSA-3w37-wq28-93x7, GHSA-f87g-xv8r-7p7x and GHSA-39w2-rjm5-chcv. None is reachable with today's config (2026-10-11 deploy record, item 6) | **T-044** (filed): bump to 16.3.8, raise the range from `^16.1.6` to `^16.3.8`, run `npm audit fix` on the tooling, then `/security-review` | Open, 🟡; doesn't block. Until T-044 is live, nothing may merge that adds `images.remotePatterns` or `domains`, a catch-all route, `use cache`, `draftMode` or a generated icon. Run `next dev` on loopback (`-H 127.0.0.1`), because it's wired to the live database |
+| SEC-INFO-30 / SEC-INFO-31 — status update, 2026-10-11 (deploy record) | Folded into **T-044** | Open until T-044. `package.json` still reads `"next": "^16.1.6"`, so only the lockfile holds the floor. Once T-044 is live, runbook §7 item 7's floor becomes 16.3.8 |
+| SEC-INFO-50 — `.claude/stack.json` `secretPatterns` has no value shape for this stack's own keys: a Supabase JWT, `sb_secret_…` or `sb_publishable_…`. So each wave's "0 hits on the 10 patterns" couldn't have caught a pasted Supabase key (2026-10-11 deploy record, item 7) | Not filed. Recommend a small tooling ticket: add the three shapes to `secretPatterns` and the hooks that read them | Open (info). This pass scanned the public history and every local ref for them: 0 hits |
+| SEC-MED-14 — status update, 2026-10-11 (deploy record) | Owner action: rotate the token | Open. Count-only check: `.git/config` still has 1 remote URL with embedded credentials and 6 `credential.*` entries. A token that can push to the branch Vercel builds from is a production-deploy credential |
+| O1 rows — status, 2026-10-11 (deploy record) | Owner rows | Now due on production. Wave 3a's O1 is one ZZ-TEST publish-and-delete; MEDIA_DELETE_REFUSED there is an owner SQL step (runbook §7 item 15). 5a's O1 is the owner's next sign-in and sign-out; if that fails, the response is PM14's revert-and-ship to both remotes, never Instant Rollback to `e8eace1` |
 
 ## 6. Secrets log
 
@@ -2895,6 +3028,8 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 No committed secret was found this pass (see Secrets hygiene above). Nothing here required rotation.
 
 2026-09-28 (T-006 review): added the row for the local `.git/config` PAT (SEC-MED-14). It isn't committed, so the Refuse-If on committed secrets doesn't apply. Recommend rotating it and moving it to a keychain-backed credential helper; record the date here when done.
+
+2026-10-11 (deploy record): a count-only check found the PAT still in local `.git/config`, with 1 remote URL holding embedded credentials and 6 `credential.*` entries, so it hasn't been rotated (SEC-MED-14). The public history and every local ref have 0 hits for Supabase JWT, `sb_secret_`, `sb_publishable_`, GitHub, AWS, Google, Slack, Stripe live, Postgres-password-URL and PEM private-key shapes. The only env-like file ever committed is `.env.example`. Nothing found needs rotating beyond SEC-MED-14's token.
 
 ## 7. Incident response runbook
 
