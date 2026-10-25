@@ -86,8 +86,9 @@ export default async function ProductsPage() {
             {/* No PageHeader banner (T-045, owner request 2026-10-25): the
                 page starts at its category grid, and "Browse by Category" is
                 its only h1, in the look it had as an h2. pt-32 is the
-                clearance PageHeader gave the fixed site header. */}
-            <section className="container pb-24 pt-32">
+                clearance PageHeader gave the fixed site header; from xl, where
+                the header shows its taller nav, pt-40 keeps the same gap. */}
+            <section className="container pb-24 pt-32 xl:pt-40">
                 <ScrollReveal>
                     <h1 className="mb-12 font-serif text-3xl font-bold text-foreground md:text-4xl">Browse by Category</h1>
                 </ScrollReveal>

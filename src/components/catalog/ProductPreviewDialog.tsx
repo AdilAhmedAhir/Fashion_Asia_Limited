@@ -35,6 +35,8 @@ const FOCUS_RING =
  */
 export default function ProductPreviewDialog({ product, categoryTitle, alt, layout, onClose }: ProductPreviewDialogProps) {
     const dialogRef = useRef<HTMLDialogElement>(null);
+    // Whether the latest press started on the backdrop (see onClick).
+    const pressedOnBackdrop = useRef(false);
     const titleId = useId();
     const [current, setCurrent] = useState(0);
 
@@ -70,7 +72,15 @@ export default function ProductPreviewDialog({ product, categoryTitle, alt, layo
     // thumbnails, arrows or dots.
     const mainPhoto = photos.length > 0 && (
         <div className="relative overflow-hidden rounded-lg bg-black/40">
-            <img src={photos[shown]} alt={photoAlt(shown)} className="aspect-[4/3] w-full object-contain" />
+            {/* Layout 2 is portrait, so the photo stands as tall as the
+                thumbnail column beside it on a phone. Layout 3 is capped at
+                55dvh, so its description shows on a short screen; contain
+                keeps the whole photo either way. */}
+            <img
+                src={photos[shown]}
+                alt={photoAlt(shown)}
+                className={cn(layout === 2 ? "aspect-[3/4]" : "aspect-[4/3]", layout === 3 && "max-h-[55dvh]", "w-full object-contain")}
+            />
             {layout === 3 && photos.length > 1 && (
                 <>
                     <button
@@ -134,7 +144,8 @@ export default function ProductPreviewDialog({ product, categoryTitle, alt, layo
                         aria-current={i === shown ? "true" : undefined}
                         className={cn("block rounded-full p-2", FOCUS_RING)}
                     >
-                        <span className={cn("block h-2.5 w-2.5 rounded-full", i === shown ? "bg-accent" : "bg-white/40")} />
+                        {/* The current dot is longer as well as green, so it doesn't rely on colour alone. */}
+                        <span className={cn("block h-2.5 rounded-full", i === shown ? "w-6 bg-accent" : "w-2.5 bg-white/40")} />
                     </button>
                 </li>
             ))}
@@ -227,18 +238,28 @@ export default function ProductPreviewDialog({ product, categoryTitle, alt, layo
             aria-labelledby={titleId}
             data-lenis-prevent
             onClose={onClose}
-            // The dialog has no padding, so a click whose target is the dialog
-            // itself landed on the backdrop, outside the content.
-            onClick={(event) => {
-                if (event.target === event.currentTarget) close();
+            // The dialog has no padding, so a press or click whose target is
+            // the dialog itself landed on the backdrop, outside the content
+            // (or on its scrollbar, which fires no click). Only a click that
+            // also started there closes it: selecting text and letting go
+            // over the backdrop targets the dialog too, and must not close.
+            onPointerDown={(event) => {
+                pressedOnBackdrop.current = event.target === event.currentTarget;
             }}
+            onClick={(event) => {
+                const fromBackdrop = pressedOnBackdrop.current;
+                pressedOnBackdrop.current = false;
+                if (fromBackdrop && event.target === event.currentTarget) close();
+            }}
+            // A dialog that scrolls is a Tab stop in Chrome, so it gets the
+            // house ring rather than the browser's outline.
             className={cn(
-                "m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-surface p-0 text-foreground backdrop:bg-black/80",
+                "m-auto max-h-[calc(100dvh-2rem)] w-[calc(100%-2rem)] overflow-y-auto overscroll-contain rounded-xl border border-white/10 bg-surface p-0 text-foreground backdrop:bg-black/80 focus:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                 layout === 3 || layout === 4 ? "max-w-3xl" : "max-w-5xl",
             )}
         >
             <div className="sticky top-0 z-10 flex items-center justify-between gap-4 border-b border-white/10 bg-surface px-5 py-3">
-                <p className="min-w-0 truncate text-xs font-bold uppercase tracking-[0.2em] text-accent">{categoryTitle}</p>
+                <p className="min-w-0 break-words text-xs font-bold uppercase tracking-[0.2em] text-accent">{categoryTitle}</p>
                 <button
                     type="button"
                     onClick={close}
