@@ -83,7 +83,7 @@ export default async function CategoryDetailPage(
     const category = await findCategory(rawSlug);
     if (!category) notFound();
 
-    // Narrowed straight away to the 3 fields a card renders, so no row id,
+    // Narrowed straight away to the fields a card renders, so no row id,
     // category slug, order or timestamp reaches a prop (SEC-INFO-36).
     const products = toProductCards(await getCategoryProducts(category.slug));
 

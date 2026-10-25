@@ -142,7 +142,7 @@ export default async function ProductsPage() {
 
                     {/* Only the category's title string is passed in, never
                         a category object, and each product is narrowed to
-                        the 3 fields its card renders: no row id, category
+                        the fields its card renders: no row id, category
                         slug, order or timestamps (SEC-INFO-36). */}
                     <ProductGrid
                         products={toProductCards(section.products)}
