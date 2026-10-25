@@ -2526,8 +2526,9 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: `design-reviewer`, Wave 5b, 2026-10-08.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
-- [ ] **T-044** — Bump Next.js to 16.3.8 and clear the tooling advisories [app:site][sec]
-  AC:
+- [ ] **T-044** — Bump Next.js to 16.4.3 and clear the tooling advisories [app:site][sec]
+  **Re-scoped 2026-10-25 (SEC-HIGH-6):** 16.3.8 is no longer enough. `next` 16.3.6 is also in range of GHSA-2464-fhr4-w9xw (critical: image-optimizer RCE with SVGs), GHSA-673q-mjm6-r5xr (critical: `use cache`, unused here) and GHSA-p3m5-59mp-jv5r (high: Server Actions DoS), all fixed from 16.4.1. The target is now `next` and `eslint-config-next` **16.4.3** (a minor bump), and it ships in the same release as T-045. The AC below still applies, with 16.4.3 in place of 16.3.8; also: `agentRules: false` and `logging.serverFunctions: false` stay in `next.config.ts` and still take effect, and 16.4.0–16.4.3's release notes are checked for breaking changes before the bump.
+  AC (as filed 2026-10-11):
   - `next` goes from 16.3.6 to 16.3.8 (patch only), which fixes GHSA-cjq9-62q9-8jv4, mcj8-r9mp-w47p, 4jqv-mc3x-m676, 3w37-wq28-93x7, f87g-xv8r-7p7x and 39w2-rjm5-chcv. None applies to this site as deployed (no `images.remotePatterns`, Vercel-hosted, no catch-all, no `use cache`/draftMode, static icons), so this is hygiene, not an incident.
   - `npm audit fix` (no `--force`) for the build-tooling advisories (tailwindcss's chokidar/fast-glob/micromatch, eslint-config-next, brace-expansion, browserslist, flatted, js-yaml, picomatch, source-map-js), with no major-version jumps.
   - The gates pass, a production-build smoke test passes (Wave 5a's header and preloader checks, the public pages), and `npm audit --omit=dev` shows no high items left that can be fixed.
