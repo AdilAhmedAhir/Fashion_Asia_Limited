@@ -22,6 +22,7 @@ import { readSettingsForEditor } from "@/lib/settings-read";
 import { actionFailure, logActionError } from "@/lib/action-errors";
 import {
     MAX_PRODUCT_GALLERY_PHOTOS,
+    PRODUCT_IMAGE_PATH_INVALID,
     hasVisibleText,
     isAllowedImageUrl,
     normalizeGallery,
@@ -64,11 +65,14 @@ const CATEGORY_CHECK_FAILED = "Nothing was saved, because the category couldn't 
 // number. A longer name is refused, never cut (T-014, SEC-INFO-15).
 const MAX_PRODUCT_NAME_LENGTH = 255;
 const PRODUCT_NAME_TOO_LONG = `A product name can be at most ${MAX_PRODUCT_NAME_LENGTH} characters. Shorten it, then try again.`;
-// An image address isAllowedImageUrl refuses (T-014).
-const PRODUCT_IMAGE_INVALID = "This image path can't be used. Upload the image, or paste a path that starts with https://, then try again.";
+// An image address isAllowedImageUrl refuses (T-014). The wording is shared
+// with the admin's extra-photo notice (site-content.ts).
+const PRODUCT_IMAGE_INVALID = PRODUCT_IMAGE_PATH_INVALID;
 // A gallery that isn't a list of at most MAX_PRODUCT_GALLERY_PHOTOS image
-// addresses isAllowedImageUrl accepts (T-045). The admin editor never sends
-// one, so only a crafted call or a stale page gets this.
+// addresses isAllowedImageUrl accepts (T-045). The admin editor checks for
+// both before it sends a gallery: its add refuses a typed path that
+// isAllowedImageUrl refuses, and a photo past the limit. So this answers a
+// crafted call, or a page whose checks are older than this server's.
 const PRODUCT_GALLERY_INVALID = `These photos can't be saved. A product can have up to ${MAX_PRODUCT_GALLERY_PHOTOS} more photos, each uploaded here or pasted as a path that starts with https://. Nothing was saved. Reload the page, then try again.`;
 // A reorder that wasn't saved (T-013).
 const REORDER_STALE = "The products in this category changed since the page loaded, so the new order wasn't saved. Reload the page and try again.";

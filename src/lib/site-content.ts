@@ -427,6 +427,13 @@ export function hasVisibleText(value: unknown): boolean {
 // or "y" flag, so test() keeps no state between calls.
 const IMAGE_URL_FORBIDDEN_CHARACTER = /[\\\s\p{C}\p{Default_Ignorable_Code_Point}]/u;
 
+// The one wording for a product photo path isAllowedImageUrl refuses: the
+// server's answer for a product's main image (products-actions.ts, T-014),
+// and the admin's notice when a typed extra photo is refused before it's
+// added (GalleryEditor in CategoryProductsManager.tsx, T-045).
+export const PRODUCT_IMAGE_PATH_INVALID =
+    "This image path can't be used. Upload the image, or paste a path that starts with https://, then try again.";
+
 /**
  * @purpose Whether an image address may be stored: a path from the site root, or an absolute https:// address with a host and no username or password.
  * The one image rule (T-014, SEC-MED-7 and 13), for a product's image

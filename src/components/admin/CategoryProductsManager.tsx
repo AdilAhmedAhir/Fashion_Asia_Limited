@@ -11,7 +11,9 @@ import {
 } from "@/app/actions/products-actions";
 import {
     MAX_PRODUCT_GALLERY_PHOTOS,
+    PRODUCT_IMAGE_PATH_INVALID,
     hasVisibleText,
+    isAllowedImageUrl,
     sameGallery,
     type CategoryProduct,
     type CategoryProductInput,
@@ -932,6 +934,15 @@ function GalleryEditor({
     const hadFocus = () => groupRef.current?.contains(document.activeElement) ?? false;
 
     const addPhoto = (url: string) => {
+        // A typed path the server would refuse is never added (T-045 review):
+        // once in the gallery, it would fail this save and every later save
+        // of the product until it was removed. The path box keeps the text,
+        // so it can be corrected, and the notice uses the main image's
+        // wording. An upload's own address always passes.
+        if (!isAllowedImageUrl(url)) {
+            setNotice(PRODUCT_IMAGE_PATH_INVALID);
+            return;
+        }
         const refocus = hadFocus();
         const added = onChange(current => (current.length >= MAX_PRODUCT_GALLERY_PHOTOS ? null : [...current, url]));
         setNotice(added ? null : GALLERY_FULL);
