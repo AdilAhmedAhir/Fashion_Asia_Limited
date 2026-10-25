@@ -18,6 +18,9 @@
 -- How to apply: paste this whole file into the Supabase SQL editor for the live project and run
 -- it. The last two queries print the new column and the constraint, so you can see it worked.
 
+-- Give up rather than queue behind a stuck lock (architect-reviewer, 2026-10-25).
+SET lock_timeout = '5s';
+
 ALTER TABLE public.products
     ADD COLUMN IF NOT EXISTS gallery TEXT[] NOT NULL DEFAULT '{}'::text[];
 
@@ -35,6 +38,9 @@ END $$;
 
 COMMENT ON COLUMN public.products.gallery IS
     'Extra product photos after the main `image`, in display order (T-045). The app allows up to 5; the CHECK is a structural backstop only.';
+
+-- So the website's database API sees the new column straight away.
+NOTIFY pgrst, 'reload schema';
 
 -- VERIFY (read-only)
 SELECT column_name, data_type, is_nullable, column_default
