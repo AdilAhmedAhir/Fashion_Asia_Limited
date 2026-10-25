@@ -2646,6 +2646,9 @@ The owner asked for every open ticket to be finished, then one deploy at the end
 - **`code-reviewer` N4 = `security-reviewer` SEC-INFO-51:** the media clean-up's gallery read isn't paged. Past 1,000 products a file named only in a later product's gallery could be deleted. Fix: `{ count: "exact" }` and keep the file when the count and the rows differ. Not reachable at today's 6 products.
 - **`security-reviewer` SEC-INFO-53:** image addresses (`image` and gallery entries) have no length cap, and they now reach every catalog page's data. Add a named maximum next to `isAllowedImageUrl`.
 - **`design-reviewer`, design 7 (polish):** the fixed 4:3 frame letterboxes portrait clothing photos, and layout 4's grid reads as bars with landscape photos. Revisit once the client has picked a layout and real gallery photos exist.
+- **Re-check minors (2026-10-25):**
+  - `code-reviewer`: a press that starts on the backdrop and ends on the content still closes the pop-up (the browser targets the shared parent); a second identical bad-path notice may not be re-announced by a screen reader.
+  - `design-reviewer`: if the client picks **layout 2**, its 3:4 frame fights the upload advice of 1200×900 landscape (`src/lib/upload-limits.ts:177`); change that advice to 900×1200 portrait, or use `aspect-[4/3]` for layout 2 from `md` up. The shared bad-path wording says "starts with https://" although a root path (`/images/…`) is also accepted; an owner wording call.
 - **T-044 leftover:** three moderate `postcss-selector-parser` advisories under tailwindcss 3.4.19; only tailwindcss 4 (a major version) fixes them.
 
 **DEPLOYED 2026-10-11:** client `4c10234` / origin `318e73b` (the same files), live on both domains, with 0 failed live checks (LOG 2026-10-11). Sign-ups were confirmed OFF first. The one-time authorship rewrite is pushed. **Staff next:** Admin → Products → **Save categories** once, then add products.

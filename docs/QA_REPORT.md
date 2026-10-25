@@ -2819,3 +2819,25 @@ Anonymous curl GET and HEAD only: no cookies, no sign-in, no POST, no `Next-Acti
 - **Mutants:** 14/14 caught, each applied by rewriting the served code with no repo edit.
 - **NOT VISUALLY VERIFIED:** real phones, a real screen reader, and the iOS scroll lock (T-042).
 - **Verdict: PASS.**
+
+## Static and Local Live Pass — T-045 (product preview pop-up) + T-044 (`next` 16.4.3) — 2026-10-25 (`code-reviewer`, `security-reviewer`, `design-reviewer`, each with one re-check)
+- **Target:** T-045 commits `2abaa7e`, `e24dba6`, `5b2a4b7`, `b95f850`, `4fe99ea` and the fix round `c2a2891`, `f80d894`; T-044 commit `b266fc1`. Both were merged onto `int/20261025-075721` (T-044 first) by `worktree.sh integrate`, with the gates green after each merge; HEAD `13bd0f6` is what ships.
+- **First round:** code FIX FIRST (a typed extra-photo path wasn't checked, so a bad one jammed the product's saves; the media clean-up's gallery check had no tests), security CLEARED for merge (with the new SEC-HIGH-6: `next` 16.3.6 is in range of two critical and one high advisory), design FIX FIRST (the scrolling dialog's default outline, layout 2's short photo on phones, layout 3's description below the fold at 1024×768, colour-only dots, a truncated label).
+- **Re-checks at `13bd0f6`:** code **SHIP** (both tickets), security **CLEARED for deploy** (SEC-HIGH-6 and SEC-MED-17 closed at merge; `npm audit --omit=dev` 0 critical, 0 high, 3 moderate), design **APPROVE** (all six fixes pass in the render; no regressions under 16.4.3, compared pixel by pixel with the first round's shots).
+- **Harnesses (stubbed, no live writes):** server rules 23/23 with 9/9 mutants; the media clean-up's gallery check 9/9 with 3/3 mutants; the admin stand-in 15/15 (the bad-path mutant fails A12 and A13); the pop-up in real Chrome 28/28 (Close, Escape, backdrop click, drag-out stays open, focus back to the card, the accent ring, no sideways scroll for layouts 1–4 at 360 and 1440).
+- **Production smoke on the combined build (orchestrator, GET only):** 36/36. All public pages and the 8 category pages 200, a 404, `/admin` 307 to login, the five legacy 308s, six headers exactly once on `/` with the CSP unchanged, no `x-powered-by`. The samples page is `noindex, nofollow` with its own canonical and absent from the sitemap and robots; `/products` has one `h1` ("Browse by Category"), no banner and 0 UUIDs. The only failures are the known missing headers on 308s under `next start` (DECISIONS 2026-10-08; Vercel adds them live).
+- **Before migration 0002 is applied:** reads work and show one photo per product; gallery saves fail and Media Center deletes keep their files (SEC-INFO-52). So 0002 must be applied before the deploy.
+- **NOT VISUALLY VERIFIED:** the signed-in admin with real saves (the live database), a real multi-photo product on a real category page (needs 0002 plus a staff upload), real phones and screen readers.
+- **Verdict: PASS**, subject to migration 0002.
+
+### Owner checklist — T-045 admin (after the deploy; agents never write to the live database)
+Sign in, open Admin → Products, pick a category with at least one product.
+1. **Add by upload:** on one product, under "More photos (up to 5)", upload a JPG or WebP. It shows Saving…, then Saved. Reload: the photo is still there.
+2. **Add by path:** paste a full `https://…` address of an image and press Enter. It's added and saved.
+3. **Bad path:** type `images/x.webp` (no leading `/` or `https://`) and press Enter. An amber notice appears, the photo is NOT added, and the product's other edits still save.
+4. **Reorder and remove:** move a photo up and down, then remove one. Each change shows Saving…, then Saved, and survives a reload.
+5. **Limit:** with 5 extra photos the add field disappears and the count reads "5 of 5".
+6. **Other fields:** change the product's name; it saves as before.
+7. **Public pop-up:** open that category's page (and `/products`) on a phone and a computer. Click the product: the pop-up shows the main photo plus the extra ones as thumbnails, with the name and description. Close, Escape and a click outside close it.
+8. **Media Center:** delete a Media Center photo you don't need; it goes, and every product photo still shows.
+9. **Samples:** open `/product-preview-samples`; the four numbered layouts show. Send that link to the client to pick a number.
