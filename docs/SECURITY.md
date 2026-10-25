@@ -126,6 +126,9 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
 - **Schema.** `products.gallery text[] not null default '{}'` (migration 0002, pending the owner) adds no grant or policy. It inherits `products`' RLS (`anon` SELECT, `authenticated` ALL) and table grants.
 - **Dependencies.** `next` 16.3.6 is in range of two critical and one high advisory that 16.3.8 doesn't fix (SEC-HIGH-6).
 
+*Amended 2026-10-25 (integration re-check at `13bd0f6`; appended, lines above left as written):*
+- **Dependencies.** At merge, `next` is 16.4.3 (T-044), which is outside SEC-HIGH-6's three advisories and SEC-MED-17's six. Production keeps 16.3.6 until `/ship` pushes this build. `npm audit --omit=dev` shows 3 moderate items, all from one build-time advisory (SEC-INFO-31).
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -3062,6 +3065,132 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 - **Ran:** read-only `git`, `shasum` and greps; a Node probe on extracted source; anonymous GETs to `:3102` (the pages, the RSC payloads, the sitemap, robots, three `/admin` paths, and a bare `/_next/image`); `npx tsc --noEmit`; `npm audit --omit=dev`; and `npm view next`.
 - **Did not:** sign in, POST, call a Server Action, write, build, or touch `:3001`. No `.env*` was read.
 
+### 🔒 CSO Re-check — 2026-10-25 — integration `int/20261025-075721` at `13bd0f6` (T-044's `next` 16.4.3 bump, and T-045's fix round)
+
+**Scope:** Dispatched by the orchestrator as the one re-check before deploy.
+- **T-044:** `git diff 0285a1a..b266fc1`, which touches only `package.json` and `package-lock.json`. It merged as `7478907`, whose tree equals `b266fc1`.
+- **T-045's fix round:** `git diff 2032039..f80d894` (`c2a2891` and `f80d894`), five files. It merged as `13bd0f6`, which differs from `f80d894` only in T-044's two package files.
+- **Since T-045's clearance at `4fe99ea`,** the only non-doc changes to `13bd0f6` are those seven files.
+- **Method:**
+  - read-only `git`, `shasum` and greps;
+  - a Node comparison of the two lockfiles (in the session scratchpad, `t044-sec/cmp.mjs`);
+  - `npm view` for registry integrity;
+  - the npm bulk-advisory endpoint, with `semver`, for the advisory ranges;
+  - `npm audit --omit=dev` and a full `npm audit`;
+  - anonymous GETs to `:3102`. It runs `next-server (v16.4.3)` from this repo, bound to `127.0.0.1` only. It started at 13:59:51 on build `NdD4f-ucgJgtVsniF6-IW` (13:57:34; `framework.json` says 16.4.3). The build includes the fix round: `55dvh`, `xl:pt-40` and the shared refusal copy are all in `.next/static`.
+- **Not done:** sign-in, POST, a Server Action call, upload, write, build or install. No `.env*` was read, `:3001` wasn't touched, and no server was started.
+
+**1. T-044 closes SEC-HIGH-6 and SEC-MED-17: ✅**
+- **Locked, installed and running:** `next` 16.4.3. `@next/env`, the eight `@next/swc-*` packages, `eslint-config-next` and `@next/eslint-plugin-next` are 16.4.3 too. It's the only copy of `next` in the tree. React stays 19.2.4, within `next` 16.4.3's `^19.0.0` peer range.
+- **The ranges** come from the npm advisory endpoint, tested with `semver`. 16.4.3 is outside all ten:
+  - **SEC-HIGH-6:** GHSA-2464-fhr4-w9xw (critical), GHSA-673q-mjm6-r5xr (critical) and GHSA-p3m5-59mp-jv5r (high), each `>=16.0.0 <=16.4.0`;
+  - **SEC-MED-17:** GHSA-cjq9-62q9-8jv4 (high), GHSA-mcj8-r9mp-w47p, GHSA-4jqv-mc3x-m676, GHSA-f87g-xv8r-7p7x and GHSA-39w2-rjm5-chcv, each `>=16.0.0 <16.3.8`, and GHSA-3w37-wq28-93x7, `>=16.3.0 <16.3.8`;
+  - **GHSA-h694-7cp9-m8p3:** `>=16.3.0 <16.3.8`.
+  - The endpoint returns no advisory whose range includes 16.4.3.
+- **`npm audit --omit=dev` at `13bd0f6`:** 0 critical, 0 high, 3 moderate and 0 low, so 3 in total. Before T-044 it was 1 critical, 7 high, 3 moderate and 1 low. There's no `next` item.
+  - The three items are one advisory, GHSA-rj75-hqrm-r3gf (`postcss-selector-parser` <7.1.6, CPU cost in selector parsing). The audit reports it at `postcss-selector-parser` 6.1.5, `postcss-nested` and `tailwindcss` 3.4.19.
+  - It runs at build time, on the repo's own CSS (SEC-INFO-31), and only `tailwindcss` 4, a major, fixes it.
+  - A full `npm audit` gives the same three.
+- **`package.json`:**
+  - `next` and `eslint-config-next` go from `^16.1.6` to `^16.4.3`;
+  - `dev` is `next dev -H 127.0.0.1`;
+  - nothing else changes. `start` is still `next start`, on all interfaces (see the note in item 6).
+
+**2. The lockfile's supply chain: ✅ nothing unexpected**
+- **47 entries change:** 46 version bumps and 1 new package, with 0 removed.
+- **All 47 resolve from `https://registry.npmjs.org/`** with a `sha512-` integrity. The whole lockfile has 0 entries from anywhere else, and 0 links.
+- **Registry cross-check:** `next` 16.4.3's lockfile integrity (`sha512-OqxKTGi9…`) equals `npm view`'s `dist.integrity` and `node_modules/.package-lock.json`'s.
+- **The one new package is `@humanfs/types` 0.15.0:**
+  - Apache-2.0, maintainer `nzakas`, repo `humanwhocodes/humanfs`;
+  - a dependency of the bumped `@humanfs/core` 0.19.2 and `@humanfs/node` 0.16.8, which are ESLint's file-system layer, so lint-only;
+  - no install script (its `prepare` runs only for a git install), and its integrity matches the registry.
+- **Install scripts:** none added. The lockfile's only two, `fsevents` 2.3.3 and `unrs-resolver` 1.11.1, are the same as before T-044.
+- **The other bumps:**
+  - `eslint-plugin-react-hooks` 7.0.1 to 7.1.1, through `eslint-config-next`;
+  - `zod` 4.3.6 to 4.6.7;
+  - 16 `@babel/*` packages, within 7.x;
+  - `brace-expansion` (two copies) and `picomatch` (two copies);
+  - `browserslist`, `baseline-browser-mapping`, `caniuse-lite`, `electron-to-chromium`, `node-releases` and `update-browserslist-db`;
+  - `flatted`, `js-yaml`, `source-map-js` and `postcss-selector-parser` (6.1.2 to 6.1.5);
+  - `@humanfs/core` and `@humanfs/node`.
+  - All stay in their parents' ranges, and none is a major bump.
+
+**3. `next.config.ts` and the runtime guards: ✅ unchanged**
+- **`next.config.ts` is `d1af850c…`** at `main`, `0285a1a`, `b266fc1`, `f80d894` and `13bd0f6`.
+- **16.4.3 still honours the owner's two flags.**
+  - `agentRules` and `logging.serverFunctions` are both in its config schema (`config-schema.js:545` and `:760`).
+  - Both are read at runtime: `agentRules` at `start-server.js:406` and `router-server.js:820`, and `serverFunctions` at `base-server.js:424` and `app-page-runtime.js:601`.
+- **Inline flight data:** 16.4.3 still writes it through `htmlEscapeJsonString` (`app-render/use-flight-response.js:172-196`), so T-045's item 3 still holds.
+- **Live on `:3102`:**
+  - `/` sends the six headers, the CSP comes from the byte-identical config, and there's no `X-Powered-By`;
+  - `/admin`, `/admin/products`, `/admin/media` and `/admin/settings` each return a 307 to `/admin/login`;
+  - a bare `/_next/image` returns 400.
+
+**4. T-045's fix round (`c2a2891` and `f80d894`): ✅ no new sink, no server change, no ids**
+- **`site-content.ts`** adds only `PRODUCT_IMAGE_PATH_INVALID` (`:434`), a fixed string that's word-for-word the old `PRODUCT_IMAGE_INVALID`. `isAllowedImageUrl`, `normalizeGallery`, `sameGallery` and the forbidden-character pattern are unchanged.
+- **`products-actions.ts`:** `PRODUCT_IMAGE_INVALID` now points at that constant (`:70`), and two comments change.
+  - `takeGallery`, `readProductRow`, the order of checks in `updateCategoryProduct` and every `getUser()` are unchanged.
+  - So the server's answer to a bad main image is the same text, and the gallery is still checked on the server.
+- **`CategoryProductsManager.tsx` `addPhoto` (`:936-947`)** refuses a typed path that fails `isAllowedImageUrl` (`:942`) before the path joins the draft.
+  - `ImageUploadField` trims the text first (`:104`), so the client checks the same value the server's trim would.
+  - It's a convenience check, at least as strict as the server's. The server's `takeGallery` stays the boundary.
+- **`ProductPreviewDialog.tsx`:**
+  - a backdrop click closes the dialog only if the press also started on the backdrop (`onPointerDown` and a ref, `:246-251`);
+  - the main photo's classes depend on the layout;
+  - the current dot is wider, the dialog gets a focus ring, and the category title wraps.
+  - The image sinks are still React-set `<img src>` only, now at `:79`, `:129` and `:210`. The main photo's source (`photos[shown]`) is unchanged.
+- **`products/page.tsx`:** one class (`xl:pt-40`, `:91`) and its comment.
+- **The 57 added lines** have 0 hits for `dangerouslySetInnerHTML`, `innerHTML`, `style=`, `url(`, `href=`, `target=`, `fetch(`, web storage, cookies, `process.env`, `eval`, `location`, an `id` key, `sort_order`, `category_slug` or a Supabase client.
+- **Live, anonymous, on `:3102`:**
+  - `/products`, the 8 category pages and `/product-preview-samples` all return 200. Their HTML and their RSC payloads have 0 UUIDs, and 0 `sort_order`, `category_slug`, `created_at` or `updated_at`. The only `"id":` keys are the layout's `site-main` and `site-footer`.
+  - The six live products, all under `heavy-jersey-products`, are exactly `{ name, description, image, gallery }`. `gallery` is `[]` because 0002 isn't applied.
+  - `/product-preview-samples` is `noindex, nofollow`, has its own canonical, and appears 0 times in the sitemap and robots.
+  - **For the next check:** 16.4 answers a bare `RSC: 1` request with a 307 to `?_rsc`. An RSC probe has to follow it (`curl -L`), or it reads an empty body.
+- **SEC-INFO-32's guardrail holds** at build `NdD4f-ucgJgtVsniF6-IW` (§5 row).
+- **The release diff (`main..13bd0f6`, 1,320 added lines):** the only hits for the 10 `secretPatterns` and the Supabase key shapes are pattern names in this file's own prose. There are 0 values.
+
+**5. As another user: anonymous only, read-only**
+- There's still one role (R1), so there's no second user to be. T-023 creates that boundary.
+- **Anonymous:** the four admin paths redirect to login, and the public payloads carry only the four card fields (item 4).
+- **Not attempted, by the owner's rules:** a POST, a Server Action call, and a direct PostgREST request.
+
+**6. Findings**
+- **No new 🔴, 🟠, 🟡 or 🟢.**
+- **Closed at merge, live at deploy:** 🟠 SEC-HIGH-6, 🟡 SEC-MED-17, and 🟢 SEC-INFO-30 (the range is now `^16.4.3`).
+- **Narrowed:** 🟢 SEC-INFO-31 is down to one build-time advisory, GHSA-rj75.
+- **Unchanged:** SEC-INFO-51, 52 and 53, and SEC-HIGH-2 (🟠, mitigated; the owner's Authentication → Users review is still unrecorded). Neither diff touches auth.
+- **Note, not a finding:** `npm start` (`next start`) still listens on all interfaces. With 16.4.3, such a server offers no more than the public site does. Start any local production server with `-H 127.0.0.1`, as now.
+
+**Bindings (sha256 at `13bd0f6`; the working tree is identical):**
+- **Re-bound (changed since `4fe99ea`):**
+  - `src/app/actions/products-actions.ts` `5834f5bbd4f1bfdf6f02012f6d2fc4681bb5f2940bea74eb810b92e3c9db4b75` (was `17935dc0…`);
+  - `src/lib/site-content.ts` `912c496e199996f8079b4170ff9b1ce66c3697cb82c087ef49a5702d2b583178` (was `529dc643…`);
+  - `src/components/catalog/ProductPreviewDialog.tsx` `28a7adf26d28d697bad6740cd5dee1ad61f8c5a3f353a867b91843caca17ced2` (was `097ada8a…`);
+  - `src/app/(website)/(marketing)/products/page.tsx` `c2b835909f1ed4d9718a7d489fb66bd2c4fc321c8bb56aa9d58c5d6dc72d7b6b` (was `d9311e35…`);
+  - `src/components/admin/CategoryProductsManager.tsx` `570333a9752e3d9150ce76d165acc90c049109a0d7dc6995a4d1feb60432d2d3` (was `d1606ab9…`);
+  - `package.json` `18e00fc7b17f958aaa3cf7bd59561887c73ac00690ea64169e579b8e8cdda5da` (was `26068c14…`);
+  - `package-lock.json` `668b8f2f313eb6a79607aa714dcce7103b5b455d9feea0336575a127d658cb1c` (was `6a026457…`).
+- **Unchanged, each equal to `4fe99ea`:**
+  - T-045's other files: `media-actions.ts` `95e9d1bd…`, `ProductCard.tsx` `6fde2f0e…`, `ProductGrid.tsx` `ecbea5aa…`, `product-preview-layout.ts` `66c1ae30…`, the samples page `70219ea2…`, `products/[category]/page.tsx` `23a959a6…` and `0002_product-gallery.sql` `d645c3a2…`;
+  - the gate: `src/middleware.ts` `6d2c7757…`, and `src/lib/supabase/client.ts` `089fde06…`, `middleware.ts` `7693ad81…` and `server.ts` `e0d8444a…`;
+  - the other actions: `settings-actions.ts` `b4c3da2e…`, `jobs-actions.ts` `bd4387b1…` and `auth-actions.ts` `b8b822df…`;
+  - lib: `action-errors.ts` `b0be0a48…`, `settings-read.ts` `cc5c8a2c…`, `upload-limits.ts` `3bff92b6…` and `nav.ts` `507e5c62…`;
+  - `ImageUploadField.tsx` `2b285f41…` and the admin `products/page.tsx` `969a00de…`;
+  - config: `next.config.ts` `d1af850c…`, `sitemap.ts` `bdfd4112…` and `robots.ts` `1c283fdb…`.
+
+**Verdict:** ✅ **The integration build `13bd0f6` is cleared for deploy.** It brings no new 🔴, 🟠 or 🟡, and it closes SEC-HIGH-6 and SEC-MED-17. So the 🟠 that held the deploy in T-045's entry is gone, and no owner risk acceptance is needed.
+
+**Deploy conditions:**
+- **Migration 0002 first.** The owner applies it, and its VERIFY rows show `products.gallery` and `products_gallery_max` before `/ship` (SEC-INFO-52).
+- **Ship `13bd0f6`'s content as one release.** T-044 and T-045 go together, through `/ship`'s pair: `main` to `client`, and its mirror to `origin`.
+- **After the deploy:** production's `window.next.version` should read `16.4.3`. Until it does, SEC-HIGH-6 is live in production.
+- **The bindings above hold.** A change to any bound file before `/ship` lapses that file's clearance until `/cso` re-checks it. T-045's come-back conditions still apply.
+
+**Actions taken:**
+- **Edited:** only `docs/SECURITY.md` (this entry, a §3 amendment and §5 rows), left uncommitted.
+- **Ran:** read-only `git`, `shasum` and greps; `node` on the lockfiles and on the fetched payloads; `npm view`; one POST to the npm registry's bulk-advisory endpoint (not this app); `npm audit --omit=dev` and `npm audit`; and anonymous GETs to `:3102` (`/`, four admin paths, `/_next/image`, the sitemap, robots, 10 pages and their RSC payloads).
+- **Did not:** sign in, POST to the app, call a Server Action, write, build, install, start or stop a server, or touch `:3001`. No `.env*` was read.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -3182,6 +3311,12 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-47 — status update, 2026-10-25 (T-045 CSO entry) | No ticket; accepted | Open (info). It now covers gallery entries too: an unsaved gallery change, or one saved between the checks and the removal |
 | SEC-INFO-36 — status update, 2026-10-25 (T-045 CSO entry) | T-045 (`4fe99ea`) | Holds. `ProductCard` is now a client component, so its props are in the page payload. Live on :3102, `/products`, the 8 category pages and `/product-preview-samples` (HTML and RSC) have 0 UUIDs and 0 row-only fields, and each card prop is exactly `{ name, description, image, gallery }` |
 | SEC-INFO-32 guardrail — status, 2026-10-25 (T-045 CSO entry) | No ticket | Holds at build `n_6g5ePIu6AM98Cy0tnd4` (`4fe99ea`): 0 key, JWT, Supabase-host or API-path hits in 38 static JS files. T-045's new client modules import no Supabase client |
+| SEC-HIGH-6 — status update, 2026-10-25 (integration re-check at `13bd0f6`) | **T-044** (`b266fc1`, merged as `7478907`) | ✅ **Closed at merge, live at deploy.** `next` 16.4.3 is outside all three ranges (`>=16.0.0 <=16.4.0`). `npm audit --omit=dev` has no `next` item and 0 high or critical. Production stays in range until `/ship` pushes this build. Deploy check: production's `window.next.version` (a JS chunk carries `version:"16.4.3"`) |
+| SEC-MED-17 — status update, 2026-10-25 (integration re-check) | **T-044** | ✅ **Closed at merge, live at deploy.** 16.4.3 is outside all six ranges, and outside GHSA-h694's. The interim merge rule (no `images.remotePatterns` or `domains`, catch-all route, `use cache`, `draftMode` or generated icon) lifts once the deploy is live. T-045's own rule still sends `next/image` for product photos back to `/cso` |
+| SEC-INFO-30 — status update, 2026-10-25 (integration re-check) | **T-044** | ✅ **Closed at merge.** `package.json` now says `^16.4.3`, so a lockfile below that floor no longer satisfies it |
+| SEC-INFO-31 — status update, 2026-10-25 (integration re-check) | **T-044** (`npm audit fix`, no `--force`) | Narrowed, still open (info). One advisory is left: GHSA-rj75-hqrm-r3gf in `postcss-selector-parser` 6.1.5 under `tailwindcss` 3.4.19, which the audit counts three times. It runs at build time on the repo's own CSS, and only `tailwindcss` 4 (a major) fixes it. The `devDependencies` move is still unfiled |
+| SEC-INFO-32 guardrail — status, 2026-10-25 (integration re-check) | No ticket | Holds at build `NdD4f-ucgJgtVsniF6-IW` (`13bd0f6`, `next` 16.4.3). `.next/static` (37 JS files and 1 CSS file) has 0 hits for a key, a JWT shape, `sb_publishable_`, `sb_secret_`, `supabase.co`, `NEXT_PUBLIC_SUPABASE`, `service_role`, `/auth/v1`, `/rest/v1`, `/storage/v1`, `createBrowserClient`, `apikey` or the 10 `secretPatterns` |
+| T-045 bindings — re-bound 2026-10-25 at `13bd0f6` | T-045 fix round (`c2a2891`, `f80d894`) | Holds. Five T-045 files and both package files are re-bound (§4, integration re-check). Every other bound file equals `4fe99ea` |
 
 ## 6. Secrets log
 
