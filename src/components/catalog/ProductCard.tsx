@@ -3,6 +3,7 @@
 import { useRef, useState } from "react";
 import { Images } from "lucide-react";
 import ProductPreviewDialog from "@/components/catalog/ProductPreviewDialog";
+import { PRODUCT_PREVIEW_LAYOUT, type ProductPreviewLayout } from "@/components/catalog/product-preview-layout";
 import { hasVisibleText, type CategoryProduct } from "@/lib/site-content";
 
 /**
@@ -26,6 +27,8 @@ type ProductCardProps = {
      * pass "h3" where the products sit under their own h2 section heading.
      */
     headingLevel?: "h2" | "h3";
+    /** The pop-up's numbered layout. Only the samples page passes one; every other card uses PRODUCT_PREVIEW_LAYOUT. */
+    layout?: ProductPreviewLayout;
 };
 
 // Same photo-card materials as the category cards (rounded-xl border,
@@ -39,7 +42,7 @@ type ProductCardProps = {
 // button, and the name stays a real heading for screen readers.
 
 /** @purpose One catalog product tile: the photo, then the serif name and full description; the whole card is a button that opens the product's preview pop-up. */
-export default function ProductCard({ product, categoryTitle, headingLevel: Heading = "h2" }: ProductCardProps) {
+export default function ProductCard({ product, categoryTitle, headingLevel: Heading = "h2", layout = PRODUCT_PREVIEW_LAYOUT }: ProductCardProps) {
     const [open, setOpen] = useState(false);
     const triggerRef = useRef<HTMLButtonElement>(null);
 
@@ -115,7 +118,7 @@ export default function ProductCard({ product, categoryTitle, headingLevel: Head
                 className="absolute inset-0 z-10 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-background"
             />
 
-            {open && <ProductPreviewDialog product={product} categoryTitle={categoryTitle} alt={alt} onClose={close} />}
+            {open && <ProductPreviewDialog product={product} categoryTitle={categoryTitle} alt={alt} layout={layout} onClose={close} />}
         </div>
     );
 }
