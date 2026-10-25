@@ -60,6 +60,8 @@
 | Max image edge | 2400 px | `src/lib/upload-limits.ts` (`MAX_UPLOAD_DIMENSION`) |
 | Accepted image formats | JPG and WebP, checked by file signature | `src/lib/upload-limits.ts` (`sniffImageFormat`) |
 | Recommended image | 1200 × 900; shape between 1:1 and 2:1 (a warning, not a block) | `src/lib/upload-limits.ts` |
+| Extra photos per product | 5, so 6 with the main photo (owner, 2026-10-25) | `src/lib/site-content.ts` (`MAX_PRODUCT_GALLERY_PHOTOS`) |
+| Product preview layout | 1 of the numbered layouts 1–4, until the client picks one on `/product-preview-samples` | `src/components/catalog/product-preview-layout.ts` (`PRODUCT_PREVIEW_LAYOUT`) |
 | Server Action request body | 1 MB (the Next.js default). Blocks most report PDFs; see Q08. | Framework default; would go in `next.config.ts` |
 | Page revalidation | 60 s on marketing pages | Each page's `revalidate` export |
 | Company facts | 26 lines, 800,000 pieces a month | Page copy and metadata fallbacks. Move them to settings if FAL ever edits them; see Q11. |
