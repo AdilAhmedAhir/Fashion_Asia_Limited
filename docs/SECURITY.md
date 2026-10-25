@@ -118,6 +118,14 @@ Sourced from `docs/TECH_STACK.md`, `docs/WORKFLOW.md`, `docs/MEMORY_BANK.md` (al
   - Any error or doubt keeps the file. The live DELETE policies are untested by agents (owner row O1).
 
 
+*Amended 2026-10-25 (T-045 CSO review; appended, rows above left as written):*
+- **Product writes.** `updateCategoryProduct` may also write `gallery`: an array of at most 5 (`MAX_PRODUCT_GALLERY_PHOTOS`) strings, each trimmed and passing `isAllowedImageUrl`. Anything else refuses the whole save with PRODUCT_GALLERY_INVALID, after `getUser()` and before any table access. Every product read passes the stored gallery through `normalizeGallery` (the same rule, the same cap), so a value written straight through PostgREST reaches no page unfiltered.
+- **The public catalog.** `ProductCard` is now a client component. A card opens `ProductPreviewDialog`, a native `<dialog>` whose only image sinks are React-set `<img src>`. A card's props, and so each catalog page's RSC payload, carry exactly `name`, `description`, `image` and `gallery` (SEC-INFO-36 holds).
+- **A hidden public page.** `/product-preview-samples` is static, `noindex, nofollow`, and absent from the nav, sitemap and robots. It reads no database and shows only fixed `/images/client/` photos.
+- **Data deletion.** The Media Center clean-up also keeps any file named in any product's gallery, and keeps every file while that read fails, which includes the whole time before migration 0002 (SEC-INFO-52). Its gallery read returns rows, not a count, so it's subject to the API row cap (SEC-INFO-51).
+- **Schema.** `products.gallery text[] not null default '{}'` (migration 0002, pending the owner) adds no grant or policy. It inherits `products`' RLS (`anon` SELECT, `authenticated` ALL) and table grants.
+- **Dependencies.** `next` 16.3.6 is in range of two critical and one high advisory that 16.3.8 doesn't fix (SEC-HIGH-6).
+
 ## 4. Findings (append-only, dated)
 
 ### 🔒 CSO Audit — 2026-09-26 — bootstrap + ticket-review:T-002
@@ -2904,6 +2912,156 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 - **Ran:** read-only `git`, `shasum` and greps, plus two `node` scans over local git objects. The scans printed no matched value.
 - **Did not:** send any request, build, start a server or sign in. `.env*` wasn't read, and `:3001` wasn't touched.
 
+### 🔒 CSO Audit — 2026-10-25 — ticket-review:T-045 (product gallery, preview pop-up, samples page)
+
+**Scope:** Dispatched by the orchestrator. It covers `git diff c36b794..4fe99ea` on `t-045-product-preview`: six commits (`d14708f`, `2abaa7e`, `e24dba6`, `5b2a4b7`, `b95f850` and `4fe99ea`) and 12 files.
+- **`HEAD` has since moved to `03ed3f3`,** which is docs only (`DATA_MODEL`, `DECISIONS`, `DOMAIN` and `STACK`). `src/`, `db/`, `public/`, `next.config.ts` and `package*.json` are byte-identical to `4fe99ea`.
+- **Method:**
+  - the diff and the files at `4fe99ea`;
+  - a probe of the real validation code under Node 25. `takeGallery` was extracted verbatim from `products-actions.ts` (types stripped), and `isAllowedImageUrl` and `normalizeGallery` were imported from `site-content.ts` at `4fe99ea`. The script is in the session scratchpad (`t045-sec/probe.mjs`);
+  - anonymous, read-only GETs to the `next start` on `:3102`. It's another reviewer's, built at 13:26:14 (`BUILD_ID` `n_6g5ePIu6AM98Cy0tnd4`) after `4fe99ea`'s 13:21:22 commit, from a clean tree, and it reads the live database as `anon`;
+  - greps over that build's `.next/static`, `npx tsc --noEmit` (exit 0), and `npm audit --omit=dev`.
+  - **Not done:** sign-in, POST, Server Action call, upload or write. No `.env*` was read, `:3001` wasn't touched, and nothing was built.
+
+**1. `updateCategoryProduct`'s gallery (`products-actions.ts:369-422`): ✅ meets the AC**
+- **Order:** `getUser()` (`:371`), then the id type check, `takeGallery` (`:377`), `productFieldsError`, the stored-row read, the category check, and the update. A signed-out call gets SESSION_EXPIRED before any table access. That was read, not called (the owner's no-POST rule).
+- **Shapes (19 probed):**
+  - **Refused** with PRODUCT_GALLERY_INVALID, and nothing is read or written: a string, a number, `null`, an own `gallery: undefined`, an array-like object, a Map, a Set, a 6-entry array, a hole, a nested array, and an object with a `toString`. A 1,000,000-length array is refused by the length check before any walk.
+  - **Accepted:** `[]`, which clears the gallery, and five valid entries.
+  - **Ignored, like the other fields:** an inherited (prototype) `gallery`, and a patch that isn't an object.
+- **Entries (42 probed):** each is trimmed (a leading BOM too), then must pass `isAllowedImageUrl`.
+  - **Refused:** `javascript:` in any case, `data:`, `vbscript:`, `blob:`, `file:`, `http:`, `//host`, `/\host`, `https:host`, `https:/host`, a username or password, a backslash, whitespace, U+200B, U+202E, NUL, `/`, empty and blank.
+  - **Accepted, exactly as for `image` since T-014:**
+    - `"`, `'`, `<`, `>`, `(` and `)` inside an https address (SEC-INFO-46; item 3 shows there's still no sink for them);
+    - same-origin root paths, such as `/admin/products`, `/api/keep-alive`, `/_next/image?url=…` and `/%5Cevil.example/…`. A browser doesn't decode `%5C` in a path, so that one stays same-origin. No GET route here changes state;
+    - any https host, including `localhost`, `127.0.0.1`, `[::1]`, `10.0.0.1` and `169.254.169.254`. The visitor's browser fetches them as an `<img>`, never the server: the pop-up uses a plain `<img>`, not `next/image`. So there's no server-side request, and SEC-MED-17's image-optimizer SSRF isn't reached through this field. It's the same class as `image` and SEC-INFO-44;
+    - a 900,000-character address (SEC-INFO-53).
+- **The client-supplied id** is used only in `.eq("id", id)`. The category comes from the stored row, and `category_slug` and `sort_order` are never written. There's one role (R1), so another product's id isn't another owner's data. RLS is unchanged: `authenticated` ALL, `anon` SELECT only.
+- **Before 0002:** PostgREST refuses an `update({ gallery })` whole, because the column is unknown. So a patch carrying a name and a gallery writes neither, and the answer is `actionFailure("save")`'s fixed copy. The reads use `select("*")`, and `normalizeGallery(undefined)` gives `[]`.
+- **Read side:** `readProductRow` (`:221`) runs `normalizeGallery` on every stored gallery. That re-applies `isAllowedImageUrl` and the cap of 5, so a value written straight through PostgREST by a signed-in account reaches no page unfiltered (the CHECK allows 20 entries of any text). `image` has no read-side filter; that's pre-existing.
+
+**2. The media clean-up (`media-actions.ts:318-366`): ✅ fails closed, with two 🟢**
+- **A gallery entry can't steer it into deleting a file.**
+  - The file to remove still comes only from the deleted `media_assets` row. It must be a bucket-root name matching `STORAGE_NAME`, whose public URL equals the stored one.
+  - A gallery entry can only add a match, which keeps more. `STORAGE_NAME` (`[A-Za-z0-9._-]`) has no character `JSON.stringify` escapes, so the substring test is exact.
+  - There's still only one Storage removal path besides `addMediaAction`'s rollback of its own upload (`removeStoredFile` at `:248` and `:364`). Removing a gallery photo in the admin, or deleting a product, removes no file.
+- **A failed read or a missing column:** `galleries.error` is logged and the file is kept (`:354-356`). A row whose `gallery` doesn't serialize (`JSON.stringify(undefined)`) keeps it too. **Until 0002 is applied, every Media Center delete keeps its file** (SEC-INFO-52).
+- **Truncation:** `select("gallery")` (`:335`) is the first clean-up check that returns rows rather than a count. The API's row cap (1,000 by default) can cut it short with no error (SEC-INFO-51).
+- **Residuals, unchanged in kind:**
+  - SEC-INFO-47's race and unsaved-draft case now cover gallery entries too.
+  - A gallery entry that spells a file name percent-encoded (`…%2Ejpg`) isn't matched. That's equally true of `image`, and it needs staff to paste an encoded address.
+
+**3. The public sinks: ✅ React-set `<img src>` only, with no CSS or raw-HTML sink (SEC-INFO-46's condition holds)**
+- **The sinks:** `ProductPreviewDialog.tsx:73`, `:119` and `:199`, plus the admin's `CategoryProductsManager.tsx:992`. All are `<img src>` set by React.
+- **The 799 added lines** have 0 hits for `dangerouslySetInnerHTML`, `innerHTML`, `style=`, `url(`, `href=`, `target=`, `fetch(`, web storage, cookies and `process.env`. The only style write is the constant `document.documentElement.style.overflow = "hidden"` (`:58`), through the CSSOM.
+- **Inline flight data:** `ProductCard` is now a client component, so its props are serialized into the page's RSC payload. Next 16.3.6 writes that payload through `htmlEscapeJsonString` (`app-render/use-flight-response.js:185-209`), so a `</script>` inside an address can't close the script. `image` was already in the same payload, as a server-rendered `<img>` prop.
+- **No `next/image` and no `images` config,** so `remotePatterns` stays unset and gallery addresses never reach `/_next/image`.
+- **The CSP is unchanged** (`next.config.ts` `d1af850c…`). The dialog has no inline script, and the native `<dialog>` and its Tailwind classes need nothing the CSP governs. **For T-038:** a future `img-src` must allow every https host staff can paste (gallery and `image`). A CSSOM write isn't governed by `style-src`.
+- **No product ids (SEC-INFO-36), live on :3102:**
+  - `/products`, the 8 `/products/<slug>` pages from the sitemap, and `/product-preview-samples` all return 200. Their HTML and their RSC payloads (`RSC: 1`) have 0 UUID-shaped strings and 0 `sort_order`, `category_slug`, `created_at` or `updated_at`.
+  - Each product prop is exactly `{ name, description, image, gallery }`. `gallery` is `[]` for all 6 live products, because the column doesn't exist yet.
+  - The guards are `toProductCards` (`ProductGrid.tsx:15`) and `id?: never`.
+- **SEC-INFO-32's guardrail holds.**
+  - The public client graph gains `ProductCard`, `ProductPreviewDialog`, `product-preview-layout`, `site-content.ts` (no imports) and `utils.ts` (`clsx` and `tailwind-merge`).
+  - `.next/static` (38 JS files) has 0 hits for a JWT shape, `sb_publishable_`, `sb_secret_`, `supabase.co` or `.in`, `NEXT_PUBLIC_SUPABASE`, `service_role`, `/auth/v1`, `/rest/v1`, `/storage/v1`, `createBrowserClient`, `apikey` and the 10 `secretPatterns`.
+- **Endpoints:** still 34 Server Action exports. T-045 adds none, because `takeGallery` and `readProductRow` aren't exported.
+
+**4. `/product-preview-samples`: ✅ reads nothing and exposes nothing**
+- **It's static:** prerendered (`.next/server/app/product-preview-samples.html`), served with `Cache-Control: s-maxage=31536000`. It imports no action and no Supabase client. Its photos are six fixed `/images/client/*.webp` paths, and it uses the shared website layout.
+- **Live:** `<meta name="robots" content="noindex, nofollow">`, its own canonical, and the six security headers. `/sitemap.xml` and `/robots.txt` mention it 0 times, and `nav.ts` is unchanged (`507e5c62…`).
+- **Nothing on it is private.** It's found only by its URL, and it shows only public photos and sample copy.
+
+**5. Migration 0002: ✅ no new grant or policy is needed**
+- **It adds** one column (`TEXT[] NOT NULL DEFAULT '{}'`), a CHECK `cardinality(gallery) <= 20`, a comment, `lock_timeout` and `NOTIFY pgrst`. It has no GRANT, REVOKE, POLICY or function.
+- **Access is inherited.** RLS works per row, so the column falls under `products`' two existing policies (`anon` SELECT `using (true)`; `authenticated` ALL `true`/`true`). Table-level grants cover columns added later. The column holds public photo addresses, so `anon` SELECT on it is intended.
+- **Unchanged:** like every table here, `products` probably carries Supabase's default `anon` write grants, which RLS alone denies (SEC-INFO-40's class). 0002 doesn't change that.
+- **`supabase-schema.sql` isn't updated yet,** correctly: that's step 5, after the owner applies it.
+
+**6. Uploads: ✅ nothing is widened**
+- The gallery adds through the same `ImageUploadField` (`2b285f41…`, equal to `main`), which calls `uploadOptimizedImage` (`media-actions.ts:96`, outside the diff's two hunks) under `upload-limits.ts` (`3bff92b6…`, equal to `main`).
+- A pasted path goes through the server's `takeGallery`.
+- An upload turned away by the full-gallery notice leaves an unused file in the public bucket. That's the orphan class Wave 3b accepted.
+
+**7. Dependencies: new `next` advisories (SEC-HIGH-6)**
+- T-045 doesn't touch `package.json` or the lockfile (`26068c14…` and `6a026457…`, equal to `main` and to production).
+- **`npm audit --omit=dev` today:** 1 critical, 7 high, 3 moderate and 1 low. Beyond SEC-MED-17's six, `next` 16.3.6 is in range of:
+  - **GHSA-2464-fhr4-w9xw** (critical): unauthenticated RCE in the Image Optimization API when SVG files are used, `>=16.0.0 <=16.4.0`;
+  - **GHSA-673q-mjm6-r5xr** (critical): unauthenticated RCE in `use cache` functions returning typed arrays, `>=16.0.0 <=16.4.0`;
+  - **GHSA-p3m5-59mp-jv5r** (high): DoS in the App Router using Server Actions, `>=16.0.0 <=16.4.0`;
+  - **GHSA-h694-7cp9-m8p3** (moderate): `use cache`, `>=16.3.0 <16.3.8`.
+- **16.3.8, T-044's target, fixes none of the first three.** 16.4.1 (2026-10-14) is the first release past their range, and `latest` is 16.4.3.
+- **The rest are tooling,** and none is imported by `src/`: `zod` via `eslint-config-next`, `brace-expansion`, `picomatch` and others (SEC-INFO-30 and SEC-INFO-31, T-044).
+
+**8. As another user: anonymous only, read-only**
+- There's one role (R1): every signed-in account is an admin, so there's no second user to be. T-023 creates that boundary.
+- **Anonymous:** `/admin`, `/admin/products` and `/admin/media` each return a 307 to `/admin/login` on :3102. The public pages expose only the four card fields (item 3). The `anon` role's write denial on `products` is RLS, which 0002 doesn't change.
+- **Not attempted, by the owner's rules:** an anonymous call to `updateCategoryProduct` (a POST), and a direct PostgREST request (it needs the anon key from `.env*`). The code's session check comes first (`:371`), and the file is bound below.
+
+**9. New findings**
+- 🟠 **SEC-HIGH-6 — `next` 16.3.6 (production and this branch) is in range of GHSA-2464-fhr4-w9xw, GHSA-673q-mjm6-r5xr and GHSA-p3m5-59mp-jv5r. T-044's 16.3.8 doesn't fix them; 16.4.1+ does.** Pre-existing; T-045 neither adds nor widens it.
+  - **GHSA-673q (RCE via `use cache`):** not reachable. `src/` and `next.config.ts` have no `use cache`, `cacheComponents` or `dynamicIO`.
+  - **GHSA-2464 (RCE via the image optimizer and SVG):** not ruled out. `/_next/image` is on by default (there's no `images` config, and `:3102` answers a bare GET with 400). `public/` has 0 SVG files, `dangerouslyAllowSVG` is unset, and there's no remote source. On Vercel, `/_next/image` is expected to be served by Vercel's own image service rather than this server's optimizer.
+    - This office didn't read the advisory's trigger conditions or run its proof of concept.
+    - Local `next start` and `next dev` servers do run Next's optimizer. `:3102` listens on all interfaces (`*:3102`), on the Mac that holds the deploy-capable PAT (SEC-MED-14).
+  - **GHSA-p3m5 (Server Actions DoS):** assumed reachable without a session, because the public forms are Server Actions. It affects availability only.
+  - **Why 🟠 and not 🔴:** no reachable path to data or code execution was shown in production. A critical RCE in an endpoint that's on by default couldn't be ruled out, and the DoS is reachable.
+  - **Fix:**
+    - Re-scope T-044 to `next` 16.4.3 (a minor bump, so architect sign-off; at least 16.4.1), then run the gates, a production-build smoke test and `/security-review`.
+    - Until then, start every local `next start` and `next dev` with `-H 127.0.0.1`.
+- 🟢 **SEC-INFO-51 — the clean-up's gallery read is unpaged (`media-actions.ts:335`).** Past the API's row cap (1,000 by default), rows are silently left out. A file named only in a later row's gallery would then be removed, which is a broken image with no undo. There are 6 products today, so it can't happen yet.
+  - **Fix:** `select("gallery", { count: "exact" })`, and keep the file when `count === null` or `data.length !== count`. Optionally add `.neq("gallery", "{}")` to read only non-empty galleries.
+- 🟢 **SEC-INFO-52 — until migration 0002 is applied, every Media Center delete keeps its Storage file (`:354-356`).** That's fail-closed by design. But a photo staff delete stays publicly fetchable at its old address, and each delete logs a gallery-check failure. Gallery saves fail with the fixed "save" copy too.
+  - **Fix (ordering):** apply 0002 and see its VERIFY rows before `/ship`, which is already ROADMAP's sequence. Files kept during the gap stay as orphans.
+- 🟢 **SEC-INFO-53 — no length cap on an image address (gallery entries, and `image` since T-014).** One save can store 5 addresses up to the 1 MB body limit. Because `ProductCard` is now a client component, they ride in every catalog page's RSC payload, even with the pop-up closed. It's signed-in only, and affects page weight and availability only.
+  - **Fix:** a named maximum length (say 2,048) beside `isAllowedImageUrl`, applied on save and in `normalizeGallery`.
+
+**Bindings (sha256 at `4fe99ea`; every one is identical at `03ed3f3`):**
+- **New or changed in T-045, now bound:**
+  - `src/app/actions/products-actions.ts` `17935dc0666b3099152ec696d779af46cce4caf2ffbc656788a0e3f97136a2d8` (was `7e8a1069…`);
+  - `src/app/actions/media-actions.ts` `95e9d1bdca561ada7774a52965ce1d6108f505d01bb8a42d3d862fbbc1cb8fc7` (was `dba76e48…`);
+  - `src/lib/site-content.ts` `529dc643cfdee7748ca2be1e69d6bade761fd6f98951aadd0f3ac468e2262439` (was `9939d4f3…`);
+  - `src/components/catalog/ProductPreviewDialog.tsx` `097ada8aee37e7d785f23e161f0571a0853b151d8395fad12a111f7ec7fafc2d` (new);
+  - `src/components/catalog/ProductCard.tsx` `6fde2f0ecbc2c1380103a4e0e08e9e41e42e9c3d8a4ea6d46b2d2046d1bdbd9f` (was `7c2f81e9…`);
+  - `src/components/catalog/ProductGrid.tsx` `ecbea5aaf69d688f22cf35ecd412b76d4004f07a90ef083bdcaa04465ac4a7c8` (was `407c3a38…`);
+  - `src/components/catalog/product-preview-layout.ts` `66c1ae30f258897cd3bcb2f89c6f4a0ec86fe18bf8ebe71ac23a915737b33c9f` (new);
+  - `src/app/(website)/product-preview-samples/page.tsx` `70219ea2245e3274a68fc17553941a36c47a3b4dc9bba03c92af012d6788f062` (new);
+  - `src/app/(website)/(marketing)/products/page.tsx` `d9311e359eadc2ec1182f2ed48fb57377b547ea3fd87c601f5c1a23f3aaf6838` (was `238f8749…`);
+  - `src/app/(website)/(marketing)/products/[category]/page.tsx` `23a959a656d75e7846dd54fb2ef26f92e7d980c059d18d1a0eedc2b19e45070e` (was `b6b09179…`; a comment-only change);
+  - `src/components/admin/CategoryProductsManager.tsx` `d1606ab9b55b5be28829055b259bfa2ea48ea6122dba89350e317c546668f48a` (was `c11c099f…`);
+  - `db/migrations/0002_product-gallery.sql` `d645c3a2498155f6793432be8356461705fa3410c73e076670474d202f672e68` (was `795719bd…` at `c36b794`, before the lock timeout and the reload).
+- **Unchanged, each equal to `main`:**
+  - the gate: `src/middleware.ts` `6d2c7757…`, and `src/lib/supabase/client.ts` `089fde06…`, `middleware.ts` `7693ad81…` and `server.ts` `e0d8444a…`;
+  - the other actions: `settings-actions.ts` `b4c3da2e…`, `jobs-actions.ts` `bd4387b1…` and `auth-actions.ts` `b8b822df…`;
+  - lib: `action-errors.ts` `b0be0a48…`, `settings-read.ts` `cc5c8a2c…`, `upload-limits.ts` `3bff92b6…` and `nav.ts` `507e5c62…`;
+  - `ImageUploadField.tsx` `2b285f41…` and the admin `products/page.tsx` `969a00de…`;
+  - config: `next.config.ts` `d1af850c…`, `sitemap.ts` `bdfd4112…` and `robots.ts` `1c283fdb…`;
+  - packages: `package.json` `26068c14…` and `package-lock.json` `6a026457…`.
+
+**Verdict:** ✅ **T-045 is cleared at `4fe99ea`.** The diff brings no 🔴, 🟠 or 🟡, and three new 🟢 (SEC-INFO-51, 52 and 53). Today's audit adds one pre-existing 🟠, SEC-HIGH-6, which governs the deploy (below), not the merge.
+
+### Sign-off verdict (ticket-review gate, `docs/WORKFLOW.md` §5)
+✅ **Cleared for merge,** once `code-reviewer` and `design-reviewer` clear. Conditions:
+- **The 12 files above are bound at those hashes.** A change to one before merge lapses that file's clearance until `/cso` re-reviews it.
+- **These come back to `/cso`:**
+  - a CSS `url()`, `background-image`, `style=` or raw-HTML sink for any image address (SEC-INFO-46);
+  - `next/image` or an `images` config for product photos;
+  - a change to `isAllowedImageUrl`, `takeGallery`, `normalizeGallery`, `readProductRow`, `toProductCards` or `ProductCardData`;
+  - any new Storage removal path, or a change to the clean-up's checks;
+  - a database read or an action import on the samples page, or listing it in the nav, sitemap or robots;
+  - any grant or policy change on `products`.
+
+**Deploy position:**
+- **Migration 0002 first.** The owner applies it and its VERIFY rows show the column and the CHECK before `/ship` (SEC-INFO-52). T-045's code is safe before then, but deletes stop cleaning up and gallery saves fail.
+- **🟠 SEC-HIGH-6:** under the rubric, a 🟠 blocks the deploy unless its fix ships in the same release.
+  - **The CSO-clean path:** ship `next` 16.4.3 (T-044, re-scoped) with T-045, after its own gates and `/security-review`.
+  - **Holding T-045 back alone reduces no exposure,** because production already runs 16.3.6. If the owner chooses to ship T-045 first, that's an owner risk acceptance of SEC-HIGH-6 for the gap, and it's recorded here. It isn't a CSO clearance.
+- **SEC-HIGH-2 (🟠, mitigated) is unchanged:** the owner's Authentication → Users review is still unrecorded. T-045 changes no auth surface.
+
+**Actions taken:**
+- **Edited:** only `docs/SECURITY.md` (this entry, a §3 amendment and §5 rows), left uncommitted.
+- **Ran:** read-only `git`, `shasum` and greps; a Node probe on extracted source; anonymous GETs to `:3102` (the pages, the RSC payloads, the sitemap, robots, three `/admin` paths, and a bare `/_next/image`); `npx tsc --noEmit`; `npm audit --omit=dev`; and `npm view next`.
+- **Did not:** sign in, POST, call a Server Action, write, build, or touch `:3001`. No `.env*` was read.
+
 ## 5. Mitigations / open items
 
 | Finding | Ticket | Status |
@@ -3015,6 +3173,15 @@ No `trigger` and no `rule` rows came back. The query covered non-internal `pg_tr
 | SEC-INFO-50 — `.claude/stack.json` `secretPatterns` has no value shape for this stack's own keys: a Supabase JWT, `sb_secret_…` or `sb_publishable_…`. So each wave's "0 hits on the 10 patterns" couldn't have caught a pasted Supabase key (2026-10-11 deploy record, item 7) | Not filed. Recommend a small tooling ticket: add the three shapes to `secretPatterns` and the hooks that read them | Open (info). This pass scanned the public history and every local ref for them: 0 hits |
 | SEC-MED-14 — status update, 2026-10-11 (deploy record) | Owner action: rotate the token | Open. Count-only check: `.git/config` still has 1 remote URL with embedded credentials and 6 `credential.*` entries. A token that can push to the branch Vercel builds from is a production-deploy credential |
 | O1 rows — status, 2026-10-11 (deploy record) | Owner rows | Now due on production. Wave 3a's O1 is one ZZ-TEST publish-and-delete; MEDIA_DELETE_REFUSED there is an owner SQL step (runbook §7 item 15). 5a's O1 is the owner's next sign-in and sign-out; if that fails, the response is PM14's revert-and-ship to both remotes, never Instant Rollback to `e8eace1` |
+| SEC-HIGH-6 — `next` 16.3.6 (production and `t-045-product-preview`) is in range of GHSA-2464-fhr4-w9xw (critical, RCE in Image Optimization when SVG files are used), GHSA-673q-mjm6-r5xr (critical, RCE in `use cache` with typed arrays) and GHSA-p3m5-59mp-jv5r (high, Server Actions DoS), all `<=16.4.0`. 16.3.8 doesn't fix them (2026-10-25 T-045 CSO entry, items 7 and 9) | **T-044**, re-scoped to `next` 16.4.3 (a minor bump, so architect sign-off; at least 16.4.1), then `/security-review` | Open, 🟠. Pre-existing; T-045 doesn't widen it. `use cache` isn't used, so GHSA-673q isn't reachable. The image-optimizer RCE isn't ruled out (it's on by default, with no SVG in `public/` and no remote source), and the DoS is reachable. It blocks a deploy unless the bump ships in the same release, or the owner records a risk acceptance. Meanwhile, bind local `next start`/`next dev` to `127.0.0.1` (`:3102` was on `*`) |
+| SEC-MED-17 — status update, 2026-10-25 (T-045 CSO entry) | **T-044** | Still open. Its 16.3.8 target is no longer enough: SEC-HIGH-6's three advisories need 16.4.1+. Re-scope T-044 to 16.4.3, which also covers these six |
+| SEC-INFO-51 — the Media Center clean-up's gallery read (`media-actions.ts:335`) is unpaged. Past the API row cap (1,000 by default), rows are silently left out, and a file named only in a later row's gallery could be removed (T-045 CSO entry) | Not filed. Recommend folding into the next `media-actions.ts` change | Open (info). 6 products today. Fix: `{ count: "exact" }`, and keep the file when `count === null` or `data.length !== count` |
+| SEC-INFO-52 — until migration 0002 is applied, every Media Center delete keeps its Storage file (the gallery read fails, so it fails closed). A deleted photo stays publicly fetchable at its old address, and gallery saves fail with fixed copy (T-045 CSO entry) | Owner: apply 0002 before `/ship` | Open (info). Closes when the owner's VERIFY rows show `products.gallery` and `products_gallery_max`. Files kept in the gap remain orphans |
+| SEC-INFO-53 — image addresses (gallery entries, and `image` since T-014) have no length cap. One save can store 5 addresses up to the 1 MB body limit, and they ride in every catalog page's RSC payload because `ProductCard` is now a client component (T-045 CSO entry) | Not filed — hardening note | Open (info). Signed-in only; page weight and availability only. Fix: a named maximum length beside `isAllowedImageUrl`, on save and in `normalizeGallery` |
+| SEC-INFO-46 — status update, 2026-10-25 (T-045 CSO entry) | No ticket | Open (info); the condition still holds. T-045's gallery accepts the same characters, and its only sinks are React-set `<img src>` (`ProductPreviewDialog.tsx:73`, `:119`, `:199`; `CategoryProductsManager.tsx:992`). There's no CSS `url()`, `style=` or raw-HTML sink, and the inline flight data is escaped by Next |
+| SEC-INFO-47 — status update, 2026-10-25 (T-045 CSO entry) | No ticket; accepted | Open (info). It now covers gallery entries too: an unsaved gallery change, or one saved between the checks and the removal |
+| SEC-INFO-36 — status update, 2026-10-25 (T-045 CSO entry) | T-045 (`4fe99ea`) | Holds. `ProductCard` is now a client component, so its props are in the page payload. Live on :3102, `/products`, the 8 category pages and `/product-preview-samples` (HTML and RSC) have 0 UUIDs and 0 row-only fields, and each card prop is exactly `{ name, description, image, gallery }` |
+| SEC-INFO-32 guardrail — status, 2026-10-25 (T-045 CSO entry) | No ticket | Holds at build `n_6g5ePIu6AM98Cy0tnd4` (`4fe99ea`): 0 key, JWT, Supabase-host or API-path hits in 38 static JS files. T-045's new client modules import no Supabase client |
 
 ## 6. Secrets log
 
