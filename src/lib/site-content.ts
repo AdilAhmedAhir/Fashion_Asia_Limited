@@ -359,6 +359,14 @@ export type CategoryProduct = {
     name: string;
     description: string;
     image: string;
+    /**
+     * The extra photos after the main `image`, in display order (T-045,
+     * db/migrations/0002_product-gallery.sql). Always a clean list: the
+     * product reads in products-actions.ts pass the stored value through
+     * normalizeGallery, so a missing column (before 0002 is applied) or a bad
+     * entry reads as [] or is left out.
+     */
+    gallery: string[];
     sort_order: number;
     created_at: string;
     updated_at: string;
@@ -377,13 +385,23 @@ export type CategoryProduct = {
 // and never reads a caller's value. Only a create takes this shape since
 // T-016: an edit sends a CategoryProductPatch (below), which can't carry the
 // category or the order.
-export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at" | "sort_order">;
+//
+// Nor a `gallery` (T-045): a new product starts with the column's default, an
+// empty gallery, and its extra photos are added afterwards, as edits.
+export type CategoryProductInput = Omit<CategoryProduct, "id" | "created_at" | "updated_at" | "sort_order" | "gallery">;
 
 /**
- * @purpose The fields one product edit may change (name, description, image): a partial update that never carries the category, the order or the id.
+ * @purpose The fields one product edit may change (name, description, image, gallery): a partial update that never carries the category, the order or the id.
  * updateCategoryProduct (products-actions.ts) writes only the fields present.
  */
-export type CategoryProductPatch = Partial<Pick<CategoryProduct, "name" | "description" | "image">>;
+export type CategoryProductPatch = Partial<Pick<CategoryProduct, "name" | "description" | "image" | "gallery">>;
+
+/**
+ * @purpose The most extra photos a product may have after its main image (T-045): 5, so 6 photos in all.
+ * App policy, checked by updateCategoryProduct and the admin editor. The
+ * database's CHECK (cardinality <= 20, migration 0002) is only a backstop.
+ */
+export const MAX_PRODUCT_GALLERY_PHOTOS = 5;
 
 // One character that is none of: whitespace; an invisible formatting
 // character (Default_Ignorable_Code_Point: zero-width spaces and joiners,
@@ -408,6 +426,13 @@ export function hasVisibleText(value: unknown): boolean {
 // refused, not encoded, so what's stored is exactly what staff pasted. No "g"
 // or "y" flag, so test() keeps no state between calls.
 const IMAGE_URL_FORBIDDEN_CHARACTER = /[\\\s\p{C}\p{Default_Ignorable_Code_Point}]/u;
+
+// The one wording for a product photo path isAllowedImageUrl refuses: the
+// server's answer for a product's main image (products-actions.ts, T-014),
+// and the admin's notice when a typed extra photo is refused before it's
+// added (GalleryEditor in CategoryProductsManager.tsx, T-045).
+export const PRODUCT_IMAGE_PATH_INVALID =
+    "This image path can't be used. Upload the image, or paste a path that starts with https://, then try again.";
 
 /**
  * @purpose Whether an image address may be stored: a path from the site root, or an absolute https:// address with a host and no username or password.
@@ -435,6 +460,28 @@ export function isAllowedImageUrl(value: string): boolean {
     }
     // new URL already refuses an https: address without a host.
     return url.protocol === "https:" && url.hostname !== "" && url.username === "" && url.password === "";
+}
+
+/**
+ * @purpose A product's stored gallery as a clean list (T-045): [] for anything that isn't an array, each entry trimmed, entries that aren't strings or fail isAllowedImageUrl left out, and at most MAX_PRODUCT_GALLERY_PHOTOS kept.
+ * Applied once, where products are read (products-actions.ts), so a missing
+ * column (before migration 0002) reads as an empty gallery.
+ */
+export function normalizeGallery(raw: unknown): string[] {
+    if (!Array.isArray(raw)) return [];
+    const gallery: string[] = [];
+    for (const entry of raw) {
+        if (gallery.length === MAX_PRODUCT_GALLERY_PHOTOS) break;
+        if (typeof entry !== "string") continue;
+        const trimmed = entry.trim();
+        if (isAllowedImageUrl(trimmed)) gallery.push(trimmed);
+    }
+    return gallery;
+}
+
+/** @purpose Whether two galleries hold the same photos in the same order: compared by value, never by array identity (T-045, the product save queue). */
+export function sameGallery(a: readonly string[], b: readonly string[]): boolean {
+    return a.length === b.length && a.every((photo, i) => photo === b[i]);
 }
 
 // The longest a category slug can be. It mirrors products.category_slug

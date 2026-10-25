@@ -318,16 +318,21 @@ async function removeFileIfOursAndUnused(supabase: Supabase, storedUrl: unknown)
         // over-match and keep more), plus every site_settings row searched as
         // JSON text here in code. Never an ilike on the jsonb value (Postgres
         // has none, so it errors) and never a value->>key filter (it misses
-        // every other key, homepage.lifeFacilities included).
+        // every other key, homepage.lifeFacilities included). Product
+        // galleries (T-045) are searched the same way: ilike errors on a
+        // text[] column, which would keep every file and quietly switch the
+        // clean-up off. Before migration 0002 adds the column, that read
+        // errors, so the file is kept.
         const pattern = `%${name}%`;
         const count = (table: string, column: string) =>
             supabase.from(table).select("id", { count: "exact", head: true }).ilike(column, pattern);
-        const [assets, products, leaders, reports, settings] = await Promise.all([
+        const [assets, products, leaders, reports, settings, galleries] = await Promise.all([
             count("media_assets", "url"),
             count("products", "image"),
             count("leaders", "photo_url"),
             count("reports", "file_url"),
             supabase.from("site_settings").select("value"),
+            supabase.from("products").select("gallery"),
         ]);
         for (const check of [assets, products, leaders, reports]) {
             if (check.error || check.count === null) {
@@ -345,6 +350,16 @@ async function removeFileIfOursAndUnused(supabase: Supabase, storedUrl: unknown)
             return typeof text !== "string" || text.includes(name);
         });
         if (mentioned) return;
+        // No rows is a real answer here (an empty catalog), unlike settings.
+        if (galleries.error || !galleries.data) {
+            logActionError("deleteMediaAction: the product gallery check failed, so the file was kept.", galleries.error ?? "no data");
+            return;
+        }
+        const inGallery = galleries.data.some((row) => {
+            const text = JSON.stringify(row?.gallery);
+            return typeof text !== "string" || text.includes(name);
+        });
+        if (inGallery) return;
 
         await removeStoredFile(supabase, name, "deleteMediaAction: removing the file failed.");
     } catch (error) {

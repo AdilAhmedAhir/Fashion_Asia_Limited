@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Check, ChevronDown, ChevronUp, Info, Loader2, Plus, Trash2, TriangleAlert, Zap } from "lucide-react";
 import { ImageUploadField } from "@/components/admin/ImageUploadField";
 import {
@@ -10,7 +10,11 @@ import {
     updateCategoryProduct,
 } from "@/app/actions/products-actions";
 import {
+    MAX_PRODUCT_GALLERY_PHOTOS,
+    PRODUCT_IMAGE_PATH_INVALID,
     hasVisibleText,
+    isAllowedImageUrl,
+    sameGallery,
     type CategoryProduct,
     type CategoryProductInput,
     type CategoryProductPatch,
@@ -34,10 +38,16 @@ const LEAVE_WHILE_SAVING =
 // another key. Read-only, so every change builds a new Map.
 type ProductsByCategory = ReadonlyMap<string, readonly CategoryProduct[]>;
 
-// The fields a product row edits, and the only ones its saves ever send.
+// The text fields a product row edits. With `gallery` (T-045), a list
+// compared by value with sameGallery, they're the only fields its saves ever
+// send.
 const EDITABLE_FIELDS = ["name", "description", "image"] as const;
 type EditableField = (typeof EDITABLE_FIELDS)[number];
-type EditableFields = Record<EditableField, string>;
+type EditableFields = Record<EditableField, string> & { gallery: readonly string[] };
+
+// A change to a product's extra photos (T-045): given the gallery as the queue
+// has it right now, the new gallery, or null to change nothing.
+type GalleryChange = (gallery: readonly string[]) => readonly string[] | null;
 
 type SaveResult = Awaited<ReturnType<typeof updateCategoryProduct>>;
 
@@ -82,16 +92,18 @@ const editableFieldsOf = (product: CategoryProduct): EditableFields => ({
     name: product.name,
     description: product.description,
     image: product.image,
+    gallery: product.gallery,
 });
 
 // What a save sends: an own key for each field whose committed value differs
-// from the confirmed one, always a string, and nothing else (never
-// category_slug, sort_order or id).
+// from the confirmed one, a string for the text fields and a new array for
+// the gallery, and nothing else (never category_slug, sort_order or id).
 function changedFields(queue: SaveQueue): CategoryProductPatch {
     const patch: CategoryProductPatch = {};
     for (const field of EDITABLE_FIELDS) {
         if (queue.committed[field] !== queue.confirmed[field]) patch[field] = queue.committed[field];
     }
+    if (!sameGallery(queue.committed.gallery, queue.confirmed.gallery)) patch.gallery = [...queue.committed.gallery];
     return patch;
 }
 
@@ -155,9 +167,21 @@ export function CategoryProductsManager({
     // upload captured when it started) acts exactly like the current one.
     const queues = useRef(new Map<string, SaveQueue>()).current;
     const [saveViews, setSaveViews] = useState<ReadonlyMap<string, SaveView>>(() => new Map());
+    // Products with an extra photo still uploading (T-045), by id.
+    const [galleryUploads, setGalleryUploads] = useState<ReadonlySet<string>>(() => new Set());
 
-    // While any product is still saving, leaving the page asks first (T-034).
-    useLeaveGuard(Array.from(saveViews.values()).some(view => view.pending));
+    // While any product is still saving, or an extra photo is still
+    // uploading, leaving the page asks first (T-034).
+    useLeaveGuard(Array.from(saveViews.values()).some(view => view.pending) || galleryUploads.size > 0);
+
+    const setGalleryUploading = (id: string, busy: boolean) =>
+        setGalleryUploads(prev => {
+            if (prev.has(id) === busy) return prev;
+            const next = new Set(prev);
+            if (busy) next.add(id);
+            else next.delete(id);
+            return next;
+        });
 
     const registerControlRef = (productId: string, kind: "up" | "down" | "delete", el: HTMLButtonElement | null) => {
         const entry = controlRefs.current.get(productId) ?? {};
@@ -258,8 +282,15 @@ export function CategoryProductsManager({
     // Returns false, sending nothing, when nothing differs.
     const send = (id: string, queue: SaveQueue): boolean => {
         const patch = changedFields(queue);
-        if (patch.name === undefined && patch.description === undefined && patch.image === undefined) return false;
-        const sent = { ...queue.committed };
+        if (
+            patch.name === undefined &&
+            patch.description === undefined &&
+            patch.image === undefined &&
+            patch.gallery === undefined
+        ) {
+            return false;
+        }
+        const sent = { ...queue.committed, gallery: [...queue.committed.gallery] };
         queue.inFlight = true;
         queue.waiting = false;
         queue.error = null;
@@ -290,6 +321,7 @@ export function CategoryProductsManager({
                 // server's value (trimmed, or another tab's edit).
                 if (queue.committed[field] === sent[field]) queue.committed[field] = confirmed[field];
             }
+            if (sameGallery(queue.committed.gallery, sent.gallery)) queue.committed.gallery = confirmed.gallery;
             queue.confirmed = confirmed;
             queue.error = null;
             handleSaved(result.product);
@@ -331,6 +363,20 @@ export function CategoryProductsManager({
         if (queue.committed[field] === value) return;
         queue.committed[field] = value;
         requestSave(product.id, queue);
+    };
+
+    // Add, remove and move an extra photo (T-045). Each works from the queue's
+    // committed gallery at the moment of the change, never from a value
+    // captured at render, so two changes landing together (an upload
+    // finishing during a click) both keep their effect. Returns whether the
+    // change applied: false when it changed nothing.
+    const commitGallery = (product: CategoryProduct, change: GalleryChange): boolean => {
+        const queue = queueFor(product);
+        const next = change(queue.committed.gallery);
+        if (!next || sameGallery(next, queue.committed.gallery)) return false;
+        queue.committed.gallery = [...next];
+        requestSave(product.id, queue);
+        return true;
     };
 
     const retrySave = (product: CategoryProduct) => requestSave(product.id, queueFor(product));
@@ -493,6 +539,8 @@ export function CategoryProductsManager({
                                     reorderBusy={reorderBusy}
                                     onMove={delta => moveProduct(i, delta)}
                                     onCommit={commitField}
+                                    onGalleryChange={commitGallery}
+                                    onGalleryUploadingChange={busy => setGalleryUploading(product.id, busy)}
                                     onRetry={retrySave}
                                     onDeleted={id => handleDeleted(selected.slug, id)}
                                     registerControlRef={(kind, el) => registerControlRef(product.id, kind, el)}
@@ -610,6 +658,8 @@ function ProductRow({
     reorderBusy,
     onMove,
     onCommit,
+    onGalleryChange,
+    onGalleryUploadingChange,
     onRetry,
     onDeleted,
     registerControlRef,
@@ -621,6 +671,8 @@ function ProductRow({
     reorderBusy: boolean;
     onMove: (delta: number) => void;
     onCommit: (product: CategoryProduct, field: EditableField, value: string) => void;
+    onGalleryChange: (product: CategoryProduct, change: GalleryChange) => boolean;
+    onGalleryUploadingChange: (busy: boolean) => void;
     onRetry: (product: CategoryProduct) => void;
     onDeleted: (id: string) => void;
     registerControlRef: (kind: "up" | "down" | "delete", el: HTMLButtonElement | null) => void;
@@ -783,6 +835,14 @@ function ProductRow({
                         className="resize-none rounded-lg border border-white/10 bg-black px-4 py-2.5 text-sm text-white focus:border-primary/50 focus:outline-none disabled:opacity-50"
                     />
                 </div>
+
+                <GalleryEditor
+                    gallery={committed.gallery}
+                    productLabel={productLabel}
+                    locked={deleting}
+                    onChange={change => onGalleryChange(product, change)}
+                    onUploadingChange={onGalleryUploadingChange}
+                />
             </div>
 
             {/* A failed save keeps the draft on screen, still editable
@@ -810,6 +870,195 @@ function ProductRow({
                 <p role="alert" className="mt-3 flex items-start gap-2 text-sm leading-relaxed text-red-400">
                     <TriangleAlert size={14} className="mt-0.5 flex-none" aria-hidden="true" />
                     {deleteError}
+                </p>
+            )}
+        </div>
+    );
+}
+
+const GALLERY_FULL = `That photo wasn't added, because this product already has ${MAX_PRODUCT_GALLERY_PHOTOS} more photos. Remove one first, then add it again.`;
+
+const GALLERY_BUTTON =
+    "rounded-md p-1.5 transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface";
+
+/**
+ * "More photos (up to 5)" in a product row (T-045): the extra photos after
+ * the main image, each with Move up, Move down and Remove, plus an add field
+ * (the same ImageUploadField and upload limits as the main image). Every
+ * change goes to the product's save queue through `onChange`, so it saves
+ * with the row's usual Saving and Saved states. It keeps no copy of the
+ * gallery: `gallery` is the queue's committed list.
+ *
+ * The add field is shown while there's room, and also while it's uploading:
+ * hiding a busy field would unmount it mid-upload. It can't overfill the
+ * gallery, because a field applies only its latest pick, and the queue's add
+ * refuses a photo past MAX_PRODUCT_GALLERY_PHOTOS and says so.
+ */
+function GalleryEditor({
+    gallery,
+    productLabel,
+    locked,
+    onChange,
+    onUploadingChange,
+}: {
+    gallery: readonly string[];
+    productLabel: string;
+    locked: boolean;
+    onChange: (change: GalleryChange) => boolean;
+    onUploadingChange: (busy: boolean) => void;
+}) {
+    const headingId = useId();
+    const groupRef = useRef<HTMLDivElement>(null);
+    const [uploading, setUploading] = useState(false);
+    // Bumped after each add, so the add field starts empty again.
+    const [addKey, setAddKey] = useState(0);
+    const [notice, setNotice] = useState<string | null>(null);
+    // Where focus goes once a change has rendered: the first of these
+    // selectors that matches an enabled control, else the group itself, so a
+    // removed or moved control never drops focus to the top of the page.
+    const [focusAfter, setFocusAfter] = useState<string[] | null>(null);
+
+    useEffect(() => {
+        if (!focusAfter) return;
+        const group = groupRef.current;
+        if (group) {
+            const target = focusAfter
+                .map(selector => group.querySelector<HTMLElement>(selector))
+                .find(el => el && !el.matches(":disabled"));
+            (target ?? group).focus();
+        }
+        setFocusAfter(null);
+    }, [focusAfter]);
+
+    const control = (name: string) => `[data-gallery-control="${name}"]`;
+    const hadFocus = () => groupRef.current?.contains(document.activeElement) ?? false;
+
+    const addPhoto = (url: string) => {
+        // A typed path the server would refuse is never added (T-045 review):
+        // once in the gallery, it would fail this save and every later save
+        // of the product until it was removed. The path box keeps the text,
+        // so it can be corrected, and the notice uses the main image's
+        // wording. An upload's own address always passes.
+        if (!isAllowedImageUrl(url)) {
+            setNotice(PRODUCT_IMAGE_PATH_INVALID);
+            return;
+        }
+        const refocus = hadFocus();
+        const added = onChange(current => (current.length >= MAX_PRODUCT_GALLERY_PHOTOS ? null : [...current, url]));
+        setNotice(added ? null : GALLERY_FULL);
+        setAddKey(key => key + 1);
+        if (refocus) setFocusAfter([`${control("add")} input[type="file"]`, control(`remove-${gallery.length}`)]);
+    };
+
+    const movePhoto = (index: number, delta: -1 | 1) => {
+        const moved = onChange(current => {
+            const target = index + delta;
+            if (index >= current.length || target < 0 || target >= current.length) return null;
+            const next = [...current];
+            [next[index], next[target]] = [next[target], next[index]];
+            return next;
+        });
+        if (!moved) return;
+        setNotice(null);
+        const at = index + delta;
+        const first = delta < 0 ? "up" : "down";
+        const second = delta < 0 ? "down" : "up";
+        setFocusAfter([control(`${first}-${at}`), control(`${second}-${at}`), control(`remove-${at}`)]);
+    };
+
+    const removePhoto = (index: number) => {
+        const removed = onChange(current => (index < current.length ? current.filter((_, i) => i !== index) : null));
+        if (!removed) return;
+        setNotice(null);
+        const remaining = gallery.length - 1;
+        setFocusAfter(remaining > 0 ? [control(`remove-${Math.min(index, remaining - 1)}`)] : [`${control("add")} input[type="file"]`]);
+    };
+
+    const showAdd = gallery.length < MAX_PRODUCT_GALLERY_PHOTOS || uploading;
+
+    return (
+        <div
+            ref={groupRef}
+            role="group"
+            aria-labelledby={headingId}
+            tabIndex={-1}
+            className="flex flex-col gap-3 rounded-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface"
+        >
+            <div className="flex flex-col gap-1">
+                <p id={headingId} className="text-xs font-bold uppercase tracking-widest text-white/50">
+                    More photos (up to {MAX_PRODUCT_GALLERY_PHOTOS})
+                </p>
+                <p className="text-xs leading-relaxed text-white/50">
+                    {gallery.length === 0
+                        ? "None yet. Visitors see these after the main image when they open the product."
+                        : `${gallery.length} of ${MAX_PRODUCT_GALLERY_PHOTOS}. Visitors see them after the main image, in this order.`}
+                </p>
+            </div>
+
+            {gallery.length > 0 && (
+                <ol className="flex flex-col gap-2">
+                    {gallery.map((url, i) => (
+                        // Keyed by place and address: the same photo can be listed twice.
+                        <li key={`${i}-${url}`} className="flex items-center gap-3 rounded-lg border border-white/10 bg-black p-2">
+                            <img src={url} alt="" className="h-14 w-14 flex-none rounded-md object-cover" />
+                            <span className="min-w-0 flex-1 text-xs font-bold text-white/70">Extra photo {i + 1}</span>
+                            <div className="flex flex-none items-center gap-1">
+                                <button
+                                    type="button"
+                                    data-gallery-control={`up-${i}`}
+                                    onClick={() => movePhoto(i, -1)}
+                                    disabled={locked || i === 0}
+                                    aria-label={`Move extra photo ${i + 1} of ${productLabel} up`}
+                                    className={`${GALLERY_BUTTON} text-white/70 hover:text-accent disabled:opacity-20 disabled:hover:text-white/70`}
+                                >
+                                    <ChevronUp size={14} aria-hidden="true" />
+                                </button>
+                                <button
+                                    type="button"
+                                    data-gallery-control={`down-${i}`}
+                                    onClick={() => movePhoto(i, 1)}
+                                    disabled={locked || i === gallery.length - 1}
+                                    aria-label={`Move extra photo ${i + 1} of ${productLabel} down`}
+                                    className={`${GALLERY_BUTTON} text-white/70 hover:text-accent disabled:opacity-20 disabled:hover:text-white/70`}
+                                >
+                                    <ChevronDown size={14} aria-hidden="true" />
+                                </button>
+                                <button
+                                    type="button"
+                                    data-gallery-control={`remove-${i}`}
+                                    onClick={() => removePhoto(i)}
+                                    disabled={locked}
+                                    aria-label={`Remove extra photo ${i + 1} of ${productLabel}`}
+                                    className={`${GALLERY_BUTTON} text-red-400 hover:text-red-300 disabled:opacity-40`}
+                                >
+                                    <Trash2 size={14} aria-hidden="true" />
+                                </button>
+                            </div>
+                        </li>
+                    ))}
+                </ol>
+            )}
+
+            {showAdd && (
+                <div data-gallery-control="add">
+                    <ImageUploadField
+                        key={addKey}
+                        label="Add a photo"
+                        value=""
+                        commitPathOnBlur
+                        onChange={addPhoto}
+                        onBusyChange={busy => {
+                            setUploading(busy);
+                            onUploadingChange(busy);
+                        }}
+                    />
+                </div>
+            )}
+
+            {notice && (
+                <p role="status" className="flex items-start gap-2 rounded-lg border border-amber-400/30 bg-amber-400/10 px-3 py-2 text-xs leading-relaxed text-amber-300">
+                    <Info size={14} className="mt-px flex-none" aria-hidden="true" />
+                    {notice}
                 </p>
             )}
         </div>

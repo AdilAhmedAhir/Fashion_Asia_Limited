@@ -2526,14 +2526,33 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: `design-reviewer`, Wave 5b, 2026-10-08.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
-- [ ] **T-044** — Bump Next.js to 16.3.8 and clear the tooling advisories [app:site][sec]
-  AC:
+- [ ] **T-044** — Bump Next.js to 16.4.3 and clear the tooling advisories [app:site][sec]
+  **Re-scoped 2026-10-25 (SEC-HIGH-6):** 16.3.8 is no longer enough. `next` 16.3.6 is also in range of GHSA-2464-fhr4-w9xw (critical: image-optimizer RCE with SVGs), GHSA-673q-mjm6-r5xr (critical: `use cache`, unused here) and GHSA-p3m5-59mp-jv5r (high: Server Actions DoS), all fixed from 16.4.1. The target is now `next` and `eslint-config-next` **16.4.3** (a minor bump), and it ships in the same release as T-045. The AC below still applies, with 16.4.3 in place of 16.3.8; also: `agentRules: false` and `logging.serverFunctions: false` stay in `next.config.ts` and still take effect, and 16.4.0–16.4.3's release notes are checked for breaking changes before the bump.
+  AC (as filed 2026-10-11):
   - `next` goes from 16.3.6 to 16.3.8 (patch only), which fixes GHSA-cjq9-62q9-8jv4, mcj8-r9mp-w47p, 4jqv-mc3x-m676, 3w37-wq28-93x7, f87g-xv8r-7p7x and 39w2-rjm5-chcv. None applies to this site as deployed (no `images.remotePatterns`, Vercel-hosted, no catch-all, no `use cache`/draftMode, static icons), so this is hygiene, not an incident.
   - `npm audit fix` (no `--force`) for the build-tooling advisories (tailwindcss's chokidar/fast-glob/micromatch, eslint-config-next, brace-expansion, browserslist, flatted, js-yaml, picomatch, source-map-js), with no major-version jumps.
   - The gates pass, a production-build smoke test passes (Wave 5a's header and preloader checks, the public pages), and `npm audit --omit=dev` shows no high items left that can be fixed.
   - `npm run dev` binds to this computer only (`next dev -H 127.0.0.1`), because the dev server talks to the live database (SEC-MED-17's note).
   Source: `/ship` preflight, 2026-10-11; SECURITY.md SEC-MED-17.
   Sequence: `/build` → `/security-review` → `code-reviewer` → merge, then deploy on the owner's "deploy".
+
+- [ ] **T-045** — Product preview pop-up with up to 6 photos, layout samples, and no banner on /products [app:site][app:admin][db][design]
+  Owner request 2026-10-25 ("urgent… this needs to be live"). Owner answers: remove the big banner on /products; a pop-up preview; up to 6 photos per product; deploy when ready.
+  AC:
+  - **/products banner:** the "OUR RANGE / Products" `PageHeader` is gone, so the page starts at "Browse by Category". That heading becomes the page's only `h1` (same look) and clears the fixed header. Metadata and everything else are unchanged.
+  - **Schema (`db/migrations/0002_product-gallery.sql`, HARD STOP until the owner applies it):** `products.gallery text[] not null default '{}'`, holding the extra photos after the main `image`. The app limit is `MAX_PRODUCT_GALLERY_PHOTOS = 5` in `src/lib/site-content.ts` (6 photos in all). Until the column exists, code treats a missing `gallery` as empty, because the reads already use `select("*")`.
+  - **Server:** `updateCategoryProduct`'s patch may carry `gallery`, an array of strings.
+    - Each entry is trimmed and must pass `isAllowedImageUrl`. At most 5 entries; anything else is refused with fixed wording, and nothing is written.
+    - It's written only when sent, like the other fields. `getUser()` stays first, and `createCategoryProduct` is unchanged.
+  - **Admin (`/admin/products`):** each product row gets "More photos (up to 5)". Staff can add a photo (the same `ImageUploadField` and upload limits), remove one, or move one up or down. Each change saves through that product's existing save queue, with the same Saving/Saved states. The other fields behave exactly as before.
+  - **Public:** a product card on `/products` and on each category page opens a pop-up preview (a native `<dialog>`).
+    - **It shows** a large photo, small thumbnails to switch between the main photo and the gallery, the name and the description. There's nothing else: no price, cart or links.
+    - **Closing:** a Close button, Escape or a backdrop click closes it, and focus returns to the card.
+    - **Keyboard and screen readers:** both are supported; contrast meets AA; it's usable at 360 px; reduced motion is respected.
+    - **One photo only:** no thumbnails are shown.
+    - **No product ids:** none appear in the HTML or props (the T-025 rule); only photo addresses do.
+  - **Layout samples:** the pop-up supports numbered layouts (1–4). The live one is chosen by one constant. A hidden samples page shows each numbered layout with sample photos, so the client can pick a number. It's `noindex`, and not in the nav or the sitemap.
+  Sequence: `architect-reviewer` (migration + contract) → owner applies SQL → `/build` → `code-reviewer` + `security-reviewer` + `design-reviewer` → merge → `/ship` (owner pre-authorised "deploy when ready").
 
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.

@@ -21,8 +21,11 @@ import { unstable_rethrow } from "next/navigation";
 import { readSettingsForEditor } from "@/lib/settings-read";
 import { actionFailure, logActionError } from "@/lib/action-errors";
 import {
+    MAX_PRODUCT_GALLERY_PHOTOS,
+    PRODUCT_IMAGE_PATH_INVALID,
     hasVisibleText,
     isAllowedImageUrl,
+    normalizeGallery,
     normalizeProducts,
     readStoredCategoryIdentities,
     isWellFormedSlug,
@@ -62,14 +65,22 @@ const CATEGORY_CHECK_FAILED = "Nothing was saved, because the category couldn't 
 // number. A longer name is refused, never cut (T-014, SEC-INFO-15).
 const MAX_PRODUCT_NAME_LENGTH = 255;
 const PRODUCT_NAME_TOO_LONG = `A product name can be at most ${MAX_PRODUCT_NAME_LENGTH} characters. Shorten it, then try again.`;
-// An image address isAllowedImageUrl refuses (T-014).
-const PRODUCT_IMAGE_INVALID = "This image path can't be used. Upload the image, or paste a path that starts with https://, then try again.";
+// An image address isAllowedImageUrl refuses (T-014). The wording is shared
+// with the admin's extra-photo notice (site-content.ts).
+const PRODUCT_IMAGE_INVALID = PRODUCT_IMAGE_PATH_INVALID;
+// A gallery that isn't a list of at most MAX_PRODUCT_GALLERY_PHOTOS image
+// addresses isAllowedImageUrl accepts (T-045). The admin editor checks for
+// both before it sends a gallery: its add refuses a typed path that
+// isAllowedImageUrl refuses, and a photo past the limit. So this answers a
+// crafted call, or a page whose checks are older than this server's.
+const PRODUCT_GALLERY_INVALID = `These photos can't be saved. A product can have up to ${MAX_PRODUCT_GALLERY_PHOTOS} more photos, each uploaded here or pasted as a path that starts with https://. Nothing was saved. Reload the page, then try again.`;
 // A reorder that wasn't saved (T-013).
 const REORDER_STALE = "The products in this category changed since the page loaded, so the new order wasn't saved. Reload the page and try again.";
 const REORDER_FAILED = "The new order couldn't be saved, so nothing changed. Try again in a moment.";
 const REORDER_PARTIAL = "The new order was only partly saved. Reload the page to see the current order, then try again.";
 
-// The only fields an edit can write (T-016, partial update).
+// The only text fields an edit can write (T-016, partial update). The fourth,
+// `gallery`, is a list and is taken by takeGallery (T-045).
 const PATCH_FIELDS = ["name", "description", "image"] as const;
 
 type SupabaseServerClient = Awaited<ReturnType<typeof createClient>>;
@@ -185,6 +196,37 @@ function takePatchFields(patch: unknown): CategoryProductPatch {
     return taken;
 }
 
+// The patch's gallery (T-045): undefined when it wasn't sent, the trimmed list
+// when it's valid, or null when it must be refused. Unlike takePatchFields, a
+// gallery that's sent but malformed is never skipped: it refuses the whole
+// save. Valid means an array of at most MAX_PRODUCT_GALLERY_PHOTOS strings,
+// each passing isAllowedImageUrl once trimmed. The length is checked first, so
+// a huge array is never walked, and an index loop sees an array's holes as
+// undefined, which is refused. [] is valid: it removes every extra photo.
+function takeGallery(patch: unknown): string[] | undefined | null {
+    if (typeof patch !== "object" || patch === null) return undefined;
+    if (!Object.prototype.hasOwnProperty.call(patch, "gallery")) return undefined;
+    const value: unknown = (patch as Record<string, unknown>).gallery;
+    if (!Array.isArray(value) || value.length > MAX_PRODUCT_GALLERY_PHOTOS) return null;
+    const gallery: string[] = [];
+    for (let i = 0; i < value.length; i++) {
+        const entry: unknown = value[i];
+        if (typeof entry !== "string") return null;
+        const trimmed = entry.trim();
+        if (!isAllowedImageUrl(trimmed)) return null;
+        gallery.push(trimmed);
+    }
+    return gallery;
+}
+
+// A product row as the app uses it (T-045): its gallery passed through
+// normalizeGallery, so it's always a clean list, and [] while the column
+// doesn't exist yet (every read here is select("*")).
+function readProductRow(row: unknown): CategoryProduct {
+    const product = row as CategoryProduct;
+    return { ...product, gallery: normalizeGallery((row as { gallery?: unknown }).gallery) };
+}
+
 // The domain rule for a product (T-016, T-014): its name needs a visible
 // character and at most MAX_PRODUCT_NAME_LENGTH code points, and its image a
 // visible character and an address isAllowedImageUrl accepts. Checked only
@@ -206,9 +248,10 @@ function productFieldsError(fields: CategoryProductPatch): string | null {
 
 // Rows grouped by category_slug in query order, so each category's list keeps
 // the query's sort_order order. A Map, never a plain object (AllProductsRead).
-function groupByCategory(rows: CategoryProduct[]): Map<string, CategoryProduct[]> {
+function groupByCategory(rows: readonly unknown[]): Map<string, CategoryProduct[]> {
     const byCategory = new Map<string, CategoryProduct[]>();
-    for (const row of rows) {
+    for (const raw of rows) {
+        const row = readProductRow(raw);
         const list = byCategory.get(row.category_slug);
         if (list) list.push(row);
         else byCategory.set(row.category_slug, [row]);
@@ -236,7 +279,7 @@ export async function getCategoryProducts(categorySlug: string): Promise<Categor
         console.error("products read error:", error);
         return [];
     }
-    return (data ?? []) as CategoryProduct[];
+    return (data ?? []).map(readProductRow);
 }
 
 // Every product across every category, grouped by category_slug and ordered
@@ -263,7 +306,7 @@ export async function getAllCategoryProducts(): Promise<AllProductsRead> {
             return { ok: false };
         }
 
-        return { ok: true, byCategory: groupByCategory((data ?? []) as CategoryProduct[]) };
+        return { ok: true, byCategory: groupByCategory(data ?? []) };
     } catch (error) {
         // Next's own control-flow signals (cookies() marking the route as
         // rendered per request) must pass straight through, as in
@@ -318,11 +361,13 @@ export async function createCategoryProduct(input: CategoryProductInput): Promis
     if (error) return actionFailure("save", "createCategoryProduct: the insert failed.", error);
 
     revalidateCategory(categorySlug);
-    return { ok: true, product: data as CategoryProduct };
+    // Only the returned row is normalised (T-045): the insert never writes a
+    // gallery, so a new product gets the column's default, an empty one.
+    return { ok: true, product: readProductRow(data) };
 }
 
-// A partial update (T-016): it writes only the name, description and image
-// fields present in `patch`, so two tabs editing different fields of one
+// A partial update (T-016): it writes only the name, description, image and
+// gallery (T-045) fields present in `patch`, so two tabs editing different fields of one
 // product both keep their edit. It never writes category_slug or sort_order,
 // so an edit can't move a product or undo a reorder.
 export async function updateCategoryProduct(id: string, patch: CategoryProductPatch): Promise<ProductActionResult> {
@@ -333,7 +378,15 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
     if (typeof id !== "string" || !id) return { ok: false, error: "Missing product id." };
 
     const fields = takePatchFields(patch);
-    if (fields.name === undefined && fields.description === undefined && fields.image === undefined) {
+    const gallery = takeGallery(patch);
+    if (gallery === null) return { ok: false, error: PRODUCT_GALLERY_INVALID };
+    if (gallery !== undefined) fields.gallery = gallery;
+    if (
+        fields.name === undefined &&
+        fields.description === undefined &&
+        fields.image === undefined &&
+        fields.gallery === undefined
+    ) {
         return { ok: false, error: NOTHING_TO_SAVE };
     }
 
@@ -370,7 +423,7 @@ export async function updateCategoryProduct(id: string, patch: CategoryProductPa
     if (!data) return { ok: false, error: PRODUCT_NOT_FOUND };
 
     revalidateCategory(categorySlug);
-    return { ok: true, product: data as CategoryProduct };
+    return { ok: true, product: readProductRow(data) };
 }
 
 // Removes exactly one product by id — never touches any other product row,

@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { unstable_rethrow } from "next/navigation";
 import { ArrowUpRight } from "lucide-react";
-import PageHeader from "@/components/ui/PageHeader";
 import ScrollReveal from "@/components/ui/ScrollReveal";
 import CategoryCardGrid, { toCategoryCards } from "@/components/catalog/CategoryCardGrid";
 import ProductGrid, { toProductCards } from "@/components/catalog/ProductGrid";
@@ -84,15 +83,14 @@ export default async function ProductsPage() {
 
     return (
         <div className="flex flex-col bg-background">
-            <PageHeader
-                tag="Our Range"
-                title="Products"
-                description="Knitwear for the global apparel market, from t-shirts and polos to sportswear and heavy jersey."
-            />
-
-            <section className="container py-24">
+            {/* No PageHeader banner (T-045, owner request 2026-10-25): the
+                page starts at its category grid, and "Browse by Category" is
+                its only h1, in the look it had as an h2. pt-32 is the
+                clearance PageHeader gave the fixed site header; from xl, where
+                the header shows its taller nav, pt-40 keeps the same gap. */}
+            <section className="container pb-24 pt-32 xl:pt-40">
                 <ScrollReveal>
-                    <h2 className="mb-12 font-serif text-3xl font-bold text-foreground md:text-4xl">Browse by Category</h2>
+                    <h1 className="mb-12 font-serif text-3xl font-bold text-foreground md:text-4xl">Browse by Category</h1>
                 </ScrollReveal>
 
                 <CategoryCardGrid categories={categories} hrefBase={PRODUCTS_PATH} />
@@ -145,7 +143,7 @@ export default async function ProductsPage() {
 
                     {/* Only the category's title string is passed in, never
                         a category object, and each product is narrowed to
-                        the 3 fields its card renders: no row id, category
+                        the fields its card renders: no row id, category
                         slug, order or timestamps (SEC-INFO-36). */}
                     <ProductGrid
                         products={toProductCards(section.products)}

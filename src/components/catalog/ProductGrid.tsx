@@ -6,11 +6,13 @@ import { cn } from "@/lib/utils";
 import type { CategoryProduct } from "@/lib/site-content";
 
 /**
- * @purpose Narrow product rows to the 3 fields a ProductCard renders, so a row's id, category, order and timestamps never reach component props or a page's payload.
- * New objects, in the same order and number; nothing is trimmed or filtered.
+ * @purpose Narrow product rows to the 4 fields a ProductCard renders (name, description, image, gallery), so a row's id, category, order and timestamps never reach component props or a page's payload.
+ * New objects, and a new gallery array, in the same order and number. Nothing
+ * is trimmed or filtered here: the product read has already cleaned the
+ * gallery (normalizeGallery, T-045).
  */
 export function toProductCards(rows: readonly CategoryProduct[]): ProductCardData[] {
-    return rows.map(({ name, description, image }) => ({ name, description, image }));
+    return rows.map(({ name, description, image, gallery }) => ({ name, description, image, gallery: [...gallery] }));
 }
 
 type ProductGridProps = {
