@@ -51,7 +51,7 @@ holds real data (`docs/WORKFLOW.md` §6).
 | Migration | Contents | Status |
 |---|---|---|
 | `db/migrations/0001_products-within-category.sql` | `public.products`, its index, grants and policies | `STATUS: APPLIED 2026-09-27` |
-| `db/migrations/0002_product-gallery.sql` | `products.gallery text[] not null default '{}'`, CHECK `products_gallery_max` (≤ 20), a column comment, `NOTIFY pgrst`. No new policy or grant: the column inherits `products`' RLS (T-045) | `STATUS: PENDING_USER_APPLY` (given to the owner 2026-10-25) |
+| `db/migrations/0002_product-gallery.sql` | `products.gallery text[] not null default '{}'`, CHECK `products_gallery_max` (≤ 20), a column comment, `NOTIFY pgrst`. No new policy or grant: the column inherits `products`' RLS (T-045) | `STATUS: APPLIED 2026-10-25` |
 
 - **Flow:** `docs/STACK.md` §5. Hand-written SQL, then the owner applies it in the SQL
   editor. This is a **hard stop**. No CLI, no type generation.

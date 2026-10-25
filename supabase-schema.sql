@@ -141,12 +141,29 @@ CREATE TABLE IF NOT EXISTS public.products (
     name VARCHAR(255) NOT NULL DEFAULT '',
     description TEXT NOT NULL DEFAULT '',
     image TEXT NOT NULL DEFAULT '',
+    -- Extra photos after `image`, in display order (T-045, db/migrations/0002_product-gallery.sql).
+    -- The app allows up to 5 (MAX_PRODUCT_GALLERY_PHOTOS); the CHECK below is a structural backstop only.
+    gallery TEXT[] NOT NULL DEFAULT '{}'::text[],
     sort_order INTEGER NOT NULL DEFAULT 0,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS idx_products_category_sort ON public.products (category_slug, sort_order);
+
+-- T-045 (db/migrations/0002_product-gallery.sql, applied 2026-10-25). For a database
+-- created before 0002, the ADD COLUMN in that migration is what adds `gallery`.
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM pg_constraint
+        WHERE conrelid = 'public.products'::regclass
+          AND conname = 'products_gallery_max'
+    ) THEN
+        ALTER TABLE public.products
+            ADD CONSTRAINT products_gallery_max CHECK (cardinality(gallery) <= 20);
+    END IF;
+END $$;
 
 -- Explicit table-level grants (2026-09-26 follow-up) — RLS policies below
 -- only filter rows a role already has table privileges for; do not rely on

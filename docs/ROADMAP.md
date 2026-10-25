@@ -2526,7 +2526,7 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: `design-reviewer`, Wave 5b, 2026-10-08.
   Sequence: `/build` → `/design-review` → `code-reviewer` → merge. Backlog.
 
-- [ ] **T-044** — Bump Next.js to 16.4.3 and clear the tooling advisories [app:site][sec]
+- [x] **T-044** — Bump Next.js to 16.4.3 and clear the tooling advisories [app:site][sec] — `b266fc1`, merged via `int/20261025-075721` (`7478907`); code SHIP, security CLEARED (SEC-HIGH-6, SEC-MED-17 closed at merge) — 2026-10-25
   **Re-scoped 2026-10-25 (SEC-HIGH-6):** 16.3.8 is no longer enough. `next` 16.3.6 is also in range of GHSA-2464-fhr4-w9xw (critical: image-optimizer RCE with SVGs), GHSA-673q-mjm6-r5xr (critical: `use cache`, unused here) and GHSA-p3m5-59mp-jv5r (high: Server Actions DoS), all fixed from 16.4.1. The target is now `next` and `eslint-config-next` **16.4.3** (a minor bump), and it ships in the same release as T-045. The AC below still applies, with 16.4.3 in place of 16.3.8; also: `agentRules: false` and `logging.serverFunctions: false` stay in `next.config.ts` and still take effect, and 16.4.0–16.4.3's release notes are checked for breaking changes before the bump.
   AC (as filed 2026-10-11):
   - `next` goes from 16.3.6 to 16.3.8 (patch only), which fixes GHSA-cjq9-62q9-8jv4, mcj8-r9mp-w47p, 4jqv-mc3x-m676, 3w37-wq28-93x7, f87g-xv8r-7p7x and 39w2-rjm5-chcv. None applies to this site as deployed (no `images.remotePatterns`, Vercel-hosted, no catch-all, no `use cache`/draftMode, static icons), so this is hygiene, not an incident.
@@ -2536,7 +2536,7 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: `/ship` preflight, 2026-10-11; SECURITY.md SEC-MED-17.
   Sequence: `/build` → `/security-review` → `code-reviewer` → merge, then deploy on the owner's "deploy".
 
-- [ ] **T-045** — Product preview pop-up with up to 6 photos, layout samples, and no banner on /products [app:site][app:admin][db][design]
+- [x] **T-045** — Product preview pop-up with up to 6 photos, layout samples, and no banner on /products [app:site][app:admin][db][design] — `2abaa7e`, `e24dba6`, `5b2a4b7`, `b95f850`, `4fe99ea`, fixes `c2a2891` and `f80d894`, merged via `int/20261025-075721` (`13bd0f6`); migration 0002 APPLIED by the owner 2026-10-25; code SHIP, security CLEARED, design APPROVE — 2026-10-25
   Owner request 2026-10-25 ("urgent… this needs to be live"). Owner answers: remove the big banner on /products; a pop-up preview; up to 6 photos per product; deploy when ready.
   AC:
   - **/products banner:** the "OUR RANGE / Products" `PageHeader` is gone, so the page starts at "Browse by Category". That heading becomes the page's only `h1` (same look) and clears the fixed header. Metadata and everything else are unchanged.

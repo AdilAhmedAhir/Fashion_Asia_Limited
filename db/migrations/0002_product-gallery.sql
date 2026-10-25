@@ -1,4 +1,4 @@
--- STATUS: PENDING_USER_APPLY
+-- STATUS: APPLIED 2026-10-25 (by the owner in the Supabase SQL editor; verified read-only: products?select=gallery returns 200 with [] for all 6 products)
 -- 0002 — product photo gallery (T-045, 2026-10-25)
 --
 -- What it does: gives each product up to 5 extra photos, for the click-to-preview pop-up on the
