@@ -21,7 +21,7 @@
 | Language(s) | TypeScript 5.9.3, strict | `tsconfig.json` |
 | Package manager | npm | `package-lock.json` |
 | Repo shape | single package | `package.json` |
-| Framework(s) | Next.js **16.3.6** (App Router; range `^16.1.6`, 16.3.6 is the approved floor), React and react-dom 19.2.4 | `package-lock.json` |
+| Framework(s) | Next.js **16.4.3** (App Router; range `^16.4.3`, 16.4.3 is the approved floor since T-044, DECISIONS 2026-10-25), React and react-dom 19.2.4. `npm run dev` binds to `127.0.0.1` (T-044). | `package-lock.json` |
 | Motion / UI libs | framer-motion 12.34.3 · gsap 3.14.2 + @gsap/react 2.1.2 · lenis 1.3.17 · lucide-react 0.575.0 · clsx 2.1.1 + tailwind-merge 3.5.0 | `package-lock.json` |
 | Database | Supabase Postgres + Auth + Storage (@supabase/supabase-js 2.112.2, @supabase/ssr 0.8.0) | `package-lock.json`, `supabase-schema.sql` |
 | Authorization model | **RLS**, plus an app-layer `getUser()` check in every writing Server Action | see §5 |
@@ -45,7 +45,7 @@
 
 | Unit | Path | Purpose |
 |---|---|---|
-| Content defaults + domain types | `src/lib/site-content.ts` | `SITE_SETTINGS` fallbacks, `Product` (= a *category*), `CategoryProduct` (= an *item*), slug and identity helpers (`slugify`, `normalizeProducts`, `resolveCategoriesForSave`, `isWellFormedSlug`, `readStoredCategoryIdentities`), the What We Do page-text picker (`WhatWeDoText`, `pickWhatWeDoText`), the product rules `hasVisibleText` and `CategoryProductPatch` (T-016), `slugify` cut at the schema's 255 (Wave 1), `isAllowedImageUrl` (`https://` or a root path; Wave 2a), and the product photo gallery: `MAX_PRODUCT_GALLERY_PHOTOS`, `normalizeGallery` (any stored value → a clean list) and `sameGallery` (compare by value; T-045) |
+| Content defaults + domain types | `src/lib/site-content.ts` | `SITE_SETTINGS` fallbacks, `Product` (= a *category*), `CategoryProduct` (= an *item*), slug and identity helpers (`slugify`, `normalizeProducts`, `resolveCategoriesForSave`, `isWellFormedSlug`, `readStoredCategoryIdentities`), the What We Do page-text picker (`WhatWeDoText`, `pickWhatWeDoText`), the product rules `hasVisibleText` and `CategoryProductPatch` (T-016), `slugify` cut at the schema's 255 (Wave 1), `isAllowedImageUrl` (`https://` or a root path; Wave 2a), and the product photo gallery: `MAX_PRODUCT_GALLERY_PHOTOS`, `normalizeGallery` (any stored value → a clean list), `sameGallery` (compare by value) and `PRODUCT_IMAGE_PATH_INVALID` (the one bad-path message, shared by the server and the admin's "More photos"; T-045) |
 | Action errors | `src/lib/action-errors.ts` | `actionFailure(kind, context, error)` and `logActionError`: the three write-action files return fixed save/delete/read/upload messages and log the raw error on the server (Wave 2a, T-018). No imports; not a `"use server"` file. |
 | Admin editor reads | `src/lib/settings-read.ts` | `readSettingsForEditor`: the admin pages' settings read, which tells "failed" from "empty" so an editor never opens on defaults. It isn't a Server Action file (T-026). |
 | Upload contract | `src/lib/upload-limits.ts` | size, edge and format limits; `sniffImageFormat`; `checkImageSizeAdvisory`; `readImageDimensions` and `describeDimensionLimit`, so the server re-checks pixel dimensions and fails closed (Wave 3a, T-007) |

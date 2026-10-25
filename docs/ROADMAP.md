@@ -2637,6 +2637,17 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   - **For T-041, optional:** each line of the static marquee ends with a dot, which nudges it slightly off centre at 360 px. Add `motion-reduce:hidden` on the dot span (`MarqueeSection.tsx:22`).
 - **`code-reviewer`:** the builder's harness lacked a preference-flip probe. The review's `rv.mjs` P1 now covers it, and any future motion work should run it.
 
+**Follow-ups found in T-045 and T-044 (2026-10-25)**, for the backlog:
+- **After the client picks a layout number:** set `PRODUCT_PREVIEW_LAYOUT`, then delete `/product-preview-samples` and the unused layouts (DECISIONS 2026-10-25).
+- **`code-reviewer`:**
+  - **N1:** switching category while an extra photo uploads unmounts its field, so the leave guard turns off. The upload still saves if the page stays open. Main-image uploads have no guard at all (older than T-045).
+  - **N3:** a gallery upload never shows the "smaller than recommended" advice, because the field is rebuilt straight after the upload. The hard limits still apply.
+  - **N5:** the photo list is built in both `ProductCard` and `ProductPreviewDialog`; two more copies of the house focus-ring string (for T-040); `grid-cols-6` assumes 1 + 5 photos.
+- **`code-reviewer` N4 = `security-reviewer` SEC-INFO-51:** the media clean-up's gallery read isn't paged. Past 1,000 products a file named only in a later product's gallery could be deleted. Fix: `{ count: "exact" }` and keep the file when the count and the rows differ. Not reachable at today's 6 products.
+- **`security-reviewer` SEC-INFO-53:** image addresses (`image` and gallery entries) have no length cap, and they now reach every catalog page's data. Add a named maximum next to `isAllowedImageUrl`.
+- **`design-reviewer`, design 7 (polish):** the fixed 4:3 frame letterboxes portrait clothing photos, and layout 4's grid reads as bars with landscape photos. Revisit once the client has picked a layout and real gallery photos exist.
+- **T-044 leftover:** three moderate `postcss-selector-parser` advisories under tailwindcss 3.4.19; only tailwindcss 4 (a major version) fixes them.
+
 **DEPLOYED 2026-10-11:** client `4c10234` / origin `318e73b` (the same files), live on both domains, with 0 failed live checks (LOG 2026-10-11). Sign-ups were confirmed OFF first. The one-time authorship rewrite is pushed. **Staff next:** Admin → Products → **Save categories** once, then add products.
 - **Owner, before the next deploy (SEC-HIGH-2, still open):** in Supabase, review Authentication → Users and remove any account you don't recognise. Sign-ups were open until 2026-10-11, and every account is an admin.
 

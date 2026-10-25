@@ -122,9 +122,9 @@ known from the forms and the brief: buyers and sourcing managers, job seekers, f
 ## Locked stack (pinned versions; mirror of `docs/STACK.md` §2)
 - **Language:** TypeScript 5.9.3 (strict).
 - **Package manager:** npm, with `package-lock.json`.
-- **Framework:** Next.js **16.3.6** (range `^16.1.6`; 16.3.6 is the minimum approved, per
-  the TECH_STACK decision of 2026-09-28), React 19.2.4 and react-dom 19.2.4, using the App
-  Router.
+- **Framework:** Next.js **16.4.3** (range `^16.4.3`; 16.4.3 is the minimum approved since
+  T-044, DECISIONS 2026-10-25, which cleared SEC-HIGH-6; it was 16.3.6 per the TECH_STACK
+  decision of 2026-09-28), React 19.2.4 and react-dom 19.2.4, using the App Router.
 - **Styling:** Tailwind CSS 3.4.19 with PostCSS 8.5.23 and autoprefixer 10.4.27.
 - **Motion:** framer-motion 12.34.3, gsap 3.14.2 with @gsap/react 2.1.2, and lenis 1.3.17.
 - **Icons:** lucide-react 0.575.0.
