@@ -2535,6 +2535,24 @@ The owner asked for every open ticket to be finished, then one deploy at the end
   Source: `/ship` preflight, 2026-10-11; SECURITY.md SEC-MED-17.
   Sequence: `/build` → `/security-review` → `code-reviewer` → merge, then deploy on the owner's "deploy".
 
+- [ ] **T-045** — Product preview pop-up with up to 6 photos, layout samples, and no banner on /products [app:site][app:admin][db][design]
+  Owner request 2026-10-25 ("urgent… this needs to be live"). Owner answers: remove the big banner on /products; a pop-up preview; up to 6 photos per product; deploy when ready.
+  AC:
+  - **/products banner:** the "OUR RANGE / Products" `PageHeader` is gone, so the page starts at "Browse by Category". That heading becomes the page's only `h1` (same look) and clears the fixed header. Metadata and everything else are unchanged.
+  - **Schema (`db/migrations/0002_product-gallery.sql`, HARD STOP until the owner applies it):** `products.gallery text[] not null default '{}'`, holding the extra photos after the main `image`. The app limit is `MAX_PRODUCT_GALLERY_PHOTOS = 5` in `src/lib/site-content.ts` (6 photos in all). Until the column exists, code treats a missing `gallery` as empty, because the reads already use `select("*")`.
+  - **Server:** `updateCategoryProduct`'s patch may carry `gallery`, an array of strings.
+    - Each entry is trimmed and must pass `isAllowedImageUrl`. At most 5 entries; anything else is refused with fixed wording, and nothing is written.
+    - It's written only when sent, like the other fields. `getUser()` stays first, and `createCategoryProduct` is unchanged.
+  - **Admin (`/admin/products`):** each product row gets "More photos (up to 5)". Staff can add a photo (the same `ImageUploadField` and upload limits), remove one, or move one up or down. Each change saves through that product's existing save queue, with the same Saving/Saved states. The other fields behave exactly as before.
+  - **Public:** a product card on `/products` and on each category page opens a pop-up preview (a native `<dialog>`).
+    - **It shows** a large photo, small thumbnails to switch between the main photo and the gallery, the name and the description. There's nothing else: no price, cart or links.
+    - **Closing:** a Close button, Escape or a backdrop click closes it, and focus returns to the card.
+    - **Keyboard and screen readers:** both are supported; contrast meets AA; it's usable at 360 px; reduced motion is respected.
+    - **One photo only:** no thumbnails are shown.
+    - **No product ids:** none appear in the HTML or props (the T-025 rule); only photo addresses do.
+  - **Layout samples:** the pop-up supports numbered layouts (1–4). The live one is chosen by one constant. A hidden samples page shows each numbered layout with sample photos, so the client can pick a number. It's `noindex`, and not in the nav or the sitemap.
+  Sequence: `architect-reviewer` (migration + contract) → owner applies SQL → `/build` → `code-reviewer` + `security-reviewer` + `design-reviewer` → merge → `/ship` (owner pre-authorised "deploy when ready").
+
 **Follow-ups found in Wave 2b (2026-10-06)**, for the backlog:
 - **`code-reviewer` Y4, watch only:** `getAllCategoryProducts` reads every product in one query with no paging, so Supabase's default 1,000-row API cap applies. Past that, the admin's lists would be cut short, and reorders there would be refused with REORDER_STALE. That doesn't matter at today's catalog size.
 - **`code-reviewer` Y1, test only:** assert that the reorder's refresh comes after its last write. Today's `return await` is correct, but a "clean-up" that drops the `await` would pass the current suite.
